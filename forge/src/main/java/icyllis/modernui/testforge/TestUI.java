@@ -18,9 +18,7 @@
 
 package icyllis.modernui.testforge;
 
-import icyllis.modernui.core.ArchCore;
 import icyllis.modernui.forge.UICallback;
-import icyllis.modernui.fragment.FragmentTransaction;
 
 public class TestUI extends UICallback {
 
