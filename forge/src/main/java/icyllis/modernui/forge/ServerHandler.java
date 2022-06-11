@@ -32,36 +32,34 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 
 import javax.annotation.Nonnull;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.*;
 
 final class ServerHandler {
 
     static final ServerHandler INSTANCE = new ServerHandler();
 
-    boolean started = false;
+    boolean mStarted = false;
 
     // time in millis that server will auto-shutdown
-    private long shutdownTime = 0;
+    private long mShutdownTime = 0;
 
-    private long nextShutdownNotify = 0;
-    private final long[] shutdownNotifyTimes = new long[]{
+    private long mNextShutdownNotify = 0;
+    private final long[] mShutdownNotifyTimes = new long[]{
             1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 60000, 300000, 600000, 1800000};
 
     @SubscribeEvent
     void onStart(@Nonnull ServerStartedEvent event) {
-        started = true;
+        mStarted = true;
         determineShutdownTime();
     }
 
     @SubscribeEvent
     void onStop(@Nonnull ServerStoppingEvent event) {
-        started = false;
+        mStarted = false;
     }
 
     void determineShutdownTime() {
-        if (!started) {
+        if (!mStarted) {
             return;
         }
         if (Config.COMMON.autoShutdown.get()) {
@@ -90,22 +88,22 @@ final class ServerHandler {
                 }
             }
             if (target < Integer.MAX_VALUE && target > current) {
-                shutdownTime = Util.getMillis() + (target - current) * 1000L;
+                mShutdownTime = Util.getMillis() + (target - current) * 1000L;
                 ModernUI.LOGGER.debug(ModernUI.MARKER, "Server will shutdown at {}",
-                        SimpleDateFormat.getDateTimeInstance().format(new Date(shutdownTime)));
-                nextShutdownNotify = shutdownNotifyTimes[shutdownNotifyTimes.length - 1];
+                        SimpleDateFormat.getDateTimeInstance().format(new Date(mShutdownTime)));
+                mNextShutdownNotify = mShutdownNotifyTimes[mShutdownNotifyTimes.length - 1];
             } else {
-                shutdownTime = 0;
+                mShutdownTime = 0;
             }
         } else {
-            shutdownTime = 0;
+            mShutdownTime = 0;
         }
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     void onLastEndTick(@Nonnull TickEvent.ServerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && shutdownTime > 0) {
-            long countdown = shutdownTime - Util.getMillis();
+        if (event.phase == TickEvent.Phase.END && mShutdownTime > 0) {
+            long countdown = mShutdownTime - Util.getMillis();
             sendShutdownNotification(countdown);
             if (countdown <= 0) {
                 ServerLifecycleHooks.getCurrentServer().halt(false);
@@ -114,16 +112,16 @@ final class ServerHandler {
     }
 
     private void sendShutdownNotification(long countdown) {
-        if (countdown < nextShutdownNotify) {
+        if (countdown < mNextShutdownNotify) {
             do {
-                int index = Arrays.binarySearch(shutdownNotifyTimes, nextShutdownNotify);
+                int index = Arrays.binarySearch(mShutdownNotifyTimes, mNextShutdownNotify);
                 if (index > 0) {
-                    nextShutdownNotify = shutdownNotifyTimes[index - 1];
+                    mNextShutdownNotify = mShutdownNotifyTimes[index - 1];
                 } else {
-                    nextShutdownNotify = 0;
+                    mNextShutdownNotify = 0;
                     break;
                 }
-            } while (countdown < nextShutdownNotify);
+            } while (countdown < mNextShutdownNotify);
             long l = Math.round(countdown / 1000D);
             final String key;
             final String str;

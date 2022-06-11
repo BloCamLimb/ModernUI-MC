@@ -18,8 +18,6 @@
 
 package icyllis.modernui.forge;
 
-import icyllis.modernui.util.Pool;
-import icyllis.modernui.util.Pools;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
@@ -44,7 +42,8 @@ import java.util.function.Consumer;
  */
 public final class PacketDispatcher {
 
-    private static final Pool<PacketDispatcher> sPool = Pools.concurrent(5);
+    private static final PacketDispatcher[] sPool = new PacketDispatcher[5];
+    private static int sPoolSize;
 
     private ClientboundCustomPayloadPacket mPacket;
     private final Consumer<ServerPlayer> mDispatcher = p -> p.connection.send(mPacket);
@@ -54,14 +53,23 @@ public final class PacketDispatcher {
 
     @Nonnull
     static PacketDispatcher obtain(@Nonnull ResourceLocation id, @Nonnull FriendlyByteBuf data) {
-        PacketDispatcher b = sPool.acquire();
-        if (b == null) {
-            b = new PacketDispatcher();
-        } else if (b.mPacket != null) {
-            throw new IllegalStateException("A previous packet was not dispatched: " + b.mPacket.getIdentifier());
+        PacketDispatcher target;
+        synchronized (sPool) {
+            if (sPoolSize == 0) {
+                target = null;
+            } else {
+                final int i = --sPoolSize;
+                target = sPool[i];
+                sPool[i] = null;
+            }
         }
-        b.mPacket = new ClientboundCustomPayloadPacket(id, data);
-        return b;
+        if (target == null) {
+            target = new PacketDispatcher();
+        } else if (target.mPacket != null) {
+            throw new IllegalStateException("A previous packet was not dispatched: " + target.mPacket.getIdentifier());
+        }
+        target.mPacket = new ClientboundCustomPayloadPacket(id, data);
+        return target;
     }
 
     private void check() {
@@ -72,7 +80,11 @@ public final class PacketDispatcher {
 
     private void recycle() {
         mPacket = null;
-        sPool.release(this);
+        synchronized (sPool) {
+            if (sPoolSize == sPool.length)
+                return;
+            sPool[sPoolSize++] = this;
+        }
     }
 
     /**

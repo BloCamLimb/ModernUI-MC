@@ -156,12 +156,12 @@ public class NetworkHandler {
                                        @Nonnull Supplier<LocalPlayer> player) {
         ResourceLocation id = packet.getIdentifier();
         if (id.getNamespace().equals(ModernUI.ID)) {
-            FriendlyByteBuf data = packet.getInternalData();
+            FriendlyByteBuf payload = packet.getInternalData();
             NetworkHandler h = sNetworks.get(id.getPath());
             if (h != null && h.mClientListener != null) {
-                h.mClientListener.handle(data.readShort(), data, player);
+                h.mClientListener.handle(payload.readShort(), payload, player);
             }
-            data.release();
+            payload.release();
             throw RunningOnDifferentThreadException.RUNNING_ON_DIFFERENT_THREAD;
         }
     }
@@ -171,12 +171,12 @@ public class NetworkHandler {
                                        @Nonnull Supplier<ServerPlayer> player) {
         ResourceLocation id = packet.getIdentifier();
         if (id.getNamespace().equals(ModernUI.ID)) {
-            FriendlyByteBuf data = packet.getInternalData();
+            FriendlyByteBuf payload = packet.getInternalData();
             NetworkHandler h = sNetworks.get(id.getPath());
             if (h != null && h.mServerListener != null) {
-                h.mServerListener.handle(data.readShort(), data, player);
+                h.mServerListener.handle(payload.readShort(), payload, player);
             }
-            data.release();
+            payload.release();
             throw RunningOnDifferentThreadException.RUNNING_ON_DIFFERENT_THREAD;
         }
     }
