@@ -7,10 +7,10 @@ layout(std140, binding = 0) uniform MatrixBlock {
     vec4 u_Color;
 };
 
-smooth in vec2 f_Position;
-smooth in vec4 f_Color;
+layout(location = 0) smooth in vec2 f_Position;
+layout(location = 1) smooth in vec4 f_Color;
 
-layout(location = 0) out vec4 fragColor;
+layout(location = 0, index = 0) out vec4 fragColor;
 
 float rand(vec2 n) {
     return fract(sin(dot(n, vec2(12.9898,12.1414))) * 83758.5453);
