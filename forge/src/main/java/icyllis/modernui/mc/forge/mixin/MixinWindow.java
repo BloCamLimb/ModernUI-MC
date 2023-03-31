@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,9 +20,9 @@ package icyllis.modernui.mc.forge.mixin;
 
 import com.mojang.blaze3d.platform.Window;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.mc.forge.ModernUIForge;
 import icyllis.modernui.mc.forge.MuiForgeApi;
-import icyllis.modernui.math.FMath;
 import icyllis.modernui.view.ViewConfiguration;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -49,7 +49,7 @@ public abstract class MixinWindow {
     @Overwrite
     public int calculateScale(int guiScaleIn, boolean forceUnicode) {
         int r = MuiForgeApi.calcGuiScales((Window) (Object) this);
-        return guiScaleIn > 0 ? FMath.clamp(guiScaleIn, r >> 8 & 0xf, r & 0xf) : r >> 4 & 0xf;
+        return guiScaleIn > 0 ? MathUtil.clamp(guiScaleIn, r >> 8 & 0xf, r & 0xf) : r >> 4 & 0xf;
     }
 
     @Inject(method = "setGuiScale", at = @At("HEAD"))

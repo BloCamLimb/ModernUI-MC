@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,8 @@
 
 package icyllis.modernui.mc.testforge.shader.uniform;
 
+import icyllis.modernui.graphics.Matrix4;
 import icyllis.modernui.mc.testforge.shader.ShaderUniform;
-import icyllis.modernui.math.Matrix4;
 
 import javax.annotation.Nonnull;
 

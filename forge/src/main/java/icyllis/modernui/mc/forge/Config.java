@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2021 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -497,7 +497,8 @@ final class Config {
                 reload = true;
             }
             if (reload) {
-                Minecraft.getInstance().submit(() -> TextLayoutEngine.getInstance().reloadAll());
+                Minecraft.getInstance().submit(
+                        () -> TextLayoutEngine.getInstance().reloadAll());
             }
 
             ModernUI.getSelectedTypeface();

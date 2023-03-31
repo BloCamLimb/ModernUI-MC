@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc.text;
 
-import icyllis.modernui.math.FMath;
+import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.util.Pool;
 import icyllis.modernui.util.Pools;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -126,9 +126,9 @@ public class FormattedLayoutKey {
     public int getMemorySize() {
         int size = 0;
         for (CharSequence s : mTexts) {
-            size += FMath.align4(s.length()) << 1;
+            size += MathUtil.align4(s.length()) << 1;
         }
-        size += (16 + (FMath.align2(mTexts.length) << 2)) * 3;
+        size += (16 + (MathUtil.align2(mTexts.length) << 2)) * 3;
         return size + 32;
     }
 

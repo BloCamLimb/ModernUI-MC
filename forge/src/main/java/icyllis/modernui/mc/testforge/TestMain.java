@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,6 +18,8 @@
 
 package icyllis.modernui.mc.testforge;
 
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.text.BreakIterator;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Document;
@@ -29,14 +31,12 @@ import icyllis.modernui.core.*;
 import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.graphics.Image;
 import icyllis.modernui.graphics.Paint;
+import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.font.*;
 import icyllis.modernui.graphics.opengl.*;
-import icyllis.modernui.math.*;
-import icyllis.modernui.test.SpectrumGraph;
-import icyllis.modernui.test.TestFragment;
+import icyllis.modernui.mc.text.CharSequenceBuilder;
 import icyllis.modernui.text.*;
 import icyllis.modernui.text.style.*;
-import icyllis.modernui.mc.text.CharSequenceBuilder;
 import icyllis.modernui.view.Gravity;
 import it.unimi.dsi.fastutil.ints.IntList;
 import org.apache.logging.log4j.Marker;
@@ -105,7 +105,7 @@ public class TestMain {
         88 89 90 91 92 93 94 95 96 4096x
      */
 
-    public static SpectrumGraph sGraph;
+    //public static SpectrumGraph sGraph;
     public static Track sTrack;
 
     static {
@@ -125,7 +125,7 @@ public class TestMain {
             AudioManager.getInstance().initialize();
             try {
                 sTrack = new Track(new OggDecoder(FileChannel.open(Path.of("F:/10.ogg"))));
-                sGraph = new SpectrumGraph(sTrack, true, 300);
+                //sGraph = new SpectrumGraph(sTrack, true, 300);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -146,25 +146,25 @@ public class TestMain {
         LOGGER.info("{} {}", name, Paths.get(name).isAbsolute());
         */
 
-        testMarkdownParsing();
+        //testMarkdownParsing();
 
         GraphicsEnvironment.getLocalGraphicsEnvironment().preferLocaleFonts();
-        final Font[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
+        /*final Font[] fonts = GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts();
         for (Font f : fonts) {
             if (f.getFamily().equals("Rockwell")) {
                 System.out.println("f=" + f + "/" + f.getPSName() + "/" + f.getName() + "/" + f.getFontName() + "/"
                         + f.getFamily());
             }
-        }
+        }*/
         FontFamily.getSystemFontMap();
 
-        //drawText();
+        testChars();
 
         if (!CREATE_WINDOW) {
             System.LoggerFinder.getLoggerFinder().getLogger("ModernUI", TestMain.class.getModule())
                     .log(System.Logger.Level.INFO, "AABBCC");
             try (ModernUI modernUI = new ModernUI()) {
-                modernUI.run(new TestFragment());
+                //modernUI.run(new TestFragment());
             }
             return;
         }
@@ -308,17 +308,17 @@ public class TestMain {
         }*/
         //ModernUI.LOGGER.info(Gravity.TOP & Gravity.BOTTOM);
         new ModernUI();
-        ShaderManager.getInstance().addListener(mgr -> mgr.getShard(ModernUI.ID, "a.vert"));
+        GLShaderManager.getInstance().addListener(mgr -> mgr.getShard(ModernUI.ID, "a.vert"));
         try {
             Thread.currentThread().setName("Main-Thread");
             Core.initialize();
             sWindow = MainWindow.initialize("Modern UI Layout Editor", 1600, 900);
-            try (var c1 = ModernUI.getInstance().getResourceChannel(ModernUI.ID, "AppLogo16x.png");
-                 var bitmap1 = NativeImage.decode(null, c1);
-                 var c2 = ModernUI.getInstance().getResourceChannel(ModernUI.ID, "AppLogo32x.png");
-                 var bitmap2 = NativeImage.decode(null, c2);
-                 var c3 = ModernUI.getInstance().getResourceChannel(ModernUI.ID, "AppLogo48x.png");
-                 var bitmap3 = NativeImage.decode(null, c3)) {
+            try (var c1 = ModernUI.getInstance().getResourceStream(ModernUI.ID, "AppLogo16x.png");
+                 var bitmap1 = BitmapFactory.decodeStream(c1);
+                 var c2 = ModernUI.getInstance().getResourceStream(ModernUI.ID, "AppLogo32x.png");
+                 var bitmap2 = BitmapFactory.decodeStream(c2);
+                 var c3 = ModernUI.getInstance().getResourceStream(ModernUI.ID, "AppLogo48x.png");
+                 var bitmap3 = BitmapFactory.decodeStream(c3)) {
                 sWindow.setIcon(bitmap1, bitmap2, bitmap3);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -375,13 +375,13 @@ public class TestMain {
         Core.initOpenGL();
         GLCore.showCapsErrorDialog();
         GLSurfaceCanvas canvas = GLSurfaceCanvas.initialize();
-        ShaderManager.getInstance().reload();
+        GLShaderManager.getInstance().reload();
         Matrix4 projection = new Matrix4();
         //projection = Matrix4.makePerspective(MathUtil.PI_DIV_2, window.getAspectRatio(), 0.01f, 1000);
 
         final Image image;
         try {
-            GLTexture texture = TextureManager.getInstance().create(
+            GLTextureCompat texture = GLTextureManager.getInstance().create(
                     FileChannel.open(Path.of("F:", "eromanga.png"), StandardOpenOption.READ), true);
             image = new Image(texture);
         } catch (IOException e) {
@@ -483,7 +483,7 @@ public class TestMain {
         tps.setColor(0xff40ddee);
         tps.setTypeface(Typeface.SANS_SERIF);
 
-        GLFramebuffer framebuffer = new GLFramebuffer(4);
+        GLFramebufferCompat framebuffer = new GLFramebufferCompat(4);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT2, GL_RGBA8);
@@ -520,7 +520,7 @@ public class TestMain {
                 }
 
                 paint.setStyle(Paint.STROKE);
-                float sin = FMath.sin(time / 300f);
+                float sin = (float) Math.sin(time / 300f);
                 paint.setRGBA(255, 255, 255, 255);
                 canvas.drawRoundRect(120, 120, 200, 250 - 50 * sin, 25 + 15 * sin, paint);
 
@@ -562,8 +562,8 @@ public class TestMain {
 
                 float playTime = sTrack.getTime();
 
-                sGraph.update(delta);
-                sGraph.draw(canvas, 800, 450);
+                /*sGraph.update(delta);*/
+                /*sGraph.draw(canvas, 800, 450);*/
 
                 String tcc = String.format("%d / %d", (int) playTime, (int) sTrack.getLength());
                 canvas.drawText(tcc, 0, tcc.length(), 800, 456, Gravity.CENTER_HORIZONTAL, tps);
@@ -640,25 +640,27 @@ public class TestMain {
     }
 
     private static void testChars() {
-        int[] codePoints = {0x1f469, 0x1f3fc, 0x200d, 0x2764, 0xfe0f, 0x200d, 0x1f48b, 0x200d, 0x1f469, 0x1f3fd};
+        LOGGER.info("Emoji Presentation: {}",
+                UCharacter.hasBinaryProperty(0x26A7, UProperty.EMOJI_PRESENTATION));
+        int[] cps = {0x0033, 0xfe0f, 0x20e3};
         CharSequenceBuilder bufferBuilder = new CharSequenceBuilder();
-        for (int cp : codePoints) {
+        for (int cp : cps) {
             bufferBuilder.addCodePoint(cp);
         }
-        for (int cp : codePoints) {
+        for (int cp : cps) {
             LOGGER.info(MARKER, "0x{}: Emoji:{}, EmojiModifier:{}, EmojiModifierBase:{}, Combining:{}, " +
                             "VariationSelector:{}", Integer.toHexString(cp),
                     Emoji.isEmoji(cp), Emoji.isEmojiModifier(cp), Emoji.isEmojiModifierBase(cp),
                     FontCollection.isCombining(cp), FontCollection.isVariationSelector(cp));
         }
-        String text = new String(codePoints, 0, codePoints.length);
+        String text = new String(cps, 0, cps.length);
         GraphemeBreak.forTextRun(text.toCharArray(), Locale.getDefault(), 0, text.length(), (s, e) -> {
             LOGGER.info(MARKER, "{}, {} to {}", text, s, e);
         });
         LOGGER.info(MARKER, "ZWSP Combining:{}", Emoji.isEmoji(0x1F918));
         LOGGER.info(MARKER, "HashCodeEquals{}", bufferBuilder.hashCode() == text.hashCode());
 
-        breakGraphemes("\u2b1b\u200c");
+        /*breakGraphemes("\u2b1b\u200c");
 
         Pattern pattern = Pattern.compile("(\\:(\\w|\\+|\\-)+\\:)(?=|[\\!\\.\\?]|$)");
         String[] testStr = {
@@ -675,7 +677,7 @@ public class TestMain {
             while (matcher.find()) {
                 LOGGER.info("Index:{} to {}, Group:{}", matcher.start(), matcher.end(), matcher.group());
             }
-        }
+        }*/
     }
 
     private static int search(int[] a, int pos) {
@@ -836,12 +838,12 @@ public class TestMain {
         LOGGER.info("AWT Headless: {}", GraphicsEnvironment.isHeadless());
         BufferedImage image = new BufferedImage(1024, 1024, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics2D = image.createGraphics();
-        Font font = new Font("Segoe UI", Font.PLAIN, 16);
+        Font font = new Font("Segoe UI", Font.BOLD, 72);
         graphics2D.setFont(font);
         graphics2D.setBackground(new Color(0, 0, 0, 0));
         graphics2D.clearRect(0, 0, 1024, 1024);
-        graphics2D.setColor(Color.WHITE);
-        graphics2D.setComposite(AlphaComposite.Src);
+        graphics2D.setColor(Color.BLACK);
+        graphics2D.setComposite(AlphaComposite.SrcOver);
         graphics2D.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         graphics2D.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
         graphics2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -849,26 +851,16 @@ public class TestMain {
         String s = "\u0e01\u0e25\u0e31\u0e1a\u0e40\u0e02\u0e49\u0e32\u0e2a\u0e39\u0e48\u0e40\u0e01\u0e21";
         //s = "\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1a\u0e31\u0e4a\u0e01";
         //s = "\u090f\u0915\u0932\u0916\u093f\u0932\u093e\u0921\u093c\u0940";
-        s = "AaAaA";
+        s = "Hello, Modern UI";
         {
-            graphics2D.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_GASP);
+            graphics2D.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             GlyphVector vector = font.layoutGlyphVector(graphics2D.getFontRenderContext(), s.toCharArray(),
                     0, s.length(), Font.LAYOUT_LEFT_TO_RIGHT);
-            graphics2D.drawGlyphVector(vector, 20, 50);
-        }
-        {
-            graphics2D.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                    RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_VRGB);
-            GlyphVector vector = font.layoutGlyphVector(graphics2D.getFontRenderContext(), s.toCharArray(),
-                    0, s.length(), Font.LAYOUT_LEFT_TO_RIGHT);
-            graphics2D.drawGlyphVector(vector, 20, 90);
-        }
-        {
-            graphics2D.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,
-                    RenderingHints.VALUE_FRACTIONALMETRICS_OFF);
-            GlyphVector vector = font.layoutGlyphVector(graphics2D.getFontRenderContext(), s.toCharArray(),
-                    0, s.length(), Font.LAYOUT_LEFT_TO_RIGHT);
-            graphics2D.drawGlyphVector(vector, 20, 130);
+            Shape outline = vector.getOutline(320, 90);
+            graphics2D.drawGlyphVector(vector, 320, 90);
+            graphics2D.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 0));
+            graphics2D.setColor(Color.WHITE);
+            graphics2D.draw(outline);
         }
         /*for (int i = 0; i < s.length(); i++) {
             System.out.println(vector.getGlyphMetrics(i).isCombining());

@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,27 +22,15 @@ import com.ibm.icu.text.DateFormat;
 import com.ibm.icu.text.SimpleDateFormat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.animation.*;
-import icyllis.modernui.mc.forge.CanvasForge;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.Canvas;
-import icyllis.modernui.graphics.Image;
-import icyllis.modernui.graphics.Paint;
+import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
-import icyllis.modernui.math.Rect;
-import icyllis.modernui.text.SpannableString;
-import icyllis.modernui.text.Spanned;
-import icyllis.modernui.text.TextPaint;
+import icyllis.modernui.mc.forge.CanvasForge;
+import icyllis.modernui.text.*;
 import icyllis.modernui.text.style.ForegroundColorSpan;
-import icyllis.modernui.util.DataSet;
-import icyllis.modernui.util.FloatProperty;
-import icyllis.modernui.util.IntProperty;
-import icyllis.modernui.view.Gravity;
-import icyllis.modernui.view.View;
-import icyllis.modernui.view.ViewGroup;
-import icyllis.modernui.widget.EditText;
-import icyllis.modernui.widget.FrameLayout;
-import icyllis.modernui.widget.LinearLayout;
-import icyllis.modernui.widget.Toast;
+import icyllis.modernui.util.*;
+import icyllis.modernui.view.*;
+import icyllis.modernui.widget.*;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -296,7 +284,7 @@ public class TestPauseFragment extends Fragment {
         public ConnectorView(Image image) {
             mImage = image;
             mSize = dp(32);
-            mRodAnimator = ObjectAnimator.ofFloat(this, new FloatProperty<>() {
+            mRodAnimator = ObjectAnimator.ofFloat(this, new FloatProperty<>("rodLength") {
                 @Override
                 public void setValue(@Nonnull ConnectorView object, float value) {
                     object.mRodLength = value;
@@ -316,7 +304,7 @@ public class TestPauseFragment extends Fragment {
                     mBoxAnimator.start();
                 }
             });
-            mBoxAnimator = ObjectAnimator.ofInt(mBoxPaint, new IntProperty<>() {
+            mBoxAnimator = ObjectAnimator.ofInt(mBoxPaint, new IntProperty<>("boxAlpha") {
                 @Override
                 public void setValue(@Nonnull Paint object, int value) {
                     object.setAlpha(value);

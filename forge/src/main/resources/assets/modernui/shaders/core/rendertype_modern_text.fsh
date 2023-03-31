@@ -16,7 +16,9 @@ in vec2 texCoord0;
 out vec4 fragColor;
 
 void main() {
-    vec4 texColor = texture(Sampler0, texCoord0, -0.475);
+    // lodBias should be -0.5/guiScale in Minecraft normalized GUI coordinates, we just take guiScale=2 here
+    // lodBias guarantees NEAREST sampling (sharpen) in despite of float errors
+    vec4 texColor = texture(Sampler0, texCoord0, -0.225);
     vec4 color = texColor * vertexColor * ColorModulator;
     if (color.a < 0.01) discard;
     fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);

@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,11 +35,11 @@ public class MixinGameRenderer {
 
     @Inject(method = "renderLevel", at = @At("HEAD"))
     private void renderLevelStart(float partialTick, long frameTimeNanos, PoseStack pStack, CallbackInfo ci) {
-        TextRenderType.sUseDistanceField = TextLayoutEngine.sUseDistanceField;
+        TextRenderType.sCurrentUseDistanceField = TextLayoutEngine.sCanUseDistanceField;
     }
 
     @Inject(method = "renderLevel", at = @At("TAIL"))
     private void renderLevelEnd(float partialTick, long frameTimeNanos, PoseStack pStack, CallbackInfo ci) {
-        TextRenderType.sUseDistanceField = false;
+        TextRenderType.sCurrentUseDistanceField = false;
     }
 }

@@ -6,7 +6,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
-version = "${minecraft_version}-${core_version}" as String
+version = "${minecraft_version}-${extension_version}" as String
 
 configurations {
     shadow
@@ -28,7 +28,7 @@ loom {
             programArgs "--existing", file("src/main/resources").absolutePath
         }
     }
-    //runConfigs.each { it.setIdeConfigGenerated(true) } // Uncomment this if run configs not generated
+    runConfigs.each { it.setIdeConfigGenerated(true) } // Uncomment this if run configs not generated
     addTaskBeforeRun(":${name}:classes")
 }
 
@@ -81,12 +81,12 @@ dependencies {
     implementation(forgeDependencies("com.github.ben-manes.caffeine:caffeine:${caffeine_version}"))
     implementation(forgeDependencies("com.vladsch.flexmark:flexmark:${flexmark_version}"))
 
-    implementation(forgeDependencies("io.reactivex.rxjava3:rxjava:${rxjava_version}"))
+    //implementation(forgeDependencies("io.reactivex.rxjava3:rxjava:${rxjava_version}"))
 
     shadow "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
     shadow "com.vladsch.flexmark:flexmark:${flexmark_version}"
 
-    shadow "io.reactivex.rxjava3:rxjava:${rxjava_version}"
+    //shadow "io.reactivex.rxjava3:rxjava:${rxjava_version}"
 
     shadow ':ModernUI-Fonts-1.0'
 
@@ -136,7 +136,7 @@ remapJar {
     archiveClassifier.set("universal")
 }
 
-task remapMavenJar(type: RemapJarTask) {
+tasks.register('remapMavenJar', RemapJarTask) {
     dependsOn(jar)
     inputFile.set(jar.archiveFile)
     /*targetNamespace.set("srg") // to srg names

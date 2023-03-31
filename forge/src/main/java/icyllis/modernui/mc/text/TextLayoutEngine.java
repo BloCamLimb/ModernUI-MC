@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,11 +23,12 @@ import com.ibm.icu.text.Bidi;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.graphics.Bitmap;
+import icyllis.modernui.graphics.font.*;
 import icyllis.modernui.mc.forge.ModernUIForge;
 import icyllis.modernui.mc.forge.UIManager;
-import icyllis.modernui.graphics.font.*;
-import icyllis.modernui.text.*;
 import icyllis.modernui.mc.text.mixin.MixinClientLanguage;
+import icyllis.modernui.text.*;
 import icyllis.modernui.view.View;
 import icyllis.modernui.view.ViewConfiguration;
 import net.minecraft.ChatFormatting;
@@ -45,6 +46,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.commons.lang3.tuple.Triple;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
@@ -58,7 +60,8 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -101,7 +104,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     /**
      * Config value to use distance field text in 3D world.
      */
-    public static volatile boolean sUseDistanceField;
+    public static volatile boolean sCanUseDistanceField;
 
     /**
      * Matches Slack emoji shortcode.
@@ -187,7 +190,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     /**
      * All the fonts to use. Maps typeface name to FontCollection.
      */
-    private final HashMap<ResourceLocation, Supplier<FontCollection>> mFontCollections = new HashMap<>();
+    private final HashMap<ResourceLocation, FontCollection> mFontCollections = new HashMap<>();
 
     /**
      * Gui scale = 4.
@@ -410,10 +413,10 @@ public class TextLayoutEngine implements PreparableReloadListener {
                     reloadProfiler.startTick();
                     reloadProfiler.push("reload");
                     // close bitmaps if never baked
-                    for (var supplier : mFontCollections.values()) {
-                        for (var family : supplier.get().getFamilies()) {
-                            if (family instanceof BitmapFont bitmapFont) {
-                                bitmapFont.ensureClose();
+                    for (var fc : mFontCollections.values()) {
+                        for (var family : fc.getFamilies()) {
+                            if (family instanceof BitmapFont) {
+                                ((BitmapFont) family).close();
                             }
                         }
                     }
@@ -433,15 +436,15 @@ public class TextLayoutEngine implements PreparableReloadListener {
     }
 
     @Nonnull
-    private Map<ResourceLocation, Supplier<FontCollection>> loadFonts(ResourceManager manager) {
+    private Map<ResourceLocation, FontCollection> loadFonts(@NotNull ResourceManager resources) {
         final var gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .disableHtmlEscaping()
                 .create();
         final var map = new HashMap<ResourceLocation, Set<FontFamily>>();
-        for (var entry : manager.listResourceStacks("font",
-                location -> location.getPath().endsWith(".json")).entrySet()) {
-            var location = entry.getKey();
+        for (var res : resources.listResourceStacks("font",
+                res -> res.getPath().endsWith(".json")).entrySet()) {
+            var location = res.getKey();
             var path = location.getPath();
             // XXX: remove prefix 'font/' and suffix '.json' to get the typeface name
             var name = new ResourceLocation(location.getNamespace(),
@@ -451,7 +454,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 continue; // remapping
             }
             var set = map.computeIfAbsent(name, n -> new LinkedHashSet<>());
-            for (var resource : entry.getValue()) {
+            for (var resource : res.getValue()) {
                 try (var reader = resource.openAsReader()) {
                     var providers = GsonHelper.getAsJsonArray(Objects.requireNonNull(
                             GsonHelper.fromJson(gson, reader, JsonObject.class)), "providers");
@@ -460,7 +463,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                                 providers.get(i), "providers[" + i + "]");
                         var type = GsonHelper.getAsString(metadata, "type");
                         switch (type) {
-                            case "bitmap" -> set.add(BitmapFont.create(metadata, manager));
+                            case "bitmap" -> set.add(BitmapFont.create(metadata, resources));
                             case "ttf" -> {
                                 if (metadata.has("shift")) {
                                     LOGGER.warn("Ignore 'shift' of providers[{}] in font '{}' in pack: '{}'",
@@ -470,7 +473,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                                     LOGGER.warn("Ignore 'skip' of providers[{}] in font '{}' in pack: '{}'",
                                             i, name, resource.sourcePackId());
                                 }
-                                set.add(createTTF(metadata, manager));
+                                set.add(createTTF(metadata, resources));
                             }
                             // ignore others
                         }
@@ -484,17 +487,15 @@ public class TextLayoutEngine implements PreparableReloadListener {
             // add fallback
             set.add(Objects.requireNonNull(FontFamily.getSystemFontMap().get(Font.SANS_SERIF)));
         }
-        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> {
-            final var stable = new FontCollection(e.getValue().toArray(new FontFamily[0]));
-            return () -> stable;
-        }));
+        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+                e -> new FontCollection(e.getValue().toArray(new FontFamily[0]))));
     }
 
     @Nonnull
-    private FontFamily createTTF(JsonObject metadata, ResourceManager manager) {
+    private FontFamily createTTF(JsonObject metadata, ResourceManager resources) {
         var file = new ResourceLocation(GsonHelper.getAsString(metadata, "file"));
         var location = new ResourceLocation(file.getNamespace(), "font/" + file.getPath());
-        try (var stream = manager.open(location)) {
+        try (var stream = resources.open(location)) {
             var f = Font.createFont(Font.TRUETYPE_FONT, stream);
             return new FontFamily(f);
         } catch (Exception e) {
@@ -503,103 +504,92 @@ public class TextLayoutEngine implements PreparableReloadListener {
     }
 
     @Nonnull
-    private Map<? extends CharSequence, EmojiEntry> loadEmojis(ResourceManager manager) {
+    private Map<? extends CharSequence, EmojiEntry> loadEmojis(ResourceManager resources) {
         final var map = new HashMap<String, EmojiEntry>();
         CYCLE:
-        for (var location : manager.listResources("emoji",
-                location -> location.getPath().endsWith(".png")).keySet()) {
-            var path = location.getPath().split("/");
+        for (var res : resources.listResources("emoji",
+                res -> res.getPath().endsWith(".png")).keySet()) {
+            var path = res.getPath().split("/");
             if (path.length == 0) {
                 continue;
             }
             var name = path[path.length - 1];
-            var codes = name.substring(0, name.length() - 4).split("-");
+            var codes = name.substring(0, name.length() - 4).split("_");
             int length = codes.length;
             if (length == 0) {
                 continue;
             }
-            var codePoints = new int[length];
+            // double the size, we may add vs16
+            var cps = new int[length << 1];
+            int n = 0;
             for (int i = 0; i < length; i++) {
                 try {
-                    int codePoint = Integer.parseInt(codes[i], 16);
-                    if (!Character.isValidCodePoint(codePoint)) {
+                    int c = Integer.parseInt(codes[i], 16);
+                    if (!Character.isValidCodePoint(c)) {
                         continue CYCLE;
                     }
-                    if (i == 0 && !Emoji.isEmoji(codePoint)) {
+                    boolean ec = Emoji.isEmoji(c);
+                    boolean ecc = isEmoji_Unicode15_workaround(c);
+                    if (i == 0 && !ec && !ecc) {
                         continue CYCLE;
                     }
-                    codePoints[i] = codePoint;
+                    cps[n++] = c;
+                    // require vs16 for color emoji, otherwise grayscale
+                    if (ec && !Emoji.isEmojiPresentation(c)) {
+                        cps[n++] = Emoji.VARIATION_SELECTOR_16;
+                    }
                 } catch (NumberFormatException e) {
                     continue CYCLE;
                 }
             }
-            map.computeIfAbsent(new String(codePoints, 0, length),
-                    sequence -> new EmojiEntry(/*index*/ map.size(), location, sequence));
+            map.computeIfAbsent(new String(cps, 0, n),
+                    sequence -> new EmojiEntry(/*index*/ map.size(), res, sequence));
         } // CYCLE end
         LOGGER.info("Scanned emoji map size: {}",
                 map.size());
         return map;
     }
 
+    //FIXME Minecraft 1.19.4 still uses ICU-71.1, but Unicode 15 CLDR was added in ICU-72
+    // remove once Minecraft's ICU updated
+    static boolean isEmoji_Unicode15_workaround(int codePoint) {
+        return codePoint == 0x1f6dc ||
+                (0x1fa75 <= codePoint && codePoint <= 0x1fa77) ||
+                codePoint == 0x1fa87 || codePoint == 0x1fa88 ||
+                (0x1faad <= codePoint && codePoint <= 0x1faaf) ||
+                (0x1fabb <= codePoint && codePoint <= 0x1fabd) ||
+                codePoint == 0x1fabf ||
+                codePoint == 0x1face || codePoint == 0x1facf ||
+                codePoint == 0x1fada || codePoint == 0x1fadb ||
+                codePoint == 0x1fae8 ||
+                codePoint == 0x1faf7 || codePoint == 0x1faf8;
+    }
+
+    /**
+     * @see EmojiDataGen
+     */
     @Nonnull
-    private Map<String, String> loadShortcodes(ResourceManager manager,
-                                               Map<? extends CharSequence, EmojiEntry> emojiMap) {
+    private Map<String, String> loadShortcodes(ResourceManager resources,
+                                               Map<? extends CharSequence, EmojiEntry> emojis) {
         final var map = new HashMap<String, String>();
-        final var lookup = new CharSequenceBuilder();
-        int mismatched = 0;
-        try (var reader = manager.openAsReader(ModernUIForge.location("emoji_data.json"))) {
-            CYCLE:
-            for (var entry : Objects.requireNonNull(
-                    GsonHelper.fromJson(new Gson(), reader, JsonObject.class)).entrySet()) {
-                var codes = entry.getKey().split("-");
-                if (codes.length == 0) {
-                    continue;
-                }
-                var shortcodes = entry.getValue().getAsJsonArray()
-                        .get(3).getAsJsonArray();
-                String sequence = null;
-                {
-                    lookup.clear();
-                    for (var code : codes) {
-                        try {
-                            int codePoint = Integer.parseInt(code, 16);
-                            lookup.addCodePoint(codePoint);
-                        } catch (NumberFormatException e) {
-                            continue CYCLE;
+        int mismatched = 0; // bad values or violate Unicode spec
+        try (var reader = resources.openAsReader(ModernUIForge.location("emoji_data.json"))) {
+            for (var entry : new Gson().fromJson(reader, JsonArray.class)) {
+                var row = entry.getAsJsonArray();
+                EmojiEntry emoji = emojis.get(row.get(0).getAsString());
+                if (emoji != null) {
+                    // map shortcodes -> emoji sequence
+                    var shortcodes = row.get(2).getAsJsonArray();
+                    if (!shortcodes.isEmpty()) {
+                        map.put(shortcodes.get(0).getAsString(), emoji.sequence);
+                        for (int i = 1; i < shortcodes.size(); i++) {
+                            map.putIfAbsent(shortcodes.get(i).getAsString(), emoji.sequence);
                         }
-                    }
-                    EmojiEntry existing = emojiMap.get(lookup);
-                    if (existing != null) {
-                        sequence = existing.sequence;
-                    }
-                }
-                if (sequence == null) {
-                    // try with 'variation selector-16' removed
-                    lookup.clear();
-                    for (var code : codes) {
-                        try {
-                            int codePoint = Integer.parseInt(code, 16);
-                            if (codePoint != Emoji.VARIATION_SELECTOR_16) {
-                                lookup.addCodePoint(codePoint);
-                            }
-                        } catch (NumberFormatException e) {
-                            continue CYCLE;
-                        }
-                    }
-                    EmojiEntry existing = emojiMap.get(lookup);
-                    if (existing != null) {
-                        sequence = existing.sequence;
-                    }
-                }
-                if (sequence != null) {
-                    // map shortcode to emoji sequence
-                    for (var e : shortcodes) {
-                        map.putIfAbsent(e.getAsString(), sequence);
                     }
                 } else {
                     mismatched++;
                 }
-            } // CYCLE end
+            }
         } catch (Exception e) {
             LOGGER.info(MARKER, "Failed to load emoji data", e);
         }
@@ -818,19 +808,21 @@ public class TextLayoutEngine implements PreparableReloadListener {
      */
     @Nonnull
     public FontCollection getFontCollection(@Nonnull ResourceLocation fontName) {
-        return mFontCollections.getOrDefault(fontName, () -> ModernUI.getSelectedTypeface().getFontCollection()).get();
+        FontCollection fc;
+        return (fc = mFontCollections.get(fontName)) != null ? fc :
+                ModernUI.getSelectedTypeface().getFontCollection();
     }
 
     public void dumpBitmapFonts() {
-        String basePath = icyllis.modernui.core.NativeImage.saveDialogGet(
-                icyllis.modernui.core.NativeImage.SaveFormat.PNG, "BitmapFont");
+        String basePath = Bitmap.saveDialogGet(
+                Bitmap.SaveFormat.PNG, null, "BitmapFont");
         if (basePath != null) {
             // XXX: remove extension name
             basePath = basePath.substring(0, basePath.length() - 4);
         }
         int index = 0;
-        for (var supplier : mFontCollections.values()) {
-            for (var family : supplier.get().getFamilies()) {
+        for (var fc : mFontCollections.values()) {
+            for (var family : fc.getFamilies()) {
                 if (family instanceof BitmapFont bitmapFont) {
                     if (basePath != null) {
                         bitmapFont.dumpAtlas(basePath + "_" + index + ".png");
@@ -885,8 +877,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
 
     public void dumpEmojiAtlas() {
         if (mEmojiAtlas != null) {
-            String basePath = icyllis.modernui.core.NativeImage.saveDialogGet(
-                    icyllis.modernui.core.NativeImage.SaveFormat.PNG, "EmojiAtlas");
+            String basePath = Bitmap.saveDialogGet(
+                    Bitmap.SaveFormat.PNG, null, "EmojiAtlas");
             mEmojiAtlas.debug(basePath);
         }
     }

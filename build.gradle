@@ -27,6 +27,54 @@ allprojects {
     dependencies {
         compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
         compileOnly 'org.jetbrains:annotations:23.1.0'
+
+        def lwjglNatives
+        switch (org.gradle.internal.os.OperatingSystem.current()) {
+            case org.gradle.internal.os.OperatingSystem.WINDOWS:
+                def osArch = System.getProperty("os.arch")
+                lwjglNatives = osArch.contains("64")
+                        ? "natives-windows${osArch.startsWith("aarch64") ? "-arm64" : ""}"
+                        : "natives-windows-x86"
+                break
+            case org.gradle.internal.os.OperatingSystem.MAC_OS:
+                lwjglNatives = System.getProperty("os.arch").startsWith("aarch64") ? "natives-macos-arm64" : "natives-macos"
+                break
+            default:
+                def osArch = System.getProperty("os.arch")
+                lwjglNatives = osArch.startsWith("arm") || osArch.startsWith("aarch64")
+                        ? "natives-linux-${osArch.contains("64") || osArch.startsWith("armv8") ? "arm64" : "arm32"}"
+                        : "natives-linux"
+                break
+        }
+
+        implementation platform("org.lwjgl:lwjgl-bom:${lwjgl_version}")
+
+        implementation "org.lwjgl:lwjgl"
+        implementation "org.lwjgl:lwjgl-assimp"
+        implementation "org.lwjgl:lwjgl-glfw"
+        implementation "org.lwjgl:lwjgl-jemalloc"
+        implementation "org.lwjgl:lwjgl-openal"
+        implementation "org.lwjgl:lwjgl-opengl"
+        implementation "org.lwjgl:lwjgl-shaderc"
+        implementation "org.lwjgl:lwjgl-spvc"
+        implementation "org.lwjgl:lwjgl-stb"
+        implementation "org.lwjgl:lwjgl-tinyfd"
+        implementation "org.lwjgl:lwjgl-vma"
+        implementation "org.lwjgl:lwjgl-vulkan"
+        runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
+        runtimeOnly "org.lwjgl:lwjgl-assimp::$lwjglNatives"
+        runtimeOnly "org.lwjgl:lwjgl-glfw::$lwjglNatives"
+        runtimeOnly "org.lwjgl:lwjgl-jemalloc::$lwjglNatives"
+        runtimeOnly "org.lwjgl:lwjgl-openal::$lwjglNatives"
+        runtimeOnly "org.lwjgl:lwjgl-opengl::$lwjglNatives"
+        runtimeOnly "org.lwjgl:lwjgl-shaderc::$lwjglNatives"
+        runtimeOnly "org.lwjgl:lwjgl-spvc::$lwjglNatives"
+        runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
+        runtimeOnly "org.lwjgl:lwjgl-tinyfd::$lwjglNatives"
+        runtimeOnly "org.lwjgl:lwjgl-vma::$lwjglNatives"
+        if (lwjglNatives == "natives-macos" || lwjglNatives == "natives-macos-arm64") {
+            runtimeOnly "org.lwjgl:lwjgl-vulkan::$lwjglNatives"
+        }
     }
 
     tasks.withType(JavaCompile).configureEach {

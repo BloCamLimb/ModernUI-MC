@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,12 +19,12 @@
 package icyllis.modernui.mc.text;
 
 import com.google.gson.*;
-import com.mojang.blaze3d.platform.NativeImage;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
-import icyllis.modernui.mc.forge.UIManager;
+import icyllis.modernui.graphics.Bitmap;
+import icyllis.modernui.graphics.BitmapFactory;
 import icyllis.modernui.graphics.font.*;
-import icyllis.modernui.graphics.opengl.GLTexture;
+import icyllis.modernui.graphics.opengl.GLTextureCompat;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.resources.ResourceLocation;
@@ -36,6 +36,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Objects;
 
 import static icyllis.modernui.graphics.opengl.GLCore.*;
 
@@ -50,14 +51,14 @@ import static icyllis.modernui.graphics.opengl.GLCore.*;
  * @see net.minecraft.client.gui.font.providers.BitmapProvider
  * @since 3.6
  */
-public class BitmapFont extends FontFamily {
+public class BitmapFont extends FontFamily implements AutoCloseable {
 
     private final ResourceLocation mLocation;
 
-    private NativeImage mImage;
+    private Bitmap mBitmap; // null after uploading to texture
     private final Int2ObjectMap<Glyph> mGlyphs = new Int2ObjectOpenHashMap<>();
 
-    private final GLTexture mTexture = new GLTexture(GL_TEXTURE_2D);
+    private final GLTextureCompat mTexture = new GLTextureCompat(GL_TEXTURE_2D);
 
     private final int mAscent;  // positive
     private final int mDescent; // positive
@@ -66,35 +67,35 @@ public class BitmapFont extends FontFamily {
     private final int mSpriteHeight;
     private final float mScaleFactor;
 
-    private BitmapFont(ResourceLocation location, NativeImage image,
+    private BitmapFont(ResourceLocation location, Bitmap bitmap,
                        int[][] map, int rows, int cols,
                        int height, int ascent) {
         super(null);
         mLocation = location;
-        mImage = image;
+        mBitmap = bitmap;
         mAscent = ascent;
         mDescent = height - ascent;
-        mSpriteWidth = image.getWidth() / cols;
-        mSpriteHeight = image.getHeight() / rows;
+        mSpriteWidth = bitmap.getWidth() / cols;
+        mSpriteHeight = bitmap.getHeight() / rows;
         mScaleFactor = (float) height / mSpriteHeight;
 
-        for (int i = 0; i < rows; i++) {
-            int[] data = map[i];
-            for (int j = 0; j < cols; j++) {
-                int ch = data[j];
+        for (int r = 0; r < rows; r++) {
+            int[] rowData = map[r];
+            for (int c = 0; c < cols; c++) {
+                int ch = rowData[c];
                 if (ch == '\u0000') {
                     continue; // padding
                 }
-                int actualWidth = getActualGlyphWidth(image, mSpriteWidth, mSpriteHeight, j, i);
+                int actualWidth = getActualGlyphWidth(bitmap, mSpriteWidth, mSpriteHeight, c, r);
                 Glyph glyph = new Glyph(Math.round(actualWidth * mScaleFactor) + 1);
                 glyph.x = 0;
                 glyph.y = -mAscent * TextLayoutEngine.BITMAP_SCALE;
                 glyph.width = Math.round(mSpriteWidth * mScaleFactor * TextLayoutEngine.BITMAP_SCALE);
                 glyph.height = Math.round(mSpriteHeight * mScaleFactor * TextLayoutEngine.BITMAP_SCALE);
-                glyph.u1 = (float) (j * mSpriteWidth) / image.getWidth();
-                glyph.v1 = (float) (i * mSpriteHeight) / image.getHeight();
-                glyph.u2 = (float) (j * mSpriteWidth + mSpriteWidth) / image.getWidth();
-                glyph.v2 = (float) (i * mSpriteHeight + mSpriteHeight) / image.getHeight();
+                glyph.u1 = (float) (c * mSpriteWidth) / bitmap.getWidth();
+                glyph.v1 = (float) (r * mSpriteHeight) / bitmap.getHeight();
+                glyph.u2 = (float) (c * mSpriteWidth + mSpriteWidth) / bitmap.getWidth();
+                glyph.v2 = (float) (r * mSpriteHeight + mSpriteHeight) / bitmap.getHeight();
                 if (mGlyphs.put(ch, glyph) != null) {
                     ModernUI.LOGGER.warn("Codepoint '{}' declared multiple times in {}",
                             Integer.toHexString(ch), mLocation);
@@ -133,20 +134,23 @@ public class BitmapFont extends FontFamily {
         var location = new ResourceLocation(file.getNamespace(), "textures/" + file.getPath());
         try (InputStream stream = manager.open(location)) {
             // Minecraft doesn't use texture views, read swizzles may not work, so we always use RGBA (colored)
-            NativeImage image = NativeImage.read(NativeImage.Format.RGBA, stream);
-            return new BitmapFont(location, image, map, rows, cols, height, ascent);
+            var opts = new BitmapFactory.Options();
+            opts.inPreferredFormat = Bitmap.Format.RGBA_8888;
+            Bitmap bitmap = BitmapFactory.decodeStream(stream, opts);
+            Objects.requireNonNull(bitmap);
+            return new BitmapFont(location, bitmap, map, rows, cols, height, ascent);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static int getActualGlyphWidth(NativeImage image, int width, int height, int col, int row) {
+    private static int getActualGlyphWidth(Bitmap bitmap, int width, int height, int col, int row) {
         int i;
         for (i = width - 1; i >= 0; i--) {
             int x = col * width + i;
             for (int j = 0; j < height; j++) {
                 int y = row * height + j;
-                if (image.getLuminanceOrAlpha(x, y) == 0) {
+                if (bitmap.getPixelARGB(x, y) >>> 24 == 0) {
                     continue;
                 }
                 return i + 1;
@@ -155,52 +159,45 @@ public class BitmapFont extends FontFamily {
         return i + 1;
     }
 
-    private void bakeAtlas() {
-        mTexture.allocate2DCompat(GL_RGBA8, mImage.getWidth(), mImage.getHeight(), 0);
+    // create texture from bitmap on render thread
+    private void createTextureLazy() {
+        mTexture.allocate2DCompat(GL_RGBA8, mBitmap.getWidth(), mBitmap.getHeight(), 0);
         try {
-            long pixels = UIManager.IMAGE_PIXELS.getLong(mImage);
+            long pixels = mBitmap.getPixels();
             mTexture.uploadCompat(0, 0, 0,
-                    mImage.getWidth(), mImage.getHeight(),
+                    mBitmap.getWidth(), mBitmap.getHeight(),
                     0, 0, 0, 1,
                     GL_RGBA, GL_UNSIGNED_BYTE, pixels);
             mTexture.setFilterCompat(GL_NEAREST, GL_NEAREST);
             for (Glyph glyph : mGlyphs.values()) {
                 glyph.texture = mTexture.get();
             }
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
         } finally {
-            mImage.close();
-            mImage = null;
+            mBitmap.close();
+            mBitmap = null;
         }
     }
 
     public void dumpAtlas(String path) {
-        if (path != null && mImage == null && Core.isOnRenderThread()) {
+        if (path != null && mBitmap == null && Core.isOnRenderThread()) {
             ModernUI.LOGGER.info(GlyphManager.MARKER, "Glyphs: {}", mGlyphs.size());
-            try (var image = icyllis.modernui.core.NativeImage.download(
-                    icyllis.modernui.core.NativeImage.Format.RGBA,
+            try (var bitmap = Bitmap.download(
+                    Bitmap.Format.RGBA_8888,
                     mTexture, false)) {
-                image.saveToPath(Path.of(path), icyllis.modernui.core.NativeImage.SaveFormat.PNG, 0);
+                bitmap.saveToPath(Bitmap.SaveFormat.PNG, 0, Path.of(path));
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public void ensureClose() {
-        if (mImage != null) {
-            mImage.close();
-            mImage = null;
-        }
-        // no worry about GLTexture
-    }
-
+    // Render thread only
     @Nullable
     public Glyph getGlyph(int ch) {
-        if (mImage != null) {
-            bakeAtlas();
+        if (mBitmap != null) {
+            createTextureLazy();
         }
+        assert mBitmap == null;
         return mGlyphs.get(ch);
     }
 
@@ -258,6 +255,15 @@ public class BitmapFont extends FontFamily {
         if (mSpriteHeight != that.mSpriteHeight) return false;
         if (mScaleFactor != that.mScaleFactor) return false;
         return mLocation.equals(that.mLocation);
+    }
+
+    @Override
+    public void close() {
+        if (mBitmap != null) {
+            mBitmap.close();
+            mBitmap = null;
+        }
+        mTexture.close();
     }
 
     public static class Glyph extends GLBakedGlyph {

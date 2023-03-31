@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,6 +20,7 @@ package icyllis.modernui.mc.testforge;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.text.TextUtils;
+import icyllis.modernui.util.BinaryIO;
 import icyllis.modernui.util.DataSet;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.ints.*;
@@ -71,18 +72,18 @@ public class TestBenchmark {
     public static Int2ObjectRBTreeMap<String> sStringInt2ObjectRBTreeMap = new Int2ObjectRBTreeMap<>();
 
     static {
-        sDataSet.putInt(1, 1007);
+        sDataSet.putInt("1", 1007);
         List<DataSet> list = new ArrayList<>();
         for (int i = 0; i < 1007; i++) {
             DataSet set = new DataSet();
-            set.putInt(2, i + 1);
-            set.putInt(3, 0xFF7766);
-            set.putUUID(4, UUID.randomUUID());
-            set.putString(5, "abcedf");
-            set.putIntArray(6, new int[]{3, 0, 5, 2, 7, 7, 7, 7});
+            set.putInt("2", i + 1);
+            set.putInt("3", 0xFF7766);
+            set.putUUID("4", UUID.randomUUID());
+            set.putString("5", "abcedf");
+            set.putIntArray("6", new int[]{3, 0, 5, 2, 7, 7, 7, 7});
             list.add(set);
         }
-        sDataSet.put(7, list);
+        sDataSet.put("7", list);
 
         sCompoundTag.putInt("uid", 1007);
         ListTag listTag = new ListTag();
@@ -125,7 +126,7 @@ public class TestBenchmark {
 
     public static void dataSetDeflation() {
         try {
-            DataSet.deflate(sDataSet, new FileOutputStream("F:/testdata_set1.dat"));
+            BinaryIO.deflate(new FileOutputStream("F:/testdata_set1.dat"), sDataSet);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -141,7 +142,7 @@ public class TestBenchmark {
 
     public static void dataSetInflation() {
         try {
-            DataSet.inflate(new FileInputStream("F:/testdata_set1.dat"));
+            BinaryIO.inflate(new FileInputStream("F:/testdata_set1.dat"), null);
         } catch (IOException e) {
             e.printStackTrace();
         }

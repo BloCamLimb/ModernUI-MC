@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,23 +21,20 @@ package icyllis.modernui.mc.forge;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.*;
 import icyllis.modernui.core.Core;
-import icyllis.modernui.mc.forge.Config.Client;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.fragment.FragmentTransaction;
-import icyllis.modernui.graphics.Canvas;
-import icyllis.modernui.graphics.Paint;
+import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
 import icyllis.modernui.graphics.drawable.StateListDrawable;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.opengl.GLSurfaceCanvas;
 import icyllis.modernui.material.MaterialDrawable;
-import icyllis.modernui.math.FMath;
-import icyllis.modernui.math.Rect;
+import icyllis.modernui.mc.forge.Config.Client;
+import icyllis.modernui.mc.text.ModernUITextMC;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.InputFilter;
 import icyllis.modernui.text.TextPaint;
 import icyllis.modernui.text.method.DigitsInputFilter;
-import icyllis.modernui.mc.text.ModernUITextMC;
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.util.StateSet;
 import icyllis.modernui.view.*;
@@ -274,7 +271,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v = (EditText) view;
-                        int value = FMath.clamp(Integer.parseInt(v.getText().toString()),
+                        int value = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
                                 Client.ANIM_DURATION_MIN, Client.ANIM_DURATION_MAX);
                         v.setText(Integer.toString(value));
                         if (value != Config.CLIENT.mBackgroundDuration.get()) {
@@ -303,7 +300,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v = (EditText) view;
-                        int value = FMath.clamp(Integer.parseInt(v.getText().toString()),
+                        int value = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
                                 Client.BLUR_RADIUS_MIN, Client.BLUR_RADIUS_MAX);
                         v.setText(Integer.toString(value));
                         if (value != Config.CLIENT.mBlurRadius.get()) {
@@ -405,7 +402,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v = (EditText) view;
-                        int value = FMath.clamp(Integer.parseInt(v.getText().toString()),
+                        int value = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
                                 Client.ANIM_DURATION_MIN, Client.ANIM_DURATION_MAX);
                         v.setText(Integer.toString(value));
                         if (value != Config.CLIENT.mTooltipDuration.get()) {
@@ -527,7 +524,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v = (EditText) view;
-                        float value = FMath.clamp(Float.parseFloat(v.getText().toString()),
+                        float value = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
                                 ModernUITextMC.Config.BASE_FONT_SIZE_MIN, ModernUITextMC.Config.BASE_FONT_SIZE_MAX);
                         v.setText(Float.toString(value));
                         if (value != ModernUITextMC.CONFIG.mBaseFontSize.get()) {
@@ -547,7 +544,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v = (EditText) view;
-                        float value = FMath.clamp(Float.parseFloat(v.getText().toString()),
+                        float value = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
                                 ModernUITextMC.Config.BASELINE_MIN, ModernUITextMC.Config.BASELINE_MAX);
                         v.setText(Float.toString(value));
                         if (value != ModernUITextMC.CONFIG.mBaselineShift.get()) {
@@ -567,7 +564,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v = (EditText) view;
-                        float value = FMath.clamp(Float.parseFloat(v.getText().toString()),
+                        float value = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
                                 ModernUITextMC.Config.SHADOW_OFFSET_MIN, ModernUITextMC.Config.SHADOW_OFFSET_MAX);
                         v.setText(Float.toString(value));
                         if (value != ModernUITextMC.CONFIG.mShadowOffset.get()) {
@@ -587,7 +584,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v = (EditText) view;
-                        float value = FMath.clamp(Float.parseFloat(v.getText().toString()),
+                        float value = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
                                 ModernUITextMC.Config.OUTLINE_OFFSET_MIN, ModernUITextMC.Config.OUTLINE_OFFSET_MAX);
                         v.setText(Float.toString(value));
                         if (value != ModernUITextMC.CONFIG.mOutlineOffset.get()) {
@@ -709,7 +706,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v = (EditText) view;
-                        int value = FMath.clamp(Integer.parseInt(v.getText().toString()),
+                        int value = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
                                 ModernUITextMC.Config.LIFESPAN_MIN, ModernUITextMC.Config.LIFESPAN_MAX);
                         v.setText(Integer.toString(value));
                         if (value != ModernUITextMC.CONFIG.mCacheLifespan.get()) {
@@ -728,7 +725,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v = (EditText) view;
-                        int value = FMath.clamp(Integer.parseInt(v.getText().toString()),
+                        int value = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
                                 ModernUITextMC.Config.REHASH_MIN, ModernUITextMC.Config.REHASH_MAX);
                         v.setText(Integer.toString(value));
                         if (value != ModernUITextMC.CONFIG.mRehashThreshold.get()) {
@@ -1141,7 +1138,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
         input.setOnFocusChangeListener((__, hasFocus) -> {
             if (!hasFocus) {
                 int val = Integer.parseInt(input.getText().toString());
-                val = FMath.clamp(val, 0, max);
+                val = MathUtil.clamp(val, 0, max);
                 input.setText(Integer.toString(val));
                 if (val != config.get()) {
                     config.set(val);

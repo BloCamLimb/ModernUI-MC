@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2021 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,7 +21,7 @@ package icyllis.modernui.mc.text;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Matrix4f;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.graphics.opengl.GLTexture;
+import icyllis.modernui.graphics.opengl.GLTextureCompat;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -197,7 +197,7 @@ public class GlyphManagerForge {
      * ID of current OpenGL cache texture being used by cacheGlyphs() to store
      * pre-rendered glyph images. Render thread only.
      */
-    private GLTexture mTexture;
+    private GLTextureCompat mTexture;
 
     /**
      * A cache of pre-rendered glyphs mapping each glyph by its glyphCode to
@@ -988,7 +988,7 @@ public class GlyphManagerForge {
         mGlyphGraphics.clearRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
 
         /* Allocate new OpenGL texture */
-        mTexture = new GLTexture(GL_TEXTURE_2D);
+        mTexture = new GLTextureCompat(GL_TEXTURE_2D);
 
         /* Load imageBuffer with pixel data ready for transfer to OpenGL texture */
         //updateImageBuffer(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT);
@@ -1147,7 +1147,7 @@ public class GlyphManagerForge {
          */
         private final float v2;
 
-        public VanillaGlyph(GLTexture texture, float advance, float baselineX, float baselineY, float width,
+        public VanillaGlyph(GLTextureCompat texture, float advance, float baselineX, float baselineY, float width,
                             float height, float u1, float v1, float u2, float v2) {
             this.advance = advance;
             this.baselineX = baselineX;

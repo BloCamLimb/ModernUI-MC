@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -90,7 +90,7 @@ public class TextRenderType extends RenderType {
      *
      * @see icyllis.modernui.mc.text.mixin.MixinGameRenderer
      */
-    public static boolean sUseDistanceField;
+    public static boolean sCurrentUseDistanceField;
     // DF requires MAG linear sampling
     private static int sLinearFontSampler;
 
@@ -170,7 +170,7 @@ public class TextRenderType extends RenderType {
     @Nonnull
     public static TextRenderType getOrCreate(int texture, boolean seeThrough) {
         return seeThrough ? sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType) :
-                sUseDistanceField ? sDfTypes.computeIfAbsent(texture, TextRenderType::makeDfType) :
+                sCurrentUseDistanceField ? sDfTypes.computeIfAbsent(texture, TextRenderType::makeDfType) :
                         sTypes.computeIfAbsent(texture, TextRenderType::makeType);
     }
 

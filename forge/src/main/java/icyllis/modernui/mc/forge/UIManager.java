@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,18 +28,15 @@ import icyllis.modernui.animation.LayoutTransition;
 import icyllis.modernui.annotation.*;
 import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.*;
-import icyllis.modernui.graphics.Canvas;
+import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.opengl.*;
 import icyllis.modernui.lifecycle.*;
-import icyllis.modernui.math.Matrix4;
-import icyllis.modernui.math.Rect;
-import icyllis.modernui.test.TestFragment;
 import icyllis.modernui.mc.testforge.TestListFragment;
 import icyllis.modernui.mc.testforge.TestPauseFragment;
-import icyllis.modernui.text.*;
 import icyllis.modernui.mc.text.ModernStringSplitter;
 import icyllis.modernui.mc.text.TextLayoutEngine;
+import icyllis.modernui.text.*;
 import icyllis.modernui.view.*;
 import icyllis.modernui.view.menu.ContextMenuBuilder;
 import icyllis.modernui.view.menu.MenuHelper;
@@ -51,7 +48,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.*;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.locale.Language;
@@ -165,7 +161,7 @@ public final class UIManager implements LifecycleOwner {
     /// Rendering \\\
 
     // the UI framebuffer
-    private GLFramebuffer mFramebuffer;
+    private GLFramebufferCompat mFramebuffer;
     GLSurfaceCanvas mCanvas;
     private final Matrix4 mProjectionMatrix = new Matrix4();
 
@@ -220,7 +216,7 @@ public final class UIManager implements LifecycleOwner {
         assert sInstance != null;
         sInstance.mCanvas = ModernUIForge.hasGLCapsError() ? null : GLSurfaceCanvas.initialize();
         //glEnable(GL_MULTISAMPLE);
-        GLFramebuffer framebuffer = new GLFramebuffer(4);
+        GLFramebufferCompat framebuffer = new GLFramebufferCompat(4);
         if (sInstance.mCanvas != null) {
             framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
             framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
@@ -642,7 +638,7 @@ public final class UIManager implements LifecycleOwner {
         if (event.getAction() == GLFW_PRESS) {
             switch (event.getKey()) {
                 case GLFW_KEY_Y -> takeScreenshot();
-                case GLFW_KEY_H -> open(new TestFragment());
+                //case GLFW_KEY_H -> open(new TestFragment());
                 case GLFW_KEY_J -> open(new TestPauseFragment());
                 case GLFW_KEY_U -> open(new TestListFragment());
                 case GLFW_KEY_N -> mDecor.postInvalidate();
@@ -680,11 +676,11 @@ public final class UIManager implements LifecycleOwner {
 
     void takeScreenshot() {
         // take a screenshot from MSAA framebuffer
-        GLTexture sampled = GLFramebuffer.resolve(mFramebuffer, GL_COLOR_ATTACHMENT0);
-        NativeImage image = NativeImage.download(NativeImage.Format.RGBA, sampled, true);
+        GLTextureCompat sampled = GLFramebufferCompat.resolve(mFramebuffer, GL_COLOR_ATTACHMENT0);
+        Bitmap image = Bitmap.download(Bitmap.Format.RGBA_8888, sampled, true);
         Util.ioPool().execute(() -> {
             try (image) {
-                image.saveDialog(NativeImage.SaveFormat.PNG);
+                image.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -1101,7 +1097,7 @@ public final class UIManager implements LifecycleOwner {
         }
 
         @RenderThread
-        private void flushDrawCommands(GLSurfaceCanvas canvas, GLFramebuffer framebuffer, int width, int height) {
+        private void flushDrawCommands(GLSurfaceCanvas canvas, GLFramebufferCompat framebuffer, int width, int height) {
             // wait UI thread, if slow
             synchronized (mRenderLock) {
                 boolean blit = true;
@@ -1120,7 +1116,7 @@ public final class UIManager implements LifecycleOwner {
                     glDisable(GL_STENCIL_TEST);
                 }
 
-                final GLTexture layer = framebuffer.getAttachedTexture(GL_COLOR_ATTACHMENT0);
+                final GLTextureCompat layer = framebuffer.getAttachedTexture(GL_COLOR_ATTACHMENT0);
                 if (blit && layer.getWidth() > 0) {
                     // draw MSAA off-screen target to Minecraft main target (not the default framebuffer)
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);

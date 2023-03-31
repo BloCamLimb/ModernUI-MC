@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,15 +28,7 @@ import icyllis.modernui.audio.Track;
 import icyllis.modernui.core.*;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.*;
-import icyllis.modernui.graphics.opengl.GLCore;
-import icyllis.modernui.graphics.opengl.GLSurfaceCanvas;
-import icyllis.modernui.graphics.opengl.ShaderManager;
-import icyllis.modernui.graphics.opengl.TextureManager;
-import icyllis.modernui.math.FMath;
-import icyllis.modernui.math.Matrix4;
-import icyllis.modernui.math.Rect;
-import icyllis.modernui.math.RectF;
-import icyllis.modernui.test.SpectrumGraph;
+import icyllis.modernui.graphics.opengl.*;
 import icyllis.modernui.text.TextPaint;
 import icyllis.modernui.util.IntProperty;
 import icyllis.modernui.view.Gravity;
@@ -60,7 +52,7 @@ import static org.lwjgl.opengl.GL13C.GL_MULTISAMPLE;
 // testing stuff, just a piece of sh*t
 public class BejeweledTwist {
 
-    private final Window mWindow;
+    /*private final Window mWindow;
     private final Thread mRenderThread;
 
     private double mCursorX;
@@ -221,7 +213,7 @@ public class BejeweledTwist {
         mWindow.makeCurrent();
         Core.initOpenGL();
         GLSurfaceCanvas canvas = GLSurfaceCanvas.initialize();
-        ShaderManager.getInstance().reload();
+        GLShaderManager.getInstance().reload();
         GLFW.glfwSwapInterval(1);
 
         Matrix4 projection = new Matrix4();
@@ -262,7 +254,7 @@ public class BejeweledTwist {
         float cx = mWindow.getWidth() / 2f, cy = mWindow.getHeight() / 2f;
 
         Paint paint = Paint.get();
-        float frac = FMath.clamp((float) ((mCursorY - mWindow.getHeight() + 250) / 250), 0, 1);
+        float frac = MathUtil.clamp((float) ((mCursorY - mWindow.getHeight() + 250) / 250), 0, 1);
         int alpha = (int) FMath.lerp(frac, 0x66, 0xFF);
         paint.setColors(0x20000000, 0x20000000, alpha << 24, alpha << 24);
         canvas.drawRect(0, mWindow.getHeight() - 250, mWindow.getWidth(), mWindow.getHeight(), paint);
@@ -462,5 +454,5 @@ public class BejeweledTwist {
             mX = x;
             mY = y;
         }
-    }
+    }*/
 }

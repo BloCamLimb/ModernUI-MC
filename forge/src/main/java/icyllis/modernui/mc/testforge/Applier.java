@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,7 +19,7 @@
 package icyllis.modernui.mc.testforge;
 
 import icyllis.modernui.animation.TimeInterpolator;
-import icyllis.modernui.math.FMath;
+import icyllis.modernui.graphics.MathUtil;
 
 import javax.annotation.Nonnull;
 import java.util.function.Consumer;
@@ -73,7 +73,7 @@ public class Applier {
 
     void update(float progress) {
         progress = interpolator.getInterpolation(progress);
-        float value = FMath.lerp(progress, logicStart, logicEnd);
+        float value = MathUtil.lerp(progress, logicStart, logicEnd);
         setter.accept(value);
     }
 

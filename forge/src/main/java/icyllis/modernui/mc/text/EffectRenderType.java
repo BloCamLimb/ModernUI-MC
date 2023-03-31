@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,7 +23,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.modernui.annotation.RenderThread;
-import icyllis.modernui.graphics.opengl.GLTexture;
+import icyllis.modernui.graphics.opengl.GLTextureCompat;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
@@ -38,7 +38,7 @@ import static icyllis.modernui.graphics.opengl.GLCore.*;
 @RenderThread
 public class EffectRenderType extends RenderType {
 
-    private static final GLTexture WHITE = new GLTexture(GL_TEXTURE_2D);
+    private static final GLTextureCompat WHITE = new GLTextureCompat(GL_TEXTURE_2D);
 
     private static final ImmutableList<RenderStateShard> STATES;
     private static final ImmutableList<RenderStateShard> SEE_THROUGH_STATES;

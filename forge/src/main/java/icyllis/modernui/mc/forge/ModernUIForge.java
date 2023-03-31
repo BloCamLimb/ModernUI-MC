@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2021 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,8 +21,8 @@ package icyllis.modernui.mc.forge;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.font.*;
-import icyllis.modernui.text.Typeface;
 import icyllis.modernui.mc.text.ModernUITextMC;
+import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.ViewManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -312,6 +312,8 @@ public final class ModernUIForge {
 
     public static class Client extends ModernUI {
 
+        private static volatile Client sInstance;
+
         static {
             assert FMLEnvironment.dist.isClient();
         }
@@ -320,6 +322,7 @@ public final class ModernUIForge {
 
         private Client() {
             super();
+            sInstance = this;
             if ((getBootstrapLevel() & BOOTSTRAP_DISABLE_TEXT_ENGINE) == 0) {
                 ModernUITextMC.init();
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
@@ -329,6 +332,10 @@ public final class ModernUIForge {
                 FMLJavaModLoadingContext.get().getModEventBus().register(Registration.ModClientDev.class);
             }
             LOGGER.info(MARKER, "Initialized Modern UI client");
+        }
+
+        public static Client getInstance() {
+            return sInstance;
         }
 
         @Nonnull

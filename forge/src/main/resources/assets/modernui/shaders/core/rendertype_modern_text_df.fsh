@@ -16,15 +16,18 @@ in vec2 texCoord0;
 out vec4 fragColor;
 
 void main() {
-    vec4 texColor = texture(Sampler0, texCoord0, -0.475);
+    // must be BILINEAR sampling
+    vec4 texColor = textureLod(Sampler0, texCoord0, 0.0);
 
     // apply distance field
-    float x = texColor.a - 0.5;
-    vec2 grad = vec2(dFdx(x), dFdy(x));
-    float afwidth = 0.7 * length(grad);
-    // use 0.05 threshold to get heavier strokes
+    float dist = texColor.a - 0.5;
+
+    /*vec2 grad = vec2(dFdx(dist), dFdy(dist));
+    float afwidth = 0.7 * length(grad);*/ // L2 norm (exact)
+    float afwidth = 0.5 * fwidth(dist);   // L1 norm (faster)
+
     // Minecraft uses non-premultiplied alpha blending
-    texColor.a = smoothstep(-afwidth - 0.05, afwidth - 0.05, x);
+    texColor.a = smoothstep(-afwidth - 0.04, afwidth - 0.04, dist);
 
     vec4 color = texColor * vertexColor * ColorModulator;
     if (color.a < 0.01) discard; // requires alpha test

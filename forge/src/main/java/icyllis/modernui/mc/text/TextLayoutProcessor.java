@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,8 +23,8 @@ import com.ibm.icu.util.ULocale;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.graphics.font.*;
-import icyllis.modernui.text.*;
 import icyllis.modernui.mc.text.mixin.*;
+import icyllis.modernui.text.*;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.minecraft.ChatFormatting;
@@ -753,7 +753,7 @@ public class TextLayoutProcessor {
             for (int i = start; i < limit; i++) {
                 if (text[i] <= '9' && text[i] >= '0' &&
                         // also check COMBINING ENCLOSING KEYCAP, don't break GCB
-                        (i + 1 >= limit || text[i + 1] != Emoji.COMBINING_ENCLOSING_KEYCAP)) {
+                        (i + 1 >= limit || text[i + 1] != Emoji.VARIATION_SELECTOR_16)) {
                     text[i] = '0';
                 }
             }

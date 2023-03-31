@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2021 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,10 +23,9 @@ import com.mojang.serialization.DataResult;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
+import icyllis.modernui.graphics.opengl.GLShaderManager;
+import icyllis.modernui.graphics.opengl.GLTextureManager;
 import icyllis.modernui.mc.forge.mixin.AccessOptions;
-import icyllis.modernui.graphics.opengl.ShaderManager;
-import icyllis.modernui.graphics.opengl.TextureManager;
-import icyllis.modernui.test.TestFragment;
 import icyllis.modernui.mc.testforge.TestContainerMenu;
 import icyllis.modernui.mc.testforge.TestPauseFragment;
 import net.minecraft.ChatFormatting;
@@ -182,8 +181,8 @@ final class Registration {
             // this event fired after LOAD_REGISTRIES and before COMMON_SETUP on client main thread (render thread)
             // this event fired after ParticleFactoryRegisterEvent
             event.registerReloadListener((ResourceManagerReloadListener) manager -> {
-                ShaderManager.getInstance().reload();
-                TextureManager.getInstance().reload();
+                GLShaderManager.getInstance().reload();
+                GLTextureManager.getInstance().reload();
                 Handler handler = Core.getUiHandlerAsync();
                 // FML may throw ex, so it can be null
                 if (handler != null) {
@@ -210,7 +209,7 @@ final class Registration {
                 UIManager.initializeRenderer();
                 if (ModernUIForge.sDevelopment) {
                     MenuScreens.register(MuiRegistries.TEST_MENU.get(), MenuScreenFactory.create(menu ->
-                            menu.isDiamond() ? new TestFragment() : new TestPauseFragment()));
+                            new TestPauseFragment()));
                 }
             });
 
@@ -360,11 +359,7 @@ final class Registration {
         static void onMenuOpen(@Nonnull OpenMenuEvent event) {
             if (ModernUIForge.sDevelopment) {
                 if (event.getMenu() instanceof TestContainerMenu c) {
-                    if (c.isDiamond()) {
-                        event.set(new TestFragment());
-                    } else {
-                        event.set(new TestPauseFragment());
-                    }
+                    event.set(new TestPauseFragment());
                 }
             }
         }

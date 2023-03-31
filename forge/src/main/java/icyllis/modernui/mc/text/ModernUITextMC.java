@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,8 +20,8 @@ package icyllis.modernui.mc.text;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
-import icyllis.modernui.mc.forge.MuiForgeApi;
 import icyllis.modernui.graphics.font.GlyphManager;
+import icyllis.modernui.mc.forge.MuiForgeApi;
 import icyllis.modernui.text.TextUtils;
 import icyllis.modernui.view.View;
 import net.minecraft.Util;
@@ -349,8 +349,8 @@ public final class ModernUITextMC {
                 TextLayoutProcessor.sColorEmoji = mColorEmoji.get();
                 reload = true;
             }
-            if (TextLayoutEngine.sUseDistanceField != mUseDistanceField.get()) {
-                TextLayoutEngine.sUseDistanceField = mUseDistanceField.get();
+            if (TextLayoutEngine.sCanUseDistanceField != mUseDistanceField.get()) {
+                TextLayoutEngine.sCanUseDistanceField = mUseDistanceField.get();
                 reload = true;
             }
             if (reload) {
