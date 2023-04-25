@@ -29,10 +29,11 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import javax.annotation.Nonnull;
 
+@Deprecated
 @Mixin(SignRenderer.class)
 public class MixinSignRenderer {
 
-    @Shadow
+    /*@Shadow
     @Final
     private static int BLACK_TEXT_OUTLINE_COLOR;
 
@@ -49,5 +50,5 @@ public class MixinSignRenderer {
             outlineColor = color;
         }
         font.drawInBatch8xOutline(text, x, y, color, outlineColor, matrix, source, packedLight);
-    }
+    }*/
 }

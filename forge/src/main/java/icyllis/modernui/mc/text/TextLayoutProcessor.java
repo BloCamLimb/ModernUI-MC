@@ -44,6 +44,7 @@ import java.util.*;
 /**
  * This is where the text layout is actually performed.
  *
+ * @author BloCamLimb
  * @see GlyphManager
  * @see CharacterStyle
  * @see MixinBidiReorder
@@ -72,7 +73,7 @@ public class TextLayoutProcessor {
     public static final boolean DEBUG = false;
 
     /**
-     * Vanilla font size is 8x or 16x.
+     * Vanilla font size is 8px or 16px.
      */
     public static final int DEFAULT_BASE_FONT_SIZE = 8;
 
@@ -494,7 +495,7 @@ public class TextLayoutProcessor {
     }*/
 
     /**
-     * Perform text layout after building stripped characters.
+     * Perform text layout after building stripped characters (without formatting codes).
      *
      * @param raw the raw string with formatting codes for fast digit replacement
      * @return the full layout result
@@ -504,7 +505,9 @@ public class TextLayoutProcessor {
         if (!mBuilder.isEmpty()) {
             // locale for GCB (grapheme cluster break)
             final ULocale locale = ULocale.forLocale(ModernUI.getSelectedLocale());
+            // pre allocate memory
             mAdvances.size(mBuilder.length());
+            // make a copied buffer
             final char[] textBuf = mBuilder.toCharArray();
             // steps 2-5
             performBidiAnalysis(textBuf, /*fastDigit*/ raw != null, locale);

@@ -20,6 +20,7 @@ package icyllis.modernui.mc.text;
 
 import com.google.gson.*;
 import com.ibm.icu.text.Bidi;
+import com.mojang.blaze3d.font.GlyphProvider;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
@@ -27,12 +28,15 @@ import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.font.*;
 import icyllis.modernui.mc.forge.ModernUIForge;
 import icyllis.modernui.mc.forge.UIManager;
+import icyllis.modernui.mc.text.mixin.AccessFontManager;
 import icyllis.modernui.mc.text.mixin.MixinClientLanguage;
 import icyllis.modernui.text.*;
 import icyllis.modernui.view.View;
 import icyllis.modernui.view.ViewConfiguration;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.font.*;
+import net.minecraft.client.gui.font.providers.GlyphProviderBuilderType;
 import net.minecraft.client.renderer.texture.MipmapGenerator;
 import net.minecraft.network.chat.*;
 import net.minecraft.resources.ResourceLocation;
@@ -45,8 +49,6 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-import org.apache.commons.lang3.tuple.Triple;
-import org.jetbrains.annotations.NotNull;
 import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
@@ -71,9 +73,10 @@ import static icyllis.modernui.ModernUI.*;
  * Modern UI text engine for Minecraft. This class performs Unicode text layout (and measurement),
  * and manage several caches for the layout results. They also provide rendering information and
  * additional information to support several Unicode text algorithms for Minecraft text system.
+ * This class also handles font and emoji resources used in Minecraft.
  * <p>
- * Minecraft's coordinate system, representation of styled texts, and rendering systems are
- * very different from those of the Modern UI core, so this becomes an independent part.
+ * The engine is designed only for Minecraft, for its special GUI scaled coordinates,
+ * tree representation of styled texts, and rendering systems.
  *
  * @author BloCamLimb
  * @since 2.0
@@ -242,6 +245,9 @@ public class TextLayoutEngine implements PreparableReloadListener {
      */
     private TextDirectionHeuristic mTextDirectionHeuristic = TextDirectionHeuristics.FIRSTSTRONG_LTR;
 
+    // vanilla's font manager, used only for compatibility
+    private FontManager mFontManager;
+
     /*
      * Remove all formatting code even though it's invalid {@link #getFormattingByCode(char)} == null
      */
@@ -385,6 +391,16 @@ public class TextLayoutEngine implements PreparableReloadListener {
         reload();
     }
 
+
+    //// START Resource Reloading
+
+    // for compatibility
+    @Nonnull
+    public TextLayoutEngine injectFontManager(@Nonnull FontManager manager) {
+        mFontManager = manager;
+        return this;
+    }
+
     /**
      * Called when resources reloaded.
      */
@@ -396,62 +412,116 @@ public class TextLayoutEngine implements PreparableReloadListener {
                                           @Nonnull ProfilerFiller reloadProfiler,
                                           @Nonnull Executor preparationExecutor,
                                           @Nonnull Executor reloadExecutor) {
-        return CompletableFuture.supplyAsync(() -> {
-                    preparationProfiler.startTick();
-                    preparationProfiler.push("fonts");
-                    final var fonts = loadFonts(resourceManager);
-                    preparationProfiler.popPush("emojis");
-                    final var emojis = loadEmojis(resourceManager);
-                    preparationProfiler.popPush("shortcodes");
-                    final var shortcodes = loadShortcodes(resourceManager, emojis);
-                    preparationProfiler.pop();
-                    preparationProfiler.endTick();
-                    return Triple.of(fonts, emojis, shortcodes);
-                }, preparationExecutor)
+        return CompletableFuture.supplyAsync(() -> prepareResources(resourceManager, preparationProfiler),
+                        preparationExecutor)
                 .thenCompose(preparationBarrier::wait)
-                .thenAcceptAsync(result -> {
-                    reloadProfiler.startTick();
-                    reloadProfiler.push("reload");
-                    // close bitmaps if never baked
-                    for (var fc : mFontCollections.values()) {
-                        for (var family : fc.getFamilies()) {
-                            if (family instanceof BitmapFont) {
-                                ((BitmapFont) family).close();
-                            }
-                        }
-                    }
-                    // reload fonts
-                    mFontCollections.clear();
-                    mFontCollections.putAll(result.getLeft());
-                    // reload emojis
-                    mEmojiMap.clear();
-                    mEmojiShortcodes.clear();
-                    mEmojiMap.putAll(result.getMiddle());
-                    mEmojiShortcodes.putAll(result.getRight());
-                    // reload the whole engine
-                    reloadAll();
-                    reloadProfiler.pop();
-                    reloadProfiler.endTick();
-                }, reloadExecutor);
+                .thenAcceptAsync(results -> reloadResources(results, reloadProfiler), reloadExecutor);
     }
 
+    private static final class LoadResults {
+        volatile Map<ResourceLocation, FontCollection> map;
+        volatile Map<ResourceLocation, List<GlyphProvider>> remap;
+        volatile Map<? extends CharSequence, EmojiEntry> emojis;
+        volatile Map<String, String> shortcodes;
+    }
+
+    // ASYNC
     @Nonnull
-    private Map<ResourceLocation, FontCollection> loadFonts(@NotNull ResourceManager resources) {
+    private LoadResults prepareResources(@Nonnull ResourceManager resourceManager,
+                                         @Nonnull ProfilerFiller preparationProfiler) {
+        preparationProfiler.startTick();
+        final var results = new LoadResults();
+        preparationProfiler.push("fonts");
+        loadFonts(resourceManager, results);
+        preparationProfiler.popPush("emojis");
+        final var emojis = loadEmojis(resourceManager);
+        preparationProfiler.popPush("shortcodes");
+        final var shortcodes = loadShortcodes(resourceManager, emojis);
+        preparationProfiler.pop();
+        results.emojis = emojis;
+        results.shortcodes = shortcodes;
+        preparationProfiler.endTick();
+        return results;
+    }
+
+    // SYNC
+    private void reloadResources(@Nonnull LoadResults asyncResults, @Nonnull ProfilerFiller reloadProfiler) {
+        reloadProfiler.startTick();
+        reloadProfiler.push("reload");
+        // close bitmaps if never baked
+        for (var fontCollection : mFontCollections.values()) {
+            for (var family : fontCollection.getFamilies()) {
+                if (family instanceof BitmapFont) {
+                    ((BitmapFont) family).close();
+                }
+            }
+        }
+        // reload fonts
+        mFontCollections.clear();
+        mFontCollections.putAll(asyncResults.map);
+        // vanilla compatibility
+        if (mFontManager != null) {
+            var fontSets = ((AccessFontManager) mFontManager).getFontSets();
+            fontSets.values().forEach(FontSet::close);
+            fontSets.clear();
+            var textureManager = Minecraft.getInstance().textureManager;
+            asyncResults.remap.forEach((name, list) -> {
+                var fontSet = new FontSet(textureManager, name);
+                fontSet.reload(list);
+                fontSets.put(name, fontSet);
+            });
+        }
+        // reload emojis
+        mEmojiMap.clear();
+        mEmojiShortcodes.clear();
+        mEmojiMap.putAll(asyncResults.emojis);
+        mEmojiShortcodes.putAll(asyncResults.shortcodes);
+        // reload the whole engine
+        reloadAll();
+        reloadProfiler.pop();
+        reloadProfiler.endTick();
+    }
+
+    // ASYNC
+    private void loadFonts(@Nonnull ResourceManager resources, @Nonnull LoadResults results) {
         final var gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .disableHtmlEscaping()
                 .create();
         final var map = new HashMap<ResourceLocation, Set<FontFamily>>();
+        final var remap = new HashMap<ResourceLocation, List<GlyphProvider>>();
         for (var res : resources.listResourceStacks("font",
                 res -> res.getPath().endsWith(".json")).entrySet()) {
             var location = res.getKey();
             var path = location.getPath();
-            // XXX: remove prefix 'font/' and suffix '.json' to get the typeface name
+            // XXX: remove prefix 'font/' and suffix '.json' to get the font name
             var name = new ResourceLocation(location.getNamespace(),
                     path.substring(5, path.length() - 5));
+            // remap default font to ModernUI, but keep them baked for vanilla
+            // because we found Create mod uses FontSet in some cases
             if (name.equals(Minecraft.DEFAULT_FONT) ||
                     name.equals(Minecraft.UNIFORM_FONT)) {
-                continue; // remapping
+                var list = remap.computeIfAbsent(name, n -> new ArrayList<>());
+                for (var resource : res.getValue()) {
+                    try (var reader = resource.openAsReader()) {
+                        var providers = GsonHelper.getAsJsonArray(Objects.requireNonNull(
+                                GsonHelper.fromJson(gson, reader, JsonObject.class)), "providers");
+                        for (int i = 0; i < providers.size(); i++) {
+                            var metadata = GsonHelper.convertToJsonObject(
+                                    providers.get(i), "providers[" + i + "]");
+                            var type = GsonHelper.getAsString(metadata, "type");
+                            var provider = GlyphProviderBuilderType.byName(type)
+                                    .create(metadata)
+                                    .create(resources);
+                            if (provider != null) {
+                                list.add(provider);
+                            }
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                continue;
             }
             var set = map.computeIfAbsent(name, n -> new LinkedHashSet<>());
             for (var resource : res.getValue()) {
@@ -466,33 +536,44 @@ public class TextLayoutEngine implements PreparableReloadListener {
                             case "bitmap" -> set.add(BitmapFont.create(metadata, resources));
                             case "ttf" -> {
                                 if (metadata.has("shift")) {
-                                    LOGGER.warn("Ignore 'shift' of providers[{}] in font '{}' in pack: '{}'",
+                                    LOGGER.info(MARKER, "Ignore 'shift' of providers[{}] in font '{}' in pack: '{}'",
                                             i, name, resource.sourcePackId());
                                 }
                                 if (metadata.has("skip")) {
-                                    LOGGER.warn("Ignore 'skip' of providers[{}] in font '{}' in pack: '{}'",
+                                    LOGGER.info(MARKER, "Ignore 'skip' of providers[{}] in font '{}' in pack: '{}'",
                                             i, name, resource.sourcePackId());
                                 }
                                 set.add(createTTF(metadata, resources));
                             }
-                            // ignore others
+                            case "space" ->
+                                    LOGGER.debug(MARKER, "Ignore provider type 'space' in font '{}' in pack: '{}'",
+                                            name, resource.sourcePackId());
+                            default -> LOGGER.info(MARKER, "Unknown provider type '{}' in font '{}' in pack: '{}'",
+                                    type, name, resource.sourcePackId());
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("Failed to load font '{}' in pack: '{}'", name, resource.sourcePackId(), e);
+                    LOGGER.warn(MARKER, "Failed to load font '{}' in pack: '{}'", name, resource.sourcePackId(), e);
                 }
             }
+            LOGGER.info(MARKER, "Loaded font resource: '{}', font set: [{}]", location,
+                    set.stream().map(FontFamily::getFamilyName).collect(Collectors.joining(",")));
         }
         for (var set : map.values()) {
             // add fallback
             set.add(Objects.requireNonNull(FontFamily.getSystemFontMap().get(Font.SANS_SERIF)));
         }
-        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+        for (var list : remap.values()) {
+            // add fallback
+            list.add(new AllMissingGlyphProvider());
+        }
+        results.map = map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                 e -> new FontCollection(e.getValue().toArray(new FontFamily[0]))));
+        results.remap = remap;
     }
 
     @Nonnull
-    private FontFamily createTTF(JsonObject metadata, ResourceManager resources) {
+    private static FontFamily createTTF(JsonObject metadata, ResourceManager resources) {
         var file = new ResourceLocation(GsonHelper.getAsString(metadata, "file"));
         var location = new ResourceLocation(file.getNamespace(), "font/" + file.getPath());
         try (var stream = resources.open(location)) {
@@ -503,6 +584,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
         }
     }
 
+    // ASYNC
     @Nonnull
     private Map<? extends CharSequence, EmojiEntry> loadEmojis(ResourceManager resources) {
         final var map = new HashMap<String, EmojiEntry>();
@@ -545,7 +627,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
             map.computeIfAbsent(new String(cps, 0, n),
                     sequence -> new EmojiEntry(/*index*/ map.size(), res, sequence));
         } // CYCLE end
-        LOGGER.info("Scanned emoji map size: {}",
+        LOGGER.info(MARKER, "Scanned emoji map size: {}",
                 map.size());
         return map;
     }
@@ -568,6 +650,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     /**
      * @see EmojiDataGen
      */
+    // ASYNC
     @Nonnull
     private Map<String, String> loadShortcodes(ResourceManager resources,
                                                Map<? extends CharSequence, EmojiEntry> emojis) {
@@ -593,10 +676,15 @@ public class TextLayoutEngine implements PreparableReloadListener {
         } catch (Exception e) {
             LOGGER.info(MARKER, "Failed to load emoji data", e);
         }
-        LOGGER.info("Scanned emoji shortcodes: {}, mismatched: {}",
+        LOGGER.info(MARKER, "Scanned emoji shortcodes: {}, mismatched: {}",
                 map.size(), mismatched);
         return map;
     }
+
+    ////// END Resource Reloading
+
+
+    ////// START Cache Retrieval
 
     /**
      * Find or create a full text layout for the given text, fast digit replacement is applicable.
@@ -781,6 +869,9 @@ public class TextLayoutEngine implements PreparableReloadListener {
             return node.get();
         }
     }
+
+    ////// END Cache Retrieval
+
 
     /**
      * Minecraft gives us a deeply processed sequence, so we have to make

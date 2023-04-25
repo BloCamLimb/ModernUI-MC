@@ -276,6 +276,7 @@ public class TextLayoutNode {
             final float ry;
             final float w;
             final float h;
+            boolean isBitmap = false;
             if ((flag & CharacterStyle.BITMAP_REPLACEMENT) != 0) {
                 if (isShadow) {
                     continue;
@@ -284,6 +285,7 @@ public class TextLayoutNode {
                 ry = y + positions[(i << 1) + 1] + (float) glyph.y / TextLayoutEngine.BITMAP_SCALE;
                 w = (float) glyph.width / TextLayoutEngine.BITMAP_SCALE;
                 h = (float) glyph.height / TextLayoutEngine.BITMAP_SCALE;
+                isBitmap = true;
             } else {
                 if (raw != null && (flag & CharacterStyle.FAST_DIGIT_REPLACEMENT) != 0) {
                     var chars = (TextLayoutEngine.FastCharSet) glyph;
@@ -335,8 +337,9 @@ public class TextLayoutNode {
                 }
             }
             if (builder == null || texture != glyph.texture) {
+                // bitmap texture and grayscale texture are different
                 texture = glyph.texture;
-                builder = source.getBuffer(TextRenderType.getOrCreate(texture, seeThrough));
+                builder = source.getBuffer(TextRenderType.getOrCreate(texture, seeThrough, isBitmap));
             }
             builder.vertex(matrix, rx, ry, 0)
                     .color(r, g, b, a)
@@ -454,7 +457,7 @@ public class TextLayoutNode {
         int texture = -1;
         VertexConsumer builder = null;
 
-        final float sBloat = Math.min(1.0f, 3.0f / resLevel);
+        final float sBloat = 1.0f / resLevel;
         for (int i = 0, e = glyphs.length; i < e; i++) {
             var glyph = glyphs[i];
             final int flag = flags[i];
@@ -489,16 +492,16 @@ public class TextLayoutNode {
             }*/
             if (builder == null || texture != glyph.texture) {
                 texture = glyph.texture;
-                builder = source.getBuffer(TextRenderType.getOrCreateGlow(texture));
+                builder = source.getBuffer(TextRenderType.getOrCreateDfStroke(texture));
             }
-            float uBloat = 1.5f * (glyph.u2 - glyph.u1) / glyph.width;
-            float vBloat = 1.5f * (glyph.v2 - glyph.v1) / glyph.height;
-            builder.vertex(matrix, rx - sBloat, ry - sBloat, 0.0001f)
+            float uBloat = (glyph.u2 - glyph.u1) / glyph.width;
+            float vBloat = (glyph.v2 - glyph.v1) / glyph.height;
+            builder.vertex(matrix, rx - sBloat, ry - sBloat, -0.001f)
                     .color(r, g, b, a)
                     .uv(glyph.u1 - uBloat, glyph.v1 - vBloat)
                     .uv2(packedLight)
                     .endVertex();
-            builder.vertex(matrix, rx - sBloat, ry + h + sBloat, 0.0001f)
+            builder.vertex(matrix, rx - sBloat, ry + h + sBloat, -0.001f)
                     .color(r, g, b, a)
                     .uv(glyph.u1 - uBloat, glyph.v2 + vBloat)
                     .uv2(packedLight)

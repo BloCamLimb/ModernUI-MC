@@ -23,6 +23,7 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
+import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.opengl.GLSurfaceCanvas;
@@ -141,7 +142,7 @@ public final class CanvasForge {
         if (t == null) {
             t = new DrawItem();
         }
-        mDrawItems.add(t.set(stack, mMatBuf.flip(), color));
+        mDrawItems.add(t.set(stack, mMatBuf.rewind(), color));
 
         canvas.drawCustom(mDrawItem);
     }
@@ -195,7 +196,7 @@ public final class CanvasForge {
 
         RenderSystem.enableCull();
         RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        RenderSystem.blendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     }
 
     //TODO
@@ -236,7 +237,7 @@ public final class CanvasForge {
         }
 
         if (shader.PROJECTION_MATRIX != null) {
-            mProjection.load(canvas.getProjection());
+            mProjection.load(canvas.getProjection().limit(16));
             shader.PROJECTION_MATRIX.set(mProjection);
         }
 

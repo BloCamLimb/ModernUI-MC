@@ -6,6 +6,7 @@
   "plugin": "icyllis.modernui.mc.text.MixinConfigPlugin",
   "package": "icyllis.modernui.mc.text.mixin",
   "client": [
+    "AccessFontManager",
     "AccessRenderBuffers",
     "MixinBidiReorder",
     "MixinChatFormatting",
@@ -20,7 +21,6 @@
     "MixinLanguage",
     "MixinLevelRenderer",
     "MixinRenderSystem",
-    "MixinSignRenderer",
     "MixinStringSplitter"
   ]
 }

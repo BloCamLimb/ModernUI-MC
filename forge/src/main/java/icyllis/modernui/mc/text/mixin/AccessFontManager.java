@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,21 +18,17 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraft.client.gui.font.FontManager;
-import net.minecraft.server.packs.resources.PreparableReloadListener;
+import net.minecraft.client.gui.font.FontSet;
+import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.gen.Accessor;
+
+import java.util.Map;
 
 @Mixin(FontManager.class)
-public class MixinFontManager {
+public interface AccessFontManager {
 
-    /**
-     * @author BloCamLimb
-     * @reason Modern Text Engine
-     */
-    @Overwrite
-    public PreparableReloadListener getReloadListener() {
-        return TextLayoutEngine.getInstance().injectFontManager((FontManager) (Object) this);
-    }
+    @Accessor("fontSets")
+    Map<ResourceLocation, FontSet> getFontSets();
 }
