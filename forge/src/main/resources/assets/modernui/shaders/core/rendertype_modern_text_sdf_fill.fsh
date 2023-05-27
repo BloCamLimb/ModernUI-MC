@@ -24,10 +24,9 @@ void main() {
 
     /*vec2 grad = vec2(dFdx(dist), dFdy(dist));
     float afwidth = 0.7 * length(grad);*/ // L2 norm (exact)
-    float afwidth = 0.5 * fwidth(dist);   // L1 norm (faster)
 
     // Minecraft uses non-premultiplied alpha blending
-    texColor.a = smoothstep(-afwidth, afwidth, dist);
+    texColor.a = clamp(dist / fwidth(dist) + 0.5, 0.0, 1.0);
 
     vec4 color = texColor * vertexColor * ColorModulator;
     if (color.a < 0.01) discard; // requires alpha test

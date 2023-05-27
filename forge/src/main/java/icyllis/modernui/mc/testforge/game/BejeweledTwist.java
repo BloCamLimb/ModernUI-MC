@@ -28,7 +28,7 @@ import icyllis.modernui.audio.Track;
 import icyllis.modernui.core.*;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.*;
-import icyllis.modernui.graphics.opengl.*;
+import icyllis.arc3d.opengl.*;
 import icyllis.modernui.text.TextPaint;
 import icyllis.modernui.util.IntProperty;
 import icyllis.modernui.view.Gravity;

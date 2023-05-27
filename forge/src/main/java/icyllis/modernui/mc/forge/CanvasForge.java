@@ -23,11 +23,9 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
-import icyllis.modernui.ModernUI;
+import icyllis.arc3d.opengl.GLSurfaceCanvas;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.graphics.*;
-import icyllis.modernui.graphics.opengl.GLSurfaceCanvas;
-import icyllis.modernui.util.Pool;
 import icyllis.modernui.util.Pools;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -48,7 +46,7 @@ import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.util.*;
 
-import static icyllis.modernui.graphics.opengl.GLCore.*;
+import static icyllis.arc3d.opengl.GLCore.*;
 
 /**
  * CanvasForge is an extension to {@link Canvas}, which provides more drawing
@@ -64,7 +62,7 @@ public final class CanvasForge {
 
     private static final CanvasForge sInstance = new CanvasForge();
 
-    private static final Pool<DrawItem> sDrawItemPool = Pools.simple(60);
+    private static final Pools.Pool<DrawItem> sDrawItemPool = Pools.newSimplePool(60);
 
     private final BufferBuilder mBufferBuilder = new BufferBuilder(256);
     private final BufferSource mBufferSource = new BufferSource();

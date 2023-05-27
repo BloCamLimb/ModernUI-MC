@@ -19,7 +19,6 @@
 package icyllis.modernui.mc.text;
 
 import icyllis.modernui.graphics.MathUtil;
-import icyllis.modernui.util.Pool;
 import icyllis.modernui.util.Pools;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -168,7 +167,7 @@ public class FormattedLayoutKey {
          */
         private class SequenceBuilder implements FormattedCharSink {
 
-            private final Pool<CharSequenceBuilder> mPool = Pools.simple(20);
+            private final Pools.Pool<CharSequenceBuilder> mPool = Pools.newSimplePool(20);
 
             private CharSequenceBuilder mBuilder = null;
             private Style mStyle = null;

@@ -23,9 +23,9 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.math.Matrix4f;
+import icyllis.arc3d.opengl.GLSurfaceCanvas;
 import icyllis.modernui.graphics.Matrix4;
 import icyllis.modernui.graphics.Paint;
-import icyllis.modernui.graphics.opengl.GLSurfaceCanvas;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -38,7 +38,7 @@ import javax.annotation.Nonnull;
 import java.nio.FloatBuffer;
 import java.util.List;
 
-import static icyllis.modernui.graphics.opengl.GLCore.*;
+import static icyllis.arc3d.opengl.GLCore.*;
 
 /**
  * An extension that replaces vanilla tooltip style.
@@ -374,7 +374,7 @@ public final class TooltipRenderer {
         sMyMat.preTranslate(0, 0, 3000);
         canvas.concat(sMyMat);
 
-        Paint paint = Paint.get();
+        Paint paint = Paint.obtain();
 
         for (int i = 0; i < 4; i++) {
             int color = sFillColor[i];
@@ -400,7 +400,7 @@ public final class TooltipRenderer {
                 tooltipY + tooltipHeight + V_BORDER, 3, paint);
 
         canvas.restore();
-        canvas.draw(null);
+        canvas.executeDrawOps(null);
 
         glBindVertexArray(oldVertexArray);
         glUseProgram(oldProgram);
@@ -450,5 +450,7 @@ public final class TooltipRenderer {
         }
         itemRenderer.blitOffset = blitOffset;
         poseStack.popPose();
+
+        paint.recycle();
     }
 }

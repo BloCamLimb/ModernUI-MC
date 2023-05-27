@@ -492,7 +492,7 @@ public class TextLayoutNode {
             }*/
             if (builder == null || texture != glyph.texture) {
                 texture = glyph.texture;
-                builder = source.getBuffer(TextRenderType.getOrCreateDfStroke(texture));
+                builder = source.getBuffer(TextRenderType.getOrCreateSDFStroke(texture));
             }
             float uBloat = (glyph.u2 - glyph.u1) / glyph.width;
             float vBloat = (glyph.v2 - glyph.v1) / glyph.height;

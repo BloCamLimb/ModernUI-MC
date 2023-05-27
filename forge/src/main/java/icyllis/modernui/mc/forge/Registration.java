@@ -20,11 +20,11 @@ package icyllis.modernui.mc.forge;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
+import icyllis.arc3d.opengl.GLShaderManager;
+import icyllis.arc3d.opengl.GLTextureManager;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
-import icyllis.modernui.graphics.opengl.GLShaderManager;
-import icyllis.modernui.graphics.opengl.GLTextureManager;
 import icyllis.modernui.mc.forge.mixin.AccessOptions;
 import icyllis.modernui.mc.testforge.TestContainerMenu;
 import icyllis.modernui.mc.testforge.TestPauseFragment;

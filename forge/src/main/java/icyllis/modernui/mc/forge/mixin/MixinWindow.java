@@ -18,17 +18,21 @@
 
 package icyllis.modernui.mc.forge.mixin;
 
-import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.platform.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.mc.forge.ModernUIForge;
 import icyllis.modernui.mc.forge.MuiForgeApi;
-import icyllis.modernui.view.ViewConfiguration;
+import icyllis.modernui.util.DisplayMetrics;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import javax.annotation.Nullable;
+
+import static org.lwjgl.glfw.GLFW.glfwGetMonitorPhysicalSize;
 
 @Mixin(Window.class)
 public abstract class MixinWindow {
@@ -41,6 +45,10 @@ public abstract class MixinWindow {
 
     @Shadow
     public abstract int getHeight();
+
+    @Shadow
+    @Nullable
+    public abstract Monitor findBestMonitor();
 
     /**
      * @author BloCamLimb
@@ -60,8 +68,28 @@ public abstract class MixinWindow {
             ModernUI.LOGGER.warn(ModernUI.MARKER,
                     "Gui scale {} should be an integer, some mods break this", scaleFactor);
         }
-        // See standards
-        ViewConfiguration.get().setViewScale(newScale * 0.5f);
+
+        DisplayMetrics metrics = new DisplayMetrics();
+        metrics.setToDefaults();
+
+        metrics.widthPixels = getWidth();
+        metrics.heightPixels = getHeight();
+
+        // the base scale is 2x, so divide by 2
+        metrics.density = newScale * 0.5f;
+        metrics.densityDpi = (int) (metrics.density * DisplayMetrics.DENSITY_DEFAULT);
+        metrics.scaledDensity = ModernUIForge.sFontScale * metrics.density;
+
+        Monitor monitor = findBestMonitor();
+        if (monitor != null) {
+            int[] w = {0}, h = {0};
+            glfwGetMonitorPhysicalSize(monitor.getMonitor(), w, h);
+            VideoMode mode = monitor.getCurrentMode();
+            metrics.xdpi = 25.4f * mode.getWidth() / w[0];
+            metrics.ydpi = 25.4f * mode.getHeight() / h[0];
+        }
+        ModernUI.getInstance().getResources().updateMetrics(metrics);
+
         ModernUIForge.dispatchOnWindowResize(getWidth(), getHeight(), newScale, oldScale);
     }
 
@@ -74,37 +102,20 @@ public abstract class MixinWindow {
     private void onInit(int x, int y) {
         GLFWErrorCallback callback = GLFW.glfwSetErrorCallback(null);
         GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
+        GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
+        GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE);
+        final int[][] versions = {{4, 6}, {4, 5}, {3, 3}};
         long window = 0;
         try {
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 6);
-            GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
-            GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE);
-            window = GLFW.glfwCreateWindow(1, 1, "", 0, 0);
-            if (window != 0) {
-                ModernUI.LOGGER.info(ModernUI.MARKER, "Promoted to OpenGL 4.6 Core Profile");
-                return;
-            }
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 5);
-            window = GLFW.glfwCreateWindow(1, 1, "", 0, 0);
-            if (window != 0) {
-                ModernUI.LOGGER.info(ModernUI.MARKER, "Promoted to OpenGL 4.5 Core Profile");
-                return;
-            }
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 1);
-            window = GLFW.glfwCreateWindow(1, 1, "", 0, 0);
-            if (window != 0) {
-                ModernUI.LOGGER.info(ModernUI.MARKER, "Promoted to OpenGL 4.1 Core Profile");
-                return;
-            }
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
-            window = GLFW.glfwCreateWindow(1, 1, "", 0, 0);
-            if (window != 0) {
-                ModernUI.LOGGER.info(ModernUI.MARKER, "Promoted to OpenGL 3.3 Core Profile");
-                return;
+            for (int[] version : versions) {
+                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, version[0]);
+                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, version[1]);
+                window = GLFW.glfwCreateWindow(16, 16, "", 0, 0);
+                if (window != 0) {
+                    ModernUI.LOGGER.info(ModernUI.MARKER, "Promoted to OpenGL {}.{} Core Profile",
+                            version[0], version[1]);
+                    return;
+                }
             }
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2);

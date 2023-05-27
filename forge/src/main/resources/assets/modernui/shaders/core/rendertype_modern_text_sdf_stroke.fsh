@@ -15,7 +15,7 @@ in vec2 texCoord0;
 
 out vec4 fragColor;
 
-void main() {
+/*void main() {
     vec4 texColor = textureLod(Sampler0, texCoord0, 0.0);
     float dist = texColor.a - 127./255.;
     dist = abs(dist + 0.1) - 0.2;
@@ -24,9 +24,9 @@ void main() {
     vec4 color = texColor * vertexColor * ColorModulator;
     if (color.a < 0.01) discard;
     fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
-}
+}*/
 
-/* why not try gaussian filter?
+// why not try gaussian filter?
 void main() {
     vec2 texSize = vec2(textureSize(Sampler0, 0));
     float dsum = 0.0;
@@ -44,11 +44,9 @@ void main() {
         }
     }
     float dist = dsum / wsum;
-    dist = abs(dist + 0.1) - 0.2;
-    float afwidth = 0.5 * fwidth(dist);
+    dist = abs(dist + 0.15) - 0.2;
     vec4 color = vertexColor * ColorModulator;
-    color.a *= 1.0 - smoothstep(-afwidth, afwidth, dist);
+    color.a *= 1.0 - clamp(dist / fwidth(dist) + 0.5, 0.0, 1.0);
     if (color.a < 0.01) discard;
     fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
 }
-*/

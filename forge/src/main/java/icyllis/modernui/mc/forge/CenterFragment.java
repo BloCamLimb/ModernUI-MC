@@ -18,8 +18,10 @@
 
 package icyllis.modernui.mc.forge;
 
+import icyllis.arc3d.opengl.GLSurfaceCanvas;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.*;
+import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.fragment.FragmentTransaction;
@@ -27,7 +29,6 @@ import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
 import icyllis.modernui.graphics.drawable.StateListDrawable;
 import icyllis.modernui.graphics.font.GlyphManager;
-import icyllis.modernui.graphics.opengl.GLSurfaceCanvas;
 import icyllis.modernui.material.MaterialDrawable;
 import icyllis.modernui.mc.forge.Config.Client;
 import icyllis.modernui.mc.text.ModernUITextMC;
@@ -51,7 +52,6 @@ import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 
-import static icyllis.modernui.view.View.dp;
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class CenterFragment extends Fragment implements ScreenCallback {
@@ -64,15 +64,16 @@ public class CenterFragment extends Fragment implements ScreenCallback {
 
     @Nullable
     @Override
-    public View onCreateView(@Nullable ViewGroup container, @Nullable DataSet savedInstanceState) {
-        final int dp6 = dp(6);
-
-        var base = new LinearLayout();
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable DataSet savedInstanceState) {
+        var base = new LinearLayout(getContext());
         base.setId(R.id.content);
         base.setOrientation(LinearLayout.VERTICAL);
-        base.setBackground(new Background());
+        base.setBackground(new Background(base));
+
+        final int dp6 = base.dp(6);
         {
-            var title = new TextView();
+            var title = new TextView(getContext());
             title.setId(R.id.title);
             title.setText(I18n.get("modernui.center.title"));
             title.setTextSize(22);
@@ -80,19 +81,20 @@ public class CenterFragment extends Fragment implements ScreenCallback {
 
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER;
-            params.setMargins(0, dp(12), 0, dp(12));
+            params.setMargins(0, base.dp(12), 0, base.dp(12));
             base.addView(title, params);
         }
 
         {
-            var content = new LinearLayout();
+            var content = new LinearLayout(getContext());
+            content.setClipChildren(true);
             content.setOrientation(LinearLayout.HORIZONTAL);
 
             boolean xor1 = Math.random() < 0.5;
             boolean xor2 = Math.random() < 0.5;
 
             {
-                ScrollView left = new ScrollView();
+                ScrollView left = new ScrollView(getContext());
                 left.addView(createLeftPanel(), MATCH_PARENT, WRAP_CONTENT);
                 var params = new LinearLayout.LayoutParams(0, MATCH_PARENT, 1);
                 params.setMargins(dp6, dp6, dp6, dp6);
@@ -114,7 +116,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             }
 
             {
-                ScrollView right = new ScrollView();
+                ScrollView right = new ScrollView(getContext());
                 right.addView(createRightPanel(), MATCH_PARENT, WRAP_CONTENT);
                 var params = new LinearLayout.LayoutParams(0, MATCH_PARENT, 1);
                 params.setMargins(dp6, dp6, dp6, dp6);
@@ -139,7 +141,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             base.addView(content, params);
         }
 
-        var params = new FrameLayout.LayoutParams(dp(720), dp(450));
+        var params = new FrameLayout.LayoutParams(base.dp(720), base.dp(450));
         params.gravity = Gravity.CENTER;
         base.setLayoutParams(params);
         return base;
@@ -147,13 +149,13 @@ public class CenterFragment extends Fragment implements ScreenCallback {
 
     @Nonnull
     private LinearLayout createCategory(String titleKey) {
-        var layout = new LinearLayout();
+        var layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.VERTICAL);
 
-        final int dp6 = dp(6);
-        final int dp12 = dp(12);
+        final int dp6 = layout.dp(6);
+        final int dp12 = layout.dp(12);
         {
-            var title = new TextView();
+            var title = new TextView(getContext());
             title.setId(R.id.title);
             title.setText(I18n.get(titleKey));
             title.setTextSize(16);
@@ -167,7 +169,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
 
         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
         params.gravity = Gravity.CENTER;
-        params.setMargins(dp12, dp12, dp12, dp(18));
+        params.setMargins(dp12, dp12, dp12, layout.dp(18));
         layout.setLayoutParams(params);
 
         return layout;
@@ -175,14 +177,14 @@ public class CenterFragment extends Fragment implements ScreenCallback {
 
     @Nonnull
     private LinearLayout createInputOption(String titleKey) {
-        var layout = new LinearLayout();
+        var layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.HORIZONTAL);
         layout.setHorizontalGravity(Gravity.START);
 
-        final int dp3 = dp(3);
-        final int dp6 = dp(6);
+        final int dp3 = layout.dp(3);
+        final int dp6 = layout.dp(6);
         {
-            var title = new TextView();
+            var title = new TextView(getContext());
             title.setText(I18n.get(titleKey));
             title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
             title.setTextSize(14);
@@ -192,7 +194,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             layout.addView(title, params);
         }
         {
-            var input = new EditText();
+            var input = new EditText(getContext());
             input.setId(R.id.input);
             input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
             input.setTextSize(14);
@@ -219,14 +221,14 @@ public class CenterFragment extends Fragment implements ScreenCallback {
 
     @Nonnull
     private LinearLayout createButtonOption(String titleKey) {
-        var layout = new LinearLayout();
+        var layout = new LinearLayout(getContext());
         layout.setOrientation(LinearLayout.HORIZONTAL);
         layout.setHorizontalGravity(Gravity.START);
 
-        final int dp3 = dp(3);
-        final int dp6 = dp(6);
+        final int dp3 = layout.dp(3);
+        final int dp6 = layout.dp(6);
         {
-            var title = new TextView();
+            var title = new TextView(getContext());
             title.setText(I18n.get(titleKey));
             title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
             title.setTextSize(14);
@@ -236,11 +238,11 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             layout.addView(title, params);
         }
         {
-            var button = new SwitchButton();
+            var button = new SwitchButton(getContext());
             button.setId(R.id.button1);
             button.setCheckedColor(THEME_COLOR);
 
-            var params = new LinearLayout.LayoutParams(dp(36), dp(16));
+            var params = new LinearLayout.LayoutParams(layout.dp(36), layout.dp(16));
             params.gravity = Gravity.CENTER_VERTICAL;
             params.setMargins(0, dp3, 0, dp3);
             layout.addView(button, params);
@@ -257,7 +259,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
     // Minecraft
     @Nonnull
     private View createLeftPanel() {
-        var panel = new LinearLayout();
+        var panel = new LinearLayout(getContext());
         panel.setOrientation(LinearLayout.VERTICAL);
 
         {
@@ -322,13 +324,13 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 category.addView(option);
             }
             {
-                var option = new LinearLayout();
+                var option = new LinearLayout(getContext());
                 option.setOrientation(LinearLayout.HORIZONTAL);
                 option.setHorizontalGravity(Gravity.START);
 
-                final int dp6 = dp(6);
+                final int dp6 = option.dp(6);
                 {
-                    var title = new TextView();
+                    var title = new TextView(getContext());
                     title.setText(I18n.get("modernui.center.screen.windowMode"));
                     title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                     title.setTextSize(14);
@@ -338,9 +340,9 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                     option.addView(title, params);
                 }
                 {
-                    var spinner = new Spinner();
+                    var spinner = new Spinner(getContext());
                     spinner.setGravity(Gravity.END);
-                    spinner.setAdapter(new ArrayAdapter<>(Client.WindowMode.values()));
+                    spinner.setAdapter(new ArrayAdapter<>(getContext(), Client.WindowMode.values()));
                     spinner.setSelection(Config.CLIENT.mWindowMode.get().ordinal());
                     spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                         @Override
@@ -616,13 +618,13 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 category.addView(option);
             }
             {
-                var option = new LinearLayout();
+                var option = new LinearLayout(getContext());
                 option.setOrientation(LinearLayout.HORIZONTAL);
                 option.setHorizontalGravity(Gravity.START);
 
-                final int dp6 = dp(6);
+                final int dp6 = option.dp(6);
                 {
-                    var title = new TextView();
+                    var title = new TextView(getContext());
                     title.setText(I18n.get("modernui.center.text.bidiHeuristicAlgo"));
                     title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                     title.setTextSize(14);
@@ -632,9 +634,9 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                     option.addView(title, params);
                 }
                 {
-                    var spinner = new Spinner();
+                    var spinner = new Spinner(getContext());
                     spinner.setGravity(Gravity.END);
-                    spinner.setAdapter(new ArrayAdapter<>(TEXT_DIRS));
+                    spinner.setAdapter(new ArrayAdapter<>(getContext(), TEXT_DIRS));
                     spinner.setSelection(TextLayoutEngine.sTextDirection - 1);
                     spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                         @Override
@@ -739,8 +741,8 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             panel.addView(category);
         }
 
-        panel.setDividerDrawable(new Divider());
-        panel.setDividerPadding(dp(8));
+        panel.setDividerDrawable(new Divider(panel));
+        panel.setDividerPadding(panel.dp(8));
         panel.setShowDividers(LinearLayout.SHOW_DIVIDER_BEGINNING | LinearLayout.SHOW_DIVIDER_MIDDLE | LinearLayout.SHOW_DIVIDER_END);
 
         return panel;
@@ -748,11 +750,10 @@ public class CenterFragment extends Fragment implements ScreenCallback {
 
     @Nonnull
     private View createRightPanel() {
-        final int dp6 = dp(6);
-
-        var panel = new LinearLayout();
+        var panel = new LinearLayout(getContext());
         panel.setOrientation(LinearLayout.VERTICAL);
 
+        final int dp6 = panel.dp(6);
         {
             var category = createCategory("modernui.center.category.system");
             {
@@ -809,24 +810,24 @@ public class CenterFragment extends Fragment implements ScreenCallback {
         {
             var category = createCategory("modernui.center.category.font");
             {
-                var option = new LinearLayout();
+                var option = new LinearLayout(getContext());
                 option.setOrientation(LinearLayout.HORIZONTAL);
                 option.setHorizontalGravity(Gravity.START);
 
-                final int dp3 = dp(3);
+                final int dp3 = panel.dp(3);
                 {
-                    var title = new TextView();
+                    var title = new TextView(getContext());
                     title.setText(I18n.get("modernui.center.font.fontFamily"));
                     title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                     title.setTextSize(14);
-                    title.setMinWidth(dp(60));
+                    title.setMinWidth(panel.dp(60));
 
                     var params = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 2);
                     params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
                     option.addView(title, params);
                 }
                 {
-                    var input = new EditText();
+                    var input = new EditText(getContext());
                     input.setId(R.id.input);
                     input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
                     input.setTextSize(14);
@@ -904,10 +905,10 @@ public class CenterFragment extends Fragment implements ScreenCallback {
         }
 
         {
-            var group = new RelativeLayout();
+            var group = new RelativeLayout(getContext());
 
             {
-                var title = new TextView();
+                var title = new TextView(getContext());
                 title.setId(18);
                 title.setText("View");
                 title.setTextSize(16);
@@ -930,7 +931,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             addSystemSetting(32, "Overfling distance", group, 1024, Config.CLIENT.mOverflingDistance);
 
             {
-                var view = new TextView();
+                var view = new TextView(getContext());
                 view.setId(34);
                 view.setText("Vertical scroll factor");
                 view.setTextSize(14);
@@ -941,13 +942,13 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 params.addRule(RelativeLayout.ALIGN_START, 32);
                 group.addView(view, params);
 
-                var input = new EditText();
+                var input = new EditText(getContext());
                 input.setText(Config.CLIENT.mVerticalScrollFactor.get().toString());
                 input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                 input.setTextSize(14);
                 input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
                         new InputFilter.LengthFilter(6));
-                input.setPadding(dp(4), 0, dp(4), 0);
+                input.setPadding(panel.dp(4), 0, panel.dp(4), 0);
                 input.setOnFocusChangeListener((__, hasFocus) -> {
                     if (!hasFocus) {
                         double radius = Double.parseDouble(input.getText().toString());
@@ -973,7 +974,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             }
 
             {
-                var view = new TextView();
+                var view = new TextView(getContext());
                 view.setId(36);
                 view.setText("Horizontal scroll factor");
                 view.setTextSize(14);
@@ -984,13 +985,13 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 params.addRule(RelativeLayout.ALIGN_START, 34);
                 group.addView(view, params);
 
-                var input = new EditText();
+                var input = new EditText(getContext());
                 input.setText(Config.CLIENT.mHorizontalScrollFactor.get().toString());
                 input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                 input.setTextSize(14);
                 input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
                         new InputFilter.LengthFilter(6));
-                input.setPadding(dp(4), 0, dp(4), 0);
+                input.setPadding(panel.dp(4), 0, panel.dp(4), 0);
                 input.setOnFocusChangeListener((__, hasFocus) -> {
                     if (!hasFocus) {
                         double radius = Double.parseDouble(input.getText().toString());
@@ -1017,7 +1018,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
 
             var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER;
-            params.setMargins(dp(12), dp(12), dp(12), dp(18));
+            params.setMargins(panel.dp(12), panel.dp(12), panel.dp(12), panel.dp(18));
             panel.addView(group, params);
         }
 
@@ -1109,8 +1110,8 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             panel.addView(category);
         }
 
-        panel.setDividerDrawable(new Divider());
-        panel.setDividerPadding(dp(8));
+        panel.setDividerDrawable(new Divider(panel));
+        panel.setDividerPadding(panel.dp(8));
         panel.setShowDividers(LinearLayout.SHOW_DIVIDER_BEGINNING | LinearLayout.SHOW_DIVIDER_MIDDLE | LinearLayout.SHOW_DIVIDER_END);
 
         return panel;
@@ -1118,7 +1119,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
 
     private void addSystemSetting(int id, String title, @Nonnull ViewGroup container, int max,
                                   @Nonnull IntValue config) {
-        var view = new TextView();
+        var view = new TextView(getContext());
         view.setId(id);
         view.setText(title);
         view.setTextSize(14);
@@ -1129,12 +1130,12 @@ public class CenterFragment extends Fragment implements ScreenCallback {
         params.addRule(RelativeLayout.ALIGN_START, id - 2);
         container.addView(view, params);
 
-        var input = new EditText();
+        var input = new EditText(getContext());
         input.setText(config.get().toString());
         input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
         input.setTextSize(14);
         input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale()), new InputFilter.LengthFilter(5));
-        input.setPadding(dp(4), 0, dp(4), 0);
+        input.setPadding(view.dp(4), 0, view.dp(4), 0);
         input.setOnFocusChangeListener((__, hasFocus) -> {
             if (!hasFocus) {
                 int val = Integer.parseInt(input.getText().toString());
@@ -1155,7 +1156,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
         params = new RelativeLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
         params.addRule(RelativeLayout.ALIGN_BASELINE, id);
         params.addRule(RelativeLayout.ALIGN_PARENT_END);
-        params.setMargins(dp(6), dp(6), dp(6), dp(6));
+        params.setMargins(view.dp(6), view.dp(6), view.dp(6), view.dp(6));
         container.addView(input, params);
     }
 
@@ -1204,14 +1205,14 @@ public class CenterFragment extends Fragment implements ScreenCallback {
         private final float mRadius;
         private final float mStrokeWidth;
 
-        private Background() {
-            mRadius = dp(8);
-            mStrokeWidth = dp(4);
+        private Background(View view) {
+            mRadius = view.dp(8);
+            mStrokeWidth = view.dp(4);
         }
 
         @Override
         public void draw(@Nonnull Canvas canvas) {
-            Paint paint = Paint.take();
+            Paint paint = Paint.obtain();
             Rect bounds = getBounds();
             paint.setStyle(Paint.FILL);
             paint.setColor(BACKGROUND_COLOR);
@@ -1226,7 +1227,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             //paint.setSmoothRadius(inner);
             canvas.drawRoundRect(bounds.left + inner, bounds.top + inner, bounds.right - inner,
                     bounds.bottom - inner, mRadius, paint);
-            paint.drop();
+            paint.recycle();
             invalidateSelf();
         }
 
@@ -1242,15 +1243,16 @@ public class CenterFragment extends Fragment implements ScreenCallback {
 
         private final int mSize;
 
-        public Divider() {
-            mSize = dp(2);
+        public Divider(View view) {
+            mSize = view.dp(2);
         }
 
         @Override
         public void draw(@Nonnull Canvas canvas) {
-            Paint paint = Paint.get();
+            Paint paint = Paint.obtain();
             paint.setColor(0xc0606060);
             canvas.drawRect(getBounds(), paint);
+            paint.recycle();
         }
 
         @Override
@@ -1265,12 +1267,13 @@ public class CenterFragment extends Fragment implements ScreenCallback {
 
         @Override
         public void draw(@Nonnull Canvas canvas) {
-            Paint paint = Paint.get();
+            Paint paint = Paint.obtain();
             paint.setColor(0x80a0a0a0);
             paint.setAlpha(MaterialDrawable.modulateAlpha(paint.getAlpha(), mAlpha));
             if (paint.getAlpha() != 0) {
                 canvas.drawRect(getBounds(), paint);
             }
+            paint.recycle();
         }
 
         @Override

@@ -26,6 +26,8 @@ import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.font.GLFontAtlas;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.mc.text.TextLayoutEngine;
+import icyllis.modernui.resources.Resources;
+import icyllis.modernui.util.DisplayMetrics;
 import icyllis.modernui.view.ViewConfiguration;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -470,16 +472,12 @@ final class Config {
             if (handler != null) {
                 handler.post(() -> {
                     UIManager.getInstance().updateLayoutDir(mForceRtl.get());
-                    ViewConfiguration.get().setFontScale(mFontScale.get().floatValue());
-                    ViewConfiguration.get().setScrollbarSize(mScrollbarSize.get());
-                    ViewConfiguration.get().setTouchSlop(mTouchSlop.get());
-                    ViewConfiguration.get().setMinScrollbarTouchTarget(mMinScrollbarTouchTarget.get());
-                    ViewConfiguration.get().setMinimumFlingVelocity(mMinimumFlingVelocity.get());
-                    ViewConfiguration.get().setMaximumFlingVelocity(mMaximumFlingVelocity.get());
-                    ViewConfiguration.get().setOverscrollDistance(mOverscrollDistance.get());
-                    ViewConfiguration.get().setOverflingDistance(mOverflingDistance.get());
-                    ViewConfiguration.get().setVerticalScrollFactor(mVerticalScrollFactor.get().floatValue());
-                    ViewConfiguration.get().setHorizontalScrollFactor(mHorizontalScrollFactor.get().floatValue());
+                    ModernUIForge.sFontScale = (mFontScale.get().floatValue());
+                    Resources res = ModernUI.getInstance().getResources();
+                    DisplayMetrics metrics = new DisplayMetrics();
+                    metrics.setTo(res.getDisplayMetrics());
+                    metrics.scaledDensity = ModernUIForge.sFontScale * metrics.density;
+                    res.updateMetrics(metrics);
                 });
             }
 

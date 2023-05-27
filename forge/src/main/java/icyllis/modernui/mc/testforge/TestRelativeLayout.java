@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.testforge;
 
+import icyllis.modernui.core.Context;
 import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.view.View;
 import icyllis.modernui.widget.RelativeLayout;
@@ -26,10 +27,11 @@ import javax.annotation.Nonnull;
 
 public class TestRelativeLayout extends RelativeLayout {
 
-    public TestRelativeLayout() {
+    public TestRelativeLayout(Context context) {
+        super(context);
         LayoutParams lp = new LayoutParams(40, 20);
         lp.addRule(CENTER_IN_PARENT);
-        CView view = new CView();
+        CView view = new CView(context);
         view.setId(1);
         view.setLayoutParams(lp);
         view.text = "First One!";
@@ -38,7 +40,7 @@ public class TestRelativeLayout extends RelativeLayout {
         lp = new LayoutParams(60, 20);
         lp.addRule(ABOVE, 1);
         lp.addRule(CENTER_HORIZONTAL);
-        view = new CView();
+        view = new CView(context);
         view.setId(2);
         view.setLayoutParams(lp);
         view.text = "Second On The Top";
@@ -47,7 +49,7 @@ public class TestRelativeLayout extends RelativeLayout {
         lp = new LayoutParams(LayoutParams.MATCH_PARENT, 40);
         lp.addRule(LEFT_OF, 1);
         lp.addRule(CENTER_VERTICAL);
-        view = new CView();
+        view = new CView(context);
         view.setId(3);
         view.setLayoutParams(lp);
         view.text = "3rd";
@@ -57,6 +59,10 @@ public class TestRelativeLayout extends RelativeLayout {
     private static class CView extends View {
 
         public String text;
+
+        public CView(Context context) {
+            super(context);
+        }
 
         @Override
         protected void onDraw(@Nonnull Canvas canvas) {

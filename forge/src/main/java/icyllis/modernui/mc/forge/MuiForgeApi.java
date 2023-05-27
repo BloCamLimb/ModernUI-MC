@@ -244,15 +244,16 @@ public final class MuiForgeApi {
         int base = Math.min(w, h);
 
         int min;
-        int max = Mth.clamp(Math.min(framebufferWidth / 12, h) / 26, 1, 9);
-        if (max > 1) {
+        int det = Math.min(framebufferWidth / 12, h) / 26;
+        if (det >= 2) {
             min = Mth.clamp(base / 64, 2, 9);
         } else {
-            min = 1;
+            min = 2;
         }
+        int max = Mth.clamp(det, 2, 8);
 
         int auto;
-        if (min > 1) {
+        if (min >= 2) {
             double step = base > 216 ? 42. : base > 120 ? 36. : 30.;
             int i = (int) (base / step);
             int j = (int) (Math.max(w, h) / step);
@@ -263,7 +264,7 @@ public final class MuiForgeApi {
                 auto = Mth.clamp(i, min, max);
             }
         } else {
-            auto = 1;
+            auto = 2;
         }
         assert min <= auto && auto <= max;
         return min << 8 | auto << 4 | max;

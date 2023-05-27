@@ -22,8 +22,8 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import icyllis.arc3d.opengl.GLTextureCompat;
 import icyllis.modernui.annotation.RenderThread;
-import icyllis.modernui.graphics.opengl.GLTextureCompat;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
@@ -33,7 +33,7 @@ import org.lwjgl.system.MemoryUtil;
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 
-import static icyllis.modernui.graphics.opengl.GLCore.*;
+import static icyllis.arc3d.opengl.GLCore.*;
 
 @RenderThread
 public class EffectRenderType extends RenderType {
@@ -55,7 +55,7 @@ public class EffectRenderType extends RenderType {
         }
         WHITE.setSwizzleCompat(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
         STATES = ImmutableList.of(
-                TextRenderType.RENDERTYPE_MODERN_TEXT,
+                TextRenderType.RENDERTYPE_MODERN_TEXT_BITMAP,
                 TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,

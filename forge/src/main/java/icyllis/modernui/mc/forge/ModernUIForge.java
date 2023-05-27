@@ -82,6 +82,7 @@ public final class ModernUIForge {
     public static boolean sRemoveTelemetrySession;
     public static boolean sSecureProfilePublicKey;
     public static boolean sGLCapsError; // write only
+    public static float sFontScale = 1;
 
     static {
         try {

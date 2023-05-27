@@ -108,12 +108,12 @@ public final class BinaryDataUtils {
                 dest.putString(entry.getKey(), (String) v);
             } else if (v instanceof UUID) {
                 dest.putUUID(entry.getKey(), (UUID) v);
-            } else if (v instanceof ByteArrayList) {
-                dest.putByteArray(entry.getKey(), ((ByteArrayList) v).toByteArray());
-            } else if (v instanceof IntArrayList) {
-                dest.putIntArray(entry.getKey(), ((IntArrayList) v).toIntArray());
-            } else if (v instanceof LongArrayList) {
-                dest.putLongArray(entry.getKey(), ((LongArrayList) v).toLongArray());
+            } else if (v instanceof byte[]) {
+                dest.putByteArray(entry.getKey(), (byte[]) v);
+            } else if (v instanceof int[]) {
+                dest.putIntArray(entry.getKey(), (int[]) v);
+            } else if (v instanceof long[]) {
+                dest.putLongArray(entry.getKey(), (long[]) v);
             } else if (v instanceof List) {
                 dest.put(entry.getKey(), writeList((List<?>) v, new ListTag()));
             } else if (v instanceof DataSet) {

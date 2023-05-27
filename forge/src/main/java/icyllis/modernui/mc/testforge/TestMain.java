@@ -24,6 +24,7 @@ import com.ibm.icu.text.BreakIterator;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.util.ast.Node;
+import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.audio.*;
 import icyllis.modernui.core.Window;
@@ -33,7 +34,6 @@ import icyllis.modernui.graphics.Image;
 import icyllis.modernui.graphics.Paint;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.font.*;
-import icyllis.modernui.graphics.opengl.*;
 import icyllis.modernui.mc.text.CharSequenceBuilder;
 import icyllis.modernui.text.*;
 import icyllis.modernui.text.style.*;
@@ -56,12 +56,10 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static icyllis.arc3d.opengl.GLCore.*;
 import static icyllis.modernui.ModernUI.LOGGER;
-import static icyllis.modernui.graphics.opengl.GLCore.*;
 import static org.lwjgl.glfw.GLFW.*;
 
 @SuppressWarnings({"unused"})
@@ -308,7 +306,7 @@ public class TestMain {
         }*/
         //ModernUI.LOGGER.info(Gravity.TOP & Gravity.BOTTOM);
         new ModernUI();
-        GLShaderManager.getInstance().addListener(mgr -> mgr.getShard(ModernUI.ID, "a.vert"));
+        GLShaderManager.getInstance().addListener(mgr -> mgr.getStage(ModernUI.ID, "a.vert"));
         try {
             Thread.currentThread().setName("Main-Thread");
             Core.initialize();
@@ -505,7 +503,7 @@ public class TestMain {
                 canvas.reset(window.getWidth(), window.getHeight());
 
                 // UI thread
-                Paint paint = Paint.get();
+                Paint paint = Paint.obtain();
 
                 paint.setRGB(160, 160, 160);
                 canvas.drawImage(image, null, screenRect, paint);
@@ -539,7 +537,7 @@ public class TestMain {
 
                 canvas.drawBezier(300, 100, 410, 210 + 100 * sin, 480, 170, paint);
 
-                canvas.drawTriangle(170, 140, 120, 90, 70, 140, paint);
+                //canvas.drawTriangle(170, 140, 120, 90, 70, 140, paint);
 
                 canvas.save();
                 canvas.scale(10, 10);
@@ -582,7 +580,7 @@ public class TestMain {
                         360 * (playTime / sTrack.getLength()), paint);
 
                 // render thread, wait UI thread
-                canvas.draw(framebuffer);
+                canvas.executeDrawOps(framebuffer);
 
                 if (!note) {
                     LOGGER.info(TextUtils.binaryCompact(canvas.getNativeMemoryUsage()));
@@ -598,7 +596,7 @@ public class TestMain {
     }
 
     private static void drawOsuScore(Canvas canvas) {
-        Paint paint = Paint.get();
+        Paint paint = Paint.obtain();
         paint.setRGBA(0, 0, 0, 64);
 
         // bottom
@@ -621,9 +619,8 @@ public class TestMain {
         // top left
         canvas.drawRoundRect(18, 24, 18 + 370, 24 + 254, 20, paint);
 
-        paint.setStrokeWidth(4);
         paint.setRGBA(229, 188, 177, 255);
-        canvas.drawRoundLine(40, 318, 1600 - 40, 318, paint);
+        canvas.drawLine(40, 318, 1600 - 40, 318, 4, paint);
 
         String s = "Hitorigoto -TV MIX-";
         TextPaint textPaint = new TextPaint();

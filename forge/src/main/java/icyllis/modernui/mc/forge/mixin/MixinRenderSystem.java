@@ -22,7 +22,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.forge.ModernUIForge;
-import icyllis.modernui.graphics.opengl.GLCore;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Configuration;
 import org.spongepowered.asm.mixin.Mixin;
@@ -45,15 +44,14 @@ public class MixinRenderSystem {
         if (name != null) {
             // non-system library should load before window creation
             ModernUI.LOGGER.info(ModernUI.MARKER, "OpenGL library: {}", name);
-            Objects.requireNonNull(GL.getFunctionProvider(), "Implicit loading is required");
+            Objects.requireNonNull(GL.getFunctionProvider(), "Implicit OpenGL loading is required");
         }
     }
 
     @Inject(method = "initRenderer", at = @At("TAIL"))
     private static void onInitRenderer(int debugLevel, boolean debugSync, CallbackInfo ci) {
-        Core.initMainThread();
-        Core.initOpenGL();
-        ModernUIForge.sGLCapsError = !GLCore.getUnsupportedList().isEmpty();
+        Core.initialize();
+        ModernUIForge.sGLCapsError = !Core.initOpenGL();
     }
 
     /**

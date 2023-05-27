@@ -32,7 +32,6 @@ import icyllis.modernui.mc.text.mixin.AccessFontManager;
 import icyllis.modernui.mc.text.mixin.MixinClientLanguage;
 import icyllis.modernui.text.*;
 import icyllis.modernui.view.View;
-import icyllis.modernui.view.ViewConfiguration;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.font.*;
@@ -97,7 +96,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
      */
     //public static int sDefaultFontSize;
     public static volatile boolean sFixedResolution = false;
-    public static volatile boolean sSuperSampling = false;
+    //public static volatile boolean sSuperSampling = false;
     public static volatile int sTextDirection = View.TEXT_DIRECTION_FIRST_STRONG;
     /**
      * Time in seconds to recycle a render node in the cache.
@@ -246,7 +245,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     private TextDirectionHeuristic mTextDirectionHeuristic = TextDirectionHeuristics.FIRSTSTRONG_LTR;
 
     // vanilla's font manager, used only for compatibility
-    private FontManager mFontManager;
+    private FontManager mVanillaFontManager;
 
     /*
      * Remove all formatting code even though it's invalid {@link #getFormattingByCode(char)} == null
@@ -271,7 +270,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
         mGlyphManager = GlyphManager.getInstance();
         // When OpenGL texture ID changed (atlas resized), we want to use the new first atlas
         // for deferred rendering, we need to clear any existing TextRenderType instances
-        mGlyphManager.addAtlasResizeCallback(TextRenderType::clear);
+        mGlyphManager.addAtlasInvalidationCallback(TextRenderType::clear);
         // init
         reload();
         // events
@@ -334,22 +333,22 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public void reload() {
         clear();
 
-        final int scale = Math.round(ViewConfiguration.get().getViewScale() * 2);
+        final int scale = Math.round(ModernUI.getInstance().getResources()
+                .getDisplayMetrics().density * 2);
         final float oldLevel = mResLevel;
         if (sFixedResolution) {
             // make font size to 16 (8 * 2)
             mResLevel = 2;
         } else {
-            // Note max font size is 96, see FontPaint, font size will be (base_font_size * res_level) in Minecraft
-            if (!sSuperSampling || !GLFontAtlas.sLinearSampling) {
+            // Note max font size is 96, actual font size will be (baseFontSize * resLevel) in Minecraft
+            /*if (!sSuperSampling || !GLFontAtlas.sLinearSampling) {
                 mResLevel = Math.min(scale, 9);
             } else if (scale > 2) {
-                // super sampling
                 mResLevel = Math.min((int) Math.ceil(scale * 4 / 3f), 12);
             } else {
-                // 1 or 2
                 mResLevel = scale;
-            }
+            }*/
+            mResLevel = Math.min(scale, 8);
         }
         mGuiScale = scale;
 
@@ -394,10 +393,12 @@ public class TextLayoutEngine implements PreparableReloadListener {
 
     //// START Resource Reloading
 
-    // for compatibility
+    // we redirect vanilla's Latin and Unicode font,
+    // but we still bake their bitmap glyphs for some cases,
+    // like Display Board from Create mod
     @Nonnull
     public TextLayoutEngine injectFontManager(@Nonnull FontManager manager) {
-        mFontManager = manager;
+        mVanillaFontManager = manager;
         return this;
     }
 
@@ -420,7 +421,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
 
     private static final class LoadResults {
         volatile Map<ResourceLocation, FontCollection> map;
-        volatile Map<ResourceLocation, List<GlyphProvider>> remap;
+        volatile Map<ResourceLocation, List<GlyphProvider>> vanilla;
         volatile Map<? extends CharSequence, EmojiEntry> emojis;
         volatile Map<String, String> shortcodes;
     }
@@ -445,7 +446,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     }
 
     // SYNC
-    private void reloadResources(@Nonnull LoadResults asyncResults, @Nonnull ProfilerFiller reloadProfiler) {
+    private void reloadResources(@Nonnull LoadResults results, @Nonnull ProfilerFiller reloadProfiler) {
         reloadProfiler.startTick();
         reloadProfiler.push("reload");
         // close bitmaps if never baked
@@ -458,14 +459,14 @@ public class TextLayoutEngine implements PreparableReloadListener {
         }
         // reload fonts
         mFontCollections.clear();
-        mFontCollections.putAll(asyncResults.map);
+        mFontCollections.putAll(results.map);
         // vanilla compatibility
-        if (mFontManager != null) {
-            var fontSets = ((AccessFontManager) mFontManager).getFontSets();
+        if (mVanillaFontManager != null) {
+            var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
             fontSets.values().forEach(FontSet::close);
             fontSets.clear();
             var textureManager = Minecraft.getInstance().textureManager;
-            asyncResults.remap.forEach((name, list) -> {
+            results.vanilla.forEach((name, list) -> {
                 var fontSet = new FontSet(textureManager, name);
                 fontSet.reload(list);
                 fontSets.put(name, fontSet);
@@ -474,8 +475,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
         // reload emojis
         mEmojiMap.clear();
         mEmojiShortcodes.clear();
-        mEmojiMap.putAll(asyncResults.emojis);
-        mEmojiShortcodes.putAll(asyncResults.shortcodes);
+        mEmojiMap.putAll(results.emojis);
+        mEmojiShortcodes.putAll(results.shortcodes);
         // reload the whole engine
         reloadAll();
         reloadProfiler.pop();
@@ -489,7 +490,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 .disableHtmlEscaping()
                 .create();
         final var map = new HashMap<ResourceLocation, Set<FontFamily>>();
-        final var remap = new HashMap<ResourceLocation, List<GlyphProvider>>();
+        final var vanilla = new HashMap<ResourceLocation, List<GlyphProvider>>();
         for (var res : resources.listResourceStacks("font",
                 res -> res.getPath().endsWith(".json")).entrySet()) {
             var location = res.getKey();
@@ -501,7 +502,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
             // because we found Create mod uses FontSet in some cases
             if (name.equals(Minecraft.DEFAULT_FONT) ||
                     name.equals(Minecraft.UNIFORM_FONT)) {
-                var list = remap.computeIfAbsent(name, n -> new ArrayList<>());
+                var list = vanilla.computeIfAbsent(name, n -> new ArrayList<>());
                 for (var resource : res.getValue()) {
                     try (var reader = resource.openAsReader()) {
                         var providers = GsonHelper.getAsJsonArray(Objects.requireNonNull(
@@ -563,13 +564,13 @@ public class TextLayoutEngine implements PreparableReloadListener {
             // add fallback
             set.add(Objects.requireNonNull(FontFamily.getSystemFontMap().get(Font.SANS_SERIF)));
         }
-        for (var list : remap.values()) {
+        for (var list : vanilla.values()) {
             // add fallback
             list.add(new AllMissingGlyphProvider());
         }
         results.map = map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
                 e -> new FontCollection(e.getValue().toArray(new FontFamily[0]))));
-        results.remap = remap;
+        results.vanilla = vanilla;
     }
 
     @Nonnull
@@ -1007,19 +1008,19 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 if (subImage != null) {
                     subImage.close();
                 }
-                glyph.x = (int) (0.5 * BITMAP_SCALE);
+                glyph.x = (int) (0.5 * BITMAP_SCALE); // there's 0.5px space at head and tail
                 glyph.y = -TextLayoutNode.DEFAULT_BASELINE_OFFSET * BITMAP_SCALE;
                 glyph.width = EMOJI_SIZE;
                 glyph.height = EMOJI_SIZE;
                 atlas.stitch(glyph, dst);
                 return glyph;
             } else {
-                atlas.setWhitespace(index);
+                atlas.setNoPixels(index);
                 LOGGER.warn(MARKER, "Emoji is not {}x or {}x: {}", EMOJI_SIZE, EMOJI_SIZE_LARGE, location);
                 return null;
             }
         } catch (Exception e) {
-            atlas.setWhitespace(index);
+            atlas.setNoPixels(index);
             LOGGER.warn(MARKER, "Failed to load emoji: {}", location, e);
             return null;
         }

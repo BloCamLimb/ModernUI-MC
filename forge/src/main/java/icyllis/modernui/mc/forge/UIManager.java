@@ -22,6 +22,7 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.LayoutTransition;
@@ -30,7 +31,6 @@ import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.*;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.font.GlyphManager;
-import icyllis.modernui.graphics.opengl.*;
 import icyllis.modernui.lifecycle.*;
 import icyllis.modernui.mc.testforge.TestListFragment;
 import icyllis.modernui.mc.testforge.TestPauseFragment;
@@ -81,8 +81,8 @@ import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.util.Map;
 
+import static icyllis.arc3d.opengl.GLCore.*;
 import static icyllis.modernui.ModernUI.LOGGER;
-import static icyllis.modernui.graphics.opengl.GLCore.*;
 import static org.lwjgl.glfw.GLFW.*;
 
 /**
@@ -364,7 +364,7 @@ public final class UIManager implements LifecycleOwner {
     Screen createCapsErrorScreen() {
         final String glRenderer = glGetString(GL_RENDERER);
         final String glVersion = glGetString(GL_VERSION);
-        String extensions = String.join(", ", GLCore.getUnsupportedList());
+        String extensions = String.join(", ", GLCaps.MISSING_EXTENSIONS);
         return new ConfirmScreen(dontShow -> {
             if (dontShow) {
                 Config.CLIENT.mShowGLCapsError.set(false);
@@ -441,7 +441,7 @@ public final class UIManager implements LifecycleOwner {
 
         mRoot = this.new ViewRootImpl();
 
-        mDecor = new CoordinatorLayout();
+        mDecor = new CoordinatorLayout(ModernUI.getInstance());
         // make the root view clickable through, so that views can lose focus
         mDecor.setClickable(true);
         mDecor.setFocusableInTouchMode(true);
@@ -449,7 +449,7 @@ public final class UIManager implements LifecycleOwner {
         mDecor.setId(R.id.content);
         updateLayoutDir(false);
 
-        mFragmentContainerView = new FragmentContainerView();
+        mFragmentContainerView = new FragmentContainerView(ModernUI.getInstance());
         mFragmentContainerView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
         mFragmentContainerView.setWillNotDraw(true);
@@ -758,7 +758,8 @@ public final class UIManager implements LifecycleOwner {
             textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
-        if (textureMap != null && GLCore.getUnsupportedList().isEmpty()) {
+        if (textureMap != null &&
+                ((GLServer) Core.getDirectContext().getServer()).getCaps().hasDSASupport()) {
             long gpuSize = 0;
             long cpuSize = 0;
             int dynamicTextures = 0;
@@ -1106,7 +1107,7 @@ public final class UIManager implements LifecycleOwner {
                     mRedrawn = false;
                     glEnable(GL_STENCIL_TEST);
                     try {
-                        blit = canvas.draw(framebuffer);
+                        blit = canvas.executeDrawOps(framebuffer);
                     } catch (Throwable t) {
                         LOGGER.fatal(MARKER,
                                 "Failed to invoke rendering callbacks, please report the issue to related mods", t);
@@ -1124,7 +1125,7 @@ public final class UIManager implements LifecycleOwner {
                     // do alpha fade in
                     //float alpha = (int) Math.min(300, mElapsedTimeMillis) / 300f;
                     canvas.drawLayer(layer, width, height, 1, true);
-                    canvas.draw(null);
+                    canvas.executeDrawOps(null);
                 }
             }
         }
@@ -1169,7 +1170,7 @@ public final class UIManager implements LifecycleOwner {
             }
 
             if (mContextMenu == null) {
-                mContextMenu = new ContextMenuBuilder();
+                mContextMenu = new ContextMenuBuilder(ModernUI.getInstance());
                 //mContextMenu.setCallback(callback);
             } else {
                 mContextMenu.clearAll();
@@ -1178,9 +1179,9 @@ public final class UIManager implements LifecycleOwner {
             final MenuHelper helper;
             final boolean isPopup = !Float.isNaN(x) && !Float.isNaN(y);
             if (isPopup) {
-                helper = mContextMenu.showPopup(originalView, x, y);
+                helper = mContextMenu.showPopup(ModernUI.getInstance(), originalView, x, y);
             } else {
-                helper = mContextMenu.showPopup(originalView, 0, 0);
+                helper = mContextMenu.showPopup(ModernUI.getInstance(), originalView, 0, 0);
             }
 
             /*if (helper != null) {
@@ -1197,7 +1198,7 @@ public final class UIManager implements LifecycleOwner {
             ViewModelStoreOwner,
             OnBackPressedDispatcherOwner {
         HostCallbacks() {
-            super(new Handler(Looper.myLooper()));
+            super(ModernUI.getInstance(), new Handler(Looper.myLooper()));
             assert Core.isOnUiThread();
         }
 

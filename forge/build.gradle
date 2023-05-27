@@ -72,6 +72,10 @@ dependencies {
     shadow("icyllis.modernui:ModernUI-Core:${core_version}") {
         transitive = false
     }
+    implementation(forgeDependencies("icyllis.modernui:ModernUI-ViewPager:1.0.0"))
+    shadow("icyllis.modernui:ModernUI-ViewPager:1.0.0") {
+        transitive = false
+    }
 
     implementation 'org.openjdk.jmh:jmh-core:1.35'
     annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.35'

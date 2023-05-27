@@ -5,7 +5,7 @@
     "dstrgb": "1-srcalpha"
   },
   "vertex": "rendertype_text_intensity",
-  "fragment": "modernui:rendertype_modern_text_df_stroke",
+  "fragment": "modernui:rendertype_modern_text_sdf_fill",
   "attributes": [
     "Position",
     "Color",

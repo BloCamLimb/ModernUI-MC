@@ -20,8 +20,8 @@ package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Matrix4f;
+import icyllis.arc3d.opengl.GLTextureCompat;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.graphics.opengl.GLTextureCompat;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -45,7 +45,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Locale;
 
-import static icyllis.modernui.graphics.opengl.GLCore.*;
+import static icyllis.arc3d.opengl.GLCore.*;
 
 /**
  * Find matching fonts and glyphs, measure glyph metrics and draw them of

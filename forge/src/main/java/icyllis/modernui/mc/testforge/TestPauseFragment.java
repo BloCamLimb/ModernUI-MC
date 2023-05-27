@@ -22,6 +22,8 @@ import com.ibm.icu.text.DateFormat;
 import com.ibm.icu.text.SimpleDateFormat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.animation.*;
+import icyllis.modernui.annotation.NonNull;
+import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
@@ -39,8 +41,6 @@ import javax.annotation.Nullable;
 import java.util.Date;
 import java.util.Locale;
 
-import static icyllis.modernui.view.View.dp;
-
 public class TestPauseFragment extends Fragment {
 
     public static final int NETWORK_COLOR = 0xFF295E8A;
@@ -49,11 +49,12 @@ public class TestPauseFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@Nullable ViewGroup container, @Nullable DataSet savedInstanceState) {
-        var content = new LinearLayout();
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable DataSet savedInstanceState) {
+        var content = new LinearLayout(getContext());
         content.setOrientation(LinearLayout.VERTICAL);
 
-        var navigation = new LinearLayout();
+        var navigation = new LinearLayout(getContext());
         navigation.setOrientation(LinearLayout.HORIZONTAL);
         navigation.setHorizontalGravity(Gravity.CENTER_HORIZONTAL);
         navigation.setLayoutTransition(new LayoutTransition());
@@ -63,8 +64,8 @@ public class TestPauseFragment extends Fragment {
         }
 
         for (int i = 0; i < 8; i++) {
-            var button = new NavigationButton(mButtonIcon, i * 32);
-            var params = new LinearLayout.LayoutParams(dp(32), dp(32));
+            var button = new NavigationButton(getContext(), mButtonIcon, i * 32);
+            var params = new LinearLayout.LayoutParams(navigation.dp(32), navigation.dp(32));
             button.setClickable(true);
             params.setMarginsRelative(i == 7 ? 26 : 2, 2, 2, 6);
             if (i == 0 || i == 7) {
@@ -94,13 +95,13 @@ public class TestPauseFragment extends Fragment {
                 new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        var tab = new LinearLayout();
+        var tab = new LinearLayout(getContext());
         tab.setOrientation(LinearLayout.VERTICAL);
         tab.setLayoutTransition(new LayoutTransition());
-        tab.setBackground(new TabBackground());
+        tab.setBackground(new TabBackground(tab));
 
         for (int i = 0; i < 3; i++) {
-            var v = new EditText();
+            var v = new EditText(getContext());
             v.setText(switch (i) {
                 case 0:
                     yield "Flux Point";
@@ -118,29 +119,30 @@ public class TestPauseFragment extends Fragment {
                     yield "Transfer Limit";
             });
             v.setSingleLine();
-            v.setBackground(new TextFieldBackground());
+            v.setBackground(new TextFieldBackground(v));
             v.setTextSize(16);
             v.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    new TextFieldStart(mButtonIcon, (((i + 1) % 3) + 1) * 64), null, null, null);
+                    new TextFieldStart(v, mButtonIcon, (((i + 1) % 3) + 1) * 64), null, null, null);
             v.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
 
             var params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT);
-            params.setMargins(dp(20), dp(i == 0 ? 50 : 2), dp(20),
-                    dp(2));
+            params.setMargins(navigation.dp(20), navigation.dp(i == 0 ? 50 : 2),
+                    navigation.dp(20), navigation.dp(2));
 
             content.postDelayed(() -> tab.addView(v, params), (i + 1) * 100);
         }
 
         {
-            var v = new ConnectorView(mButtonIcon);
+            var v = new ConnectorView(getContext(), mButtonIcon);
             var params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT);
-            params.setMargins(dp(8), dp(2), dp(8), dp(8));
+            params.setMargins(navigation.dp(8), navigation.dp(2),
+                    navigation.dp(8), navigation.dp(8));
             content.postDelayed(() -> tab.addView(v, params), 400);
         }
 
-        int tabSize = dp(340);
+        int tabSize = navigation.dp(340);
         content.addView(tab, new LinearLayout.LayoutParams(tabSize, tabSize));
 
         content.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -153,10 +155,10 @@ public class TestPauseFragment extends Fragment {
         private final float mRadius;
         private final TextPaint mTextPaint;
 
-        public TabBackground() {
-            mRadius = dp(16);
+        public TabBackground(View view) {
+            mRadius = view.dp(16);
             mTextPaint = new TextPaint();
-            mTextPaint.setFontSize(View.sp(16));
+            mTextPaint.setFontSize(view.sp(16));
         }
 
         @Override
@@ -165,7 +167,7 @@ public class TestPauseFragment extends Fragment {
             float stroke = mRadius * 0.25f;
             float start = stroke * 0.5f;
 
-            Paint paint = Paint.get();
+            Paint paint = Paint.obtain();
             paint.setRGBA(0, 0, 0, 180);
             canvas.drawRoundRect(b.left + start, b.top + start, b.right - start, b.bottom - start, mRadius, paint);
             paint.setStyle(Paint.STROKE);
@@ -174,7 +176,8 @@ public class TestPauseFragment extends Fragment {
             canvas.drawRoundRect(b.left + start, b.top + start, b.right - start, b.bottom - start, mRadius, paint);
 
             canvas.drawText("BloCamLimb's Network", 0, 20, b.exactCenterX(), b.top + mRadius * 1.8f,
-                    Gravity.CENTER_HORIZONTAL, mTextPaint);
+                    mTextPaint);
+            paint.recycle();
         }
     }
 
@@ -184,10 +187,10 @@ public class TestPauseFragment extends Fragment {
         private final int mSrcLeft;
         private final int mSize;
 
-        public TextFieldStart(Image image, int srcLeft) {
+        public TextFieldStart(View view, Image image, int srcLeft) {
             mImage = image;
             mSrcLeft = srcLeft;
-            mSize = dp(24);
+            mSize = view.dp(24);
         }
 
         @Override
@@ -219,8 +222,8 @@ public class TestPauseFragment extends Fragment {
 
         private final float mRadius;
 
-        public TextFieldBackground() {
-            mRadius = dp(3);
+        public TextFieldBackground(View view) {
+            mRadius = view.dp(3);
         }
 
         @Override
@@ -228,11 +231,12 @@ public class TestPauseFragment extends Fragment {
             Rect b = getBounds();
             float start = mRadius * 0.5f;
 
-            Paint paint = Paint.get();
+            Paint paint = Paint.obtain();
             paint.setStyle(Paint.STROKE);
             paint.setStrokeWidth(mRadius);
             paint.setColor(NETWORK_COLOR);
             canvas.drawRoundRect(b.left + start, b.top + start, b.right - start, b.bottom - start, mRadius, paint);
+            paint.recycle();
         }
 
         @Override
@@ -249,17 +253,20 @@ public class TestPauseFragment extends Fragment {
         private final Image mImage;
         private final int mSrcLeft;
 
-        public NavigationButton(Image image, int srcLeft) {
+        public NavigationButton(Context context,
+                                Image image, int srcLeft) {
+            super(context);
             mImage = image;
             mSrcLeft = srcLeft;
         }
 
         @Override
         protected void onDraw(@Nonnull Canvas canvas) {
-            Paint paint = Paint.get();
+            Paint paint = Paint.obtain();
             if (!isHovered())
                 paint.setRGBA(192, 192, 192, 255);
             canvas.drawImage(mImage, mSrcLeft, 352, mSrcLeft + 32, 384, 0, 0, getWidth(), getHeight(), paint);
+            paint.recycle();
         }
 
         @Override
@@ -281,7 +288,8 @@ public class TestPauseFragment extends Fragment {
 
         private final ItemStack mItem = Items.DIAMOND_BLOCK.getDefaultInstance();
 
-        public ConnectorView(Image image) {
+        public ConnectorView(Context context, Image image) {
+            super(context);
             mImage = image;
             mSize = dp(32);
             mRodAnimator = ObjectAnimator.ofFloat(this, new FloatProperty<>("rodLength") {
@@ -329,10 +337,9 @@ public class TestPauseFragment extends Fragment {
 
         @Override
         protected void onDraw(@Nonnull Canvas canvas) {
-            Paint paint = Paint.get();
+            Paint paint = Paint.obtain();
             paint.setColor(NETWORK_COLOR);
             paint.setAlpha(192);
-            paint.setStrokeWidth(mSize / 8f);
 
             float centerX = getWidth() / 2f;
             float centerY = getHeight() / 2f;
@@ -343,7 +350,7 @@ public class TestPauseFragment extends Fragment {
             float py1 = centerY + (8 / 64f) * mSize;
             canvas.save();
             canvas.rotate(22.5f, px1l, py1);
-            canvas.drawRoundLine(px1l, py1, px1l - mRodLength * 2, py1, paint);
+            canvas.drawLine(px1l, py1, px1l - mRodLength * 2, py1, mSize / 8f, paint);
             canvas.restore();
 
             if (boxAlpha > 0) {
@@ -354,7 +361,7 @@ public class TestPauseFragment extends Fragment {
             float px1r = centerX + (15 / 64f) * mSize;
             canvas.save();
             canvas.rotate(-22.5f, px1r, py1);
-            canvas.drawRoundLine(px1r, py1, px1r + mRodLength * 2, py1, paint);
+            canvas.drawLine(px1r, py1, px1r + mRodLength * 2, py1, mSize / 8f, paint);
             canvas.restore();
 
             if (boxAlpha > 0) {
@@ -363,7 +370,7 @@ public class TestPauseFragment extends Fragment {
             }
 
             float py2 = centerY + (19 / 64f) * mSize;
-            canvas.drawRoundLine(centerX, py2, centerX, py2 + mRodLength, paint);
+            canvas.drawLine(centerX, py2, centerX, py2 + mRodLength, mSize / 8f, paint);
 
             if (boxAlpha > 0) {
                 canvas.drawRect(centerX - mSize * .5f, py2 + mSize * 1.1f,
@@ -377,7 +384,7 @@ public class TestPauseFragment extends Fragment {
 
             canvas.save();
             canvas.rotate(-22.5f, px1l, py1);
-            canvas.drawRoundLine(px1l, py1, px1l - mRodLength * 2, py1, paint);
+            canvas.drawLine(px1l, py1, px1l - mRodLength * 2, py1, mSize / 8f, paint);
             canvas.restore();
 
             if (boxAlpha > 0) {
@@ -387,7 +394,7 @@ public class TestPauseFragment extends Fragment {
 
             canvas.save();
             canvas.rotate(22.5f, px1r, py1);
-            canvas.drawRoundLine(px1r, py1, px1r + mRodLength * 2, py1, paint);
+            canvas.drawLine(px1r, py1, px1r + mRodLength * 2, py1, mSize / 8f, paint);
             canvas.restore();
 
             if (boxAlpha > 0) {
@@ -396,7 +403,7 @@ public class TestPauseFragment extends Fragment {
             }
 
             py2 = centerY - (19 / 64f) * mSize;
-            canvas.drawRoundLine(centerX, py2, centerX, py2 - mRodLength, paint);
+            canvas.drawLine(centerX, py2, centerX, py2 - mRodLength, mSize / 8f, paint);
 
             if (boxAlpha > 0) {
                 canvas.drawRect(centerX - mSize * .5f, py2 - mSize * 2.1f,
