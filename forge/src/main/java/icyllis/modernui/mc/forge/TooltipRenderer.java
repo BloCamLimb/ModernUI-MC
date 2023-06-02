@@ -381,23 +381,29 @@ public final class TooltipRenderer {
             int alpha = (int) ((color >>> 24) * sAlpha);
             sActiveFillColor[i] = (color & 0xFFFFFF) | (alpha << 24);
         }
-        paint.setColors(sActiveFillColor);
         paint.setStyle(Paint.FILL);
-        canvas.drawRoundRect(tooltipX - H_BORDER, tooltipY - V_BORDER,
+        canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
                 tooltipX + tooltipWidth + H_BORDER,
-                tooltipY + tooltipHeight + V_BORDER, 3, paint);
+                tooltipY + tooltipHeight + V_BORDER,
+                sActiveFillColor[0], sActiveFillColor[1],
+                sActiveFillColor[2], sActiveFillColor[3],
+                3, paint);
 
         for (int i = 0; i < 4; i++) {
             int color = sStrokeColor[i];
             int alpha = (int) ((color >>> 24) * sAlpha);
             sActiveStrokeColor[i] = (color & 0xFFFFFF) | (alpha << 24);
         }
-        paint.setColors(sActiveStrokeColor);
         paint.setStyle(Paint.STROKE);
         paint.setStrokeWidth(4 / 3f);
-        canvas.drawRoundRect(tooltipX - H_BORDER, tooltipY - V_BORDER,
+        canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
                 tooltipX + tooltipWidth + H_BORDER,
-                tooltipY + tooltipHeight + V_BORDER, 3, paint);
+                tooltipY + tooltipHeight + V_BORDER,
+                sActiveStrokeColor[0], sActiveStrokeColor[1],
+                sActiveStrokeColor[2], sActiveStrokeColor[3],
+                3, paint);
+
+        paint.recycle();
 
         canvas.restore();
         canvas.executeDrawOps(null);
@@ -450,7 +456,5 @@ public final class TooltipRenderer {
         }
         itemRenderer.blitOffset = blitOffset;
         poseStack.popPose();
-
-        paint.recycle();
     }
 }

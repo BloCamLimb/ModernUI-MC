@@ -18,16 +18,14 @@ void main() {
     // base = -0.5 / (sigma * sigma)
     // factor = 1.0 / (sigma * sqrt(2*PI))
     float base = -2.0 / (radius * radius);
-    float factor = 0.7978845608 / radius;
-    float randScale = min(radius * 0.2, 1.0);
+    float factor = 0.79788456 / radius;
     vec2 dir = oneTexel * BlurDir;
-    float sum = 0.0, f, rand;
+    float wsum = 0.0, w;
     for (float r = -radius; r <= radius; r += 1.0) {
-        f = exp(r * r * base) * factor;
-        rand = fract(sin(dot(texCoord, vec2(12.9898, 78.233))) * 43758.5453123);
-        blur += texture(DiffuseSampler, texCoord + (r * 2.0 + randScale * rand) * dir) * f;
-        sum += f;
+        w = exp(r * r * base) * factor;
+        blur += texture(DiffuseSampler, texCoord + r * dir) * w;
+        wsum += w;
     }
 
-    fragColor = vec4(blur.rgb / sum, 1.0);
+    fragColor = vec4(blur.rgb / wsum, 1.0);
 }

@@ -103,10 +103,10 @@ public class TextLayoutEngine implements PreparableReloadListener {
      */
     public static volatile int sCacheLifespan = 12;
     public static volatile int sRehashThreshold = 100;
-    /**
+    /*
      * Config value to use distance field text in 3D world.
      */
-    public static volatile boolean sCanUseDistanceField;
+    //public static volatile boolean sCanUseDistanceField;
 
     /**
      * Matches Slack emoji shortcode.

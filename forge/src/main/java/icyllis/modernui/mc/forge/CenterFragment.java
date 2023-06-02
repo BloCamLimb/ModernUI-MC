@@ -22,17 +22,13 @@ import icyllis.arc3d.opengl.GLSurfaceCanvas;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.*;
 import icyllis.modernui.annotation.NonNull;
-import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.fragment.FragmentTransaction;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
 import icyllis.modernui.graphics.drawable.StateListDrawable;
-import icyllis.modernui.graphics.font.GlyphManager;
-import icyllis.modernui.material.MaterialDrawable;
-import icyllis.modernui.mc.forge.Config.Client;
+import icyllis.modernui.mc.forge.ui.RectangleDrawable;
 import icyllis.modernui.mc.text.ModernUITextMC;
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.InputFilter;
 import icyllis.modernui.text.TextPaint;
 import icyllis.modernui.text.method.DigitsInputFilter;
@@ -41,26 +37,16 @@ import icyllis.modernui.util.StateSet;
 import icyllis.modernui.view.*;
 import icyllis.modernui.view.View.OnLayoutChangeListener;
 import icyllis.modernui.widget.*;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.OptionInstance;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraftforge.common.ForgeConfigSpec.IntValue;
-import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
 
+import static icyllis.modernui.mc.forge.ui.ThemeControl.*;
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class CenterFragment extends Fragment implements ScreenCallback {
-
-    private static final Field OPTION_VALUE = ObfuscationReflectionHelper.findField(OptionInstance.class, "f_231481_");
-
-    public static final int BACKGROUND_COLOR = 0xc0292a2c;
-    public static final int THEME_COLOR = 0xffcda398;
-    public static final int THEME_COLOR_2 = 0xffcd98a3;
 
     @Nullable
     @Override
@@ -201,7 +187,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             input.setPadding(dp3, 0, dp3, 0);
 
             StateListDrawable background = new StateListDrawable();
-            background.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), new InputBackground());
+            background.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), new RectangleDrawable());
             background.setEnterFadeDuration(300);
             background.setExitFadeDuration(300);
             input.setBackground(background);
@@ -265,206 +251,17 @@ public class CenterFragment extends Fragment implements ScreenCallback {
         {
             // Screen
             var category = createCategory("modernui.center.category.screen");
-            {
-                var option = createInputOption("modernui.center.screen.backgroundDuration");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(Config.CLIENT.mBackgroundDuration.get().toString());
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale()), new InputFilter.LengthFilter(3));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        int value = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
-                                Client.ANIM_DURATION_MIN, Client.ANIM_DURATION_MAX);
-                        v.setText(Integer.toString(value));
-                        if (value != Config.CLIENT.mBackgroundDuration.get()) {
-                            Config.CLIENT.mBackgroundDuration.set(value);
-                            Config.CLIENT.saveAndReload();
-                        }
-                    }
-                });
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("modernui.center.screen.blurEffect");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(Config.CLIENT.mBlurEffect.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    Config.CLIENT.mBlurEffect.set(checked);
-                    Config.CLIENT.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
-                var option = createInputOption("modernui.center.screen.blurRadius");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(Config.CLIENT.mBlurRadius.get().toString());
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale()), new InputFilter.LengthFilter(2));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        int value = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
-                                Client.BLUR_RADIUS_MIN, Client.BLUR_RADIUS_MAX);
-                        v.setText(Integer.toString(value));
-                        if (value != Config.CLIENT.mBlurRadius.get()) {
-                            Config.CLIENT.mBlurRadius.set(value);
-                            Config.CLIENT.saveAndReload();
-                        }
-                    }
-                });
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("modernui.center.screen.inventoryPause");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(Config.CLIENT.mInventoryPause.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    Config.CLIENT.mInventoryPause.set(checked);
-                    Config.CLIENT.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
-                var option = new LinearLayout(getContext());
-                option.setOrientation(LinearLayout.HORIZONTAL);
-                option.setHorizontalGravity(Gravity.START);
-
-                final int dp6 = option.dp(6);
-                {
-                    var title = new TextView(getContext());
-                    title.setText(I18n.get("modernui.center.screen.windowMode"));
-                    title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-                    title.setTextSize(14);
-
-                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
-                    params.gravity = Gravity.CENTER_VERTICAL;
-                    option.addView(title, params);
-                }
-                {
-                    var spinner = new Spinner(getContext());
-                    spinner.setGravity(Gravity.END);
-                    spinner.setAdapter(new ArrayAdapter<>(getContext(), Client.WindowMode.values()));
-                    spinner.setSelection(Config.CLIENT.mWindowMode.get().ordinal());
-                    spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                            Client.WindowMode windowMode = Client.WindowMode.values()[position];
-                            if (Config.CLIENT.mWindowMode.get() != windowMode) {
-                                Config.CLIENT.mWindowMode.set(windowMode);
-                                Config.CLIENT.saveAndReload();
-                            }
-                        }
-
-                        @Override
-                        public void onNothingSelected(AdapterView<?> parent) {
-                        }
-                    });
-
-                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
-                    params.gravity = Gravity.CENTER_VERTICAL;
-                    option.addView(spinner, params);
-                }
-
-                var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-                params.gravity = Gravity.CENTER;
-                params.setMargins(dp6, 0, dp6, 0);
-                option.setLayoutParams(params);
-
-                category.addView(option);
-            }
             panel.addView(category);
         }
 
         {
             var category = createCategory("modernui.center.category.extension");
-            {
-                var option = createButtonOption("modernui.center.extension.ding");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(Config.CLIENT.mDing.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    Config.CLIENT.mDing.set(checked);
-                    Config.CLIENT.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("modernui.center.extension.tooltip");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(Config.CLIENT.mTooltip.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    Config.CLIENT.mTooltip.set(checked);
-                    Config.CLIENT.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
-                var option = createInputOption("modernui.center.extension.tooltipDuration");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(Config.CLIENT.mTooltipDuration.get().toString());
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale()), new InputFilter.LengthFilter(3));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        int value = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
-                                Client.ANIM_DURATION_MIN, Client.ANIM_DURATION_MAX);
-                        v.setText(Integer.toString(value));
-                        if (value != Config.CLIENT.mTooltipDuration.get()) {
-                            Config.CLIENT.mTooltipDuration.set(value);
-                            Config.CLIENT.saveAndReload();
-                        }
-                    }
-                });
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("modernui.center.extension.smoothScrolling");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked((ModernUIForge.getBootstrapLevel() & ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING) == 0);
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    int level = ModernUIForge.getBootstrapLevel();
-                    if (checked) {
-                        level &= ~ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING;
-                    } else {
-                        level |= ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING;
-                    }
-                    ModernUIForge.setBootstrapLevel(level);
-                    Toast.makeText(I18n.get("gui.modernui.restart_to_work"), Toast.LENGTH_SHORT)
-                            .show();
-                });
-                category.addView(option);
-            }
             panel.addView(category);
         }
 
         {
             // Text Engine
             var category = createCategory("modernui.center.category.text");
-            {
-                var option = createButtonOption("modernui.center.text.textEngine");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked((ModernUIForge.getBootstrapLevel() & ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE) == 0);
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    int level = ModernUIForge.getBootstrapLevel();
-                    if (checked) {
-                        level &= ~ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE;
-                    } else {
-                        level |= ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE;
-                    }
-                    ModernUIForge.setBootstrapLevel(level);
-                    Toast.makeText(I18n.get("gui.modernui.restart_to_work"), Toast.LENGTH_SHORT)
-                            .show();
-                });
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("modernui.center.text.colorEmoji");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(ModernUITextMC.CONFIG.mColorEmoji.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    ModernUITextMC.CONFIG.mColorEmoji.set(checked);
-                    ModernUITextMC.CONFIG.saveAndReload();
-                });
-                category.addView(option);
-            }
             /*{
                 var option = createButtonOption("modernui.center.text.bitmapRepl");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
@@ -478,133 +275,15 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 category.addView(option);
             }*/
             {
-                var option = createButtonOption("modernui.center.text.emojiShortcodes");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(ModernUITextMC.CONFIG.mEmojiShortcodes.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    ModernUITextMC.CONFIG.mEmojiShortcodes.set(checked);
-                    ModernUITextMC.CONFIG.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
                 var option = createButtonOption("modernui.center.text.distanceField");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(ModernUITextMC.CONFIG.mUseDistanceField.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    ModernUITextMC.CONFIG.mUseDistanceField.set(checked);
-                    ModernUITextMC.CONFIG.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("modernui.center.text.allowShadow");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(ModernUITextMC.CONFIG.mAllowShadow.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    ModernUITextMC.CONFIG.mAllowShadow.set(checked);
-                    ModernUITextMC.CONFIG.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("modernui.center.text.fixedResolution");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(ModernUITextMC.CONFIG.mFixedResolution.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    ModernUITextMC.CONFIG.mFixedResolution.set(checked);
-                    ModernUITextMC.CONFIG.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
-                var option = createInputOption("modernui.center.text.baseFontSize");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(ModernUITextMC.CONFIG.mBaseFontSize.get().toString());
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
-                        new InputFilter.LengthFilter(5));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        float value = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
-                                ModernUITextMC.Config.BASE_FONT_SIZE_MIN, ModernUITextMC.Config.BASE_FONT_SIZE_MAX);
-                        v.setText(Float.toString(value));
-                        if (value != ModernUITextMC.CONFIG.mBaseFontSize.get()) {
-                            ModernUITextMC.CONFIG.mBaseFontSize.set((double) value);
-                            ModernUITextMC.CONFIG.saveAndReload();
-                        }
-                    }
-                });
-                category.addView(option);
-            }
-            {
-                var option = createInputOption("modernui.center.text.baselineShift");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(ModernUITextMC.CONFIG.mBaselineShift.get().toString());
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
-                        new InputFilter.LengthFilter(5));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        float value = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
-                                ModernUITextMC.Config.BASELINE_MIN, ModernUITextMC.Config.BASELINE_MAX);
-                        v.setText(Float.toString(value));
-                        if (value != ModernUITextMC.CONFIG.mBaselineShift.get()) {
-                            ModernUITextMC.CONFIG.mBaselineShift.set((double) value);
-                            ModernUITextMC.CONFIG.saveAndReload();
-                        }
-                    }
-                });
-                category.addView(option);
-            }
-            {
-                var option = createInputOption("modernui.center.text.shadowOffset");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(ModernUITextMC.CONFIG.mShadowOffset.get().toString());
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
-                        new InputFilter.LengthFilter(5));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        float value = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
-                                ModernUITextMC.Config.SHADOW_OFFSET_MIN, ModernUITextMC.Config.SHADOW_OFFSET_MAX);
-                        v.setText(Float.toString(value));
-                        if (value != ModernUITextMC.CONFIG.mShadowOffset.get()) {
-                            ModernUITextMC.CONFIG.mShadowOffset.set((double) value);
-                            ModernUITextMC.CONFIG.saveAndReload();
-                        }
-                    }
-                });
-                category.addView(option);
-            }
-            {
-                var option = createInputOption("modernui.center.text.outlineOffset");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(ModernUITextMC.CONFIG.mOutlineOffset.get().toString());
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
-                        new InputFilter.LengthFilter(5));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        float value = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
-                                ModernUITextMC.Config.OUTLINE_OFFSET_MIN, ModernUITextMC.Config.OUTLINE_OFFSET_MAX);
-                        v.setText(Float.toString(value));
-                        if (value != ModernUITextMC.CONFIG.mOutlineOffset.get()) {
-                            ModernUITextMC.CONFIG.mOutlineOffset.set((double) value);
-                            ModernUITextMC.CONFIG.saveAndReload();
-                        }
-                    }
-                });
+                button.setChecked(true);
                 category.addView(option);
             }
             {
                 var option = createButtonOption("modernui.center.text.superSampling");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(ModernUITextMC.CONFIG.mSuperSampling.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    ModernUITextMC.CONFIG.mSuperSampling.set(checked);
-                    ModernUITextMC.CONFIG.saveAndReload();
-                });
+                button.setChecked(true);
                 category.addView(option);
             }
             {
@@ -613,56 +292,8 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 button.setChecked(ModernUITextMC.CONFIG.mAlignPixels.get());
                 button.setOnCheckedChangeListener((__, checked) -> {
                     ModernUITextMC.CONFIG.mAlignPixels.set(checked);
-                    ModernUITextMC.CONFIG.saveAndReload();
+                    ModernUITextMC.CONFIG.saveAndReloadAsync();
                 });
-                category.addView(option);
-            }
-            {
-                var option = new LinearLayout(getContext());
-                option.setOrientation(LinearLayout.HORIZONTAL);
-                option.setHorizontalGravity(Gravity.START);
-
-                final int dp6 = option.dp(6);
-                {
-                    var title = new TextView(getContext());
-                    title.setText(I18n.get("modernui.center.text.bidiHeuristicAlgo"));
-                    title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-                    title.setTextSize(14);
-
-                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
-                    params.gravity = Gravity.CENTER_VERTICAL;
-                    option.addView(title, params);
-                }
-                {
-                    var spinner = new Spinner(getContext());
-                    spinner.setGravity(Gravity.END);
-                    spinner.setAdapter(new ArrayAdapter<>(getContext(), TEXT_DIRS));
-                    spinner.setSelection(TextLayoutEngine.sTextDirection - 1);
-                    spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                        @Override
-                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                            int value = position + 1;
-                            if (ModernUITextMC.CONFIG.mTextDirection.get() != value) {
-                                ModernUITextMC.CONFIG.mTextDirection.set(value);
-                                ModernUITextMC.CONFIG.saveAndReload();
-                            }
-                        }
-
-                        @Override
-                        public void onNothingSelected(AdapterView<?> parent) {
-                        }
-                    });
-
-                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
-                    params.gravity = Gravity.CENTER_VERTICAL;
-                    option.addView(spinner, params);
-                }
-
-                var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-                params.gravity = Gravity.CENTER;
-                params.setMargins(dp6, 0, dp6, 0);
-                option.setLayoutParams(params);
-
                 category.addView(option);
             }
             {
@@ -713,7 +344,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                         v.setText(Integer.toString(value));
                         if (value != ModernUITextMC.CONFIG.mCacheLifespan.get()) {
                             ModernUITextMC.CONFIG.mCacheLifespan.set(value);
-                            ModernUITextMC.CONFIG.saveAndReload();
+                            ModernUITextMC.CONFIG.saveAndReloadAsync();
                         }
                     }
                 });
@@ -732,7 +363,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                         v.setText(Integer.toString(value));
                         if (value != ModernUITextMC.CONFIG.mRehashThreshold.get()) {
                             ModernUITextMC.CONFIG.mRehashThreshold.set(value);
-                            ModernUITextMC.CONFIG.saveAndReload();
+                            ModernUITextMC.CONFIG.saveAndReloadAsync();
                         }
                     }
                 });
@@ -756,138 +387,18 @@ public class CenterFragment extends Fragment implements ScreenCallback {
         final int dp6 = panel.dp(6);
         {
             var category = createCategory("modernui.center.category.system");
-            {
-                var option = createButtonOption("modernui.center.system.forceRtlLayout");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(Config.CLIENT.mForceRtl.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    Config.CLIENT.mForceRtl.set(checked);
-                    Config.CLIENT.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
-                var option = createInputOption("modernui.center.system.globalFontScale");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(Config.CLIENT.mFontScale.get().toString());
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
-                        new InputFilter.LengthFilter(4));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        double value = Math.max(Math.min(Double.parseDouble(v.getText().toString()),
-                                Client.FONT_SCALE_MAX), Client.FONT_SCALE_MIN);
-                        v.setText(Double.toString(value));
-                        if (value != Config.CLIENT.mFontScale.get()) {
-                            Config.CLIENT.mFontScale.set(value);
-                            Config.CLIENT.saveAndReload();
-                        }
-                    }
-                });
-                category.addView(option);
-            }
-            {
-                var option = createInputOption("modernui.center.system.globalAnimationScale");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(Float.toString(ValueAnimator.sDurationScale));
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
-                        new InputFilter.LengthFilter(4));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        double scale = Math.max(Math.min(Double.parseDouble(v.getText().toString()), 10), 0.1);
-                        v.setText(Double.toString(scale));
-                        if (scale != ValueAnimator.sDurationScale) {
-                            ValueAnimator.sDurationScale = (float) scale;
-                        }
-                    }
-                });
-                category.addView(option);
-            }
             panel.addView(category);
         }
 
         {
             var category = createCategory("modernui.center.category.font");
-            {
-                var option = new LinearLayout(getContext());
-                option.setOrientation(LinearLayout.HORIZONTAL);
-                option.setHorizontalGravity(Gravity.START);
-
-                final int dp3 = panel.dp(3);
-                {
-                    var title = new TextView(getContext());
-                    title.setText(I18n.get("modernui.center.font.fontFamily"));
-                    title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-                    title.setTextSize(14);
-                    title.setMinWidth(panel.dp(60));
-
-                    var params = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 2);
-                    params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
-                    option.addView(title, params);
-                }
-                {
-                    var input = new EditText(getContext());
-                    input.setId(R.id.input);
-                    input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-                    input.setTextSize(14);
-                    input.setPadding(dp3, 0, dp3, 0);
-
-                    input.setText(String.join("\n", Config.CLIENT.mFontFamily.get()));
-                    input.setOnFocusChangeListener((view, hasFocus) -> {
-                        if (!hasFocus) {
-                            EditText v = (EditText) view;
-                            ArrayList<String> list = new ArrayList<>();
-                            for (String s : v.getText().toString().split("\n")) {
-                                if (!s.isBlank()) {
-                                    list.add(s);
-                                }
-                            }
-                            v.setText(String.join("\n", list));
-                            if (!Config.CLIENT.mFontFamily.get().equals(list)) {
-                                Config.CLIENT.mFontFamily.set(list);
-                                Config.CLIENT.saveOnly();
-                                Toast.makeText(I18n.get("gui.modernui.restart_to_work"), Toast.LENGTH_SHORT)
-                                        .show();
-                            }
-                        }
-                    });
-
-                    StateListDrawable background = new StateListDrawable();
-                    background.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), new InputBackground());
-                    background.setEnterFadeDuration(300);
-                    background.setExitFadeDuration(300);
-                    input.setBackground(background);
-
-                    var params = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 5);
-                    params.gravity = Gravity.CENTER_VERTICAL;
-                    option.addView(input, params);
-                }
-
-                var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-                params.gravity = Gravity.CENTER;
-                params.setMargins(dp6, 0, dp6, 0);
-                option.setLayoutParams(params);
-
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("modernui.center.font.antiAliasing");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(Config.CLIENT.mAntiAliasing.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    Config.CLIENT.mAntiAliasing.set(checked);
-                    Config.CLIENT.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
+            /*{
                 var option = createButtonOption("modernui.center.font.fractionalMetrics");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
                 button.setChecked(Config.CLIENT.mFractionalMetrics.get());
                 button.setOnCheckedChangeListener((__, checked) -> {
                     Config.CLIENT.mFractionalMetrics.set(checked);
-                    Config.CLIENT.saveAndReload();
+                    Config.CLIENT.saveAndReloadAsync();
                 });
                 category.addView(option);
             }
@@ -897,10 +408,10 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 button.setChecked(Config.CLIENT.mLinearSampling.get());
                 button.setOnCheckedChangeListener((__, checked) -> {
                     Config.CLIENT.mLinearSampling.set(checked);
-                    Config.CLIENT.saveAndReload();
+                    Config.CLIENT.saveAndReloadAsync();
                 });
                 category.addView(option);
-            }
+            }*/
             panel.addView(category);
         }
 
@@ -956,12 +467,12 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                         input.setText(Double.toString(radius));
                         if (radius != Config.CLIENT.mVerticalScrollFactor.get()) {
                             Config.CLIENT.mVerticalScrollFactor.set(radius);
-                            Config.CLIENT.saveAndReload();
+                            Config.CLIENT.saveAndReloadAsync();
                         }
                     }
                 });
                 StateListDrawable drawable = new StateListDrawable();
-                drawable.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), new InputBackground());
+                drawable.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), new RectangleDrawable());
                 drawable.setEnterFadeDuration(300);
                 drawable.setExitFadeDuration(300);
                 input.setBackground(drawable);
@@ -999,12 +510,12 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                         input.setText(Double.toString(radius));
                         if (radius != Config.CLIENT.mHorizontalScrollFactor.get()) {
                             Config.CLIENT.mHorizontalScrollFactor.set(radius);
-                            Config.CLIENT.saveAndReload();
+                            Config.CLIENT.saveAndReloadAsync();
                         }
                     }
                 });
                 StateListDrawable drawable = new StateListDrawable();
-                drawable.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), new InputBackground());
+                drawable.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), new RectangleDrawable());
                 drawable.setEnterFadeDuration(300);
                 drawable.setExitFadeDuration(300);
                 input.setBackground(drawable);
@@ -1020,94 +531,6 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             params.gravity = Gravity.CENTER;
             params.setMargins(panel.dp(12), panel.dp(12), panel.dp(12), panel.dp(18));
             panel.addView(group, params);
-        }
-
-        if (ModernUIForge.isDeveloperMode()) {
-            var category = createCategory("Developer");
-            {
-                var option = createInputOption("Gamma");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(Minecraft.getInstance().options.gamma().get().toString());
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
-                        new InputFilter.LengthFilter(6));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        double gamma = Double.parseDouble(v.getText().toString());
-                        v.setText(Double.toString(gamma));
-                        // no sync, but safe
-                        try {
-                            // no listener
-                            OPTION_VALUE.set(Minecraft.getInstance().options.gamma(), gamma);
-                        } catch (Exception e) {
-                            Minecraft.getInstance().options.gamma().set(gamma);
-                        }
-                    }
-                });
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("Remove Message Signature");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(Config.CLIENT.mRemoveSignature.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    Config.CLIENT.mRemoveSignature.set(checked);
-                    Config.CLIENT.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("Remove Telemetry Session");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(Config.CLIENT.mRemoveTelemetry.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    Config.CLIENT.mRemoveTelemetry.set(checked);
-                    Config.CLIENT.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("Secure Profile Public Key");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(Config.CLIENT.mSecurePublicKey.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    Config.CLIENT.mSecurePublicKey.set(checked);
-                    Config.CLIENT.saveAndReload();
-                });
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("Take Screenshot (Y)");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(false);
-                button.setOnCheckedChangeListener((__, checked) ->
-                        Core.postOnRenderThread(() -> UIManager.getInstance().takeScreenshot()));
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("Dump UI Manager (P)");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(false);
-                button.setOnCheckedChangeListener((__, checked) ->
-                        Core.postOnMainThread(() -> UIManager.getInstance().dump()));
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("Debug Glyph Manager (G)");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(false);
-                button.setOnCheckedChangeListener((__, checked) ->
-                        Core.postOnMainThread(() -> GlyphManager.getInstance().debug()));
-                category.addView(option);
-            }
-            {
-                var option = createButtonOption("GC (F)");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(false);
-                button.setOnCheckedChangeListener((__, checked) -> System.gc());
-                category.addView(option);
-            }
-            panel.addView(category);
         }
 
         panel.setDividerDrawable(new Divider(panel));
@@ -1143,12 +566,12 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 input.setText(Integer.toString(val));
                 if (val != config.get()) {
                     config.set(val);
-                    Config.CLIENT.saveAndReload();
+                    Config.CLIENT.saveAndReloadAsync();
                 }
             }
         });
         StateListDrawable drawable = new StateListDrawable();
-        drawable.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), new InputBackground());
+        drawable.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), new RectangleDrawable());
         drawable.setEnterFadeDuration(300);
         drawable.setExitFadeDuration(300);
         input.setBackground(drawable);
@@ -1182,24 +605,6 @@ public class CenterFragment extends Fragment implements ScreenCallback {
         return super.onCreateAnimator(transit, enter, nextAnim);
     }
 
-    private static final TextDir[] TEXT_DIRS = {
-            new TextDir(View.TEXT_DIRECTION_FIRST_STRONG, "FirstStrong"),
-            new TextDir(View.TEXT_DIRECTION_ANY_RTL, "AnyRTL-LTR"),
-            new TextDir(View.TEXT_DIRECTION_LTR, "LTR"),
-            new TextDir(View.TEXT_DIRECTION_RTL, "RTL"),
-            new TextDir(View.TEXT_DIRECTION_LOCALE, "Locale"),
-            new TextDir(View.TEXT_DIRECTION_FIRST_STRONG_LTR, "FirstStrong-LTR"),
-            new TextDir(View.TEXT_DIRECTION_FIRST_STRONG_RTL, "FirstStrong-RTL"),
-    };
-
-    private record TextDir(int key, String text) {
-
-        @Override
-        public String toString() {
-            return text;
-        }
-    }
-
     private static class Background extends Drawable {
 
         private final float mRadius;
@@ -1222,7 +627,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             ((GLSurfaceCanvas) canvas).drawGlowWave(bounds.left + inner * 1.5f, bounds.top + inner * 1.5f,
                     bounds.right - inner, bounds.bottom - inner);
             paint.setStyle(Paint.STROKE);
-            paint.setColors(THEME_COLOR, THEME_COLOR_2, THEME_COLOR, THEME_COLOR_2);
+            paint.setColor(THEME_COLOR);
             paint.setStrokeWidth(mStrokeWidth);
             //paint.setSmoothRadius(inner);
             canvas.drawRoundRect(bounds.left + inner, bounds.top + inner, bounds.right - inner,
@@ -1261,32 +666,4 @@ public class CenterFragment extends Fragment implements ScreenCallback {
         }
     }
 
-    private static class InputBackground extends Drawable {
-
-        private int mAlpha = 255;
-
-        @Override
-        public void draw(@Nonnull Canvas canvas) {
-            Paint paint = Paint.obtain();
-            paint.setColor(0x80a0a0a0);
-            paint.setAlpha(MaterialDrawable.modulateAlpha(paint.getAlpha(), mAlpha));
-            if (paint.getAlpha() != 0) {
-                canvas.drawRect(getBounds(), paint);
-            }
-            paint.recycle();
-        }
-
-        @Override
-        public void setAlpha(int alpha) {
-            if (mAlpha != alpha) {
-                mAlpha = alpha;
-                invalidateSelf();
-            }
-        }
-
-        @Override
-        public int getAlpha() {
-            return mAlpha;
-        }
-    }
 }

@@ -191,7 +191,7 @@ public class TextRenderType extends RenderType {
     private static void ensureLinearFontSampler() {
         if (sLinearFontSampler == null) {
             GLServer server = (GLServer) Core.getDirectContext().getServer();
-            // default is bilinear
+            // default state is bilinear
             sLinearFontSampler = server.getResourceProvider().findOrCreateCompatibleSampler(
                     SamplerState.DEFAULT);
             Objects.requireNonNull(sLinearFontSampler, "Failed to create sampler object");
@@ -205,7 +205,7 @@ public class TextRenderType extends RenderType {
             SDF_FILL_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.enableTexture();
             RenderSystem.setShaderTexture(0, texture);
-            GLCore.glBindSampler(0, sLinearFontSampler.getSamplerID());
+            GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
         }, () -> {
             SDF_FILL_STATES.forEach(RenderStateShard::clearRenderState);
             GLCore.glBindSampler(0, 0);
@@ -226,7 +226,7 @@ public class TextRenderType extends RenderType {
             SDF_STROKE_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.enableTexture();
             RenderSystem.setShaderTexture(0, texture);
-            GLCore.glBindSampler(0, sLinearFontSampler.getSamplerID());
+            GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
         }, () -> {
             SDF_STROKE_STATES.forEach(RenderStateShard::clearRenderState);
             GLCore.glBindSampler(0, 0);

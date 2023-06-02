@@ -195,15 +195,15 @@ public final class ModernUITextMC {
         public final ForgeConfigSpec.DoubleValue mBaselineShift;
         public final ForgeConfigSpec.DoubleValue mShadowOffset;
         public final ForgeConfigSpec.DoubleValue mOutlineOffset;
-        public final ForgeConfigSpec.BooleanValue mSuperSampling;
+        //public final ForgeConfigSpec.BooleanValue mSuperSampling;
         public final ForgeConfigSpec.BooleanValue mAlignPixels;
         public final ForgeConfigSpec.IntValue mCacheLifespan;
         public final ForgeConfigSpec.IntValue mRehashThreshold;
-        public final ForgeConfigSpec.IntValue mTextDirection;
+        public final ForgeConfigSpec.EnumValue<TextDirection> mTextDirection;
         public final ForgeConfigSpec.BooleanValue mColorEmoji;
         //public final ForgeConfigSpec.BooleanValue mBitmapReplacement;
         public final ForgeConfigSpec.BooleanValue mEmojiShortcodes;
-        public final ForgeConfigSpec.BooleanValue mUseDistanceField;
+        //public final ForgeConfigSpec.BooleanValue mUseDistanceField;
 
         //private final ForgeConfigSpec.BooleanValue antiAliasing;
         //private final ForgeConfigSpec.BooleanValue highPrecision;
@@ -244,14 +244,14 @@ public final class ModernUITextMC {
             mOutlineOffset = builder.comment(
                             "Control the text outline offset for vanilla text rendering, in GUI scaled pixels.")
                     .defineInRange("outlineOffset", 0.5, OUTLINE_OFFSET_MIN, OUTLINE_OFFSET_MAX);
-            mSuperSampling = builder.comment(
+            /*mSuperSampling = builder.comment(
                             "Super sampling can make the text more smooth with large font size or in the 3D world.",
                             "But it makes the glyph edge too blurry and difficult to read.")
-                    .define("superSampling", false);
+                    .define("superSampling", false);*/
             mAlignPixels = builder.comment(
                             "Enable to make each glyph pixel-aligned in text layout in screen-space.",
                             "Text rendering may be better with bitmap fonts / fixed resolution / linear sampling.")
-                    .define("alignPixels", true);
+                    .define("alignPixels", false);
             mCacheLifespan = builder.comment(
                             "Set the recycle time of layout cache in seconds, using least recently used algorithm.")
                     .defineInRange("cacheLifespan", 12, LIFESPAN_MIN, LIFESPAN_MAX);
@@ -259,8 +259,7 @@ public final class ModernUITextMC {
                     .defineInRange("rehashThreshold", 100, REHASH_MIN, REHASH_MAX);
             mTextDirection = builder.comment(
                             "Control bidirectional text heuristic algorithm.")
-                    .defineInRange("textDirection", View.TEXT_DIRECTION_FIRST_STRONG,
-                            View.TEXT_DIRECTION_FIRST_STRONG, View.TEXT_DIRECTION_FIRST_STRONG_RTL);
+                    .defineEnum("textDirection", TextDirection.FIRST_STRONG);
             mColorEmoji = builder.comment(
                             "Enable to use colored emoji, otherwise grayscale emoji.")
                     .define("colorEmoji", true);
@@ -270,10 +269,10 @@ public final class ModernUITextMC {
             mEmojiShortcodes = builder.comment(
                             "Allow Slack or Discord shortcodes to replace Unicode Emoji Sequences in chat.")
                     .define("emojiShortcodes", true);
-            mUseDistanceField = builder.comment(
+            /*mUseDistanceField = builder.comment(
                             "Enable to use distance field for text rendering in 3D world.",
                             "It improves performance with deferred rendering and sharpens when doing 3D transform.")
-                    .define("useDistanceField", true);
+                    .define("useDistanceField", true);*/
             /*antiAliasing = builder.comment(
                     "Enable font anti-aliasing.")
                     .define("antiAliasing", true);
@@ -298,11 +297,11 @@ public final class ModernUITextMC {
             builder.pop();
         }
 
-        public void saveOnly() {
+        public void saveAsync() {
             Util.ioPool().execute(() -> CONFIG_SPEC.save());
         }
 
-        public void saveAndReload() {
+        public void saveAndReloadAsync() {
             Util.ioPool().execute(() -> {
                 CONFIG_SPEC.save();
                 reload();
@@ -331,26 +330,18 @@ public final class ModernUITextMC {
             TextLayoutNode.sBaselineOffset = mBaselineShift.get().floatValue();
             ModernTextRenderer.sShadowOffset = mShadowOffset.get().floatValue();
             ModernTextRenderer.sOutlineOffset = mOutlineOffset.get().floatValue();
-            if (TextLayoutEngine.sSuperSampling != mSuperSampling.get()) {
-                TextLayoutEngine.sSuperSampling = mSuperSampling.get();
-                reload = true;
-            }
             if (TextLayoutProcessor.sAlignPixels != mAlignPixels.get()) {
                 TextLayoutProcessor.sAlignPixels = mAlignPixels.get();
                 reload = true;
             }
             TextLayoutEngine.sCacheLifespan = mCacheLifespan.get();
             TextLayoutEngine.sRehashThreshold = mRehashThreshold.get();
-            if (TextLayoutEngine.sTextDirection != mTextDirection.get()) {
-                TextLayoutEngine.sTextDirection = mTextDirection.get();
+            if (TextLayoutEngine.sTextDirection != mTextDirection.get().key) {
+                TextLayoutEngine.sTextDirection = mTextDirection.get().key;
                 reload = true;
             }
             if (TextLayoutProcessor.sColorEmoji != mColorEmoji.get()) {
                 TextLayoutProcessor.sColorEmoji = mColorEmoji.get();
-                reload = true;
-            }
-            if (TextLayoutEngine.sCanUseDistanceField != mUseDistanceField.get()) {
-                TextLayoutEngine.sCanUseDistanceField = mUseDistanceField.get();
                 reload = true;
             }
             if (reload) {
@@ -363,6 +354,29 @@ public final class ModernUITextMC {
             GlyphManagerForge.sMipmapLevel = mipmapLevel.get();*/
             //GlyphManager.sResolutionLevel = resolutionLevel.get();
             //TextLayoutEngine.sDefaultFontSize = defaultFontSize.get();
+        }
+
+        public enum TextDirection {
+            FIRST_STRONG(View.TEXT_DIRECTION_FIRST_STRONG, "FirstStrong"),
+            ANY_RTL(View.TEXT_DIRECTION_ANY_RTL, "AnyRTL-LTR"),
+            LTR(View.TEXT_DIRECTION_LTR, "LTR"),
+            RTL(View.TEXT_DIRECTION_RTL, "RTL"),
+            LOCALE(View.TEXT_DIRECTION_LOCALE, "Locale"),
+            FIRST_STRONG_LTR(View.TEXT_DIRECTION_FIRST_STRONG_LTR, "FirstStrong-LTR"),
+            FIRST_STRONG_RTL(View.TEXT_DIRECTION_FIRST_STRONG_RTL, "FirstStrong-RTL");
+
+            private final int key;
+            private final String text;
+
+            TextDirection(int key, String text) {
+                this.key = key;
+                this.text = text;
+            }
+
+            @Override
+            public String toString() {
+                return text;
+            }
         }
     }
 }

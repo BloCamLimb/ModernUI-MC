@@ -23,7 +23,6 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.Color;
-import icyllis.modernui.graphics.font.GLFontAtlas;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.resources.Resources;
@@ -162,44 +161,44 @@ final class Config {
         public static final float FONT_SCALE_MIN = 0.5f;
         public static final float FONT_SCALE_MAX = 2.0f;
 
-        final ForgeConfigSpec.BooleanValue mBlurEffect;
-        final ForgeConfigSpec.IntValue mBackgroundDuration;
-        final ForgeConfigSpec.IntValue mBlurRadius;
-        final ForgeConfigSpec.ConfigValue<List<? extends String>> mBackgroundColor;
-        final ForgeConfigSpec.BooleanValue mInventoryPause;
-        final ForgeConfigSpec.BooleanValue mTooltip;
-        final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipFill;
-        final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
-        final ForgeConfigSpec.IntValue mTooltipDuration;
-        final ForgeConfigSpec.BooleanValue mDing;
+        public final ForgeConfigSpec.BooleanValue mBlurEffect;
+        public final ForgeConfigSpec.IntValue mBackgroundDuration;
+        public final ForgeConfigSpec.IntValue mBlurRadius;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mBackgroundColor;
+        public final ForgeConfigSpec.BooleanValue mInventoryPause;
+        public final ForgeConfigSpec.BooleanValue mTooltip;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipFill;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
+        public final ForgeConfigSpec.IntValue mTooltipDuration;
+        public final ForgeConfigSpec.BooleanValue mDing;
         //private final ForgeConfigSpec.BooleanValue hudBars;
-        final ForgeConfigSpec.BooleanValue mForceRtl;
-        final ForgeConfigSpec.DoubleValue mFontScale;
-        final ForgeConfigSpec.EnumValue<WindowMode> mWindowMode;
-        final ForgeConfigSpec.BooleanValue mUseNewGuiScale;
-        final ForgeConfigSpec.BooleanValue mRemoveSignature;
-        final ForgeConfigSpec.BooleanValue mRemoveTelemetry;
-        final ForgeConfigSpec.BooleanValue mSecurePublicKey;
+        public final ForgeConfigSpec.BooleanValue mForceRtl;
+        public final ForgeConfigSpec.DoubleValue mFontScale;
+        public final ForgeConfigSpec.EnumValue<WindowMode> mWindowMode;
+        public final ForgeConfigSpec.BooleanValue mUseNewGuiScale;
+        public final ForgeConfigSpec.BooleanValue mRemoveSignature;
+        public final ForgeConfigSpec.BooleanValue mRemoveTelemetry;
+        public final ForgeConfigSpec.BooleanValue mSecurePublicKey;
 
-        final ForgeConfigSpec.IntValue mScrollbarSize;
-        final ForgeConfigSpec.IntValue mTouchSlop;
-        final ForgeConfigSpec.IntValue mMinScrollbarTouchTarget;
-        final ForgeConfigSpec.IntValue mMinimumFlingVelocity;
-        final ForgeConfigSpec.IntValue mMaximumFlingVelocity;
-        final ForgeConfigSpec.IntValue mOverscrollDistance;
-        final ForgeConfigSpec.IntValue mOverflingDistance;
-        final ForgeConfigSpec.DoubleValue mVerticalScrollFactor;
-        final ForgeConfigSpec.DoubleValue mHorizontalScrollFactor;
+        public final ForgeConfigSpec.IntValue mScrollbarSize;
+        public final ForgeConfigSpec.IntValue mTouchSlop;
+        public final ForgeConfigSpec.IntValue mMinScrollbarTouchTarget;
+        public final ForgeConfigSpec.IntValue mMinimumFlingVelocity;
+        public final ForgeConfigSpec.IntValue mMaximumFlingVelocity;
+        public final ForgeConfigSpec.IntValue mOverscrollDistance;
+        public final ForgeConfigSpec.IntValue mOverflingDistance;
+        public final ForgeConfigSpec.DoubleValue mVerticalScrollFactor;
+        public final ForgeConfigSpec.DoubleValue mHorizontalScrollFactor;
 
         private final ForgeConfigSpec.ConfigValue<List<? extends String>> mBlurBlacklist;
 
-        final ForgeConfigSpec.BooleanValue mAntiAliasing;
-        final ForgeConfigSpec.BooleanValue mFractionalMetrics;
-        final ForgeConfigSpec.BooleanValue mLinearSampling;
-        final ForgeConfigSpec.ConfigValue<List<? extends String>> mFontFamily;
+        public final ForgeConfigSpec.BooleanValue mAntiAliasing;
+        public final ForgeConfigSpec.BooleanValue mAutoHinting;
+        //public final ForgeConfigSpec.BooleanValue mLinearSampling;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFontFamily;
 
-        final ForgeConfigSpec.BooleanValue mSkipGLCapsError;
-        final ForgeConfigSpec.BooleanValue mShowGLCapsError;
+        public final ForgeConfigSpec.BooleanValue mSkipGLCapsError;
+        public final ForgeConfigSpec.BooleanValue mShowGLCapsError;
 
         private WindowMode mLastWindowMode;
 
@@ -225,11 +224,13 @@ final class Config {
 
             mBlurEffect = builder.comment(
                             "Add blur effect to GUI background when opened, it is incompatible with OptiFine's FXAA " +
-                                    "shader and some mods.")
+                                    "shader and some mods.",
+                            "Disable this if you run into a problem or are on low-end PCs")
                     .define("blurEffect", true);
             mBlurRadius = builder.comment(
-                            "The strength for two-pass gaussian convolution blur effect, spp = (radius * 2) + 1.")
-                    .defineInRange("blurRadius", 5, BLUR_RADIUS_MIN, BLUR_RADIUS_MAX);
+                            "The strength for two-pass gaussian convolution blur effect.",
+                            "samples/pixel = ((radius * 2) + 1) * 2, sigma = radius / 2.")
+                    .defineInRange("blurRadius", 7, BLUR_RADIUS_MIN, BLUR_RADIUS_MAX);
             mBlurBlacklist = builder.comment(
                             "A list of GUI screen superclasses that won't activate blur effect when opened.")
                     .defineList("blurBlacklist", () -> {
@@ -247,15 +248,13 @@ final class Config {
                     .push("tooltip");
 
             mTooltip = builder.comment(
-                            "Whether to enable Modern UI tooltip style, or back to vanilla style.")
+                            "Whether to enable Modern UI rounded tooltip style, or back to vanilla style.")
                     .define("enable", true);
             mTooltipFill = builder.comment(
                             "The tooltip FILL color in #RRGGBB or #AARRGGBB format. Default: #D4000000",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
-                            "Multiple values produce a gradient effect, whereas one value produce a solid color.",
-                            "When values is less than 4, the rest of the corner color will be replaced by the last " +
-                                    "value.")
+                            "Multiple values produce a gradient effect, whereas one value produces a solid color.")
                     .defineList("colorFill", () -> {
                         List<String> list = new ArrayList<>();
                         list.add("#D4000000");
@@ -266,9 +265,7 @@ final class Config {
                                     "#F0FFC3F7 and #F0DAD0F4",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
-                            "Multiple values produce a gradient effect, whereas one value produce a solid color.",
-                            "When values is less than 4, the rest of the corner color will be replaced by the last " +
-                                    "value.")
+                            "Multiple values produce a gradient effect, whereas one value produces a solid color.")
                     .defineList("colorStroke", () -> {
                         List<String> list = new ArrayList<>();
                         list.add("#F0AADCF0");
@@ -279,7 +276,7 @@ final class Config {
                     }, $ -> true);
             mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
-                    .defineInRange("animationDuration", 100, ANIM_DURATION_MIN, ANIM_DURATION_MAX);
+                    .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);
 
             builder.pop();
 
@@ -336,8 +333,7 @@ final class Config {
             mOverflingDistance = builder.comment("Max distance in dips to overfling for edge effects.")
                     .defineInRange("overflingDistance", ViewConfiguration.OVERFLING_DISTANCE, 0, 1024);
             mVerticalScrollFactor = builder.comment("Amount to scroll in response to a vertical scroll event, in dips" +
-                            " " +
-                            "per axis value.")
+                            " per axis value.")
                     .defineInRange("verticalScrollFactor", ViewConfiguration.VERTICAL_SCROLL_FACTOR, 0, 1024);
             mHorizontalScrollFactor = builder.comment("Amount to scroll in response to a horizontal scroll event, in " +
                             "dips per axis value.")
@@ -352,14 +348,14 @@ final class Config {
             mAntiAliasing = builder.comment(
                             "Control the anti-aliasing of raw glyph rendering.")
                     .define("antiAliasing", true);
-            mFractionalMetrics = builder.comment(
-                            "Control the fractional metrics of raw glyph rendering.",
-                            "Disable for rougher fonts; Enable for smoother fonts.")
-                    .define("fractionalMetrics", true);
-            mLinearSampling = builder.comment(
+            mAutoHinting = builder.comment(
+                            "Control the FreeType font hinting of raw glyph metrics.",
+                            "Enable if on low-res monitor; disable for smooth fonts.")
+                    .define("autoHinting", true);
+            /*mLinearSampling = builder.comment(
                             "Enable linear sampling for font atlases with mipmaps, mag filter will be always NEAREST.",
                             "If your fonts are not bitmap fonts, then you should keep this setting true.")
-                    .define("linearSampling", true);
+                    .define("linearSampling", true);*/
             // Segoe UI, Source Han Sans CN Medium, Noto Sans, Open Sans, San Francisco, Calibri,
             // Microsoft YaHei UI, STHeiti, SimHei, SansSerif
             mFontFamily = builder.comment(
@@ -375,11 +371,11 @@ final class Config {
                         List<String> list = new ArrayList<>();
                         list.add("modernui:font/default.ttf");
                         list.add("modernui:font/biliw.otf");
+                        list.add("Microsoft YaHei UI");
                         list.add("Segoe UI");
                         list.add("Noto Sans");
                         list.add("San Francisco");
                         list.add("Calibri");
-                        list.add("Microsoft YaHei UI");
                         list.add("SimHei");
                         list.add("STHeiti");
                         list.add("SansSerif");
@@ -390,11 +386,11 @@ final class Config {
             builder.pop();
         }
 
-        void saveOnly() {
+        public void saveAsync() {
             Util.ioPool().execute(() -> CLIENT_SPEC.save());
         }
 
-        void saveAndReload() {
+        public void saveAndReloadAsync() {
             Util.ioPool().execute(() -> {
                 CLIENT_SPEC.save();
                 reload();
@@ -407,7 +403,7 @@ final class Config {
             BlurHandler.sBlurRadius = mBlurRadius.get();
 
             List<? extends String> colors = mBackgroundColor.get();
-            int color = 0x66000000;
+            int color = 0x99000000;
             for (int i = 0; i < 4; i++) {
                 if (colors != null && i < colors.size()) {
                     String s = colors.get(i);
@@ -430,27 +426,27 @@ final class Config {
             TooltipRenderer.sTooltip = !ModernUIForge.hasGLCapsError() && mTooltip.get();
 
             colors = mTooltipFill.get();
-            color = 0xD4000000;
+            color = 0xFFFFFFFF;
             for (int i = 0; i < 4; i++) {
                 if (colors != null && i < colors.size()) {
                     String s = colors.get(i);
                     try {
                         color = Color.parseColor(s);
                     } catch (Exception e) {
-                        LOGGER.error(MARKER, "Wrong color format for tooltip fill, index: {}", i, e);
+                        LOGGER.error(MARKER, "Wrong color format for tooltip background, index: {}", i, e);
                     }
                 }
                 TooltipRenderer.sFillColor[i] = color;
             }
             colors = mTooltipStroke.get();
-            color = 0xF0AADCF0;
+            color = 0xFFFFFFFF;
             for (int i = 0; i < 4; i++) {
                 if (colors != null && i < colors.size()) {
                     String s = colors.get(i);
                     try {
                         color = Color.parseColor(s);
                     } catch (Exception e) {
-                        LOGGER.error(MARKER, "Wrong color format for tooltil stroke, index: {}", i, e);
+                        LOGGER.error(MARKER, "Wrong color format for tooltip border, index: {}", i, e);
                     }
                 }
                 TooltipRenderer.sStrokeColor[i] = color;
@@ -486,14 +482,14 @@ final class Config {
                 GlyphManager.sAntiAliasing = mAntiAliasing.get();
                 reload = true;
             }
-            if (GlyphManager.sFractionalMetrics != mFractionalMetrics.get()) {
-                GlyphManager.sFractionalMetrics = mFractionalMetrics.get();
+            if (GlyphManager.sFractionalMetrics == mAutoHinting.get()) {
+                GlyphManager.sFractionalMetrics = !mAutoHinting.get();
                 reload = true;
             }
-            if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
+            /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
                 GLFontAtlas.sLinearSampling = mLinearSampling.get();
                 reload = true;
-            }
+            }*/
             if (reload) {
                 Minecraft.getInstance().submit(
                         () -> TextLayoutEngine.getInstance().reloadAll());

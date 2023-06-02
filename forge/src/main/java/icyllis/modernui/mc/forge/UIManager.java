@@ -368,7 +368,7 @@ public final class UIManager implements LifecycleOwner {
         return new ConfirmScreen(dontShow -> {
             if (dontShow) {
                 Config.CLIENT.mShowGLCapsError.set(false);
-                Config.CLIENT.saveAndReload();
+                Config.CLIENT.saveAndReloadAsync();
             }
             minecraft.setScreen(null);
         }, Component.translatable("error.modernui.gl_caps"),
@@ -628,7 +628,7 @@ public final class UIManager implements LifecycleOwner {
         if (event.getAction() == GLFW_PRESS) {
             InputConstants.Key key = InputConstants.getKey(event.getKey(), event.getScanCode());
             if (OPEN_CENTER_KEY.isActiveAndMatches(key)) {
-                open(new CenterFragment());
+                open(new CenterFragment2());
                 return;
             }
         }
