@@ -61,6 +61,12 @@ public final class MuiForgeApi {
     static final CopyOnWriteArrayList<OnDebugDumpListener> sOnDebugDumpListeners =
             new CopyOnWriteArrayList<>();
 
+    /**
+     * Minecraft GUI scale is limited to 8, so that density is limited to 4.0.
+     * This prevents rasterization of large vector graphics.
+     */
+    public static final int MAX_GUI_SCALE = 8;
+
     private MuiForgeApi() {
     }
 
@@ -246,11 +252,11 @@ public final class MuiForgeApi {
         int min;
         int det = Math.min(framebufferWidth / 12, h) / 26;
         if (det >= 2) {
-            min = Mth.clamp(base / 64, 2, 9);
+            min = Mth.clamp(base / 64, 2, MAX_GUI_SCALE);
         } else {
             min = 2;
         }
-        int max = Mth.clamp(det, 2, 8);
+        int max = Mth.clamp(det, 2, MAX_GUI_SCALE);
 
         int auto;
         if (min >= 2) {

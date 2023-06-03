@@ -314,7 +314,10 @@ final class Registration {
 
             @Override
             public int maxInclusive() {
-                return MuiForgeApi.calcGuiScales() & 0xf;
+                Minecraft minecraft = Minecraft.getInstance();
+                return !minecraft.isRunning()
+                        ? MuiForgeApi.MAX_GUI_SCALE
+                        : MuiForgeApi.calcGuiScales(minecraft.getWindow()) & 0xf;
             }
 
             @Nonnull

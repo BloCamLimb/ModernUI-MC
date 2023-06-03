@@ -26,8 +26,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.font.*;
-import icyllis.modernui.mc.forge.ModernUIForge;
-import icyllis.modernui.mc.forge.UIManager;
+import icyllis.modernui.mc.forge.*;
 import icyllis.modernui.mc.text.mixin.AccessFontManager;
 import icyllis.modernui.mc.text.mixin.MixinClientLanguage;
 import icyllis.modernui.text.*;
@@ -348,7 +347,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
             } else {
                 mResLevel = scale;
             }*/
-            mResLevel = Math.min(scale, 8);
+            mResLevel = Math.min(scale, MuiForgeApi.MAX_GUI_SCALE);
         }
         mGuiScale = scale;
 
