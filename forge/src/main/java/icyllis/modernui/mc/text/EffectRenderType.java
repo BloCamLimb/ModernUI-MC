@@ -47,13 +47,13 @@ public class EffectRenderType extends RenderType {
     private static final EffectRenderType SEE_THROUGH_TYPE;
 
     static {
-        WHITE.allocate2DCompat(GL_R8, 2, 2, 0);
+        WHITE.allocate2D(GL_R8, 2, 2, 0);
         try (MemoryStack stack = MemoryStack.stackPush()) {
             ByteBuffer pixels = stack.bytes((byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff);
-            WHITE.uploadCompat(0, 0, 0, 2, 2, 0, 0, 0, 1,
+            WHITE.upload(0, 0, 0, 2, 2, 0, 0, 0, 1,
                     GL_RED, GL_UNSIGNED_BYTE, MemoryUtil.memAddress(pixels));
         }
-        WHITE.setSwizzleCompat(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
+        WHITE.setSwizzle(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
         STATES = ImmutableList.of(
                 TextRenderType.RENDERTYPE_MODERN_TEXT_BITMAP,
                 TRANSLUCENT_TRANSPARENCY,

@@ -28,8 +28,7 @@ import icyllis.modernui.graphics.drawable.Drawable;
 import icyllis.modernui.mc.forge.ui.ThemeControl;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
-import icyllis.modernui.widget.FrameLayout;
-import icyllis.modernui.widget.TextView;
+import icyllis.modernui.widget.*;
 
 import javax.annotation.Nonnull;
 
@@ -49,7 +48,6 @@ public class DashboardFragment extends Fragment {
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        StillAlive.getInstance().start();
     }
 
     @Override
@@ -58,31 +56,17 @@ public class DashboardFragment extends Fragment {
         if (mLayout != null) {
             return mLayout;
         }
-        var layout = new FrameLayout(getContext());
-
-        {
-            var view = new View(getContext());
-            view.setBackground(new Background(view));
-
-            var params = new FrameLayout.LayoutParams(view.dp(400), view.dp(240));
-            params.setMarginStart(view.dp(60));
-            params.setMarginEnd(view.dp(30));
-            params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
-            layout.postDelayed(() -> {
-                if (layout.isAttachedToWindow()) {
-                    layout.addView(view, params);
-                }
-            }, 18000);
-        }
+        var layout = new FrameLayout(requireContext());
 
         {
             TextView tv;
             if (mTextView == null) {
-                tv = new TextView(getContext());
-                tv.setText("", TextView.BufferType.EDITABLE);
+                tv = new Button(getContext());
+                tv.setText("Still Alive");
                 tv.setTextSize(16);
                 tv.setTextColor(0xFFDCAE32);
                 tv.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+                tv.setOnClickListener(this::play);
                 ThemeControl.addBackground(tv);
                 mTextView = tv;
             } else {
@@ -93,13 +77,36 @@ public class DashboardFragment extends Fragment {
                     ViewGroup.LayoutParams.WRAP_CONTENT);
             params.setMarginEnd(tv.dp(120));
             params.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-            layout.postDelayed(() -> {
-                layout.addView(tv, params);
-                updateText();
-            }, 2000);
+            layout.addView(tv, params);
         }
 
         return mLayout = layout;
+    }
+
+    final Runnable mUpdateText = this::updateText;
+
+    private void play(View button) {
+        var tv = (TextView) button;
+        tv.setText("", TextView.BufferType.EDITABLE);
+        tv.setClickable(false);
+
+        StillAlive.getInstance().start();
+
+        mLayout.postDelayed(() -> {
+            if (mLayout.isAttachedToWindow()) {
+                var view = new View(getContext());
+                view.setBackground(new Background(view));
+
+                var params = new FrameLayout.LayoutParams(view.dp(480), view.dp(270));
+                params.setMarginStart(view.dp(60));
+                params.setMarginEnd(view.dp(30));
+                params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
+
+                mLayout.addView(view, params);
+            }
+        }, 18000);
+
+        mLayout.postDelayed(mUpdateText, 2000);
     }
 
     private void updateText() {
@@ -110,7 +117,7 @@ public class DashboardFragment extends Fragment {
         if (editable.length() < CREDIT_TEXT.length()) {
             editable.append(CREDIT_TEXT.charAt(editable.length()));
             if (editable.length() < CREDIT_TEXT.length()) {
-                mTextView.postDelayed(this::updateText, 200);
+                mTextView.postDelayed(mUpdateText, 200);
             }
         }
     }

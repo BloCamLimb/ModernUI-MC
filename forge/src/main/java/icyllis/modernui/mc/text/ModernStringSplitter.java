@@ -68,7 +68,7 @@ public final class ModernStringSplitter {
         if (text == null) {
             return 0;
         }
-        return TextLayoutEngine.getInstance().lookupVanillaNode(text).getTotalAdvance();
+        return TextLayoutEngine.getInstance().lookupVanillaLayout(text).getTotalAdvance();
     }
 
     /**
@@ -79,7 +79,7 @@ public final class ModernStringSplitter {
      * @return text advance in GUI scaled pixels
      */
     public static float measureText(@Nonnull FormattedText text) {
-        return TextLayoutEngine.getInstance().lookupComplexNode(text).getTotalAdvance();
+        return TextLayoutEngine.getInstance().lookupComplexLayout(text).getTotalAdvance();
     }
 
     /**
@@ -89,7 +89,7 @@ public final class ModernStringSplitter {
      * @return text advance in GUI scaled pixels
      */
     public static float measureText(@Nonnull FormattedCharSequence text) {
-        return TextLayoutEngine.getInstance().lookupSequenceNode(text).getTotalAdvance();
+        return TextLayoutEngine.getInstance().lookupSequenceLayout(text).getTotalAdvance();
     }
 
     /**
@@ -99,32 +99,32 @@ public final class ModernStringSplitter {
      * If forwards=false, returns the minimum index from the end instead (but still
      * indexing from the start).
      *
-     * @param node     the measured text to break
+     * @param layout     the measured text to break
      * @param forwards the leading position
      * @param width    the max width in GUI scaled pixels
      * @return break index (without formatting codes)
      */
-    public static int breakText(@Nonnull TextLayoutNode node, boolean forwards, float width) {
-        final int limit = node.getLength();
+    public static int breakText(@Nonnull TextLayout layout, boolean forwards, float width) {
+        final int limit = layout.getLength();
         if (forwards) {
             // TruncateAt.END
             int i = 0;
             while (i < limit) {
-                width -= node.getAdvances()[i];
+                width -= layout.getAdvances()[i];
                 if (width < 0.0f) break;
                 i++;
             }
-            while (i > 0 && node.getTextBuf()[i - 1] == ' ') i--;
+            while (i > 0 && layout.getTextBuf()[i - 1] == ' ') i--;
             return i;
         } else {
             // TruncateAt.START
             int i = limit - 1;
             while (i >= 0) {
-                width -= node.getAdvances()[i];
+                width -= layout.getAdvances()[i];
                 if (width < 0.0f) break;
                 i--;
             }
-            while (i < limit - 1 && (node.getTextBuf()[i + 1] == ' ' || node.getAdvances()[i + 1] == 0.0f)) {
+            while (i < limit - 1 && (layout.getTextBuf()[i + 1] == ' ' || layout.getAdvances()[i + 1] == 0.0f)) {
                 i++;
             }
             return i + 1;
@@ -151,12 +151,12 @@ public final class ModernStringSplitter {
             return 0;
         }
 
-        final TextLayoutNode node = TextLayoutEngine.getInstance().lookupVanillaNode(text, style);
-        if (width >= node.getTotalAdvance()) {
+        final TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(text, style);
+        if (width >= layout.getTotalAdvance()) {
             return forwards ? text.length() : 0;
         }
 
-        int breakIndex = breakText(node, forwards, width);
+        int breakIndex = breakText(layout, forwards, width);
 
         // We assume that formatting codes belong to the next grapheme cluster in logical order
         final int length = text.length();
@@ -230,12 +230,12 @@ public final class ModernStringSplitter {
             return null;
         }
 
-        final TextLayoutNode node = TextLayoutEngine.getInstance().lookupComplexNode(text);
-        if (width >= node.getTotalAdvance()) {
+        final TextLayout layout = TextLayoutEngine.getInstance().lookupComplexLayout(text);
+        if (width >= layout.getTotalAdvance()) {
             return null;
         }
 
-        final int breakIndex = breakText(node, true, width);
+        final int breakIndex = breakText(layout, true, width);
 
         return text.visit(new FormattedText.StyledContentConsumer<Style>() {
             private int mStripIndex;
@@ -278,12 +278,12 @@ public final class ModernStringSplitter {
             return styleAtWidth(((FormattedTextWrapper) text).mText, width);
         }
 
-        final TextLayoutNode node = TextLayoutEngine.getInstance().lookupSequenceNode(text);
-        if (width >= node.getTotalAdvance()) {
+        final TextLayout layout = TextLayoutEngine.getInstance().lookupSequenceLayout(text);
+        if (width >= layout.getTotalAdvance()) {
             return null;
         }
 
-        final int breakIndex = breakText(node, true, width);
+        final int breakIndex = breakText(layout, true, width);
 
         final MutableObject<Style> result = new MutableObject<>();
         text.accept(new FormattedCharSink() {
@@ -316,12 +316,12 @@ public final class ModernStringSplitter {
             return FormattedText.EMPTY;
         }
 
-        final TextLayoutNode node = TextLayoutEngine.getInstance().lookupComplexNode(text, style);
-        if (width >= node.getTotalAdvance()) {
+        final TextLayout layout = TextLayoutEngine.getInstance().lookupComplexLayout(text, style);
+        if (width >= layout.getTotalAdvance()) {
             return text;
         }
 
-        final int breakIndex = breakText(node, true, width);
+        final int breakIndex = breakText(layout, true, width);
 
         return text.visit(new FormattedText.StyledContentConsumer<FormattedText>() {
             private final ComponentCollector mCollector = new ComponentCollector();
@@ -374,11 +374,11 @@ public final class ModernStringSplitter {
             return;
         }
 
-        final TextLayoutNode node = TextLayoutEngine.getInstance().lookupVanillaNode(text, base);
-        final char[] buf = node.getTextBuf();
-        if (width >= node.getTotalAdvance()) {
+        final TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(text, base);
+        final char[] buf = layout.getTextBuf();
+        if (width >= layout.getTotalAdvance()) {
             boolean hasLineFeed = false;
-            for (int i = 0, e = node.getLength(); i < e; i++) {
+            for (int i = 0, e = layout.getLength(); i < e; i++) {
                 if (buf[i] == '\n') {
                     hasLineFeed = true;
                     break;
@@ -392,7 +392,7 @@ public final class ModernStringSplitter {
 
         // ignore styles generated from formatting codes
         final LineBreaker lineBreaker = new LineBreaker(width);
-        final int end = node.getLength();
+        final int end = layout.getLength();
 
         int nextBoundaryIndex = 0;
         int paraEnd;
@@ -411,7 +411,7 @@ public final class ModernStringSplitter {
                 paraEnd++;  // Includes LINE_FEED(U+000A) to the prev paragraph.
             }
 
-            nextBoundaryIndex = lineBreaker.process(node, buf, paraStart, paraEnd, nextBoundaryIndex);
+            nextBoundaryIndex = lineBreaker.process(layout, buf, paraStart, paraEnd, nextBoundaryIndex);
         }
 
         final IntList result = lineBreaker.mBreakPoints;
@@ -465,11 +465,11 @@ public final class ModernStringSplitter {
             return;
         }
 
-        final TextLayoutNode node = TextLayoutEngine.getInstance().lookupComplexNode(text, base);
-        final char[] buf = node.getTextBuf();
-        if (width >= node.getTotalAdvance()) {
+        final TextLayout layout = TextLayoutEngine.getInstance().lookupComplexLayout(text, base);
+        final char[] buf = layout.getTextBuf();
+        if (width >= layout.getTotalAdvance()) {
             boolean hasLineFeed = false;
-            for (int i = 0, e = node.getLength(); i < e; i++) {
+            for (int i = 0, e = layout.getLength(); i < e; i++) {
                 if (buf[i] == '\n') {
                     hasLineFeed = true;
                     break;
@@ -483,7 +483,7 @@ public final class ModernStringSplitter {
 
         // ignore styles generated from formatting codes
         final LineBreaker lineBreaker = new LineBreaker(width);
-        final int end = node.getLength();
+        final int end = layout.getLength();
 
         int nextBoundaryIndex = 0;
         int paraEnd;
@@ -502,7 +502,7 @@ public final class ModernStringSplitter {
                 paraEnd++;  // Includes LINE_FEED(U+000A) to the prev paragraph.
             }
 
-            nextBoundaryIndex = lineBreaker.process(node, buf, paraStart, paraEnd, nextBoundaryIndex);
+            nextBoundaryIndex = lineBreaker.process(layout, buf, paraStart, paraEnd, nextBoundaryIndex);
         }
 
         final IntList result = lineBreaker.mBreakPoints;
@@ -574,23 +574,23 @@ public final class ModernStringSplitter {
             mLineWidthLimit = lineWidthLimit;
         }
 
-        public int process(@Nonnull TextLayoutNode node, @Nonnull char[] buf,
+        public int process(@Nonnull TextLayout layout, @Nonnull char[] buf,
                            int start, int end, int nextBoundaryIndex) {
             mLineWidth = 0;
             mCharsAdvance = 0;
             mPrevBoundaryOffset = NOWHERE;
             mCharsAdvanceAtPrevBoundary = 0;
 
-            int nextBoundary = node.getLineBoundaries()[nextBoundaryIndex++];
+            int nextBoundary = layout.getLineBoundaries()[nextBoundaryIndex++];
 
             for (int i = start; i < end; i++) {
-                updateLineWidth(buf[i], node.getAdvances()[i]);
+                updateLineWidth(buf[i], layout.getAdvances()[i]);
 
                 if (i + 1 == nextBoundary) {
-                    processLineBreak(node, i + 1);
+                    processLineBreak(layout, i + 1);
 
                     if (nextBoundary < end) {
-                        nextBoundary = node.getLineBoundaries()[nextBoundaryIndex++];
+                        nextBoundary = layout.getLineBoundaries()[nextBoundaryIndex++];
                     }
                     if (nextBoundary > end) {
                         nextBoundary = end;
@@ -606,12 +606,12 @@ public final class ModernStringSplitter {
             return nextBoundaryIndex;
         }
 
-        private void processLineBreak(@Nonnull TextLayoutNode node, int offset) {
+        private void processLineBreak(@Nonnull TextLayout layout, int offset) {
             while (mLineWidth > mLineWidthLimit) {
                 int start = getPrevLineBreakOffset();
                 // The word in the new line may still be too long for the line limit.
                 // Try general line break first, otherwise try grapheme boundary or out of the line width
-                if (!tryLineBreak() && doLineBreakWithGraphemeBounds(node, start, offset)) {
+                if (!tryLineBreak() && doLineBreakWithGraphemeBounds(layout, start, offset)) {
                     return;
                 }
             }
@@ -632,12 +632,12 @@ public final class ModernStringSplitter {
             return true;
         }
 
-        private boolean doLineBreakWithGraphemeBounds(@Nonnull TextLayoutNode node, int start, int end) {
-            float width = node.getAdvances()[start];
+        private boolean doLineBreakWithGraphemeBounds(@Nonnull TextLayout layout, int start, int end) {
+            float width = layout.getAdvances()[start];
 
             // Starting from + 1 since at least one character needs to be assigned to a line.
             for (int i = start + 1; i < end; i++) {
-                final float w = node.getAdvances()[i];
+                final float w = layout.getAdvances()[i];
                 if (w == 0) {
                     // w == 0 means here is not a grapheme bounds. Don't break here.
                     continue;

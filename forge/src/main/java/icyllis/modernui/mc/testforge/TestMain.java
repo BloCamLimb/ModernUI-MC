@@ -377,15 +377,6 @@ public class TestMain {
         Matrix4 projection = new Matrix4();
         //projection = Matrix4.makePerspective(MathUtil.PI_DIV_2, window.getAspectRatio(), 0.01f, 1000);
 
-        final Image image;
-        try {
-            GLTextureCompat texture = GLTextureManager.getInstance().create(
-                    FileChannel.open(Path.of("F:", "eromanga.png"), StandardOpenOption.READ), true);
-            image = new Image(texture);
-        } catch (IOException e) {
-            throw new IllegalStateException();
-        }
-
         //GlyphManager glyphManager = GlyphManager.getInstance();
 
         String text;
@@ -506,7 +497,6 @@ public class TestMain {
                 Paint paint = Paint.obtain();
 
                 paint.setRGB(160, 160, 160);
-                canvas.drawImage(image, null, screenRect, paint);
 
                 int stackAlpha = (int) (255 * ((time - 2500) / 300F));
                 if (stackAlpha < 255) {

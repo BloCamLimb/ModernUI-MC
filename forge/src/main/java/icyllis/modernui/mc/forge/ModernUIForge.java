@@ -81,7 +81,6 @@ public final class ModernUIForge {
     public static boolean sRemoveMessageSignature;
     public static boolean sRemoveTelemetrySession;
     public static boolean sSecureProfilePublicKey;
-    public static boolean sGLCapsError; // write only
     public static float sFontScale = 1;
 
     static {
@@ -291,10 +290,6 @@ public final class ModernUIForge {
 
     public static boolean isOptiFineLoaded() {
         return sOptiFineLoaded;
-    }
-
-    public static boolean hasGLCapsError() {
-        return sGLCapsError && !Config.CLIENT.mSkipGLCapsError.get();
     }
 
     @SuppressWarnings("UnusedReturnValue")

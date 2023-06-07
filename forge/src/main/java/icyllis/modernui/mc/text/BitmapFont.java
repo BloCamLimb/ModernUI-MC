@@ -161,14 +161,14 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
 
     // create texture from bitmap on render thread
     private void createTextureLazy() {
-        mTexture.allocate2DCompat(GL_RGBA8, mBitmap.getWidth(), mBitmap.getHeight(), 0);
+        mTexture.allocate2D(GL_RGBA8, mBitmap.getWidth(), mBitmap.getHeight(), 0);
         try {
             long pixels = mBitmap.getPixels();
-            mTexture.uploadCompat(0, 0, 0,
+            mTexture.upload(0, 0, 0,
                     mBitmap.getWidth(), mBitmap.getHeight(),
                     0, 0, 0, 1,
                     GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-            mTexture.setFilterCompat(GL_NEAREST, GL_NEAREST);
+            mTexture.setFilter(GL_NEAREST, GL_NEAREST);
             for (Glyph glyph : mGlyphs.values()) {
                 glyph.texture = mTexture.get();
             }
@@ -183,7 +183,7 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
             ModernUI.LOGGER.info(GlyphManager.MARKER, "Glyphs: {}", mGlyphs.size());
             try (var bitmap = Bitmap.download(
                     Bitmap.Format.RGBA_8888,
-                    mTexture, false)) {
+                    mTexture)) {
                 bitmap.saveToPath(Bitmap.SaveFormat.PNG, 0, Path.of(path));
             } catch (IOException e) {
                 e.printStackTrace();

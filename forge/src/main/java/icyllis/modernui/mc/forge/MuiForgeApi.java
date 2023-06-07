@@ -132,15 +132,6 @@ public final class MuiForgeApi {
     }
 
     /**
-     * Returns whether the graphics engine has failed to launch. False means that UI will render nothing.
-     * Call this after {@link net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent} on render thread.
-     */
-    @RenderThread
-    public static boolean hasNoRender() {
-        return ModernUIForge.hasGLCapsError();
-    }
-
-    /**
      * <b>Debug only.</b>
      * <p>
      * Get the lifecycle of current server. At most one server instance exists

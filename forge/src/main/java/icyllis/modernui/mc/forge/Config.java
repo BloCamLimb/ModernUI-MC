@@ -197,8 +197,8 @@ final class Config {
         //public final ForgeConfigSpec.BooleanValue mLinearSampling;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFontFamily;
 
-        public final ForgeConfigSpec.BooleanValue mSkipGLCapsError;
-        public final ForgeConfigSpec.BooleanValue mShowGLCapsError;
+        /*public final ForgeConfigSpec.BooleanValue mSkipGLCapsError;
+        public final ForgeConfigSpec.BooleanValue mShowGLCapsError;*/
 
         private WindowMode mLastWindowMode;
 
@@ -295,12 +295,12 @@ final class Config {
             mUseNewGuiScale = builder.comment("Whether to replace vanilla GUI scale button to slider with tips.")
                     .define("useNewGuiScale", true);
 
-            mSkipGLCapsError = builder.comment("UI renderer is disabled when the OpenGL capability test fails.",
+            /*mSkipGLCapsError = builder.comment("UI renderer is disabled when the OpenGL capability test fails.",
                             "Sometimes the driver reports wrong values, you can enable this to ignore it.")
                     .define("skipGLCapsError", false);
             mShowGLCapsError = builder.comment("A dialog popup is displayed when the OpenGL capability test fails.",
                             "Set to false to not show it. This is ignored when skipGLCapsError=true")
-                    .define("showGLCapsError", true);
+                    .define("showGLCapsError", true);*/
 
             mRemoveSignature = builder.comment("Remove signature of chat messages and commands.")
                     .define("removeSignature", false);
@@ -423,7 +423,7 @@ final class Config {
             ModernUIForge.sRemoveTelemetrySession = mRemoveTelemetry.get();
             ModernUIForge.sSecureProfilePublicKey = mSecurePublicKey.get();
 
-            TooltipRenderer.sTooltip = !ModernUIForge.hasGLCapsError() && mTooltip.get();
+            TooltipRenderer.sTooltip = mTooltip.get();
 
             colors = mTooltipFill.get();
             color = 0xFFFFFFFF;

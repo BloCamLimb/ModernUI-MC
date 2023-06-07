@@ -1,19 +1,19 @@
 // Copyright (C) 2022 BloCamLimb. All rights reserved.
-#version 450 core
+#version 330 core
 
-layout(std140, binding = 0) uniform MatrixBlock {
+layout(std140) uniform MatrixBlock {
     mat4 u_Projection;
     mat4 u_ModelView;
     vec4 u_Color;
 };
 
-layout(location = 0) smooth in vec2 f_Position;
-layout(location = 1) smooth in vec4 f_Color;
+in vec2 f_Position;
+in vec4 f_Color;
 
-layout(location = 0, index = 0) out vec4 fragColor;
+out vec4 fragColor;
 
 float rand(vec2 n) {
-    return fract(sin(dot(n, vec2(12.9898, 12.1414))) * 83758.5453);
+    return fract(sin(dot(n, vec2(12.9898,12.1414))) * 83758.5453);
 }
 
 void main() {

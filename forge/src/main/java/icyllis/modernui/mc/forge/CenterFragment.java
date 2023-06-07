@@ -286,7 +286,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 button.setChecked(true);
                 category.addView(option);
             }
-            {
+            /*{
                 var option = createButtonOption("modernui.center.text.alignPixels");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
                 button.setChecked(ModernUITextMC.CONFIG.mAlignPixels.get());
@@ -295,7 +295,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                     ModernUITextMC.CONFIG.saveAndReloadAsync();
                 });
                 category.addView(option);
-            }
+            }*/
             {
                 var option = createButtonOption("modernui.center.text.textShaping");
                 option.<SwitchButton>requireViewById(R.id.button1).setChecked(true);

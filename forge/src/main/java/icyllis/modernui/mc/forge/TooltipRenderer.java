@@ -76,18 +76,16 @@ public final class TooltipRenderer {
     static volatile boolean sLayoutRTL;
 
     private static boolean sDraw;
-    public static float sAlpha;
+    public static float sAlpha = 1;
 
     static void update(long deltaMillis, long timeMillis) {
-        if (sDraw) {
-            if (sAnimationDuration == 0) {
-                sAlpha = 1;
-            } else if (sAlpha < 1) {
+        if (sAnimationDuration <= 0) {
+            sAlpha = 1;
+        } else if (sDraw) {
+            if (sAlpha < 1) {
                 sAlpha = Math.min(sAlpha + deltaMillis / sAnimationDuration, 1);
             }
             sDraw = false;
-        } else if (sAnimationDuration == 0) {
-            sAlpha = 0;
         } else if (sAlpha > 0) {
             sAlpha = Math.max(sAlpha - deltaMillis / sAnimationDuration, 0);
         }
@@ -378,7 +376,7 @@ public final class TooltipRenderer {
 
         for (int i = 0; i < 4; i++) {
             int color = sFillColor[i];
-            int alpha = (int) ((color >>> 24) * sAlpha);
+            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
             sActiveFillColor[i] = (color & 0xFFFFFF) | (alpha << 24);
         }
         paint.setStyle(Paint.FILL);
@@ -391,7 +389,7 @@ public final class TooltipRenderer {
 
         for (int i = 0; i < 4; i++) {
             int color = sStrokeColor[i];
-            int alpha = (int) ((color >>> 24) * sAlpha);
+            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
             sActiveStrokeColor[i] = (color & 0xFFFFFF) | (alpha << 24);
         }
         paint.setStyle(Paint.STROKE);

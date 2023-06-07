@@ -149,15 +149,16 @@ tasks.register('remapMavenJar', RemapJarTask) {
     archiveClassifier.set("maven")
 }
 
-if (project.hasProperty("jks")) {
+if (project.hasProperty("keystore")) {
     remapJar.doLast {
         ant.signjar(
-                keypass: project.getProperty("jks_keypass"),
-                storepass: project.getProperty("jks_pass"),
                 jar: remapJar.archiveFile.get(),
-                storetype: 'jks',
-                keystore: project.getProperty("jks"),
-                alias: project.getProperty("jks_alias")
+                alias: project.getProperty("keystore_alias"),
+                storepass: project.getProperty("keystore_pass"),
+                keystore: project.getProperty("keystore"),
+                storetype: 'pkcs12',
+                keypass: project.getProperty("keystore_keypass"),
+                tsaurl: 'http://sha256timestamp.ws.symantec.com/sha256/timestamp'
         )
     }
 }

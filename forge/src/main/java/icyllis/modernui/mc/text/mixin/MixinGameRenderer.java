@@ -19,7 +19,7 @@
 package icyllis.modernui.mc.text.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import icyllis.modernui.mc.text.TextRenderType;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -34,11 +34,11 @@ public class MixinGameRenderer {
 
     @Inject(method = "renderLevel", at = @At("HEAD"))
     private void renderLevelStart(float partialTick, long frameTimeNanos, PoseStack pStack, CallbackInfo ci) {
-        TextRenderType.sCurrentUseDistanceField = true;
+        TextLayoutEngine.sForceUseDistanceField = true;
     }
 
     @Inject(method = "renderLevel", at = @At("TAIL"))
     private void renderLevelEnd(float partialTick, long frameTimeNanos, PoseStack pStack, CallbackInfo ci) {
-        TextRenderType.sCurrentUseDistanceField = false;
+        TextLayoutEngine.sForceUseDistanceField = false;
     }
 }

@@ -81,7 +81,7 @@ public class TextLayoutProcessor {
      * Config values.
      */
     public static volatile float sBaseFontSize = DEFAULT_BASE_FONT_SIZE;
-    public static volatile boolean sAlignPixels = false;
+    //public static volatile boolean sAlignPixels = false;
     public static volatile boolean sColorEmoji = true;
 
     private final TextLayoutEngine mEngine;
@@ -146,7 +146,7 @@ public class TextLayoutProcessor {
     private final IntArrayList mCharFlags = new IntArrayList();
     /**
      * Glyphs to relative char indices of the strip string (without formatting codes).
-     * For vanilla layout ({@link VanillaLayoutKey} and {@link TextLayoutEngine#lookupVanillaNode(String)}),
+     * For vanilla layout ({@link VanillaLayoutKey} and {@link TextLayoutEngine#lookupVanillaLayout(String)}),
      * these will be adjusted to string index (with formatting codes).
      * Same indexing with {@link #mGlyphs}, in visual order.
      */
@@ -377,36 +377,36 @@ public class TextLayoutProcessor {
     }
 
     @Nonnull
-    public TextLayoutNode performVanillaLayout(@Nonnull String text, @Nonnull Style style) {
+    public TextLayout performVanillaLayout(@Nonnull String text, @Nonnull Style style) {
         StringDecomposer.iterateFormatted(text, style, mSequenceBuilder);
-        TextLayoutNode node = performFullLayout(text); // do fast digit replacement
+        TextLayout layout = performFullLayout(text); // do fast digit replacement
         if (DEBUG) {
-            ModernUI.LOGGER.info("Performed Vanilla Layout: {}, {}, {}", mBuilder.toString(), text, node);
+            ModernUI.LOGGER.info("Performed Vanilla Layout: {}, {}, {}", mBuilder.toString(), text, layout);
         }
         reset();
-        return node;
+        return layout;
     }
 
     @Nonnull
-    public TextLayoutNode performComplexLayout(@Nonnull FormattedText text, @Nonnull Style style) {
+    public TextLayout performComplexLayout(@Nonnull FormattedText text, @Nonnull Style style) {
         text.visit(mContentBuilder, style);
-        TextLayoutNode node = performFullLayout(null);
+        TextLayout layout = performFullLayout(null);
         if (DEBUG) {
-            ModernUI.LOGGER.info("Performed Complex Layout: {}, {}, {}", mBuilder.toString(), text, node);
+            ModernUI.LOGGER.info("Performed Complex Layout: {}, {}, {}", mBuilder.toString(), text, layout);
         }
         reset();
-        return node;
+        return layout;
     }
 
     @Nonnull
-    public TextLayoutNode performSequenceLayout(@Nonnull FormattedCharSequence sequence) {
+    public TextLayout performSequenceLayout(@Nonnull FormattedCharSequence sequence) {
         sequence.accept(mSequenceBuilder);
-        TextLayoutNode node = performFullLayout(null);
+        TextLayout layout = performFullLayout(null);
         if (DEBUG) {
-            ModernUI.LOGGER.info("Performed Sequence Layout: {}, {}, {}", mBuilder.toString(), sequence, node);
+            ModernUI.LOGGER.info("Performed Sequence Layout: {}, {}, {}", mBuilder.toString(), sequence, layout);
         }
         reset();
-        return node;
+        return layout;
     }
 
     /*
@@ -501,7 +501,7 @@ public class TextLayoutProcessor {
      * @return the full layout result
      */
     @Nonnull
-    private TextLayoutNode performFullLayout(@Nullable String raw) {
+    private TextLayout performFullLayout(@Nullable String raw) {
         if (!mBuilder.isEmpty()) {
             // locale for GCB (grapheme cluster break)
             final ULocale locale = ULocale.forLocale(ModernUI.getSelectedLocale());
@@ -517,17 +517,17 @@ public class TextLayoutProcessor {
                 }
                 // sort line boundaries to logical order, because runs are in visual order
                 mLineBoundaries.sort(null);
-                if (sAlignPixels) {
+                /*if (sAlignPixels) {
                     float guiScale = mEngine.getGuiScale();
                     mTotalAdvance = Math.round(mTotalAdvance * guiScale) / guiScale;
-                }
-                return new TextLayoutNode(textBuf, mGlyphs.toArray(new GLBakedGlyph[0]), mPositions.toFloatArray(),
+                }*/
+                return new TextLayout(textBuf, mGlyphs.toArray(new GLBakedGlyph[0]), mPositions.toFloatArray(),
                         mAdvances.toFloatArray(), mCharFlags.toIntArray(), mCharIndices.toIntArray(),
                         mLineBoundaries.toIntArray(), mTotalAdvance, mHasEffect, mHasFastDigit, mHasColorBitmap);
             }
         }
         // all invisible and no measure info
-        return TextLayoutNode.makeEmpty();
+        return TextLayout.makeEmpty();
     }
 
     /**
@@ -811,12 +811,12 @@ public class TextLayoutProcessor {
                                 int styleFlags, @Nonnull Font font, @Nonnull ULocale locale) {
         final boolean hasEffect = (styleFlags & CharacterStyle.EFFECT_MASK) != 0;
         // Convert to float form for calculation, but actually an integer
-        final float guiScale = mEngine.getGuiScale();
+        //final float guiScale = mEngine.getGuiScale();
 
         if ((styleFlags & CharacterStyle.OBFUSCATED_MASK) != 0) {
             // obfuscated layout, all replacement
             final TextLayoutEngine.FastCharSet fastChars = mEngine.lookupFastChars(font);
-            final boolean alignPixels = sAlignPixels;
+            //final boolean alignPixels = sAlignPixels;
             final float advance = fastChars.offsets[0];
 
             float offset = mTotalAdvance;
@@ -825,9 +825,9 @@ public class TextLayoutProcessor {
                 mAdvances.set(i, advance);
 
                 float pos = offset;
-                if (alignPixels) {
+                /*if (alignPixels) {
                     pos = Math.round(pos * guiScale) / guiScale;
-                }
+                }*/
 
                 mGlyphs.add(fastChars);
                 mPositions.add(pos);
@@ -864,7 +864,7 @@ public class TextLayoutProcessor {
             final GlyphManager glyphManager = mEngine.getGlyphManager();
 
             TextLayoutEngine.FastCharSet fastChars = null;
-            final boolean alignPixels = sAlignPixels;
+            //final boolean alignPixels = sAlignPixels;
 
             // Measure grapheme cluster in visual order
             BreakIterator breaker = BreakIterator.getCharacterInstance(locale);
@@ -899,10 +899,10 @@ public class TextLayoutProcessor {
                                 float posX = (float) position.getX() / resLevel + offsetX;
                                 float posY = (float) position.getY() / resLevel;
                                 // Align with a full pixel
-                                if (alignPixels) {
+                                /*if (alignPixels) {
                                     posX = Math.round(posX * guiScale) / guiScale;
                                     posY = Math.round(posY * guiScale) / guiScale;
-                                }
+                                }*/
 
                                 // ASCII digits are not on SMP
                                 if (fastDigit && text[charIndex] == '0') {
@@ -940,7 +940,7 @@ public class TextLayoutProcessor {
                         mAdvances.set(currPos, TextLayoutEngine.EMOJI_BASE_SIZE + 1);
 
                         mGlyphs.add(emoji);
-                        mPositions.add(alignPixels ? Math.round(mTotalAdvance * guiScale) / guiScale : mTotalAdvance);
+                        mPositions.add(/*alignPixels ? Math.round(mTotalAdvance * guiScale) / guiScale : */mTotalAdvance);
                         mPositions.add(0);
                         mCharFlags.add(0xFFFFFF | CharacterStyle.BITMAP_REPLACEMENT);
                         mCharIndices.add(currPos);
@@ -977,10 +977,10 @@ public class TextLayoutProcessor {
                         float posX = (float) position.getX() / resLevel + offsetX;
                         float posY = (float) position.getY() / resLevel;
                         // Align with a full pixel
-                        if (alignPixels) {
+                        /*if (alignPixels) {
                             posX = Math.round(posX * guiScale) / guiScale;
                             posY = Math.round(posY * guiScale) / guiScale;
-                        }
+                        }*/
 
                         // ASCII digits are not on SMP
                         if (fastDigit && text[charIndex] == '0') {
@@ -1038,10 +1038,10 @@ public class TextLayoutProcessor {
                                 float posX = (float) position.getX() / resLevel + offsetX;
                                 float posY = (float) position.getY() / resLevel;
                                 // Align with a full pixel
-                                if (alignPixels) {
+                               /* if (alignPixels) {
                                     posX = Math.round(posX * guiScale) / guiScale;
                                     posY = Math.round(posY * guiScale) / guiScale;
-                                }
+                                }*/
 
                                 // ASCII digits are not on SMP
                                 if (fastDigit && text[charIndex] == '0') {
@@ -1079,7 +1079,7 @@ public class TextLayoutProcessor {
                         mAdvances.set(prevPos, TextLayoutEngine.EMOJI_BASE_SIZE + 1);
 
                         mGlyphs.add(emoji);
-                        mPositions.add(alignPixels ? Math.round(mTotalAdvance * guiScale) / guiScale : mTotalAdvance);
+                        mPositions.add(/*alignPixels ? Math.round(mTotalAdvance * guiScale) / guiScale : */mTotalAdvance);
                         mPositions.add(0);
                         mCharFlags.add(0xFFFFFF | CharacterStyle.BITMAP_REPLACEMENT);
                         mCharIndices.add(prevPos);
@@ -1116,10 +1116,10 @@ public class TextLayoutProcessor {
                         float posX = (float) position.getX() / resLevel + offsetX;
                         float posY = (float) position.getY() / resLevel;
                         // Align with a full pixel
-                        if (alignPixels) {
+                       /* if (alignPixels) {
                             posX = Math.round(posX * guiScale) / guiScale;
                             posY = Math.round(posY * guiScale) / guiScale;
-                        }
+                        }*/
 
                         // ASCII digits are not on SMP
                         if (fastDigit && text[charIndex] == '0') {
@@ -1198,7 +1198,7 @@ public class TextLayoutProcessor {
 
             TextLayoutEngine.FastCharSet fastChars = null;
             final float offsetX = mTotalAdvance;
-            final boolean alignPixels = sAlignPixels;
+            //final boolean alignPixels = sAlignPixels;
 
             Point2D position = vector.getGlyphPosition(0);
             Point2D nextPosition = position;
@@ -1217,10 +1217,10 @@ public class TextLayoutProcessor {
                 float posX = (float) position.getX() / resLevel + offsetX;
                 float posY = (float) position.getY() / resLevel;
                 // Align with a full pixel
-                if (alignPixels) {
+               /* if (alignPixels) {
                     posX = Math.round(posX * guiScale) / guiScale;
                     posY = Math.round(posY * guiScale) / guiScale;
-                }
+                }*/
 
                 // ASCII digits are not on SMP
                 if (fastDigit && text[charIndex] == '0') {

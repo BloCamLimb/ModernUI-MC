@@ -1018,7 +1018,7 @@ public class GlyphManagerForge {
             GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, GL11.GL_ALPHA, TEXTURE_SIZE >> level,
                     TEXTURE_SIZE >> level, 0, GL11.GL_ALPHA, GL11.GL_UNSIGNED_BYTE, (IntBuffer) null);
         }*/
-        mTexture.allocate2DCompat(GL_ALPHA, TEXTURE_SIZE, TEXTURE_SIZE, mipmapLevel);
+        mTexture.allocate2D(GL_ALPHA, TEXTURE_SIZE, TEXTURE_SIZE, mipmapLevel);
 
         //mTexture.swizzle(GL_ONE, GL_ONE, GL_ONE, GL_RED);
 

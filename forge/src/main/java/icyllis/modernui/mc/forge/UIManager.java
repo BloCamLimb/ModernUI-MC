@@ -44,14 +44,13 @@ import icyllis.modernui.widget.CoordinatorLayout;
 import icyllis.modernui.widget.EditText;
 import net.minecraft.*;
 import net.minecraft.client.*;
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.texture.*;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.locale.Language;
-import net.minecraft.network.chat.*;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -80,6 +79,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.Objects;
 
 import static icyllis.arc3d.opengl.GLCore.*;
 import static icyllis.modernui.ModernUI.LOGGER;
@@ -163,6 +163,7 @@ public final class UIManager implements LifecycleOwner {
     // the UI framebuffer
     private GLFramebufferCompat mFramebuffer;
     GLSurfaceCanvas mCanvas;
+    GLServer mServer;
     private final Matrix4 mProjectionMatrix = new Matrix4();
 
 
@@ -213,22 +214,21 @@ public final class UIManager implements LifecycleOwner {
     @RenderThread
     static void initializeRenderer() {
         Core.checkRenderThread();
-        assert sInstance != null;
-        sInstance.mCanvas = ModernUIForge.hasGLCapsError() ? null : GLSurfaceCanvas.initialize();
-        //glEnable(GL_MULTISAMPLE);
-        GLFramebufferCompat framebuffer = new GLFramebufferCompat(4);
-        if (sInstance.mCanvas != null) {
-            framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
-            framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
-            framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT2, GL_RGBA8);
-            framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT3, GL_RGBA8);
-            // no depth buffer
-            framebuffer.addRenderbufferAttachment(GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
-            framebuffer.setDrawBuffer(GL_COLOR_ATTACHMENT0);
-        } else {
-            LOGGER.info(MARKER, "Disabled UI renderer");
+        if (ModernUIForge.isDeveloperMode()) {
+            GLCore.setupDebugCallback();
         }
+        Objects.requireNonNull(sInstance);
+        sInstance.mCanvas = GLSurfaceCanvas.initialize();
+        sInstance.mServer = (GLServer) Core.getDirectContext().getServer();
+        sInstance.mServer.getContext().getResourceCache().setCacheLimit(1 << 26); // 64MB
+        var framebuffer = new GLFramebufferCompat(4);
+        framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
+        framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
+        framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT2, GL_RGBA8);
+        framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT3, GL_RGBA8);
+        framebuffer.addRenderbufferAttachment(GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
         sInstance.mFramebuffer = framebuffer;
+        LOGGER.info(MARKER, "UI renderer initialized");
     }
 
     @Nonnull
@@ -361,33 +361,6 @@ public final class UIManager implements LifecycleOwner {
         transition.enableTransitionType(LayoutTransition.DISAPPEARING);
     }
 
-    Screen createCapsErrorScreen() {
-        final String glRenderer = glGetString(GL_RENDERER);
-        final String glVersion = glGetString(GL_VERSION);
-        String extensions = String.join(", ", GLCaps.MISSING_EXTENSIONS);
-        return new ConfirmScreen(dontShow -> {
-            if (dontShow) {
-                Config.CLIENT.mShowGLCapsError.set(false);
-                Config.CLIENT.saveAndReloadAsync();
-            }
-            minecraft.setScreen(null);
-        }, Component.translatable("error.modernui.gl_caps"),
-                Component.translatable("error.modernui.gl_caps_desc", glRenderer, glVersion, extensions),
-                Component.translatable("gui.modernui.dont_show_again"),
-                CommonComponents.GUI_CANCEL) {
-            @Override
-            protected void addButtons(int i) {
-                this.addExitButton(new Button(this.width / 2 - 50 - 105, i, 100, 20, this.yesButton,
-                        b -> this.callback.accept(true)));
-                this.addExitButton(new Button(this.width / 2 - 50, i, 100, 20,
-                        Component.translatable("gui.modernui.ok"), b -> Util.getPlatform().openUri(
-                        "https://github.com/BloCamLimb/ModernUI/wiki/OpenGL-4.5-support")));
-                this.addExitButton(new Button(this.width / 2 - 50 + 105, i, 100, 20, this.noButton,
-                        b -> this.callback.accept(false)));
-            }
-        };
-    }
-
     @SubscribeEvent
     void onScreenOpen(@Nonnull ScreenEvent.Opening event) {
         final Screen newScreen = event.getNewScreen();
@@ -400,9 +373,6 @@ public final class UIManager implements LifecycleOwner {
                     (ModernUIForge.getBootstrapLevel() & ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE) == 0) {
                 OptiFineIntegration.setFastRender(false);
                 LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
-            }
-            if (ModernUIForge.hasGLCapsError() && Config.CLIENT.mShowGLCapsError.get()) {
-                event.setNewScreen(createCapsErrorScreen());
             }
             mFirstScreenOpened = true;
         }
@@ -654,7 +624,7 @@ public final class UIManager implements LifecycleOwner {
                         index = ModernStringSplitter.breakText(text, width, Style.EMPTY, false);
                         LOGGER.info("Break backwards: width {} index:{}", width, index);
                     }
-                    LOGGER.info(TextLayoutEngine.getInstance().lookupVanillaNode(text));
+                    LOGGER.info(TextLayoutEngine.getInstance().lookupVanillaLayout(text));
                 }
                 case GLFW_KEY_G ->
                 /*if (minecraft.screen == null && minecraft.isLocalServer() &&
@@ -674,17 +644,54 @@ public final class UIManager implements LifecycleOwner {
         }
     }
 
+    @SuppressWarnings("resource")
     void takeScreenshot() {
         // take a screenshot from MSAA framebuffer
-        GLTextureCompat sampled = GLFramebufferCompat.resolve(mFramebuffer, GL_COLOR_ATTACHMENT0);
-        Bitmap image = Bitmap.download(Bitmap.Format.RGBA_8888, sampled, true);
+        final var swap = GLFramebufferCompat.resolve(mFramebuffer, GL_COLOR_ATTACHMENT0);
+        final var attachment = swap.getAttachment(GL_COLOR_ATTACHMENT0);
+        final int width = attachment.getWidth();
+        final int height = attachment.getHeight();
+        final Bitmap image = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
+        swap.bind();
+        swap.setReadBuffer(GL_COLOR_ATTACHMENT0);
+        glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+        glPixelStorei(GL_PACK_SKIP_ROWS, 0);
+        glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
+        glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        // WAIT FOR GPU
+        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image.getPixels());
         Util.ioPool().execute(() -> {
             try (image) {
+                Bitmap.flipVertically(image);
+                unpremulAlpha(image);
                 image.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
+    }
+
+    @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
+    static void unpremulAlpha(Bitmap bitmap) {
+        final int width = bitmap.getWidth();
+        final int height = bitmap.getHeight();
+        final int rowStride = bitmap.getRowStride();
+        long addr = bitmap.getPixels();
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                long base = addr + (j << 2);
+                int col = MemoryUtil.memGetInt(base);
+                int alpha = col >>> 24;
+                if (alpha != 0) {
+                    float a = alpha / 255.0f;
+                    int r = MathUtil.clamp((int) ((col & 0xFF) / a + 0.5f), 0, 0xFF);
+                    int g = MathUtil.clamp((int) (((col >> 8) & 0xFF) / a + 0.5f), 0, 0xFF);
+                    int b = MathUtil.clamp((int) (((col >> 16) & 0xFF) / a + 0.5f), 0, 0xFF);
+                    MemoryUtil.memPutInt(base, (r) | (g << 8) | (b << 16) | (col & 0xFF000000));
+                }
+            }
+            addr += rowStride;
+        }
     }
 
     void changeRadialBlur() {
@@ -879,6 +886,8 @@ public final class UIManager implements LifecycleOwner {
                 mWindow.getWidth(), mWindow.getHeight(), 0, icyllis.modernui.core.Window.LAST_SYSTEM_WINDOW * 2 + 1,
                 true));
         mRoot.flushDrawCommands(mCanvas, mFramebuffer, mWindow.getWidth(), mWindow.getHeight());
+
+        mServer.getContext().getResourceCache().purge();
 
         glBindVertexArray(oldVertexArray);
         glUseProgram(oldProgram);

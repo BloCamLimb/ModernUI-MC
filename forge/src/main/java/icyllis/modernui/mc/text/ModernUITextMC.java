@@ -196,7 +196,7 @@ public final class ModernUITextMC {
         public final ForgeConfigSpec.DoubleValue mShadowOffset;
         public final ForgeConfigSpec.DoubleValue mOutlineOffset;
         //public final ForgeConfigSpec.BooleanValue mSuperSampling;
-        public final ForgeConfigSpec.BooleanValue mAlignPixels;
+        //public final ForgeConfigSpec.BooleanValue mAlignPixels;
         public final ForgeConfigSpec.IntValue mCacheLifespan;
         public final ForgeConfigSpec.IntValue mRehashThreshold;
         public final ForgeConfigSpec.EnumValue<TextDirection> mTextDirection;
@@ -236,11 +236,11 @@ public final class ModernUITextMC {
             mBaselineShift = builder.comment(
                             "Control vertical baseline for vanilla text layout, in GUI scaled pixels.",
                             "For smaller font, 6 is recommended. The default value is 7.")
-                    .defineInRange("baselineShift", TextLayoutNode.DEFAULT_BASELINE_OFFSET,
+                    .defineInRange("baselineShift", TextLayout.DEFAULT_BASELINE_OFFSET,
                             BASELINE_MIN, BASELINE_MAX);
             mShadowOffset = builder.comment(
                             "Control the text shadow offset for vanilla text rendering, in GUI scaled pixels.")
-                    .defineInRange("shadowOffset", 0.8, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
+                    .defineInRange("shadowOffset", 1.0, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
             mOutlineOffset = builder.comment(
                             "Control the text outline offset for vanilla text rendering, in GUI scaled pixels.")
                     .defineInRange("outlineOffset", 0.5, OUTLINE_OFFSET_MIN, OUTLINE_OFFSET_MAX);
@@ -248,10 +248,10 @@ public final class ModernUITextMC {
                             "Super sampling can make the text more smooth with large font size or in the 3D world.",
                             "But it makes the glyph edge too blurry and difficult to read.")
                     .define("superSampling", false);*/
-            mAlignPixels = builder.comment(
+            /*mAlignPixels = builder.comment(
                             "Enable to make each glyph pixel-aligned in text layout in screen-space.",
                             "Text rendering may be better with bitmap fonts / fixed resolution / linear sampling.")
-                    .define("alignPixels", false);
+                    .define("alignPixels", false);*/
             mCacheLifespan = builder.comment(
                             "Set the recycle time of layout cache in seconds, using least recently used algorithm.")
                     .defineInRange("cacheLifespan", 12, LIFESPAN_MIN, LIFESPAN_MAX);
@@ -261,7 +261,7 @@ public final class ModernUITextMC {
                             "Control bidirectional text heuristic algorithm.")
                     .defineEnum("textDirection", TextDirection.FIRST_STRONG);
             mColorEmoji = builder.comment(
-                            "Enable to use colored emoji, otherwise grayscale emoji.")
+                            "Enable to use colored emoji, otherwise grayscale emoji (faster).")
                     .define("colorEmoji", true);
             /*mBitmapReplacement = builder.comment(
                             "Whether to use bitmap replacement for non-Emoji character sequences. Restart is required.")
@@ -327,13 +327,13 @@ public final class ModernUITextMC {
                 TextLayoutProcessor.sBaseFontSize = mBaseFontSize.get().floatValue();
                 reload = true;
             }
-            TextLayoutNode.sBaselineOffset = mBaselineShift.get().floatValue();
+            TextLayout.sBaselineOffset = mBaselineShift.get().floatValue();
             ModernTextRenderer.sShadowOffset = mShadowOffset.get().floatValue();
             ModernTextRenderer.sOutlineOffset = mOutlineOffset.get().floatValue();
-            if (TextLayoutProcessor.sAlignPixels != mAlignPixels.get()) {
+            /*if (TextLayoutProcessor.sAlignPixels != mAlignPixels.get()) {
                 TextLayoutProcessor.sAlignPixels = mAlignPixels.get();
                 reload = true;
-            }
+            }*/
             TextLayoutEngine.sCacheLifespan = mCacheLifespan.get();
             TextLayoutEngine.sRehashThreshold = mRehashThreshold.get();
             if (TextLayoutEngine.sTextDirection != mTextDirection.get().key) {

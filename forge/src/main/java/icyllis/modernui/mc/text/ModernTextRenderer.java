@@ -53,7 +53,7 @@ public final class ModernTextRenderer {
      * Config values
      */
     public static volatile boolean sAllowShadow = true;
-    public static volatile float sShadowOffset = 0.8f;
+    public static volatile float sShadowOffset = 1.0f;
     public static volatile float sOutlineOffset = 0.5f;
     //private boolean mGlobalRenderer = false;
 
@@ -99,23 +99,22 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
-        TextLayoutNode node = engine.lookupVanillaNode(text);
-        float guiScale = engine.getGuiScale();
+        TextLayout layout = engine.lookupVanillaLayout(text);
         float resLevel = engine.getResLevel();
-        if (node.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
+        if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
-            node.drawText(matrix, source, text, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    seeThrough, colorBackground, packedLight, guiScale, resLevel);
+            layout.drawText(matrix, source, text, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
+                    seeThrough, colorBackground, packedLight, resLevel);
             matrix = matrix.copy(); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
-        x += node.drawText(matrix, source, text, x, y, r, g, b, a, false,
-                seeThrough, colorBackground, packedLight, guiScale, resLevel);
+        x += layout.drawText(matrix, source, text, x, y, r, g, b, a, false,
+                seeThrough, colorBackground, packedLight, resLevel);
         return x;
     }
 
@@ -139,23 +138,22 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
-        TextLayoutNode node = engine.lookupComplexNode(text);
-        float guiScale = engine.getGuiScale();
+        TextLayout layout = engine.lookupComplexLayout(text);
         float resLevel = engine.getResLevel();
-        if (node.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
+        if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
-            node.drawText(matrix, source, null, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    seeThrough, colorBackground, packedLight, guiScale, resLevel);
+            layout.drawText(matrix, source, null, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
+                    seeThrough, colorBackground, packedLight, resLevel);
             matrix = matrix.copy(); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
-        x += node.drawText(matrix, source, null, x, y, r, g, b, a, false,
-                seeThrough, colorBackground, packedLight, guiScale, resLevel);
+        x += layout.drawText(matrix, source, null, x, y, r, g, b, a, false,
+                seeThrough, colorBackground, packedLight, resLevel);
         return x;
     }
 
@@ -179,23 +177,22 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
-        TextLayoutNode node = engine.lookupSequenceNode(text);
-        float guiScale = engine.getGuiScale();
+        TextLayout layout = engine.lookupSequenceLayout(text);
         float resLevel = engine.getResLevel();
-        if (node.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
+        if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
-            node.drawText(matrix, source, null, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    seeThrough, colorBackground, packedLight, guiScale, resLevel);
+            layout.drawText(matrix, source, null, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
+                    seeThrough, colorBackground, packedLight, resLevel);
             matrix = matrix.copy(); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
-        x += node.drawText(matrix, source, null, x, y, r, g, b, a, false,
-                seeThrough, colorBackground, packedLight, guiScale, resLevel);
+        x += layout.drawText(matrix, source, null, x, y, r, g, b, a, false,
+                seeThrough, colorBackground, packedLight, resLevel);
         return x;
     }
 
@@ -219,20 +216,19 @@ public final class ModernTextRenderer {
         int ob = outlineColor & 0xff;
 
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
-        TextLayoutNode node = engine.lookupComplexNode(text);
-        float guiScale = engine.getGuiScale();
+        TextLayout layout = engine.lookupComplexLayout(text);
         float resLevel = engine.getResLevel();
-        if (node.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
+        if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
 
         matrix = matrix.copy();
-        node.drawText(matrix, source, null, x, y, r, g, b, a, false,
-                false, 0, LightTexture.FULL_BRIGHT, guiScale, resLevel);
+        layout.drawText(matrix, source, null, x, y, r, g, b, a, false,
+                false, 0, LightTexture.FULL_BRIGHT, resLevel);
         matrix.translate(OUTLINE_OFFSET);
 
-        node.drawTextGlow(matrix, source, x, y, or, og, ob, oa, LightTexture.FULL_BRIGHT, guiScale, resLevel);
+        layout.drawTextGlow(matrix, source, x, y, or, og, ob, oa, LightTexture.FULL_BRIGHT, resLevel);
     }
 
     public static void drawText8xOutline(@Nonnull FormattedCharSequence text, float x, float y,
@@ -255,20 +251,19 @@ public final class ModernTextRenderer {
         int ob = outlineColor & 0xff;
 
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
-        TextLayoutNode node = engine.lookupSequenceNode(text);
-        float guiScale = engine.getGuiScale();
+        TextLayout layout = engine.lookupSequenceLayout(text);
         float resLevel = engine.getResLevel();
-        if (node.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
+        if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
 
         matrix = matrix.copy();
-        node.drawText(matrix, source, null, x, y, r, g, b, a, false,
-                false, 0, packedLight, guiScale, resLevel);
+        layout.drawText(matrix, source, null, x, y, r, g, b, a, false,
+                false, 0, packedLight, resLevel);
         matrix.translate(OUTLINE_OFFSET);
 
-        node.drawTextGlow(matrix, source, x, y, or, og, ob, oa, packedLight, guiScale, resLevel);
+        layout.drawTextGlow(matrix, source, x, y, or, og, ob, oa, packedLight, resLevel);
     }
 
     /*public static void change(boolean global, boolean shadow) {

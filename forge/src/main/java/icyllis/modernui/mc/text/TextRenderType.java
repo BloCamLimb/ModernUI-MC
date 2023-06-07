@@ -81,13 +81,6 @@ public class TextRenderType extends RenderType {
     private static TextRenderType sFirstSDFStrokeType;
     private static final BufferBuilder sFirstSDFStrokeBuffer = new BufferBuilder(131072);
 
-    /**
-     * Dynamic value controlling whether to use distance field at current stage.
-     * Distance field only benefits in 3D world, it looks bad in 2D UI.
-     *
-     * @see icyllis.modernui.mc.text.mixin.MixinGameRenderer
-     */
-    public static boolean sCurrentUseDistanceField;
     // SDF requires bilinear sampling
     private static GLSampler sLinearFontSampler;
 
@@ -168,7 +161,7 @@ public class TextRenderType extends RenderType {
     public static TextRenderType getOrCreate(int texture, boolean seeThrough, boolean isBitmap) {
         if (seeThrough)
             return sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
-        else if (sCurrentUseDistanceField && !isBitmap)
+        else if (TextLayoutEngine.sForceUseDistanceField && !isBitmap)
             return sSDFFillTypes.computeIfAbsent(texture, TextRenderType::makeSDFFillType);
         else
             return sBitmapTypes.computeIfAbsent(texture, TextRenderType::makeBitmapType);

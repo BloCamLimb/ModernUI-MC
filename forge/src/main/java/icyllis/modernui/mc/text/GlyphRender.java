@@ -226,12 +226,12 @@ public abstract class GlyphRender {
             x += mOffsetX;
             final float w;
             final float h;
-            if (TextLayoutProcessor.sAlignPixels) {
+            /*if (TextLayoutProcessor.sAlignPixels) {
                 x += Math.round(glyph.x * res) / res;
                 y += Math.round(glyph.y * res) / res;
                 w = Math.round(glyph.width * res) / res;
                 h = Math.round(glyph.height * res) / res;
-            } else {
+            } else */{
                 x += glyph.x / res;
                 y += glyph.y / res;
                 w = glyph.width / res;
@@ -338,12 +338,12 @@ public abstract class GlyphRender {
             }
             final float w;
             final float h;
-            if (TextLayoutProcessor.sAlignPixels) {
+            /*if (TextLayoutProcessor.sAlignPixels) {
                 x += Math.round(glyph.x * res) / res;
                 y += Math.round(glyph.y * res) / res;
                 w = Math.round(glyph.width * res) / res;
                 h = Math.round(glyph.height * res) / res;
-            } else {
+            } else*/ {
                 x += glyph.x / res;
                 y += glyph.y / res;
                 w = glyph.width / res;
@@ -453,12 +453,12 @@ public abstract class GlyphRender {
             }
             final float w;
             final float h;
-            if (TextLayoutProcessor.sAlignPixels) {
+            /*if (TextLayoutProcessor.sAlignPixels) {
                 x += Math.round(glyph.x * res) / res;
                 y += Math.round(glyph.y * res) / res;
                 w = Math.round(glyph.width * res) / res;
                 h = Math.round(glyph.height * res) / res;
-            } else {
+            } else */{
                 x += glyph.x / res;
                 y += glyph.y / res;
                 w = glyph.width / res;

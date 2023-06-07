@@ -42,7 +42,8 @@ public class MixinClientTextTooltip {
                          boolean seeThrough, int colorBackground, int packedLight) {
         if (TooltipRenderer.sTooltip) {
             // vanilla alpha threshold is 4, MULTIPLY BLENDING, UN_PREMULTIPLIED COLOR
-            int alpha = Math.round(TooltipRenderer.sAlpha * 255);
+            float a = (color >>> 24) / 255.0f;
+            int alpha = (int) (TooltipRenderer.sAlpha * a * 255.0f + 0.5f);
             final int newColor = (Math.max(alpha, 4) << 24) | (color & 0xFFFFFF);
             return font.drawInBatch(text, x, y, newColor, dropShadow, matrix, source, seeThrough, colorBackground,
                     packedLight);

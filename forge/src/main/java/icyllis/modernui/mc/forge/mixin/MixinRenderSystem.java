@@ -19,9 +19,9 @@
 package icyllis.modernui.mc.forge.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import icyllis.arc3d.opengl.GLCore;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
-import icyllis.modernui.mc.forge.ModernUIForge;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Configuration;
 import org.spongepowered.asm.mixin.Mixin;
@@ -51,7 +51,9 @@ public class MixinRenderSystem {
     @Inject(method = "initRenderer", at = @At("TAIL"))
     private static void onInitRenderer(int debugLevel, boolean debugSync, CallbackInfo ci) {
         Core.initialize();
-        ModernUIForge.sGLCapsError = !Core.initOpenGL();
+        if (!Core.initOpenGL()) {
+            GLCore.showCapsErrorDialog();
+        }
     }
 
     /**

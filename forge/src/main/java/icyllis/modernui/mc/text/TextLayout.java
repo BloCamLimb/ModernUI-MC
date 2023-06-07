@@ -29,9 +29,9 @@ import java.util.Arrays;
 import java.util.Random;
 
 /**
- * The layout node contains all glyph layout information and rendering information.
+ * The layout contains all glyph layout information and rendering information.
  */
-public class TextLayoutNode {
+public class TextLayout {
 
     /**
      * For obfuscated characters.
@@ -43,11 +43,11 @@ public class TextLayoutNode {
      * <p>
      * This singleton cannot be inserted into the cache!
      */
-    public static final TextLayoutNode EMPTY = new TextLayoutNode(new char[0], new GLBakedGlyph[0], new float[0],
+    public static final TextLayout EMPTY = new TextLayout(new char[0], new GLBakedGlyph[0], new float[0],
             new float[0], new int[0], new int[0], new int[0], 0, false, false, false) {
         @Nonnull
         @Override
-        TextLayoutNode get() {
+        TextLayout get() {
             throw new UnsupportedOperationException();
         }
 
@@ -59,13 +59,13 @@ public class TextLayoutNode {
         @Override
         public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, @Nullable String raw,
                               float x, float y, int r, int g, int b, int a, boolean isShadow, boolean seeThrough,
-                              int background, int packedLight, float guiScale, float resLevel) {
+                              int background, int packedLight, float resLevel) {
             return 0;
         }
 
         @Override
         public void drawTextGlow(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, float x, float y,
-                                 int r, int g, int b, int a, int packedLight, float guiScale, float resLevel) {
+                                 int r, int g, int b, int a, int packedLight, float resLevel) {
             // noop
         }
     };
@@ -132,7 +132,7 @@ public class TextLayoutNode {
 
     /**
      * Glyphs to relative char indices of the strip string (without formatting codes).
-     * For vanilla layout ({@link VanillaLayoutKey} and {@link TextLayoutEngine#lookupVanillaNode(String)}),
+     * For vanilla layout ({@link VanillaLayoutKey} and {@link TextLayoutEngine#lookupVanillaLayout(String)}),
      * these will be adjusted to string index (with formatting codes).
      * Same indexing with {@link #mGlyphs}, in visual order.
      */
@@ -163,24 +163,24 @@ public class TextLayoutNode {
      */
     private transient int mTimer = 0;
 
-    private TextLayoutNode(@Nonnull TextLayoutNode node) {
-        mTextBuf = node.mTextBuf;
-        mGlyphs = node.mGlyphs;
-        mPositions = node.mPositions;
-        mAdvances = node.mAdvances;
-        mCharFlags = node.mCharFlags;
-        mCharIndices = node.mCharIndices;
-        mLineBoundaries = node.mLineBoundaries;
-        mTotalAdvance = node.mTotalAdvance;
-        mHasEffect = node.mHasEffect;
-        mHasFastDigit = node.mHasFastDigit;
-        mHasColorBitmap = node.mHasColorBitmap;
+    private TextLayout(@Nonnull TextLayout layout) {
+        mTextBuf = layout.mTextBuf;
+        mGlyphs = layout.mGlyphs;
+        mPositions = layout.mPositions;
+        mAdvances = layout.mAdvances;
+        mCharFlags = layout.mCharFlags;
+        mCharIndices = layout.mCharIndices;
+        mLineBoundaries = layout.mLineBoundaries;
+        mTotalAdvance = layout.mTotalAdvance;
+        mHasEffect = layout.mHasEffect;
+        mHasFastDigit = layout.mHasFastDigit;
+        mHasColorBitmap = layout.mHasColorBitmap;
     }
 
-    TextLayoutNode(@Nonnull char[] textBuf, @Nonnull GLBakedGlyph[] glyphs, @Nonnull float[] positions,
-                   @Nonnull float[] advances, @Nonnull int[] charFlags, @Nonnull int[] charIndices,
-                   @Nonnull int[] lineBoundaries, float totalAdvance, boolean hasEffect,
-                   boolean hasFastDigit, boolean hasColorBitmap) {
+    TextLayout(@Nonnull char[] textBuf, @Nonnull GLBakedGlyph[] glyphs, @Nonnull float[] positions,
+               @Nonnull float[] advances, @Nonnull int[] charFlags, @Nonnull int[] charIndices,
+               @Nonnull int[] lineBoundaries, float totalAdvance, boolean hasEffect,
+               boolean hasFastDigit, boolean hasColorBitmap) {
         mTextBuf = textBuf;
         mGlyphs = glyphs;
         mPositions = positions;
@@ -204,8 +204,8 @@ public class TextLayoutNode {
      * @return a new empty node as fallback
      */
     @Nonnull
-    public static TextLayoutNode makeEmpty() {
-        return new TextLayoutNode(EMPTY);
+    public static TextLayout makeEmpty() {
+        return new TextLayout(EMPTY);
     }
 
     /**
@@ -214,7 +214,7 @@ public class TextLayoutNode {
      * @return this with timer reset
      */
     @Nonnull
-    TextLayoutNode get() {
+    TextLayout get() {
         mTimer = 0;
         return this;
     }
@@ -244,15 +244,14 @@ public class TextLayoutNode {
      * @param seeThrough  whether this text visible behind a wall?
      * @param background  the background color of the text in 0xAARRGGBB format
      * @param packedLight see {@link net.minecraft.client.renderer.LightTexture}
-     * @param guiScale    the gui scale factor
      * @param resLevel    the resolution level used to create this node
      * @return the total advance, always positive
      */
     public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, @Nullable String raw,
                           float x, float y, int r, int g, int b, int a, boolean isShadow, boolean seeThrough,
-                          int background, int packedLight, float guiScale, float resLevel) {
+                          int background, int packedLight, float resLevel) {
         if (mGlyphs.length == 0) {
-            // e.g. text contains only spaces
+            // e.g. text contains only spaces, no render, but provides ident
             return mTotalAdvance;
         }
         final int startR = r;
@@ -436,13 +435,12 @@ public class TextLayoutNode {
      * @param b           the default outline blue value (0...255)
      * @param a           the alpha value (0...255)
      * @param packedLight see {@link net.minecraft.client.renderer.LightTexture}
-     * @param guiScale    the gui scale factor
      * @param resLevel    the resolution level used to create this node
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
     public void drawTextGlow(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
                              float x, float y, int r, int g, int b, int a, int packedLight,
-                             float guiScale, float resLevel) {
+                             float resLevel) {
         if (mGlyphs.length == 0) {
             return;
         }
@@ -584,7 +582,7 @@ public class TextLayoutNode {
 
     /**
      * Glyphs to relative char indices of the strip string (without formatting codes). However,
-     * for vanilla layout {@link VanillaLayoutKey} and {@link TextLayoutEngine#lookupVanillaNode(String)},
+     * for vanilla layout {@link VanillaLayoutKey} and {@link TextLayoutEngine#lookupVanillaLayout(String)},
      * these will be adjusted to string index (with formatting codes).
      * Same indexing with {@link #getGlyphs()}, in visual order.
      */

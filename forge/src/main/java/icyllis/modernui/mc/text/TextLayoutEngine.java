@@ -108,6 +108,15 @@ public class TextLayoutEngine implements PreparableReloadListener {
     //public static volatile boolean sCanUseDistanceField;
 
     /**
+     * Dynamic value controlling whether to use distance field at current stage.
+     * Distance field benefits in 3D world, but it looks bad in 2D UI,
+     * unless the text is scaled and it is large. SDF use font size 4x base size.
+     *
+     * @see icyllis.modernui.mc.text.mixin.MixinGameRenderer
+     */
+    public static boolean sForceUseDistanceField;
+
+    /**
      * Matches Slack emoji shortcode.
      */
     public static final Pattern EMOJI_SHORTCODE_PATTERN =
@@ -162,18 +171,18 @@ public class TextLayoutEngine implements PreparableReloadListener {
      * when adding a mapping to stringCache.
      */
     private final VanillaLayoutKey mVanillaLookupKey = new VanillaLayoutKey();
-    private Map<VanillaLayoutKey, TextLayoutNode> mVanillaCache = new HashMap<>();
+    private Map<VanillaLayoutKey, TextLayout> mVanillaCache = new HashMap<>();
 
     /**
      * For styled texts.
      */
-    private Map<MutableComponent, TextLayoutNode> mComponentCache = new HashMap<>();
+    private Map<MutableComponent, TextLayout> mComponentCache = new HashMap<>();
 
     /**
      * For deeply-processed texts.
      */
     private final FormattedLayoutKey.Lookup mFormattedLayoutKey = new FormattedLayoutKey.Lookup();
-    private Map<FormattedLayoutKey, TextLayoutNode> mFormattedCache = new HashMap<>();
+    private Map<FormattedLayoutKey, TextLayout> mFormattedCache = new HashMap<>();
 
     /**
      * Shared layout engine.
@@ -228,7 +237,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     private record EmojiEntry(int index, ResourceLocation location, String sequence) {
     }
 
-    private final Predicate<TextLayoutNode> mTicker = n -> n.tick(sCacheLifespan);
+    private final Predicate<TextLayout> mTicker = n -> n.tick(sCacheLifespan);
 
     /**
      * Determine font size. Integer.
@@ -693,22 +702,22 @@ public class TextLayoutEngine implements PreparableReloadListener {
      * @return the full layout for the text
      */
     @Nonnull
-    public TextLayoutNode lookupVanillaNode(@Nonnull String text) {
+    public TextLayout lookupVanillaLayout(@Nonnull String text) {
         if (text.isEmpty()) {
-            return TextLayoutNode.EMPTY;
+            return TextLayout.EMPTY;
         }
         if (!RenderSystem.isOnRenderThread()) {
             // block here
-            return Minecraft.getInstance().submit(() -> lookupVanillaNode(text))
+            return Minecraft.getInstance().submit(() -> lookupVanillaLayout(text))
                     .join();
         }
-        TextLayoutNode node = mVanillaCache.get(mVanillaLookupKey.update(text, Style.EMPTY));
-        if (node == null) {
-            node = mProcessor.performVanillaLayout(text, Style.EMPTY);
-            mVanillaCache.put(mVanillaLookupKey.copy(), node);
-            return node;
+        TextLayout layout = mVanillaCache.get(mVanillaLookupKey.update(text, Style.EMPTY));
+        if (layout == null) {
+            layout = mProcessor.performVanillaLayout(text, Style.EMPTY);
+            mVanillaCache.put(mVanillaLookupKey.copy(), layout);
+            return layout;
         }
-        return node.get();
+        return layout.get();
     }
 
     /**
@@ -719,22 +728,22 @@ public class TextLayoutEngine implements PreparableReloadListener {
      * @return the full layout for the text
      */
     @Nonnull
-    public TextLayoutNode lookupVanillaNode(@Nonnull String text, @Nonnull Style style) {
+    public TextLayout lookupVanillaLayout(@Nonnull String text, @Nonnull Style style) {
         if (text.isEmpty()) {
-            return TextLayoutNode.EMPTY;
+            return TextLayout.EMPTY;
         }
         if (!RenderSystem.isOnRenderThread()) {
             // block here
-            return Minecraft.getInstance().submit(() -> lookupVanillaNode(text, style))
+            return Minecraft.getInstance().submit(() -> lookupVanillaLayout(text, style))
                     .join();
         }
-        TextLayoutNode node = mVanillaCache.get(mVanillaLookupKey.update(text, style));
-        if (node == null) {
-            node = mProcessor.performVanillaLayout(text, style);
-            mVanillaCache.put(mVanillaLookupKey.copy(), node);
-            return node;
+        TextLayout layout = mVanillaCache.get(mVanillaLookupKey.update(text, style));
+        if (layout == null) {
+            layout = mProcessor.performVanillaLayout(text, style);
+            mVanillaCache.put(mVanillaLookupKey.copy(), layout);
+            return layout;
         }
-        return node.get();
+        return layout.get();
     }
 
     /**
@@ -746,32 +755,32 @@ public class TextLayoutEngine implements PreparableReloadListener {
      * @see FormattedTextWrapper
      */
     @Nonnull
-    public TextLayoutNode lookupComplexNode(@Nonnull FormattedText text) {
+    public TextLayout lookupComplexLayout(@Nonnull FormattedText text) {
         if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
-            return TextLayoutNode.EMPTY;
+            return TextLayout.EMPTY;
         }
         if (!RenderSystem.isOnRenderThread()) {
             // block here
-            return Minecraft.getInstance().submit(() -> lookupComplexNode(text))
+            return Minecraft.getInstance().submit(() -> lookupComplexLayout(text))
                     .join();
         }
-        TextLayoutNode node;
+        TextLayout layout;
         if (text instanceof MutableComponent component) {
-            node = mComponentCache.get(component);
-            if (node == null) {
-                node = mProcessor.performComplexLayout(text, Style.EMPTY);
-                mComponentCache.put(component, node);
-                return node;
+            layout = mComponentCache.get(component);
+            if (layout == null) {
+                layout = mProcessor.performComplexLayout(text, Style.EMPTY);
+                mComponentCache.put(component, layout);
+                return layout;
             }
         } else {
-            node = mFormattedCache.get(mFormattedLayoutKey.update(text, Style.EMPTY));
-            if (node == null) {
-                node = mProcessor.performComplexLayout(text, Style.EMPTY);
-                mFormattedCache.put(mFormattedLayoutKey.copy(), node);
-                return node;
+            layout = mFormattedCache.get(mFormattedLayoutKey.update(text, Style.EMPTY));
+            if (layout == null) {
+                layout = mProcessor.performComplexLayout(text, Style.EMPTY);
+                mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
+                return layout;
             }
         }
-        return node.get();
+        return layout.get();
     }
 
     /**
@@ -784,33 +793,33 @@ public class TextLayoutEngine implements PreparableReloadListener {
      * @see FormattedTextWrapper
      */
     @Nonnull
-    public TextLayoutNode lookupComplexNode(@Nonnull FormattedText text, @Nonnull Style style) {
+    public TextLayout lookupComplexLayout(@Nonnull FormattedText text, @Nonnull Style style) {
         if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
-            return TextLayoutNode.EMPTY;
+            return TextLayout.EMPTY;
         }
         if (!RenderSystem.isOnRenderThread()) {
             // block here
-            return Minecraft.getInstance().submit(() -> lookupComplexNode(text, style))
+            return Minecraft.getInstance().submit(() -> lookupComplexLayout(text, style))
                     .join();
         }
-        TextLayoutNode node;
+        TextLayout layout;
         if (style.isEmpty() && text instanceof MutableComponent component) {
-            node = mComponentCache.get(component);
-            if (node == null) {
-                node = mProcessor.performComplexLayout(text, Style.EMPTY);
-                mComponentCache.put(component, node);
-                return node;
+            layout = mComponentCache.get(component);
+            if (layout == null) {
+                layout = mProcessor.performComplexLayout(text, Style.EMPTY);
+                mComponentCache.put(component, layout);
+                return layout;
             }
         } else {
             // the more complex case (multi-component)
-            node = mFormattedCache.get(mFormattedLayoutKey.update(text, style));
-            if (node == null) {
-                node = mProcessor.performComplexLayout(text, style);
-                mFormattedCache.put(mFormattedLayoutKey.copy(), node);
-                return node;
+            layout = mFormattedCache.get(mFormattedLayoutKey.update(text, style));
+            if (layout == null) {
+                layout = mProcessor.performComplexLayout(text, style);
+                mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
+                return layout;
             }
         }
-        return node.get();
+        return layout.get();
     }
 
     /**
@@ -825,48 +834,48 @@ public class TextLayoutEngine implements PreparableReloadListener {
      * @see FormattedTextWrapper
      */
     @Nonnull
-    public TextLayoutNode lookupSequenceNode(@Nonnull FormattedCharSequence sequence) {
+    public TextLayout lookupSequenceLayout(@Nonnull FormattedCharSequence sequence) {
         if (sequence == FormattedCharSequence.EMPTY) {
-            return TextLayoutNode.EMPTY;
+            return TextLayout.EMPTY;
         }
         if (!RenderSystem.isOnRenderThread()) {
             // block here
-            return Minecraft.getInstance().submit(() -> lookupSequenceNode(sequence))
+            return Minecraft.getInstance().submit(() -> lookupSequenceLayout(sequence))
                     .join();
         }
         // check if it's intercepted by Language.getVisualOrder()
         if (sequence instanceof FormattedTextWrapper) {
             FormattedText text = ((FormattedTextWrapper) sequence).mText;
             if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
-                return TextLayoutNode.EMPTY;
+                return TextLayout.EMPTY;
             }
-            TextLayoutNode node;
+            TextLayout layout;
             if (text instanceof MutableComponent component) {
-                node = mComponentCache.get(component);
-                if (node == null) {
-                    node = mProcessor.performComplexLayout(text, Style.EMPTY);
-                    mComponentCache.put(component, node);
-                    return node;
+                layout = mComponentCache.get(component);
+                if (layout == null) {
+                    layout = mProcessor.performComplexLayout(text, Style.EMPTY);
+                    mComponentCache.put(component, layout);
+                    return layout;
                 }
             } else {
                 // the more complex case (multi-component)
-                node = mFormattedCache.get(mFormattedLayoutKey.update(text, Style.EMPTY));
-                if (node == null) {
-                    node = mProcessor.performComplexLayout(text, Style.EMPTY);
-                    mFormattedCache.put(mFormattedLayoutKey.copy(), node);
-                    return node;
+                layout = mFormattedCache.get(mFormattedLayoutKey.update(text, Style.EMPTY));
+                if (layout == null) {
+                    layout = mProcessor.performComplexLayout(text, Style.EMPTY);
+                    mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
+                    return layout;
                 }
             }
-            return node.get();
+            return layout.get();
         } else {
             // the most complex case (multi-component)
-            TextLayoutNode node = mFormattedCache.get(mFormattedLayoutKey.update(sequence));
-            if (node == null) {
-                node = mProcessor.performSequenceLayout(sequence);
-                mFormattedCache.put(mFormattedLayoutKey.copy(), node);
-                return node;
+            TextLayout layout = mFormattedCache.get(mFormattedLayoutKey.update(sequence));
+            if (layout == null) {
+                layout = mProcessor.performSequenceLayout(sequence);
+                mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
+                return layout;
             }
-            return node.get();
+            return layout.get();
         }
     }
 
@@ -1008,7 +1017,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                     subImage.close();
                 }
                 glyph.x = (int) (0.5 * BITMAP_SCALE); // there's 0.5px space at head and tail
-                glyph.y = -TextLayoutNode.DEFAULT_BASELINE_OFFSET * BITMAP_SCALE;
+                glyph.y = -TextLayout.DEFAULT_BASELINE_OFFSET * BITMAP_SCALE;
                 glyph.width = EMOJI_SIZE;
                 glyph.height = EMOJI_SIZE;
                 atlas.stitch(glyph, dst);
@@ -1263,8 +1272,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
 
     @Nullable
     @Deprecated
-    private TextLayoutNode generateAndCache(VanillaLayoutKey key, @Nonnull CharSequence string,
-                                            @Nonnull final Style style) {
+    private TextLayout generateAndCache(VanillaLayoutKey key, @Nonnull CharSequence string,
+                                        @Nonnull final Style style) {
         /*final int length = string.length();
         final TextProcessRegister register = this.register;
 

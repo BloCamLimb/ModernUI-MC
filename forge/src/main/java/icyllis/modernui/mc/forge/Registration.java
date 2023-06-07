@@ -21,10 +21,10 @@ package icyllis.modernui.mc.forge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import icyllis.arc3d.opengl.GLShaderManager;
-import icyllis.arc3d.opengl.GLTextureManager;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
+import icyllis.modernui.graphics.ImageStore;
 import icyllis.modernui.mc.forge.mixin.AccessOptions;
 import icyllis.modernui.mc.testforge.TestContainerMenu;
 import icyllis.modernui.mc.testforge.TestPauseFragment;
@@ -182,7 +182,7 @@ final class Registration {
             // this event fired after ParticleFactoryRegisterEvent
             event.registerReloadListener((ResourceManagerReloadListener) manager -> {
                 GLShaderManager.getInstance().reload();
-                GLTextureManager.getInstance().reload();
+                ImageStore.getInstance().clear();
                 Handler handler = Core.getUiHandlerAsync();
                 // FML may throw ex, so it can be null
                 if (handler != null) {
