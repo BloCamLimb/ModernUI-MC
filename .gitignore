@@ -27,5 +27,4 @@ classes
 *.log
 logs
 
-core/src/main/resources/assets/modernui/test/
-forge/src/main/java/icyllis/modernui/test/Main.java
+forge/src/main/resources/assets/modernui/emoji/a.bat

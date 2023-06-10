@@ -24,12 +24,12 @@ import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
+import icyllis.modernui.graphics.MathUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.Mth;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -234,20 +234,20 @@ public final class MuiForgeApi {
         return calcGuiScales(window.getWidth(), window.getHeight());
     }
 
-    // V3
+    // V4, this matches vanilla, screen size is 640x480 dp at least
     public static int calcGuiScales(int framebufferWidth, int framebufferHeight) {
-        int w = framebufferWidth / 16;
-        int h = framebufferHeight / 9;
-        int base = Math.min(w, h);
+        double w = framebufferWidth / 16.;
+        double h = framebufferHeight / 9.;
+        double base = Math.min(w, h);
 
         int min;
-        int det = Math.min(framebufferWidth / 12, h) / 26;
+        int det = (int) (Math.min(framebufferWidth, h * 12) / 320);
         if (det >= 2) {
-            min = Mth.clamp(base / 64, 2, MAX_GUI_SCALE);
+            min = MathUtil.clamp((int) (base / 64), 2, MAX_GUI_SCALE);
         } else {
             min = 2;
         }
-        int max = Mth.clamp(det, 2, MAX_GUI_SCALE);
+        int max = MathUtil.clamp(det, 2, MAX_GUI_SCALE);
 
         int auto;
         if (min >= 2) {
@@ -256,9 +256,9 @@ public final class MuiForgeApi {
             int j = (int) (Math.max(w, h) / step);
             double v1 = base / (i * 30.);
             if (v1 > 42 / 30. || j > i) {
-                auto = Mth.clamp(i + 1, min, max);
+                auto = MathUtil.clamp(i + 1, min, max);
             } else {
-                auto = Mth.clamp(i, min, max);
+                auto = MathUtil.clamp(i, min, max);
             }
         } else {
             auto = 2;

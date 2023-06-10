@@ -228,25 +228,40 @@ final class Registration {
             );*/
 
             if (Config.CLIENT.mUseNewGuiScale.get()) {
-                final OptionInstance<Integer> newGuiScale = new OptionInstance<>("options.guiScale",
-                        OptionInstance.noTooltip(),
-                        (caption, value) -> {
-                            if (value == 0) { // auto
-                                int auto = MuiForgeApi.calcGuiScales() >> 4 & 0xf;
-                                return Options.genericValueLabel(caption,
-                                        Component.translatable("options.guiScale.auto")
-                                                .append(Component.literal(" (" + auto + ")")));
+                final OptionInstance<Integer> newGuiScale = new OptionInstance<>(
+                        /*caption*/ "options.guiScale",
+                        /*tooltip*/ OptionInstance.noTooltip(),
+                        /*toString*/ (caption, value) -> {
+                    int r = MuiForgeApi.calcGuiScales();
+                    if (value == 0) { // auto
+                        int auto = r >> 4 & 0xf;
+                        return Options.genericValueLabel(caption,
+                                Component.translatable("options.guiScale.auto")
+                                        .append(Component.literal(" (" + auto + ")")));
+                    } else {
+                        MutableComponent valueComponent = Component.literal(value.toString());
+                        int min = r >> 8 & 0xf;
+                        int max = r & 0xf;
+                        if (value < min || value > max) {
+                            final MutableComponent hint;
+                            if (value < min) {
+                                hint = Component.literal(" (<" + min + ")");
                             } else {
-                                MutableComponent valueComponent = Component.literal(value.toString());
-                                if (value < (MuiForgeApi.calcGuiScales() >> 8 & 0xf)) { // < min
-                                    valueComponent.withStyle(ChatFormatting.RED);
-                                }
-                                return Options.genericValueLabel(caption, valueComponent);
+                                hint = Component.literal(" (>" + max + ")");
                             }
-                        },
-                        new GuiScaleValueSet(), /*initialValue*/ 0, /*onValueUpdate*/ value -> {
-                    if (value != Minecraft.getInstance().getWindow().getGuiScale()) {
-                        Minecraft.getInstance().resizeDisplay();
+                            valueComponent.append(hint);
+                            valueComponent.withStyle(ChatFormatting.RED);
+                        }
+                        return Options.genericValueLabel(caption, valueComponent);
+                    }
+                },
+                        /*values*/ new GuiScaleValueSet(),
+                        /*initialValue*/ 0,
+                        /*onValueUpdate*/ value -> {
+                    Minecraft minecraft = Minecraft.getInstance();
+                    if ((int) minecraft.getWindow().getGuiScale() !=
+                            minecraft.getWindow().calculateScale(value, false)) {
+                        minecraft.resizeDisplay();
                     }
                 });
                 // no barrier
@@ -255,7 +270,7 @@ final class Registration {
                 ((AccessOptions) options).setGuiScale(newGuiScale);
                 if (ModernUIForge.isOptiFineLoaded()) {
                     OptiFineIntegration.setGuiScale(newGuiScale);
-                    LOGGER.info(MARKER, "Override OptiFine Gui Scale");
+                    LOGGER.debug(MARKER, "Override OptiFine Gui Scale");
                 }
             }
 
@@ -314,10 +329,7 @@ final class Registration {
 
             @Override
             public int maxInclusive() {
-                Minecraft minecraft = Minecraft.getInstance();
-                return !minecraft.isRunning()
-                        ? MuiForgeApi.MAX_GUI_SCALE
-                        : MuiForgeApi.calcGuiScales(minecraft.getWindow()) & 0xf;
+                return MuiForgeApi.MAX_GUI_SCALE;
             }
 
             @Nonnull
