@@ -24,6 +24,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.CommonComponents;
+import net.minecraftforge.client.event.ScreenEvent;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
@@ -78,7 +80,8 @@ final class SimpleScreen extends Screen implements MuiScreen {
     public void render(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float deltaTick) {
         ScreenCallback callback = getCallback();
         if (callback == null || callback.hasDefaultBackground()) {
-            renderBackground(poseStack);
+            BlurHandler.INSTANCE.drawScreenBackground(this, poseStack, 0, 0, this.width, this.height);
+            MinecraftForge.EVENT_BUS.post(new ScreenEvent.BackgroundRendered(this, poseStack));
         }
         mHost.render();
     }

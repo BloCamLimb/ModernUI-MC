@@ -337,14 +337,14 @@ public class PreferencesFragment extends Fragment {
 
             list.addView(createIntegerOption(context, "modernui.center.screen.backgroundDuration",
                     Config.Client.ANIM_DURATION_MIN, Config.Client.ANIM_DURATION_MAX,
-                    3, Config.CLIENT.mBackgroundDuration, saveFn));
+                    3, 50, Config.CLIENT.mBackgroundDuration, saveFn));
 
             list.addView(createBooleanOption(context, "modernui.center.screen.blurEffect",
                     Config.CLIENT.mBlurEffect, saveFn));
 
             list.addView(createIntegerOption(context, "modernui.center.screen.blurRadius",
                     Config.Client.BLUR_RADIUS_MIN, Config.Client.BLUR_RADIUS_MAX,
-                    2, Config.CLIENT.mBlurRadius, saveFn));
+                    2, 1, Config.CLIENT.mBlurRadius, saveFn));
 
             list.addView(createSpinnerOption(context, "modernui.center.screen.windowMode",
                     Config.Client.WindowMode.values(), Config.CLIENT.mWindowMode, saveFn));
@@ -384,7 +384,7 @@ public class PreferencesFragment extends Fragment {
 
             list.addView(createIntegerOption(context, "modernui.center.extension.tooltipDuration",
                     Config.Client.ANIM_DURATION_MIN, Config.Client.ANIM_DURATION_MAX,
-                    3, Config.CLIENT.mTooltipDuration, saveFn));
+                    3, 50, Config.CLIENT.mTooltipDuration, saveFn));
 
             {
                 var layout = new LinearLayout(context);
@@ -649,7 +649,7 @@ public class PreferencesFragment extends Fragment {
         {
             var input = new EditText(context);
             input.setId(R.id.input);
-            input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+            input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
             input.setTextSize(14);
             input.setPadding(dp3, 0, dp3, 0);
 
@@ -668,23 +668,59 @@ public class PreferencesFragment extends Fragment {
         return layout;
     }
 
+    public static LinearLayout createInputBoxWithSlider(Context context, String name) {
+        var layout = createInputBox(context, name);
+        var slider = new SeekBar(context);
+        slider.setId(R.id.button2);
+        slider.setClickable(true);
+        var params = new LinearLayout.LayoutParams(slider.dp(200), WRAP_CONTENT);
+        params.gravity = Gravity.CENTER_VERTICAL;
+        layout.addView(slider, 1, params);
+        return layout;
+    }
+
     public static LinearLayout createIntegerOption(Context context, String name,
-                                                   int minValue, int maxValue, int maxLength,
+                                                   int minValue, int maxValue, int maxLength, int stepSize,
                                                    ForgeConfigSpec.IntValue config,
                                                    Runnable saveFn) {
-        var layout = createInputBox(context, name);
+        var layout = createInputBoxWithSlider(context, name);
+        var slider = layout.<SeekBar>requireViewById(R.id.button2);
         var input = layout.<EditText>requireViewById(R.id.input);
         input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale()),
                 new InputFilter.LengthFilter(maxLength));
-        input.setText(config.get().toString());
+        int curValue = config.get();
+        input.setText(Integer.toString(curValue));
         input.setOnFocusChangeListener((view, hasFocus) -> {
             if (!hasFocus) {
                 EditText v = (EditText) view;
-                int value = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
+                int newValue = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
                         minValue, maxValue);
-                v.setText(Integer.toString(value));
-                if (value != config.get()) {
-                    config.set(value);
+                v.setText(Integer.toString(newValue));
+                if (newValue != config.get()) {
+                    config.set(newValue);
+                    int curProgress = (newValue - minValue) / stepSize;
+                    slider.setProgress(curProgress, true);
+                    saveFn.run();
+                }
+            }
+        });
+        input.setMinWidth(slider.dp(50));
+        int steps = (maxValue - minValue) / stepSize;
+        slider.setMax(steps);
+        slider.setProgress((curValue - minValue) / stepSize);
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int newValue = seekBar.getProgress() * stepSize + minValue;
+                input.setText(Integer.toString(newValue));
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                int newValue = seekBar.getProgress() * stepSize + minValue;
+                if (newValue != config.get()) {
+                    config.set(newValue);
+                    input.setText(Integer.toString(newValue));
                     saveFn.run();
                 }
             }
@@ -696,19 +732,45 @@ public class PreferencesFragment extends Fragment {
                                                  float minValue, float maxValue, int maxLength,
                                                  ForgeConfigSpec.DoubleValue config,
                                                  Runnable saveFn) {
-        var layout = createInputBox(context, name);
+        var layout = createInputBoxWithSlider(context, name);
+        var slider = layout.<SeekBar>requireViewById(R.id.button2);
         var input = layout.<EditText>requireViewById(R.id.input);
         input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), minValue < 0, true),
                 new InputFilter.LengthFilter(maxLength));
-        input.setText(Float.toString(config.get().floatValue()));
+        float curValue = config.get().floatValue();
+        input.setText(Float.toString(curValue));
         input.setOnFocusChangeListener((view, hasFocus) -> {
             if (!hasFocus) {
                 EditText v = (EditText) view;
-                float value = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
+                float newValue = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
                         minValue, maxValue);
-                v.setText(Float.toString(value));
-                if (value != config.get()) {
-                    config.set((double) value);
+                v.setText(Float.toString(newValue));
+                if (newValue != config.get()) {
+                    config.set((double) newValue);
+                    int curProgress = (int) Math.round((newValue - minValue) * 10.0);
+                    slider.setProgress(curProgress, true);
+                    saveFn.run();
+                }
+            }
+        });
+        input.setMinWidth(slider.dp(50));
+        int steps = (int) Math.round((maxValue - minValue) * 10.0);
+        slider.setMax(steps);
+        int curProgress = (int) Math.round((curValue - minValue) * 10.0);
+        slider.setProgress(curProgress);
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                double newValue = seekBar.getProgress() / 10.0 + minValue;
+                input.setText(Float.toString((float) newValue));
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                double newValue = seekBar.getProgress() / 10.0 + minValue;
+                if (newValue != config.get()) {
+                    config.set((double) (float) newValue);
+                    input.setText(Float.toString((float) newValue));
                     saveFn.run();
                 }
             }

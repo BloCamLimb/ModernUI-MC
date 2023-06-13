@@ -219,14 +219,29 @@ public enum BlurHandler {
         Matrix4f matrix = stack.last().pose();
         int z = screen.getBlitOffset();
         builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        int color = mBackgroundColor[1];
-        builder.vertex(matrix, x2, y1, z).color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
-        color = mBackgroundColor[0];
-        builder.vertex(matrix, x1, y1, z).color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
-        color = mBackgroundColor[3];
-        builder.vertex(matrix, x1, y2, z).color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
-        color = mBackgroundColor[2];
-        builder.vertex(matrix, x2, y2, z).color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
+        if (minecraft.level == null) {
+            builder.vertex(matrix, x2, y1, z)
+                    .color(25, 25, 25, 255).endVertex();
+            builder.vertex(matrix, x1, y1, z)
+                    .color(25, 25, 25, 255).endVertex();
+            builder.vertex(matrix, x1, y2, z)
+                    .color(25, 25, 25, 255).endVertex();
+            builder.vertex(matrix, x2, y2, z)
+                    .color(25, 25, 25, 255).endVertex();
+        } else {
+            int color = mBackgroundColor[1];
+            builder.vertex(matrix, x2, y1, z)
+                    .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
+            color = mBackgroundColor[0];
+            builder.vertex(matrix, x1, y1, z)
+                    .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
+            color = mBackgroundColor[3];
+            builder.vertex(matrix, x1, y2, z)
+                    .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
+            color = mBackgroundColor[2];
+            builder.vertex(matrix, x2, y2, z)
+                    .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
+        }
         BufferUploader.drawWithShader(builder.end());
 
         RenderSystem.disableBlend();

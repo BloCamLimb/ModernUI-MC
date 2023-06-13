@@ -26,7 +26,7 @@ void main() {
         dist = pow(0.1/dist, 0.8);
 
         col = vec4(mix(vec3(0.2, 0.85, 0.95), vec3(0.85, 0.5, 0.75), pos.x*0.5+0.5), 1.0);
-        col *= (dist+rand(pos.yx)*0.01);
+        col *= dist;
     } else {
         float f = 0.0;
 
@@ -40,6 +40,7 @@ void main() {
 
         col = vec4(0.3, 0.6, 1.0, 1.0)*f;
     }
+    col += (rand(pos.yx)-0.5)*0.02;
     col = 1.0 - exp(-col*0.5);
 
     fragColor = col;

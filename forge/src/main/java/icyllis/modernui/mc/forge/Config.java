@@ -346,7 +346,7 @@ final class Config {
                     .push("font");
 
             mAntiAliasing = builder.comment(
-                            "Control the anti-aliasing of raw glyph rendering.")
+                            "Control the anti-aliasing of raw glyph rasterization.")
                     .define("antiAliasing", true);
             mAutoHinting = builder.comment(
                             "Control the FreeType font hinting of raw glyph metrics.",
@@ -369,7 +369,6 @@ final class Config {
                             "This list is only read once when the game is loaded. A game restart is required to reload")
                     .defineList("fontFamily", () -> {
                         List<String> list = new ArrayList<>();
-                        list.add("modernui:font/default.ttf");
                         list.add("modernui:font/biliw.otf");
                         list.add("Microsoft YaHei UI");
                         list.add("Segoe UI");

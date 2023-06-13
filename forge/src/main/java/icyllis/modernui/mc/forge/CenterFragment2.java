@@ -19,23 +19,26 @@
 package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.R;
-import icyllis.modernui.animation.LayoutTransition;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.*;
-import icyllis.modernui.mc.forge.ui.*;
+import icyllis.modernui.mc.forge.ui.DividerDrawable;
+import icyllis.modernui.mc.forge.ui.ThemeControl;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.util.*;
 import icyllis.modernui.view.*;
 import icyllis.modernui.widget.*;
 import net.minecraft.client.resources.language.I18n;
 
+import java.util.concurrent.CompletableFuture;
+
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class CenterFragment2 extends Fragment {
 
     private static final int id_tab_container = 0x2002;
+    private static boolean sPreloadClasses;
 
     private static final ColorStateList NAV_BUTTON_COLOR = new ColorStateList(
             new int[][]{
@@ -54,6 +57,15 @@ public class CenterFragment2 extends Fragment {
         getParentFragmentManager().beginTransaction()
                 .setPrimaryNavigationFragment(this)
                 .commit();
+        if (!sPreloadClasses) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    Class.forName(PreferencesFragment.class.getName());
+                } catch (ClassNotFoundException ignored) {
+                }
+            });
+            sPreloadClasses = true;
+        }
     }
 
     @Override
@@ -94,15 +106,10 @@ public class CenterFragment2 extends Fragment {
             var buttonGroup = new RadioGroup(getContext());
             buttonGroup.setOrientation(LinearLayout.HORIZONTAL);
             buttonGroup.setHorizontalGravity(Gravity.CENTER_HORIZONTAL);
-            buttonGroup.setLayoutTransition(new LayoutTransition());
 
             buttonGroup.addView(createNavButton(1001, "modernui.center.tab.dashboard"));
-            buttonGroup.postDelayed(() -> {
-                buttonGroup.addView(createNavButton(1002, "modernui.center.tab.preferences"));
-            }, 200);
-            buttonGroup.postDelayed(() -> {
-                buttonGroup.addView(createNavButton(1003, "modernui.center.tab.developerOptions"));
-            }, 600);
+            buttonGroup.addView(createNavButton(1002, "modernui.center.tab.preferences"));
+            buttonGroup.addView(createNavButton(1003, "modernui.center.tab.developerOptions"));
 
             buttonGroup.check(1001);
 

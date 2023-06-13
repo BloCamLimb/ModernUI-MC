@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.forge;
 
 import icyllis.arc3d.opengl.GLSurfaceCanvas;
+import icyllis.modernui.animation.LayoutTransition;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
@@ -43,7 +44,8 @@ public class DashboardFragment extends Fragment {
             _(:з」∠)_""";
 
     private ViewGroup mLayout;
-    private TextView mTextView;
+    private TextView mSideBox;
+    private TextView mInfoBox;
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -60,7 +62,7 @@ public class DashboardFragment extends Fragment {
 
         {
             TextView tv;
-            if (mTextView == null) {
+            if (mSideBox == null) {
                 tv = new Button(getContext());
                 tv.setText("Still Alive");
                 tv.setTextSize(16);
@@ -68,9 +70,9 @@ public class DashboardFragment extends Fragment {
                 tv.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
                 tv.setOnClickListener(this::play);
                 ThemeControl.addBackground(tv);
-                mTextView = tv;
+                mSideBox = tv;
             } else {
-                tv = mTextView;
+                tv = mSideBox;
             }
 
             var params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -80,6 +82,34 @@ public class DashboardFragment extends Fragment {
             layout.addView(tv, params);
         }
 
+        {
+            TextView tv;
+            if (mInfoBox == null) {
+                tv = new TextView(getContext());
+                tv.setText("""
+                        What's New in Modern UI 3.7
+                                                
+                        • Unicode 15.0 Emoji List
+                        • Arc 3D Graphics Engine
+                        • New UI Components
+                        • New Rendering Methods
+                        • And More…
+                        """);
+                tv.setTextSize(16);
+                tv.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+                mInfoBox = tv;
+            } else {
+                tv = mInfoBox;
+            }
+
+            var params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.setMarginStart(tv.dp(120));
+            params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
+            layout.addView(tv, params);
+        }
+
+        layout.setLayoutTransition(new LayoutTransition());
         return mLayout = layout;
     }
 
@@ -89,6 +119,9 @@ public class DashboardFragment extends Fragment {
         var tv = (TextView) button;
         tv.setText("", TextView.BufferType.EDITABLE);
         tv.setClickable(false);
+        if (mInfoBox != null) {
+            mInfoBox.setVisibility(View.GONE);
+        }
 
         StillAlive.getInstance().start();
 
@@ -110,14 +143,14 @@ public class DashboardFragment extends Fragment {
     }
 
     private void updateText() {
-        if (!mTextView.isAttachedToWindow()) {
+        if (!mSideBox.isAttachedToWindow()) {
             return;
         }
-        var editable = mTextView.getEditableText();
+        var editable = mSideBox.getEditableText();
         if (editable.length() < CREDIT_TEXT.length()) {
             editable.append(CREDIT_TEXT.charAt(editable.length()));
             if (editable.length() < CREDIT_TEXT.length()) {
-                mTextView.postDelayed(mUpdateText, 200);
+                mSideBox.postDelayed(mUpdateText, 200);
             }
         }
     }

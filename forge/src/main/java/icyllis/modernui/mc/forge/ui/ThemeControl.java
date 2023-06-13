@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.forge.ui;
 
+import icyllis.modernui.graphics.drawable.ShapeDrawable;
 import icyllis.modernui.graphics.drawable.StateListDrawable;
 import icyllis.modernui.util.StateSet;
 import icyllis.modernui.view.View;
@@ -30,9 +31,13 @@ public class ThemeControl {
 
     public static void addBackground(View view) {
         StateListDrawable background = new StateListDrawable();
-        background.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), new RectangleDrawable());
-        background.setEnterFadeDuration(300);
-        background.setExitFadeDuration(300);
+        ShapeDrawable drawable = new ShapeDrawable();
+        drawable.setShape(ShapeDrawable.RECTANGLE);
+        drawable.setColor(0x80a0a0a0);
+        drawable.setCornerRadius(view.dp(2));
+        background.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), drawable);
+        background.setEnterFadeDuration(250);
+        background.setExitFadeDuration(250);
         view.setBackground(background);
     }
 }

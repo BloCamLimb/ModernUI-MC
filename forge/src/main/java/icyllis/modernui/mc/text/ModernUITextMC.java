@@ -175,14 +175,14 @@ public final class ModernUITextMC {
 
     public static class Config {
 
-        public static final float BASE_FONT_SIZE_MIN = 6;
-        public static final float BASE_FONT_SIZE_MAX = 10;
+        public static final float BASE_FONT_SIZE_MIN = 6.5f;
+        public static final float BASE_FONT_SIZE_MAX = 9.5f;
         public static final float BASELINE_MIN = 4;
         public static final float BASELINE_MAX = 10;
         public static final float SHADOW_OFFSET_MIN = 0.2f;
-        public static final float SHADOW_OFFSET_MAX = 4;
+        public static final float SHADOW_OFFSET_MAX = 2;
         public static final float OUTLINE_OFFSET_MIN = 0.2f;
-        public static final float OUTLINE_OFFSET_MAX = 4;
+        public static final float OUTLINE_OFFSET_MAX = 2;
         public static final int LIFESPAN_MIN = 2;
         public static final int LIFESPAN_MAX = 60;
         public static final int REHASH_MIN = 0;
