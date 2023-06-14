@@ -1053,6 +1053,9 @@ public final class UIManager implements LifecycleOwner {
             if (!minecraft.isRunning() && mRunning) {
                 mRunning = false;
                 mRoot.mHandler.post(this::finish);
+                if (mCanvas != null) {
+                    mCanvas.destroy();
+                }
                 try {
                     // in case of GLFW is terminated too early
                     mUiThread.join(1000);

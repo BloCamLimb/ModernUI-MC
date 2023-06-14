@@ -111,7 +111,7 @@ public final class ShaderShard {
             return shader;
         }
         try (InputStream stream = manager.open(location)) {
-            String src = Core.readUTF8(stream);
+            String src = null;//Core.readUTF8(stream);
             if (src != null) {
                 int id = glCreateShader(type.type);
                 glShaderSource(id, src);

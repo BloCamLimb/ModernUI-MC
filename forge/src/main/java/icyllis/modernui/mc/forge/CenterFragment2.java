@@ -31,14 +31,11 @@ import icyllis.modernui.view.*;
 import icyllis.modernui.widget.*;
 import net.minecraft.client.resources.language.I18n;
 
-import java.util.concurrent.CompletableFuture;
-
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class CenterFragment2 extends Fragment {
 
     private static final int id_tab_container = 0x2002;
-    private static boolean sPreloadClasses;
 
     private static final ColorStateList NAV_BUTTON_COLOR = new ColorStateList(
             new int[][]{
@@ -57,15 +54,6 @@ public class CenterFragment2 extends Fragment {
         getParentFragmentManager().beginTransaction()
                 .setPrimaryNavigationFragment(this)
                 .commit();
-        if (!sPreloadClasses) {
-            CompletableFuture.runAsync(() -> {
-                try {
-                    Class.forName(PreferencesFragment.class.getName());
-                } catch (ClassNotFoundException ignored) {
-                }
-            });
-            sPreloadClasses = true;
-        }
     }
 
     @Override

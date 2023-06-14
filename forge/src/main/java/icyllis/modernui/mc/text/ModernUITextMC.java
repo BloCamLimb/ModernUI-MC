@@ -87,7 +87,7 @@ public final class ModernUITextMC {
         // so that the typeface config is valid
         Minecraft.getInstance().execute(ModernUI::getSelectedTypeface);
         MuiForgeApi.addOnWindowResizeListener((width, height, newScale, oldScale) -> {
-            if (Core.hasRenderThread() && newScale != oldScale) {
+            if (Core.getRenderThread() != null && newScale != oldScale) {
                 TextLayoutEngine.getInstance().reload();
             }
         });

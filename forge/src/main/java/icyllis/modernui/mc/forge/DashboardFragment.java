@@ -92,7 +92,7 @@ public class DashboardFragment extends Fragment {
                         • Unicode 15.0 Emoji List
                         • Arc 3D Graphics Engine
                         • New UI Components
-                        • New Rendering Methods
+                        • New Rendering Effects
                         • And More…
                         """);
                 tv.setTextSize(16);

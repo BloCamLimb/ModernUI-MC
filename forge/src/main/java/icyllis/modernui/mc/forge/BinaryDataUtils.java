@@ -79,7 +79,7 @@ public final class BinaryDataUtils {
         }
     }
 
-    /**
+    /*
      * Write only the string mapping of the given data set to the target compound tag.
      * ByteList, IntList and LongList will be converted to their ArrayTags. If one of
      * these lists nested in the parent list, then it will be silently ignored.
@@ -88,7 +88,7 @@ public final class BinaryDataUtils {
      * @param dest   the target compound tag
      * @return the compound tag as a convenience
      */
-    @Nonnull
+    /*@Nonnull
     public static CompoundTag writeDataSet(@Nonnull DataSet source, @Nonnull CompoundTag dest) {
         for (Map.Entry<String, Object> entry : source.entrySet()) {
             final Object v = entry.getValue();
@@ -161,5 +161,5 @@ public final class BinaryDataUtils {
             }
         }
         return tag;
-    }
+    }*/
 }

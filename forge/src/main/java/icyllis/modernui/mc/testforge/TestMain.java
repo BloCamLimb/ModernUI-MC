@@ -347,7 +347,7 @@ public class TestMain {
                 }
             }, "Choose-Color").start();*/
 
-            Looper.prepare(sWindow);
+            Looper.prepareMainLooper();
             Looper.loop();
 
             renderThread.interrupt();
