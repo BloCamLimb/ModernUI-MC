@@ -18,8 +18,8 @@
 
 package icyllis.modernui.mc.testforge.shader.uniform;
 
-import com.mojang.math.Vector4f;
 import icyllis.modernui.mc.testforge.shader.ShaderUniform;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL20;
 
 @Deprecated

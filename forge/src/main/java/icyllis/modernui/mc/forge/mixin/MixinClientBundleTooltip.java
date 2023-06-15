@@ -18,17 +18,14 @@
 
 package icyllis.modernui.mc.forge.mixin;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import icyllis.modernui.mc.forge.TooltipRenderer;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientBundleTooltip;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
+@Deprecated
 @Mixin(ClientBundleTooltip.class)
 public class MixinClientBundleTooltip {
 
-    @Redirect(method = "blit",
+    /*@Redirect(method = "blit",
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V"))
     private void setColor(float r, float g, float b, float a) {
         if (TooltipRenderer.sTooltip) {
@@ -38,5 +35,5 @@ public class MixinClientBundleTooltip {
         } else {
             RenderSystem.setShaderColor(r, g, b, a);
         }
-    }
+    }*/
 }

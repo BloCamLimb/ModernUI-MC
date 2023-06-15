@@ -41,7 +41,6 @@ import java.util.*;
 /**
  * Contains {@link DataSet} and {@link CompoundTag} utilities.
  */
-@SuppressWarnings("unchecked")
 public final class BinaryDataUtils {
 
     private BinaryDataUtils() {

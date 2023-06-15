@@ -19,12 +19,14 @@
 package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Matrix4f;
 import icyllis.modernui.graphics.font.GLBakedGlyph;
+import icyllis.modernui.graphics.font.GlyphManager;
 import net.minecraft.client.renderer.MultiBufferSource;
+import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.awt.*;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -43,8 +45,8 @@ public class TextLayout {
      * <p>
      * This singleton cannot be inserted into the cache!
      */
-    public static final TextLayout EMPTY = new TextLayout(new char[0], new GLBakedGlyph[0], new float[0],
-            new float[0], new int[0], new int[0], new int[0], 0, false, false, false) {
+    public static final TextLayout EMPTY = new TextLayout(new char[0], new GLBakedGlyph[0], new long[0],
+            new float[0], new float[0], new int[0], new int[0], new int[0], 0, false, false, false, 2) {
         @Nonnull
         @Override
         TextLayout get() {
@@ -58,14 +60,14 @@ public class TextLayout {
 
         @Override
         public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, @Nullable String raw,
-                              float x, float y, int r, int g, int b, int a, boolean isShadow, boolean seeThrough,
-                              int background, int packedLight, float resLevel) {
+                              float x, float y, int r, int g, int b, int a, boolean isShadow,
+                              int preferredMode, int bgColor, int packedLight) {
             return 0;
         }
 
         @Override
-        public void drawTextGlow(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, float x, float y,
-                                 int r, int g, int b, int a, int packedLight, float resLevel) {
+        public void drawTextOutline(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, float x, float y,
+                                    int r, int g, int b, int a, int packedLight) {
             // noop
         }
     };
@@ -91,6 +93,8 @@ public class TextLayout {
      * obfuscated chars are {@link icyllis.modernui.mc.text.TextLayoutEngine.FastCharSet}.
      */
     private final GLBakedGlyph[] mGlyphs;
+    private final long[] mGlyphKeys;
+    private transient GLBakedGlyph[] mGlyphsForSDF;
 
     /**
      * Position x1 y1 x2 y2... relative to the same point, for rendering glyphs.
@@ -157,6 +161,7 @@ public class TextLayout {
     private final boolean mHasEffect;
     private final boolean mHasFastDigit;
     private final boolean mHasColorBitmap;
+    private final int mCreatedResLevel;
 
     /**
      * Elapsed time in seconds since last use.
@@ -166,6 +171,7 @@ public class TextLayout {
     private TextLayout(@Nonnull TextLayout layout) {
         mTextBuf = layout.mTextBuf;
         mGlyphs = layout.mGlyphs;
+        mGlyphKeys = layout.mGlyphKeys;
         mPositions = layout.mPositions;
         mAdvances = layout.mAdvances;
         mCharFlags = layout.mCharFlags;
@@ -175,14 +181,17 @@ public class TextLayout {
         mHasEffect = layout.mHasEffect;
         mHasFastDigit = layout.mHasFastDigit;
         mHasColorBitmap = layout.mHasColorBitmap;
+        mCreatedResLevel = layout.mCreatedResLevel;
     }
 
-    TextLayout(@Nonnull char[] textBuf, @Nonnull GLBakedGlyph[] glyphs, @Nonnull float[] positions,
+    TextLayout(@Nonnull char[] textBuf, @Nonnull GLBakedGlyph[] glyphs,
+               @Nonnull long[] glyphKeys, @Nonnull float[] positions,
                @Nonnull float[] advances, @Nonnull int[] charFlags, @Nonnull int[] charIndices,
                @Nonnull int[] lineBoundaries, float totalAdvance, boolean hasEffect,
-               boolean hasFastDigit, boolean hasColorBitmap) {
+               boolean hasFastDigit, boolean hasColorBitmap, int createdResLevel) {
         mTextBuf = textBuf;
         mGlyphs = glyphs;
+        mGlyphKeys = glyphKeys;
         mPositions = positions;
         mAdvances = advances;
         mCharFlags = charFlags;
@@ -192,10 +201,12 @@ public class TextLayout {
         mHasEffect = hasEffect;
         mHasFastDigit = hasFastDigit;
         mHasColorBitmap = hasColorBitmap;
+        mCreatedResLevel = createdResLevel;
         assert mTextBuf.length == mAdvances.length;
         assert mGlyphs.length * 2 == mPositions.length;
         assert mGlyphs.length == mCharFlags.length;
         assert mGlyphs.length == mCharIndices.length;
+        assert mGlyphs.length == mGlyphKeys.length;
     }
 
     /**
@@ -228,28 +239,62 @@ public class TextLayout {
         return ++mTimer > threshold;
     }
 
+    private GLBakedGlyph[] getGlyphs(int resLevel) {
+        if (resLevel == mCreatedResLevel) {
+            return mGlyphs;
+        }
+        if (mGlyphsForSDF == null) {
+            GlyphManager glyphManager = GlyphManager.getInstance();
+            TextLayoutEngine engine = TextLayoutEngine.getInstance();
+            float fontSize = Math.min(TextLayoutProcessor.sBaseFontSize * resLevel, 96);
+            mGlyphsForSDF = mGlyphs.clone();
+            Font lastFont = null;
+            Font lastDeriveFont = null;
+            for (int i = 0, e = mGlyphsForSDF.length; i < e; i++) {
+                final int flag = mCharFlags[i];
+                if ((flag & CharacterStyle.BITMAP_REPLACEMENT) == 0) {
+                    long key = mGlyphKeys[i];
+                    Font font = glyphManager.getFontFromKey(key);
+                    if (lastFont == font) {
+                        font = lastDeriveFont;
+                    } else {
+                        lastFont = font;
+                        font = font.deriveFont(fontSize);
+                        lastDeriveFont = font;
+                    }
+                    if ((flag & CharacterStyle.FAST_DIGIT_REPLACEMENT) != 0) {
+                        mGlyphsForSDF[i] = engine.lookupFastChars(font);
+                    } else {
+                        int glyphCode = GlyphManager.getGlyphCodeFromKey(key);
+                        mGlyphsForSDF[i] = glyphManager.lookupGlyph(font, glyphCode);
+                    }
+                }
+            }
+        }
+        return mGlyphsForSDF;
+    }
+
     /**
      * Render this text in Minecraft render system.
      *
-     * @param matrix      the transform matrix
-     * @param source      the vertex buffer source
-     * @param raw         the raw string of vanilla layout for fast digit replacement
-     * @param x           the left pos of the text line to render
-     * @param y           the baseline of the text line to render
-     * @param r           the default red value (0...255, was divided by 4 if isShadow=true)
-     * @param g           the default green value (0...255, was divided by 4 if isShadow=true)
-     * @param b           the default blue value (0...255, was divided by 4 if isShadow=true)
-     * @param a           the alpha value (0...255)
-     * @param isShadow    whether to use a darker color to draw?
-     * @param seeThrough  whether this text visible behind a wall?
-     * @param background  the background color of the text in 0xAARRGGBB format
-     * @param packedLight see {@link net.minecraft.client.renderer.LightTexture}
-     * @param resLevel    the resolution level used to create this node
+     * @param matrix        the transform matrix
+     * @param source        the vertex buffer source
+     * @param raw           the raw string of vanilla layout for fast digit replacement
+     * @param x             the left pos of the text line to render
+     * @param y             the baseline of the text line to render
+     * @param r             the default red value (0...255, was divided by 4 if isShadow=true)
+     * @param g             the default green value (0...255, was divided by 4 if isShadow=true)
+     * @param b             the default blue value (0...255, was divided by 4 if isShadow=true)
+     * @param a             the alpha value (0...255)
+     * @param isShadow      whether to use a darker color to draw?
+     * @param preferredMode a render mode, normal, see through or SDF
+     * @param bgColor       the background color of the text in 0xAARRGGBB format
+     * @param packedLight   see {@link net.minecraft.client.renderer.LightTexture}
      * @return the total advance, always positive
      */
     public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, @Nullable String raw,
-                          float x, float y, int r, int g, int b, int a, boolean isShadow, boolean seeThrough,
-                          int background, int packedLight, float resLevel) {
+                          float x, float y, int r, int g, int b, int a, boolean isShadow,
+                          int preferredMode, int bgColor, int packedLight) {
         if (mGlyphs.length == 0) {
             // e.g. text contains only spaces, no render, but provides ident
             return mTotalAdvance;
@@ -257,8 +302,11 @@ public class TextLayout {
         final int startR = r;
         final int startG = g;
         final int startB = b;
+        final float resLevel = preferredMode == TextRenderType.MODE_SDF_FILL
+                ? TextLayoutEngine.getResLevelForSDF(mCreatedResLevel)
+                : mCreatedResLevel;
 
-        final var glyphs = mGlyphs;
+        final var glyphs = getGlyphs((int) resLevel);
         final var positions = mPositions;
         final var flags = mCharFlags;
         //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
@@ -268,6 +316,7 @@ public class TextLayout {
         int texture = -1;
         VertexConsumer builder = null;
 
+        boolean seeThrough = preferredMode == TextRenderType.MODE_SEE_THROUGH;
         for (int i = 0, e = glyphs.length; i < e; i++) {
             var glyph = glyphs[i];
             final int flag = flags[i];
@@ -275,17 +324,18 @@ public class TextLayout {
             final float ry;
             final float w;
             final float h;
-            boolean isBitmap = false;
+            final int effMode;
             if ((flag & CharacterStyle.BITMAP_REPLACEMENT) != 0) {
                 if (isShadow) {
                     continue;
                 }
                 rx = x + positions[i << 1] + (float) glyph.x / TextLayoutEngine.BITMAP_SCALE;
-                ry = y + positions[(i << 1) + 1] + (float) glyph.y / TextLayoutEngine.BITMAP_SCALE;
+                ry = y + positions[i << 1 | 1] + (float) glyph.y / TextLayoutEngine.BITMAP_SCALE;
                 w = (float) glyph.width / TextLayoutEngine.BITMAP_SCALE;
                 h = (float) glyph.height / TextLayoutEngine.BITMAP_SCALE;
-                isBitmap = true;
+                effMode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL;
             } else {
+                effMode = preferredMode;
                 if (raw != null && (flag & CharacterStyle.FAST_DIGIT_REPLACEMENT) != 0) {
                     var chars = (TextLayoutEngine.FastCharSet) glyph;
                     int fastIndex = raw.charAt(mCharIndices[i]) - '0';
@@ -294,7 +344,7 @@ public class TextLayout {
                     }
                     glyph = chars.glyphs[fastIndex];
                     if (fastIndex != 0) {
-                        rx = x + positions[i << 1] + glyph.x / resLevel + chars.offsets[fastIndex];
+                        rx = x + positions[i << 1] + (glyph.x + chars.offsets[fastIndex]) / resLevel;
                     } else {
                         // 0 is standard, no additional offset
                         rx = x + positions[i << 1] + glyph.x / resLevel;
@@ -304,7 +354,7 @@ public class TextLayout {
                     int fastIndex = RANDOM.nextInt(chars.glyphs.length);
                     glyph = chars.glyphs[fastIndex];
                     if (fastIndex != 0) {
-                        rx = x + positions[i << 1] + glyph.x / resLevel + chars.offsets[fastIndex];
+                        rx = x + positions[i << 1] + (glyph.x + chars.offsets[fastIndex]) / resLevel;
                     } else {
                         // 0 is standard, no additional offset
                         rx = x + positions[i << 1] + glyph.x / resLevel;
@@ -312,7 +362,7 @@ public class TextLayout {
                 } else {
                     rx = x + positions[i << 1] + glyph.x / resLevel;
                 }
-                ry = y + positions[(i << 1) + 1] + glyph.y / resLevel;
+                ry = y + positions[i << 1 | 1] + glyph.y / resLevel;
 
                 w = glyph.width / resLevel;
                 h = glyph.height / resLevel;
@@ -338,7 +388,7 @@ public class TextLayout {
             if (builder == null || texture != glyph.texture) {
                 // bitmap texture and grayscale texture are different
                 texture = glyph.texture;
-                builder = source.getBuffer(TextRenderType.getOrCreate(texture, seeThrough, isBitmap));
+                builder = source.getBuffer(TextRenderType.getOrCreate(texture, effMode));
             }
             builder.vertex(matrix, rx, ry, 0)
                     .color(r, g, b, a)
@@ -399,12 +449,12 @@ public class TextLayout {
             }
         }
 
-        if ((background & 0xFF000000) != 0) {
+        if ((bgColor & 0xFF000000) != 0) {
             y -= sBaselineOffset;
-            a = background >>> 24;
-            r = background >> 16 & 0xff;
-            g = background >> 8 & 0xff;
-            b = background & 0xff;
+            a = bgColor >>> 24;
+            r = bgColor >> 16 & 0xff;
+            g = bgColor >> 8 & 0xff;
+            b = bgColor & 0xff;
             if (builder == null) {
                 builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough));
             }
@@ -435,17 +485,16 @@ public class TextLayout {
      * @param b           the default outline blue value (0...255)
      * @param a           the alpha value (0...255)
      * @param packedLight see {@link net.minecraft.client.renderer.LightTexture}
-     * @param resLevel    the resolution level used to create this node
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
-    public void drawTextGlow(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
-                             float x, float y, int r, int g, int b, int a, int packedLight,
-                             float resLevel) {
+    public void drawTextOutline(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
+                                float x, float y, int r, int g, int b, int a, int packedLight) {
         if (mGlyphs.length == 0) {
             return;
         }
+        final float resLevel = TextLayoutEngine.getResLevelForSDF(mCreatedResLevel);
 
-        final var glyphs = mGlyphs;
+        final var glyphs = getGlyphs((int) resLevel);
         final var positions = mPositions;
         final var flags = mCharFlags;
         //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
@@ -471,7 +520,7 @@ public class TextLayout {
                     int fastIndex = RANDOM.nextInt(chars.glyphs.length);
                     glyph = chars.glyphs[fastIndex];
                     if (fastIndex != 0) {
-                        rx = x + positions[i << 1] + glyph.x / resLevel + chars.offsets[fastIndex];
+                        rx = x + positions[i << 1] + (glyph.x + chars.offsets[fastIndex]) / resLevel;
                     } else {
                         // 0 is standard, no additional offset
                         rx = x + positions[i << 1] + glyph.x / resLevel;
@@ -479,7 +528,7 @@ public class TextLayout {
                 } else {
                     rx = x + positions[i << 1] + glyph.x / resLevel;
                 }
-                ry = y + positions[(i << 1) + 1] + glyph.y / resLevel;
+                ry = y + positions[i << 1 | 1] + glyph.y / resLevel;
 
                 w = glyph.width / resLevel;
                 h = glyph.height / resLevel;
@@ -490,7 +539,7 @@ public class TextLayout {
             }*/
             if (builder == null || texture != glyph.texture) {
                 texture = glyph.texture;
-                builder = source.getBuffer(TextRenderType.getOrCreateSDFStroke(texture));
+                builder = source.getBuffer(TextRenderType.getOrCreate(texture, TextRenderType.MODE_SDF_STROKE));
             }
             float uBloat = (glyph.u2 - glyph.u1) / glyph.width;
             float vBloat = (glyph.v2 - glyph.v1) / glyph.height;

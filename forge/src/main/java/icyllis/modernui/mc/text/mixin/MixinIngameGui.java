@@ -20,7 +20,6 @@ package icyllis.modernui.mc.text.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.math.Matrix4f;
 import icyllis.modernui.mc.text.ModernStringSplitter;
 import icyllis.modernui.mc.text.ModernTextRenderer;
 import net.minecraft.client.Minecraft;
@@ -29,6 +28,7 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import org.joml.Matrix4f;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.*;
@@ -73,19 +73,19 @@ public abstract class MixinIngameGui {
             MultiBufferSource.BufferSource source = MultiBufferSource.immediate(
                     Tesselator.getInstance().getBuilder());
             ModernTextRenderer.drawText(s, x + offset, y, 0xff000000, false,
-                    matrix, source, false, 0, LightTexture.FULL_BRIGHT);
+                    matrix, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
             ModernTextRenderer.drawText(s, x - offset, y, 0xff000000, false,
-                    matrix, source, false, 0, LightTexture.FULL_BRIGHT);
+                    matrix, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
             ModernTextRenderer.drawText(s, x, y + offset, 0xff000000, false,
-                    matrix, source, false, 0, LightTexture.FULL_BRIGHT);
+                    matrix, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
             ModernTextRenderer.drawText(s, x, y - offset, 0xff000000, false,
-                    matrix, source, false, 0, LightTexture.FULL_BRIGHT);
+                    matrix, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
             ModernTextRenderer.drawText(s, x, y, 0xff80ff20, false,
-                    matrix, source, false, 0, LightTexture.FULL_BRIGHT);
+                    matrix, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
         }
     }

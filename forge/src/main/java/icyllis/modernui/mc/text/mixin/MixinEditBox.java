@@ -20,7 +20,6 @@ package icyllis.modernui.mc.text.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import com.mojang.math.Matrix4f;
 import icyllis.modernui.mc.text.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
@@ -31,6 +30,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -125,14 +125,14 @@ public abstract class MixinEditBox extends AbstractWidget {
      */
     @Override
     @Overwrite
-    public void renderButton(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float deltaTicks) {
+    public void renderWidget(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float deltaTicks) {
         if (!isVisible()) {
             return;
         }
         if (bordered) {
             int color = isFocused() ? BORDER_COLOR_FOCUSED : BORDER_COLOR;
-            fill(poseStack, x - 1, y - 1, x + width + 1, y + height + 1, color);
-            fill(poseStack, x, y, x + width, y + height, BACKGROUND_COLOR);
+            fill(poseStack, getX() - 1, getY() - 1, getX() + width + 1, getY() + height + 1, color);
+            fill(poseStack, getX(), getY(), getX() + width, getY() + height, BACKGROUND_COLOR);
         }
         final int color = isEditable ? textColor : textColorUneditable;
 
@@ -144,8 +144,8 @@ public abstract class MixinEditBox extends AbstractWidget {
         final boolean cursorInRange = viewCursorPos >= 0 && viewCursorPos <= viewText.length();
         final boolean cursorVisible = isFocused() && ((frame / 10) & 1) == 0 && cursorInRange;
 
-        final int baseX = bordered ? x + 4 : x;
-        final int baseY = bordered ? y + (height - 8) / 2 : y;
+        final int baseX = bordered ? getX() + 4 : getX();
+        final int baseY = bordered ? getY() + (height - 8) / 2 : getY();
         float seqX = baseX;
 
         final Matrix4f matrix = poseStack.last().pose();
@@ -159,11 +159,11 @@ public abstract class MixinEditBox extends AbstractWidget {
             if (subSequence != null) {
                 separate = true;
                 seqX = ModernTextRenderer.drawText(subSequence, seqX, baseY, color, true,
-                        matrix, bufferSource, false, 0, LightTexture.FULL_BRIGHT);
+                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             } else {
                 separate = false;
                 seqX = ModernTextRenderer.drawText(viewText, seqX, baseY, color, true,
-                        matrix, bufferSource, false, 0, LightTexture.FULL_BRIGHT);
+                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             }
         } else {
             separate = false;
@@ -198,16 +198,16 @@ public abstract class MixinEditBox extends AbstractWidget {
             FormattedCharSequence subSequence = formatter.apply(subText, cursorPos);
             if (subSequence != null) {
                 ModernTextRenderer.drawText(subSequence, seqX, baseY, color, true,
-                        matrix, bufferSource, false, 0, LightTexture.FULL_BRIGHT);
+                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             } else {
                 ModernTextRenderer.drawText(subText, seqX, baseY, color, true,
-                        matrix, bufferSource, false, 0, LightTexture.FULL_BRIGHT);
+                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             }
         }
 
         if (!cursorNotAtEnd && suggestion != null) {
             ModernTextRenderer.drawText(suggestion, cursorX, baseY, 0xFF808080, true,
-                    matrix, bufferSource, false, 0, LightTexture.FULL_BRIGHT);
+                    matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }
 
         if (viewCursorPos != clampedViewHighlightPos) {
@@ -230,16 +230,15 @@ public abstract class MixinEditBox extends AbstractWidget {
                 startX = endX;
                 endX = temp;
             }
-            if (startX > x + width) {
-                startX = x + width;
+            if (startX > getX() + width) {
+                startX = getX() + width;
             }
-            if (endX > x + width) {
-                endX = x + width;
+            if (endX > getX() + width) {
+                endX = getX() + width;
             }
 
             BufferBuilder builder = Tesselator.getInstance().getBuilder();
             RenderSystem.setShader(GameRenderer::getPositionColorShader);
-            RenderSystem.disableTexture();
             RenderSystem.disableDepthTest();
             RenderSystem.enableBlend();
             RenderSystem.defaultBlendFunc();
@@ -253,7 +252,6 @@ public abstract class MixinEditBox extends AbstractWidget {
             builder.vertex(matrix, startX, baseY - 1, 0)
                     .color(51, 181, 229, 102).endVertex();
             BufferUploader.drawWithShader(builder.end());
-            RenderSystem.enableTexture();
             RenderSystem.enableDepthTest();
         } else if (cursorVisible) {
             if (cursorNotAtEnd) {
@@ -261,7 +259,6 @@ public abstract class MixinEditBox extends AbstractWidget {
 
                 BufferBuilder builder = Tesselator.getInstance().getBuilder();
                 RenderSystem.setShader(GameRenderer::getPositionColorShader);
-                RenderSystem.disableTexture();
                 RenderSystem.enableBlend();
                 RenderSystem.defaultBlendFunc();
                 builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
@@ -274,10 +271,9 @@ public abstract class MixinEditBox extends AbstractWidget {
                 builder.vertex(matrix, cursorX - 0.5f, baseY - 1, 0)
                         .color(208, 208, 208, 255).endVertex();
                 BufferUploader.drawWithShader(builder.end());
-                RenderSystem.enableTexture();
             } else {
                 ModernTextRenderer.drawText(CURSOR_APPEND_CHARACTER, cursorX, baseY, color, true,
-                        matrix, bufferSource, false, 0, LightTexture.FULL_BRIGHT);
+                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
 
                 bufferSource.endBatch();
             }

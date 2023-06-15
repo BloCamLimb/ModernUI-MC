@@ -23,7 +23,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import icyllis.arc3d.engine.SamplerState;
 import icyllis.arc3d.opengl.*;
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.forge.ModernUIForge;
 import icyllis.modernui.mc.text.mixin.AccessRenderBuffers;
@@ -48,13 +47,18 @@ import static icyllis.modernui.ModernUI.*;
  */
 public class TextRenderType extends RenderType {
 
-    private static volatile ShaderInstance sShaderBitmap;
+    public static final int MODE_NORMAL = 0;
+    public static final int MODE_SDF_FILL = 1;
+    public static final int MODE_SDF_STROKE = 2;
+    public static final int MODE_SEE_THROUGH = 3;
+
+    private static volatile ShaderInstance sShaderNormal;
     private static volatile ShaderInstance sShaderSDFFill;
     private static volatile ShaderInstance sShaderSDFStroke;
     private static volatile ShaderInstance sShaderSeeThrough;
 
     static final ShaderStateShard
-            RENDERTYPE_MODERN_TEXT_BITMAP = new ShaderStateShard(TextRenderType::getShaderBitmap),
+            RENDERTYPE_MODERN_TEXT_NORMAL = new ShaderStateShard(TextRenderType::getShaderNormal),
             RENDERTYPE_MODERN_TEXT_SDF_FILL = new ShaderStateShard(TextRenderType::getShaderSDFFill),
             RENDERTYPE_MODERN_TEXT_SDF_STROKE = new ShaderStateShard(TextRenderType::getShaderSDFStroke),
             RENDERTYPE_MODERN_TEXT_SEE_THROUGH = new ShaderStateShard(TextRenderType::getShaderSeeThrough);
@@ -62,7 +66,7 @@ public class TextRenderType extends RenderType {
     /**
      * Only the texture id is different, the rest state are same
      */
-    private static final ImmutableList<RenderStateShard> BITMAP_STATES;
+    private static final ImmutableList<RenderStateShard> NORMAL_STATES;
     private static final ImmutableList<RenderStateShard> SDF_FILL_STATES;
     private static final ImmutableList<RenderStateShard> SDF_STROKE_STATES;
     private static final ImmutableList<RenderStateShard> SEE_THROUGH_STATES;
@@ -70,7 +74,7 @@ public class TextRenderType extends RenderType {
     /**
      * Texture id to render type map
      */
-    private static final Int2ObjectMap<TextRenderType> sBitmapTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectMap<TextRenderType> sNormalTypes = new Int2ObjectOpenHashMap<>();
     private static final Int2ObjectMap<TextRenderType> sSDFFillTypes = new Int2ObjectOpenHashMap<>();
     private static final Int2ObjectMap<TextRenderType> sSDFStrokeTypes = new Int2ObjectOpenHashMap<>();
     private static final Int2ObjectMap<TextRenderType> sSeeThroughTypes = new Int2ObjectOpenHashMap<>();
@@ -85,8 +89,8 @@ public class TextRenderType extends RenderType {
     private static GLSampler sLinearFontSampler;
 
     static {
-        BITMAP_STATES = ImmutableList.of(
-                RENDERTYPE_MODERN_TEXT_BITMAP,
+        NORMAL_STATES = ImmutableList.of(
+                RENDERTYPE_MODERN_TEXT_NORMAL,
                 TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,
@@ -137,19 +141,6 @@ public class TextRenderType extends RenderType {
                 COLOR_WRITE,
                 DEFAULT_LINE
         );
-        /*POLYGON_OFFSET_STATES = ImmutableList.of(
-                RENDERTYPE_MODERN_TEXT,
-                TRANSLUCENT_TRANSPARENCY,
-                LEQUAL_DEPTH_TEST,
-                CULL,
-                LIGHTMAP,
-                NO_OVERLAY,
-                POLYGON_OFFSET_LAYERING,
-                MAIN_TARGET,
-                DEFAULT_TEXTURING,
-                COLOR_DEPTH_WRITE,
-                DEFAULT_LINE
-        );*/
     }
 
     private TextRenderType(String name, int bufferSize, Runnable setupState, Runnable clearState) {
@@ -158,27 +149,21 @@ public class TextRenderType extends RenderType {
     }
 
     @Nonnull
-    public static TextRenderType getOrCreate(int texture, boolean seeThrough, boolean isBitmap) {
-        if (seeThrough)
-            return sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
-        else if (TextLayoutEngine.sForceUseDistanceField && !isBitmap)
-            return sSDFFillTypes.computeIfAbsent(texture, TextRenderType::makeSDFFillType);
-        else
-            return sBitmapTypes.computeIfAbsent(texture, TextRenderType::makeBitmapType);
+    public static TextRenderType getOrCreate(int texture, int mode) {
+        return switch (mode) {
+            default -> sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
+            case MODE_SDF_FILL -> sSDFFillTypes.computeIfAbsent(texture, TextRenderType::makeSDFFillType);
+            case MODE_SDF_STROKE -> sSDFStrokeTypes.computeIfAbsent(texture, TextRenderType::makeSDFStrokeType);
+            case MODE_SEE_THROUGH -> sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
+        };
     }
 
     @Nonnull
-    public static TextRenderType getOrCreateSDFStroke(int texture) { // seeThrough=false isBitmap=false
-        return sSDFStrokeTypes.computeIfAbsent(texture, TextRenderType::makeSDFStrokeType);
-    }
-
-    @Nonnull
-    private static TextRenderType makeBitmapType(int texture) {
-        return new TextRenderType("modern_text_bitmap", 256, () -> {
-            BITMAP_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.enableTexture();
+    private static TextRenderType makeNormalType(int texture) {
+        return new TextRenderType("modern_text_normal", 256, () -> {
+            NORMAL_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
-        }, () -> BITMAP_STATES.forEach(RenderStateShard::clearRenderState));
+        }, () -> NORMAL_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
     private static void ensureLinearFontSampler() {
@@ -196,7 +181,6 @@ public class TextRenderType extends RenderType {
         ensureLinearFontSampler();
         TextRenderType renderType = new TextRenderType("modern_text_sdf_fill", 256, () -> {
             SDF_FILL_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.enableTexture();
             RenderSystem.setShaderTexture(0, texture);
             GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
         }, () -> {
@@ -217,7 +201,6 @@ public class TextRenderType extends RenderType {
         ensureLinearFontSampler();
         TextRenderType renderType = new TextRenderType("modern_text_sdf_stroke", 256, () -> {
             SDF_STROKE_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.enableTexture();
             RenderSystem.setShaderTexture(0, texture);
             GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
         }, () -> {
@@ -237,7 +220,6 @@ public class TextRenderType extends RenderType {
     private static TextRenderType makeSeeThroughType(int texture) {
         return new TextRenderType("modern_text_see_through", 256, () -> {
             SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.enableTexture();
             RenderSystem.setShaderTexture(0, texture);
         }, () -> SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
     }
@@ -284,7 +266,7 @@ public class TextRenderType extends RenderType {
             }
             sFirstSDFStrokeType = null;
         }
-        sBitmapTypes.clear();
+        sNormalTypes.clear();
         sSDFFillTypes.clear();
         sSDFStrokeTypes.clear();
         sSeeThroughTypes.clear();
@@ -292,8 +274,8 @@ public class TextRenderType extends RenderType {
         sFirstSDFStrokeBuffer.clear();
     }
 
-    public static ShaderInstance getShaderBitmap() {
-        return sShaderBitmap;
+    public static ShaderInstance getShaderNormal() {
+        return sShaderNormal;
     }
 
     public static ShaderInstance getShaderSDFFill() {
@@ -313,10 +295,11 @@ public class TextRenderType extends RenderType {
      * and cannot be overridden by other resource packs or reloaded.
      */
     public static synchronized void preloadShaders() {
-        if (sShaderBitmap != null) {
+        if (sShaderNormal != null) {
             return;
         }
-        final var fallback = Minecraft.getInstance().getClientPackSource().getVanillaPack().asProvider();
+        final var source = Minecraft.getInstance().getVanillaPackResources();
+        final var fallback = source.asProvider();
         final var provider = (ResourceProvider) location -> {
             // don't worry, ShaderInstance ctor will close it
             @SuppressWarnings("resource") final var stream = ModernUITextMC.class
@@ -325,11 +308,11 @@ public class TextRenderType extends RenderType {
                 // fallback to vanilla
                 return fallback.getResource(location);
             }
-            return Optional.of(new Resource(ModernUI.ID, () -> stream));
+            return Optional.of(new Resource(source, () -> stream));
         };
         try {
-            sShaderBitmap = new ShaderInstance(provider,
-                    ModernUIForge.location("rendertype_modern_text_bitmap"),
+            sShaderNormal = new ShaderInstance(provider,
+                    ModernUIForge.location("rendertype_modern_text_normal"),
                     DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
             sShaderSDFFill = new ShaderInstance(provider,
                     ModernUIForge.location("rendertype_modern_text_sdf_fill"),

@@ -22,7 +22,6 @@ import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import com.mojang.math.Matrix4f;
 import icyllis.arc3d.opengl.GLSurfaceCanvas;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.graphics.*;
@@ -38,6 +37,7 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.loading.FMLEnvironment;
+import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 
 import javax.annotation.Nonnull;
@@ -157,7 +157,7 @@ public final class CanvasForge {
         @Nonnull
         private DrawItem set(@Nonnull ItemStack stack, @Nonnull FloatBuffer mv, int color) {
             mStack = stack;
-            mModelView.load(mv);
+            mModelView.set(mv);
             mR = ((color >> 16) & 0xFF) / 255f;
             mG = ((color >> 8) & 0xFF) / 255f;
             mB = (color & 0xFF) / 255f;
@@ -183,8 +183,8 @@ public final class CanvasForge {
             Lighting.setupForFlatItems();
         }
         PoseStack localTransform = new PoseStack();
-        mRenderer.render(t.mStack, ItemTransforms.TransformType.GUI, false, localTransform, bufferSource,
-                LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, model);
+        /*mRenderer.render(t.mStack, ItemTransforms.TransformType.GUI, false, localTransform, bufferSource,
+                LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, model);*/
         bufferSource.endBatch();
         if (light2D) {
             Lighting.setupFor3DItems();
@@ -235,7 +235,7 @@ public final class CanvasForge {
         }
 
         if (shader.PROJECTION_MATRIX != null) {
-            mProjection.load(canvas.getProjection().limit(16));
+            mProjection.set(canvas.getProjection().limit(16));
             shader.PROJECTION_MATRIX.set(mProjection);
         }
 

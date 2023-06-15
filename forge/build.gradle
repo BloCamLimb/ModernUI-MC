@@ -34,8 +34,8 @@ loom {
 
 repositories {
     maven {
-        name "Progwml6 maven"
-        url "https://dvs1.progwml6.com/files/maven/"
+        name "Jared's maven"
+        url "https://maven.blamejared.com/"
         content {
             includeGroup 'mezz.jei'
         }
@@ -61,7 +61,7 @@ dependencies {
     //mappings minecraft.officialMojangMappings()
     mappings loom.layered() {
         officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-${minecraft_version}:2022.08.21@zip" as String)
+        parchment("org.parchmentmc.data:parchment-1.19.3:2023.03.12@zip" as String)
     }
     forge "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 

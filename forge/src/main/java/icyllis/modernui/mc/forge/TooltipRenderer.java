@@ -22,7 +22,6 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.math.Matrix4f;
 import icyllis.arc3d.opengl.GLSurfaceCanvas;
 import icyllis.modernui.graphics.Matrix4;
 import icyllis.modernui.graphics.Paint;
@@ -32,6 +31,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.ApiStatus;
+import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 
 import javax.annotation.Nonnull;
@@ -355,17 +355,17 @@ public final class TooltipRenderer {
         canvas.reset(window.getWidth(), window.getHeight());
 
         // swap matrices
-        RenderSystem.getProjectionMatrix().store(sMatBuf.rewind());
+        RenderSystem.getProjectionMatrix().get(sMatBuf.rewind());
         sMyMat.set(sMatBuf.rewind());
         canvas.setProjection(sMyMat);
 
         canvas.save();
-        RenderSystem.getModelViewMatrix().store(sMatBuf.rewind());
+        RenderSystem.getModelViewMatrix().get(sMatBuf.rewind());
         sMyMat.set(sMatBuf.rewind());
         canvas.concat(sMyMat);
 
         // Sodium check the remaining
-        mat.store(sMatBuf.rewind());
+        mat.get(sMatBuf.rewind());
         sMyMat.set(sMatBuf.rewind());
         // RenderSystem.getModelViewMatrix() has Z translation normalized to -1
         // We have to offset against our canvas Z translation, see restore matrix in GLCanvas
@@ -415,7 +415,6 @@ public final class TooltipRenderer {
         RenderSystem.enableDepthTest();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.enableTexture();
 
         final MultiBufferSource.BufferSource source =
                 MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
@@ -435,24 +434,20 @@ public final class TooltipRenderer {
         source.endBatch();
 
         drawY = (int) tooltipY;
-        poseStack.translate(0, 0, -400);
-        final float blitOffset = itemRenderer.blitOffset;
-        itemRenderer.blitOffset = 400;
 
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
             if (sLayoutRTL) {
                 component.renderImage(font, drawX + tooltipWidth - component.getWidth(font), drawY,
-                        poseStack, itemRenderer, 400);
+                        poseStack, itemRenderer);
             } else {
-                component.renderImage(font, drawX, drawY, poseStack, itemRenderer, 400);
+                component.renderImage(font, drawX, drawY, poseStack, itemRenderer);
             }
             if (i == 0) {
                 drawY += TITLE_GAP;
             }
             drawY += component.getHeight();
         }
-        itemRenderer.blitOffset = blitOffset;
         poseStack.popPose();
     }
 }

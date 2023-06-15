@@ -78,9 +78,9 @@ public final class ModernUIForge {
     static volatile Integer sBootstrapLevel;
 
     public static boolean sInventoryScreenPausesGame;
-    public static boolean sRemoveMessageSignature;
+    //public static boolean sRemoveMessageSignature;
     public static boolean sRemoveTelemetrySession;
-    public static boolean sSecureProfilePublicKey;
+    //public static boolean sSecureProfilePublicKey;
     public static float sFontScale = 1;
 
     static {
@@ -189,8 +189,8 @@ public final class ModernUIForge {
         }
         synchronized (ModernUIForge.class) {
             if (sBootstrapLevel == null) {
-                Path path = FMLPaths.getOrCreateGameRelativePath(FMLPaths.CONFIGDIR.get().resolve(NAME_CPT),
-                        NAME_CPT).resolve("bootstrap");
+                Path path = FMLPaths.getOrCreateGameRelativePath(FMLPaths.CONFIGDIR.get().resolve(NAME_CPT))
+                        .resolve("bootstrap");
                 if (Files.exists(path)) {
                     try {
                         sBootstrapLevel = Integer.parseUnsignedInt(Files.readString(path, StandardCharsets.UTF_8));
@@ -214,8 +214,8 @@ public final class ModernUIForge {
 
     public static void setBootstrapLevel(int level) {
         sBootstrapLevel = level;
-        Path path = FMLPaths.getOrCreateGameRelativePath(FMLPaths.CONFIGDIR.get().resolve(NAME_CPT),
-                NAME_CPT).resolve("bootstrap");
+        Path path = FMLPaths.getOrCreateGameRelativePath(FMLPaths.CONFIGDIR.get().resolve(NAME_CPT))
+                .resolve("bootstrap");
         if (!Files.exists(path)) {
             try {
                 Files.createFile(path);
@@ -334,10 +334,15 @@ public final class ModernUIForge {
             return sInstance;
         }
 
+        @SuppressWarnings("ConstantValue")
         @Nonnull
         @Override
         protected Locale onGetSelectedLocale() {
-            return Minecraft.getInstance().getLanguageManager().getSelected().getJavaLocale();
+            var manager = Minecraft.getInstance().getLanguageManager();
+            if (manager != null) {
+                return manager.getJavaLocale();
+            }
+            return super.onGetSelectedLocale();
         }
 
         @Nonnull

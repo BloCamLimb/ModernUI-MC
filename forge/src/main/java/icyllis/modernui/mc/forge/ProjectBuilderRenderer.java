@@ -19,15 +19,15 @@
 package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Vector3f;
+import com.mojang.math.Axis;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.ApiStatus;
 
@@ -46,7 +46,7 @@ final class ProjectBuilderRenderer extends BlockEntityWithoutLevelRenderer {
     }
 
     @Override
-    public void renderByItem(@Nonnull ItemStack stack, @Nonnull ItemTransforms.TransformType transformType,
+    public void renderByItem(@Nonnull ItemStack stack, @Nonnull ItemDisplayContext transformType,
                              @Nonnull PoseStack ps, @Nonnull MultiBufferSource source, int combinedLight,
                              int combinedOverlay) {
         ItemRenderer itemRenderer = Minecraft.getInstance().getItemRenderer();
@@ -61,7 +61,7 @@ final class ProjectBuilderRenderer extends BlockEntityWithoutLevelRenderer {
         float angel = time * -0.08f;
         angel %= 360;
         ps.translate(0, 0, -0.671875f);
-        ps.mulPose(Vector3f.YN.rotationDegrees(angel));
+        ps.mulPose(Axis.YN.rotationDegrees(angel));
 
         float f = ((float) Math.sin(time / 200D) + 1) * 0.5f;
         int glowX = (int) Mth.lerp(f, combinedLight >> 16, 240);

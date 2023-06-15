@@ -20,7 +20,6 @@ package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import com.mojang.math.Matrix4f;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.animation.ColorEvaluator;
 import icyllis.modernui.mc.forge.mixin.AccessPostChain;
@@ -30,6 +29,7 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.commons.lang3.StringUtils;
+import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -209,15 +209,14 @@ public enum BlurHandler {
     }
 
     // INTERNAL HOOK
-    public void drawScreenBackground(@Nonnull Screen screen, @Nonnull PoseStack stack, int x1, int y1, int x2, int y2) {
-        RenderSystem.disableTexture();
+    public void drawScreenBackground(@Nonnull PoseStack stack, int x1, int y1, int x2, int y2) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
 
         BufferBuilder builder = Tesselator.getInstance().getBuilder();
         Matrix4f matrix = stack.last().pose();
-        int z = screen.getBlitOffset();
+        int z = 0;
         builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         if (minecraft.level == null) {
             builder.vertex(matrix, x2, y1, z)
@@ -245,6 +244,5 @@ public enum BlurHandler {
         BufferUploader.drawWithShader(builder.end());
 
         RenderSystem.disableBlend();
-        RenderSystem.enableTexture();
     }
 }

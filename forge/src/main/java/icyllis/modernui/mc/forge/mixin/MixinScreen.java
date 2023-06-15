@@ -46,16 +46,16 @@ public class MixinScreen {
     protected Minecraft minecraft;*/
 
     @Redirect(
-            method = "renderBackground(Lcom/mojang/blaze3d/vertex/PoseStack;I)V",
+            method = "renderBackground",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/screens/Screen;fillGradient" +
                             "(Lcom/mojang/blaze3d/vertex/PoseStack;IIIIII)V"
             )
     )
-    private void renderBackgroundInWorld(@Nonnull Screen screen, @Nonnull PoseStack stack, int x1, int y1,
-                                         int x2, int y2, int colorFrom, int colorTo) {
-        BlurHandler.INSTANCE.drawScreenBackground(screen, stack, x1, y1, x2, y2);
+    private void renderBackgroundInWorld(@Nonnull PoseStack stack, int x1, int y1,
+                                         int x2, int y2, int color1, int color2) {
+        BlurHandler.INSTANCE.drawScreenBackground(stack, x1, y1, x2, y2);
     }
 
     /*@Redirect(

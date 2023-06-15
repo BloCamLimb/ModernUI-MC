@@ -68,16 +68,20 @@ public class FormattedLayoutKey {
      */
     int mHash;
 
+    int mResLevel;
+
     private FormattedLayoutKey() {
     }
 
     private FormattedLayoutKey(CharSequence[] texts,
                                ResourceLocation[] fonts,
-                               int[] codes, int hash) {
+                               int[] codes, int hash,
+                               int resLevel) {
         mTexts = texts;
         mFonts = fonts;
         mCodes = codes;
         mHash = hash;
+        mResLevel = resLevel;
     }
 
     @Override
@@ -92,7 +96,7 @@ public class FormattedLayoutKey {
                 h = 31 * h + mFonts[i].hashCode();
                 h = 31 * h + codes[i];
             }
-            mHash = h;
+            mHash = 31 * h + mResLevel;
         }
 
         return h;
@@ -104,7 +108,8 @@ public class FormattedLayoutKey {
             return false;
         }
         FormattedLayoutKey key = (FormattedLayoutKey) o;
-        return Arrays.equals(mCodes, key.mCodes) &&
+        return mResLevel == key.mResLevel &&
+                Arrays.equals(mCodes, key.mCodes) &&
                 Arrays.equals(mFonts, key.mFonts) &&
                 Arrays.equals(mTexts, key.mTexts);
     }
@@ -116,6 +121,7 @@ public class FormattedLayoutKey {
                 ", mFonts=" + Arrays.toString(mFonts) +
                 ", mCodes=" + Arrays.toString(mCodes) +
                 ", mHash=" + mHash +
+                ", mResLevel=" + mResLevel +
                 '}';
     }
 
@@ -229,8 +235,9 @@ public class FormattedLayoutKey {
          * Update this key.
          */
         @Nonnull
-        public FormattedLayoutKey update(@Nonnull FormattedText text, @Nonnull Style style) {
+        public FormattedLayoutKey update(@Nonnull FormattedText text, @Nonnull Style style, int resLevel) {
             reset();
+            mResLevel = resLevel;
             text.visit(mContentBuilder, style);
             return this;
         }
@@ -239,8 +246,9 @@ public class FormattedLayoutKey {
          * Update this key.
          */
         @Nonnull
-        public FormattedLayoutKey update(@Nonnull FormattedCharSequence sequence) {
+        public FormattedLayoutKey update(@Nonnull FormattedCharSequence sequence, int resLevel) {
             reset();
+            mResLevel = resLevel;
             sequence.accept(mSequenceBuilder);
             mSequenceBuilder.end();
             return this;
@@ -261,7 +269,7 @@ public class FormattedLayoutKey {
                     h = 31 * h + fonts.get(i).hashCode();
                     h = 31 * h + codes.getInt(i);
                 }
-                mHash = h;
+                mHash = 31 * h + mResLevel;
             }
 
             return h;
@@ -275,6 +283,7 @@ public class FormattedLayoutKey {
             FormattedLayoutKey key = (FormattedLayoutKey) o;
             final int length = mTexts.size();
             return length == key.mTexts.length &&
+                    mResLevel == key.mResLevel &&
                     Arrays.equals(mCodes.elements(), 0, length, key.mCodes, 0, length) &&
                     Arrays.equals(mFonts.elements(), 0, length, key.mFonts, 0, length) &&
                     Arrays.equals(mTexts.elements(), 0, length, key.mTexts, 0, length);
@@ -287,6 +296,7 @@ public class FormattedLayoutKey {
                     ", mFonts=" + mFonts +
                     ", mCodes=" + mCodes +
                     ", mHash=" + mHash +
+                    ", mResLevel=" + mResLevel +
                     '}';
         }
 
@@ -304,7 +314,7 @@ public class FormattedLayoutKey {
                 texts[i] = mTexts.get(i).toString();
             }
             return new FormattedLayoutKey(texts, mFonts.toArray(new ResourceLocation[0]),
-                    mCodes.toIntArray(), mHash);
+                    mCodes.toIntArray(), mHash, mResLevel);
         }
     }
 }

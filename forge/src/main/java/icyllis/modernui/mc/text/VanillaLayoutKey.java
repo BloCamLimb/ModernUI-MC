@@ -62,6 +62,8 @@ public class VanillaLayoutKey {
      */
     private int mHash;
 
+    private int mResLevel;
+
     public VanillaLayoutKey() {
     }
 
@@ -73,6 +75,7 @@ public class VanillaLayoutKey {
         mFont = key.mFont;
         mCode = key.mCode;
         mHash = key.mHash;
+        mResLevel = key.mResLevel;
     }
 
     /**
@@ -80,11 +83,12 @@ public class VanillaLayoutKey {
      *
      * @param text the string
      */
-    public VanillaLayoutKey update(@Nonnull String text, @Nonnull Style style) {
+    public VanillaLayoutKey update(@Nonnull String text, @Nonnull Style style, int resLevel) {
         mView = text;
         mFont = style.getFont();
         mCode = CharacterStyle.flatten(style);
         mHash = 0;
+        mResLevel = resLevel;
         return this;
     }
 
@@ -116,7 +120,8 @@ public class VanillaLayoutKey {
             }
 
             h = 31 * h + mFont.hashCode();
-            mHash = h = 31 * h + mCode;
+            h = 31 * h + mCode;
+            mHash = h = 31 * h + mResLevel;
         }
 
         return h;
@@ -136,6 +141,9 @@ public class VanillaLayoutKey {
         VanillaLayoutKey key = (VanillaLayoutKey) o;
 
         if (mCode != key.mCode) {
+            return false;
+        }
+        if (mResLevel != key.mResLevel) {
             return false;
         }
         if (!mFont.equals(key.mFont)) {
@@ -175,6 +183,7 @@ public class VanillaLayoutKey {
                 ", mFont=" + mFont +
                 ", mCode=" + mCode +
                 ", mHash=" + mHash +
+                ", mResLevel=" + mResLevel +
                 '}';
     }
 

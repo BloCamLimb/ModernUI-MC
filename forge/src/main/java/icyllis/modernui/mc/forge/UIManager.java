@@ -121,8 +121,8 @@ public final class UIManager implements LifecycleOwner {
             ObfuscationReflectionHelper.findField(TextureManager.class, "f_118468_");
     public static final Field TEXTURES_BY_NAME =
             ObfuscationReflectionHelper.findField(TextureAtlas.class, "f_118264_");
-    public static final Field MAIN_IMAGE =
-            ObfuscationReflectionHelper.findField(TextureAtlasSprite.class, "f_118342_");
+    /*public static final Field MAIN_IMAGE =
+            ObfuscationReflectionHelper.findField(TextureAtlasSprite.class, "f_118342_");*/
     public static final Field IMAGE_PIXELS =
             ObfuscationReflectionHelper.findField(com.mojang.blaze3d.platform.NativeImage.class, "f_84964_");
     public static final Field TEXTURE_ID =
@@ -824,14 +824,15 @@ public final class UIManager implements LifecycleOwner {
                     try {
                         Map<ResourceLocation, TextureAtlasSprite> textures =
                                 (Map<ResourceLocation, TextureAtlasSprite>) TEXTURES_BY_NAME.get(textureAtlas);
-                        for (var sprite : textures.values()) {
+                        /*for (var sprite : textures.values()) {
                             for (var image : (com.mojang.blaze3d.platform.NativeImage[]) MAIN_IMAGE.get(sprite)) {
                                 if (image != null && IMAGE_PIXELS.getLong(image) != 0) {
                                     cpuSize += (long) image.getWidth() * image.getHeight() * image.format().components();
                                 }
                             }
                             atlasSprites++;
-                        }
+                        }*/
+                        atlasSprites += textures.size();
                     } catch (Exception ignored) {
                     }
                     textureAtlases++;

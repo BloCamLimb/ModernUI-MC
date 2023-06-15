@@ -18,38 +18,30 @@
 
 package icyllis.modernui.mc.forge.mixin;
 
-import com.mojang.math.Matrix4f;
-import icyllis.modernui.mc.forge.TooltipRenderer;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTextTooltip;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.util.FormattedCharSequence;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 
-import javax.annotation.Nonnull;
-
+@Deprecated
 @Mixin(ClientTextTooltip.class)
 public class MixinClientTextTooltip {
 
-    @Redirect(method = "renderText",
+    /*@Redirect(method = "renderText",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Font;drawInBatch" +
-                    "(Lnet/minecraft/util/FormattedCharSequence;FFIZLcom/mojang/math/Matrix4f;" +
-                    "Lnet/minecraft/client/renderer/MultiBufferSource;ZII)I"))
+                    "(Lnet/minecraft/util/FormattedCharSequence;FFIZLorg/joml/Matrix4f;" +
+                    "Lnet/minecraft/client/renderer/MultiBufferSource;Lnet/minecraft/client/gui/Font$DisplayMode;II)I"))
     private int drawText(@Nonnull Font font, FormattedCharSequence text, float x, float y,
                          int color, boolean dropShadow, Matrix4f matrix, MultiBufferSource source,
-                         boolean seeThrough, int colorBackground, int packedLight) {
+                         Font.DisplayMode displayMode, int colorBackground, int packedLight) {
         if (TooltipRenderer.sTooltip) {
             // vanilla alpha threshold is 4, MULTIPLY BLENDING, UN_PREMULTIPLIED COLOR
             float a = (color >>> 24) / 255.0f;
             int alpha = (int) (TooltipRenderer.sAlpha * a * 255.0f + 0.5f);
             final int newColor = (Math.max(alpha, 4) << 24) | (color & 0xFFFFFF);
-            return font.drawInBatch(text, x, y, newColor, dropShadow, matrix, source, seeThrough, colorBackground,
+            return font.drawInBatch(text, x, y, newColor, dropShadow, matrix, source, displayMode, colorBackground,
                     packedLight);
         } else {
-            return font.drawInBatch(text, x, y, color, dropShadow, matrix, source, seeThrough, colorBackground,
+            return font.drawInBatch(text, x, y, color, dropShadow, matrix, source, displayMode, colorBackground,
                     packedLight);
         }
-    }
+    }*/
 }

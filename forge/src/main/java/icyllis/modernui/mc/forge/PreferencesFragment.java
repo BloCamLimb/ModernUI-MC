@@ -101,7 +101,7 @@ public class PreferencesFragment extends Fragment {
                 sv.addView(createFirstPage(context), MATCH_PARENT, WRAP_CONTENT);
 
                 var animator = ObjectAnimator.ofFloat(sv,
-                        View.ROTATION_Y, container.isLayoutRtl() ? 45 : -45, 0);
+                        View.ROTATION_Y, container.isLayoutRtl() ? -45 : 45, 0);
                 animator.setInterpolator(TimeInterpolator.DECELERATE);
                 sv.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
                     @Override
@@ -268,14 +268,14 @@ public class PreferencesFragment extends Fragment {
                 category.addView(option);
             }
 
-            category.addView(createBooleanOption(context, "Remove Message Signature",
-                    Config.CLIENT.mRemoveSignature, Config.CLIENT::saveAndReloadAsync));
+            /*category.addView(createBooleanOption(context, "Remove Message Signature",
+                    Config.CLIENT.mRemoveSignature, Config.CLIENT::saveAndReloadAsync));*/
 
             category.addView(createBooleanOption(context, "Remove Telemetry Session",
                     Config.CLIENT.mRemoveTelemetry, Config.CLIENT::saveAndReloadAsync));
 
-            category.addView(createBooleanOption(context, "Secure Profile Public Key",
-                    Config.CLIENT.mSecurePublicKey, Config.CLIENT::saveAndReloadAsync));
+            /*category.addView(createBooleanOption(context, "Secure Profile Public Key",
+                    Config.CLIENT.mSecurePublicKey, Config.CLIENT::saveAndReloadAsync));*/
 
             {
                 var button = createDebugButton(context, "Take UI Screenshot (Y)");

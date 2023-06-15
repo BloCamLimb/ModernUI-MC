@@ -33,8 +33,8 @@ public final class MuiRegistries {
     /**
      * Sounds (Client only, no registration)
      */
-    public static final SoundEvent BUTTON_CLICK_1 = new SoundEvent(ModernUIForge.location("button1"));
-    public static final SoundEvent BUTTON_CLICK_2 = new SoundEvent(ModernUIForge.location("button2"));
+    public static final SoundEvent BUTTON_CLICK_1 = SoundEvent.createVariableRangeEvent(ModernUIForge.location("button1"));
+    public static final SoundEvent BUTTON_CLICK_2 = SoundEvent.createVariableRangeEvent(ModernUIForge.location("button2"));
 
     /**
      * Container Menus (Development only)

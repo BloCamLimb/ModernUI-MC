@@ -21,7 +21,7 @@ package icyllis.modernui.mc.forge;
 import icyllis.modernui.fragment.Fragment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.resources.ResourceLocation;
@@ -64,7 +64,7 @@ public sealed class NetworkMessages extends NetworkHandler {
     static PacketBuffer openMenu(@Nonnull AbstractContainerMenu menu, @Nullable Consumer<FriendlyByteBuf> writer) {
         PacketBuffer buf = sNetwork.buffer(S2C_OPEN_MENU);
         buf.writeVarInt(menu.containerId);
-        buf.writeVarInt(Registry.MENU.getId(menu.getType()));
+        buf.writeVarInt(BuiltInRegistries.MENU.getId(menu.getType()));
         if (writer != null) {
             writer.accept(buf);
         }
@@ -111,8 +111,8 @@ public sealed class NetworkMessages extends NetworkHandler {
                                      @Nonnull BlockableEventLoop<?> looper) {
             final int containerId = payload.readVarInt();
             // No barrier, SAFE
-            final MenuType<?> type = Registry.MENU.byIdOrThrow(payload.readVarInt());
-            final ResourceLocation key = Registry.MENU.getKey(type);
+            final MenuType<?> type = BuiltInRegistries.MENU.byIdOrThrow(payload.readVarInt());
+            final ResourceLocation key = BuiltInRegistries.MENU.getKey(type);
             assert key != null;
             payload.retain();
             looper.execute(() -> {

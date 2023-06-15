@@ -157,7 +157,7 @@ public class TestHUD {
         GL11.glPopMatrix();
         GL11.glMatrixMode(GL11.GL_MODELVIEW);
 
-        RenderSystem.enableTexture();
+        //RenderSystem.enableTexture();
         //RenderSystem.enableAlphaTest();
         RenderSystem.disableBlend();
 

@@ -18,23 +18,14 @@
 
 package icyllis.modernui.mc.forge.mixin;
 
-import com.mojang.authlib.minecraft.InsecurePublicKeyException;
-import icyllis.modernui.mc.forge.ModernUIForge;
 import net.minecraft.client.multiplayer.ProfileKeyPairManager;
-import net.minecraft.util.CryptException;
-import net.minecraft.util.Signer;
-import net.minecraft.world.entity.player.ProfilePublicKey;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.Optional;
-
+@Deprecated
 @Mixin(ProfileKeyPairManager.class)
 public class MixinProfileKeyPairManager {
 
-    @Inject(method = "signer", at = @At("HEAD"), cancellable = true)
+    /*@Inject(method = "signer", at = @At("HEAD"), cancellable = true)
     private void onSigner(CallbackInfoReturnable<Optional<Signer>> info) {
         if (ModernUIForge.sSecureProfilePublicKey) {
             info.setReturnValue(null);
@@ -42,7 +33,8 @@ public class MixinProfileKeyPairManager {
     }
 
     @Inject(method = "parsePublicKey", at = @At("HEAD"))
-    private static void onParsePublicKey(CallbackInfoReturnable<Optional<ProfilePublicKey.Data>> info) throws CryptException {
+    private static void onParsePublicKey(CallbackInfoReturnable<Optional<ProfilePublicKey.Data>> info) throws
+    CryptException {
         if (ModernUIForge.sSecureProfilePublicKey) {
             throw new CryptException(new InsecurePublicKeyException.MissingException());
         }
@@ -53,5 +45,5 @@ public class MixinProfileKeyPairManager {
         if (ModernUIForge.sSecureProfilePublicKey) {
             info.setReturnValue(Optional.empty());
         }
-    }
+    }*/
 }

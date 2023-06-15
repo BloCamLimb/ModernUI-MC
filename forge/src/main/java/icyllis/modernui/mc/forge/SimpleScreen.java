@@ -80,7 +80,7 @@ final class SimpleScreen extends Screen implements MuiScreen {
     public void render(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float deltaTick) {
         ScreenCallback callback = getCallback();
         if (callback == null || callback.hasDefaultBackground()) {
-            BlurHandler.INSTANCE.drawScreenBackground(this, poseStack, 0, 0, this.width, this.height);
+            BlurHandler.INSTANCE.drawScreenBackground(poseStack, 0, 0, this.width, this.height);
             MinecraftForge.EVENT_BUS.post(new ScreenEvent.BackgroundRendered(this, poseStack));
         }
         mHost.render();

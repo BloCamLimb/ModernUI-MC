@@ -27,6 +27,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
 
@@ -46,5 +47,12 @@ public class MixinMinecraft {
             opcode = Opcodes.PUTFIELD))
     private void onSetScreen(Screen guiScreen, CallbackInfo ci) {
         ModernUIForge.dispatchOnScreenChange(screen, guiScreen);
+    }
+
+    @Inject(method = "allowsTelemetry", at = @At("HEAD"), cancellable = true)
+    private void onAllowsTelemetry(CallbackInfoReturnable<Boolean> info) {
+        if (ModernUIForge.sRemoveTelemetrySession) {
+            info.setReturnValue(false);
+        }
     }
 }

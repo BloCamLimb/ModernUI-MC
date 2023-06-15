@@ -63,7 +63,7 @@ public final class ModernUITextMC {
     }
 
     public static void initConfig() {
-        FMLPaths.getOrCreateGameRelativePath(FMLPaths.CONFIGDIR.get().resolve(ModernUI.NAME_CPT), ModernUI.NAME_CPT);
+        FMLPaths.getOrCreateGameRelativePath(FMLPaths.CONFIGDIR.get().resolve(ModernUI.NAME_CPT));
         ModContainer mod = ModLoadingContext.get().getActiveContainer();
 
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();

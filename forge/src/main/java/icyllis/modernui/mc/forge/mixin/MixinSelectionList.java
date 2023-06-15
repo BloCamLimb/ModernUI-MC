@@ -24,10 +24,7 @@ import icyllis.modernui.mc.forge.ScrollController;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractSelectionList;
 import net.minecraft.util.Mth;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -86,8 +83,7 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client" +
-            "/gui/components/AbstractSelectionList;renderHeader(Lcom/mojang/blaze3d/vertex/PoseStack;" +
-            "IILcom/mojang/blaze3d/vertex/Tesselator;)V"))
+            "/gui/components/AbstractSelectionList;renderHeader(Lcom/mojang/blaze3d/vertex/PoseStack;II)V"))
     private void preRenderHeader(@Nonnull PoseStack ps, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         ps.pushPose();
         ps.translate(0,
@@ -95,8 +91,7 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client/gui" +
-            "/components/AbstractSelectionList;renderHeader(Lcom/mojang/blaze3d/vertex/PoseStack;" +
-            "IILcom/mojang/blaze3d/vertex/Tesselator;)V"))
+            "/components/AbstractSelectionList;renderHeader(Lcom/mojang/blaze3d/vertex/PoseStack;II)V"))
     private void postRenderHeader(@Nonnull PoseStack ps, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         ps.popPose();
     }

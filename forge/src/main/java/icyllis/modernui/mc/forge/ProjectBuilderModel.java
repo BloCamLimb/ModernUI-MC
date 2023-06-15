@@ -19,12 +19,14 @@
 package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.resources.model.*;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraftforge.client.model.BakedModelWrapper;
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
+import java.util.Map;
 
 @ApiStatus.Experimental
 final class ProjectBuilderModel extends BakedModelWrapper<BakedModel> {
@@ -32,19 +34,19 @@ final class ProjectBuilderModel extends BakedModelWrapper<BakedModel> {
     public final BakedModel main;
     public final BakedModel cube;
 
-    ProjectBuilderModel(BakedModel originalModel, ModelBakery bakery) {
+    ProjectBuilderModel(BakedModel originalModel, Map<ResourceLocation, BakedModel> models) {
         super(originalModel);
-        main = bakeCustomModel(bakery, "item/project_builder_main");
-        cube = bakeCustomModel(bakery, "item/project_builder_cube");
+        main = bakeCustomModel(models, "item/project_builder_main");
+        cube = bakeCustomModel(models, "item/project_builder_cube");
     }
 
-    private static BakedModel bakeCustomModel(@Nonnull ModelBakery bakery, String path) {
-        return bakery.bake(ModernUIForge.location(path), BlockModelRotation.X0_Y0, Material::sprite);
+    private static BakedModel bakeCustomModel(@Nonnull Map<ResourceLocation, BakedModel> models, String path) {
+        return models.get(ModernUIForge.location(path));
     }
 
     @Nonnull
     @Override
-    public BakedModel applyTransform(@Nonnull ItemTransforms.TransformType transformType,
+    public BakedModel applyTransform(@Nonnull ItemDisplayContext transformType,
                                      @Nonnull PoseStack poseStack,
                                      boolean applyLeftHandTransform) {
         super.applyTransform(transformType, poseStack, applyLeftHandTransform);

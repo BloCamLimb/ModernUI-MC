@@ -18,8 +18,8 @@
 
 package icyllis.modernui.mc.forge.mixin;
 
-import com.mojang.math.Vector3f;
 import net.minecraft.client.gui.Font;
+import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 

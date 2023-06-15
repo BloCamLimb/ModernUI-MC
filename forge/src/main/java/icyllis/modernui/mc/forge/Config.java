@@ -80,7 +80,7 @@ final class Config {
     }
 
     static void init() {
-        FMLPaths.getOrCreateGameRelativePath(FMLPaths.CONFIGDIR.get().resolve(ModernUI.NAME_CPT), ModernUI.NAME_CPT);
+        FMLPaths.getOrCreateGameRelativePath(FMLPaths.CONFIGDIR.get().resolve(ModernUI.NAME_CPT));
         ModContainer container = ModLoadingContext.get().getActiveContainer();
         if (FMLEnvironment.dist.isClient()) {
             container.addConfig(new ModConfig(ModConfig.Type.CLIENT, CLIENT_SPEC, container,
@@ -176,9 +176,9 @@ final class Config {
         public final ForgeConfigSpec.DoubleValue mFontScale;
         public final ForgeConfigSpec.EnumValue<WindowMode> mWindowMode;
         public final ForgeConfigSpec.BooleanValue mUseNewGuiScale;
-        public final ForgeConfigSpec.BooleanValue mRemoveSignature;
+        //public final ForgeConfigSpec.BooleanValue mRemoveSignature;
         public final ForgeConfigSpec.BooleanValue mRemoveTelemetry;
-        public final ForgeConfigSpec.BooleanValue mSecurePublicKey;
+        //public final ForgeConfigSpec.BooleanValue mSecurePublicKey;
 
         public final ForgeConfigSpec.IntValue mScrollbarSize;
         public final ForgeConfigSpec.IntValue mTouchSlop;
@@ -302,12 +302,12 @@ final class Config {
                             "Set to false to not show it. This is ignored when skipGLCapsError=true")
                     .define("showGLCapsError", true);*/
 
-            mRemoveSignature = builder.comment("Remove signature of chat messages and commands.")
-                    .define("removeSignature", false);
+            /*mRemoveSignature = builder.comment("Remove signature of chat messages and commands.")
+                    .define("removeSignature", false);*/
             mRemoveTelemetry = builder.comment("Remove telemetry event of client behaviors.")
                     .define("removeTelemetry", false);
-            mSecurePublicKey = builder.comment("Don't report profile's public key to server.")
-                    .define("securePublicKey", false);
+            /*mSecurePublicKey = builder.comment("Don't report profile's public key to server.")
+                    .define("securePublicKey", false);*/
 
             builder.pop();
 
@@ -418,9 +418,9 @@ final class Config {
             BlurHandler.INSTANCE.loadBlacklist(mBlurBlacklist.get());
 
             ModernUIForge.sInventoryScreenPausesGame = mInventoryPause.get();
-            ModernUIForge.sRemoveMessageSignature = mRemoveSignature.get();
+            //ModernUIForge.sRemoveMessageSignature = mRemoveSignature.get();
             ModernUIForge.sRemoveTelemetrySession = mRemoveTelemetry.get();
-            ModernUIForge.sSecureProfilePublicKey = mSecurePublicKey.get();
+            //ModernUIForge.sSecureProfilePublicKey = mSecurePublicKey.get();
 
             TooltipRenderer.sTooltip = mTooltip.get();
 

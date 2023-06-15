@@ -18,16 +18,8 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import com.mojang.math.Matrix4f;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.SignRenderer;
-import net.minecraft.util.FormattedCharSequence;
-import org.spongepowered.asm.mixin.*;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
-
-import javax.annotation.Nonnull;
+import org.spongepowered.asm.mixin.Mixin;
 
 @Deprecated
 @Mixin(SignRenderer.class)

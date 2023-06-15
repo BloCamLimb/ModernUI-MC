@@ -18,12 +18,12 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import com.mojang.math.Matrix4f;
 import icyllis.modernui.mc.text.ModernTextRenderer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -38,10 +38,10 @@ public abstract class MixinFontRenderer {
      */
     @Overwrite
     public int drawInBatch(@Nonnull String text, float x, float y, int color, boolean dropShadow,
-                           @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, boolean seeThrough,
+                           @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
                            int colorBackground, int packedLight, @Deprecated boolean bidiFlag) {
-        return (int) ModernTextRenderer.drawText(text, x, y, color, dropShadow, matrix, source, seeThrough,
-                colorBackground, packedLight) + (dropShadow ? 1 : 0);
+        return (int) ModernTextRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
+                displayMode, colorBackground, packedLight) + (dropShadow ? 1 : 0);
     }
 
     /**
@@ -50,10 +50,10 @@ public abstract class MixinFontRenderer {
      */
     @Overwrite
     public int drawInBatch(@Nonnull Component text, float x, float y, int color, boolean dropShadow,
-                           @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, boolean seeThrough,
+                           @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
                            int colorBackground, int packedLight) {
-        return (int) ModernTextRenderer.drawText(text, x, y, color, dropShadow, matrix, source, seeThrough,
-                colorBackground, packedLight) + (dropShadow ? 1 : 0);
+        return (int) ModernTextRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
+                displayMode, colorBackground, packedLight) + (dropShadow ? 1 : 0);
     }
 
     /**
@@ -62,7 +62,7 @@ public abstract class MixinFontRenderer {
      */
     @Overwrite
     public int drawInBatch(@Nonnull FormattedCharSequence text, float x, float y, int color, boolean dropShadow,
-                           @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, boolean seeThrough,
+                           @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
                            int colorBackground, int packedLight) {
         /*if (text instanceof FormattedTextWrapper)
             // Handle Enchantment Table
@@ -71,8 +71,8 @@ public abstract class MixinFontRenderer {
                     FormattedText.STOP_ITERATION : Optional.empty(), Style.EMPTY).isPresent())
                 return callDrawInternal(text, x, y, color, dropShadow, matrix, source, seeThrough, colorBackground,
                         packedLight);*/
-        return (int) ModernTextRenderer.drawText(text, x, y, color, dropShadow, matrix, source, seeThrough,
-                colorBackground, packedLight) + (dropShadow ? 1 : 0);
+        return (int) ModernTextRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
+                displayMode, colorBackground, packedLight) + (dropShadow ? 1 : 0);
     }
 
     /*@Invoker
