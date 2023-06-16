@@ -382,9 +382,9 @@ public class PreferencesFragment extends Fragment {
             list.addView(createBooleanOption(context, "modernui.center.extension.tooltip",
                     Config.CLIENT.mTooltip, saveFn));
 
-            list.addView(createIntegerOption(context, "modernui.center.extension.tooltipDuration",
+            /*list.addView(createIntegerOption(context, "modernui.center.extension.tooltipDuration",
                     Config.Client.ANIM_DURATION_MIN, Config.Client.ANIM_DURATION_MAX,
-                    3, 50, Config.CLIENT.mTooltipDuration, saveFn));
+                    3, 50, Config.CLIENT.mTooltipDuration, saveFn));*/
 
             {
                 var layout = new LinearLayout(context);

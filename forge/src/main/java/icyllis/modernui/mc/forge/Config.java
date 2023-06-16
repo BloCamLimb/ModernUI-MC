@@ -169,7 +169,7 @@ final class Config {
         public final ForgeConfigSpec.BooleanValue mTooltip;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipFill;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
-        public final ForgeConfigSpec.IntValue mTooltipDuration;
+        //public final ForgeConfigSpec.IntValue mTooltipDuration;
         public final ForgeConfigSpec.BooleanValue mDing;
         //private final ForgeConfigSpec.BooleanValue hudBars;
         public final ForgeConfigSpec.BooleanValue mForceRtl;
@@ -274,9 +274,9 @@ final class Config {
                         list.add("#F0DAD0F4");
                         return list;
                     }, $ -> true);
-            mTooltipDuration = builder.comment(
+            /*mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
-                    .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);
+                    .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);*/
 
             builder.pop();
 
@@ -450,7 +450,7 @@ final class Config {
                 }
                 TooltipRenderer.sStrokeColor[i] = color;
             }
-            TooltipRenderer.sAnimationDuration = mTooltipDuration.get();
+            //TooltipRenderer.sAnimationDuration = mTooltipDuration.get();
 
             UIManager.sPlaySoundOnLoaded = mDing.get();
 

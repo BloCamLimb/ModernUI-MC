@@ -1036,9 +1036,9 @@ public final class UIManager implements LifecycleOwner {
                 mRoot.mChoreographer.scheduleFrameAsync(mFrameTimeNanos);
                 // update extension animations
                 BlurHandler.INSTANCE.update(mElapsedTimeMillis);
-                if (TooltipRenderer.sTooltip) {
+                /*if (TooltipRenderer.sTooltip) {
                     TooltipRenderer.update(deltaMillis, mFrameTimeNanos / 1000000);
-                }
+                }*/
                 if (mClearNextMainTarget || mAlwaysClearMainTarget) {
                     int boundFramebuffer = glGetInteger(GL_FRAMEBUFFER_BINDING);
                     glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
