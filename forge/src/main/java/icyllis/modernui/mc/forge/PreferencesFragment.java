@@ -29,7 +29,7 @@ import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.mc.forge.ui.DividerDrawable;
 import icyllis.modernui.mc.forge.ui.ThemeControl;
-import icyllis.modernui.mc.text.ModernUITextMC;
+import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.text.InputFilter;
 import icyllis.modernui.text.method.DigitsInputFilter;
 import icyllis.modernui.util.DataSet;
@@ -234,6 +234,10 @@ public class PreferencesFragment extends Fragment {
                 list.addView(option);
             }
 
+            list.addView(createBooleanOption(context, "modernui.center.font.vanillaFont",
+                    ModernUIText.CONFIG.mUseVanillaFont,
+                    ModernUIText.CONFIG::saveAndReloadAsync));
+
             list.addView(createBooleanOption(context, "modernui.center.font.antiAliasing",
                     Config.CLIENT.mAntiAliasing, Config.CLIENT::saveAndReloadAsync));
 
@@ -429,7 +433,7 @@ public class PreferencesFragment extends Fragment {
             content.addView(list);
         }
 
-        saveFn = ModernUITextMC.CONFIG::saveAndReloadAsync;
+        saveFn = ModernUIText.CONFIG::saveAndReloadAsync;
 
         {
             var category = createCategoryList(context, "modernui.center.category.text");
@@ -451,37 +455,37 @@ public class PreferencesFragment extends Fragment {
             category.addView(option);
 
             category.addView(createBooleanOption(context, "modernui.center.text.colorEmoji",
-                    ModernUITextMC.CONFIG.mColorEmoji, saveFn));
+                    ModernUIText.CONFIG.mColorEmoji, saveFn));
 
             category.addView(createBooleanOption(context, "modernui.center.text.emojiShortcodes",
-                    ModernUITextMC.CONFIG.mEmojiShortcodes, saveFn));
+                    ModernUIText.CONFIG.mEmojiShortcodes, saveFn));
 
             category.addView(createSpinnerOption(context, "modernui.center.text.bidiHeuristicAlgo",
-                    ModernUITextMC.Config.TextDirection.values(),
-                    ModernUITextMC.CONFIG.mTextDirection,
+                    ModernUIText.Config.TextDirection.values(),
+                    ModernUIText.CONFIG.mTextDirection,
                     saveFn));
 
             category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
-                    ModernUITextMC.CONFIG.mAllowShadow, saveFn));
+                    ModernUIText.CONFIG.mAllowShadow, saveFn));
 
             category.addView(createBooleanOption(context, "modernui.center.text.fixedResolution",
-                    ModernUITextMC.CONFIG.mFixedResolution, saveFn));
+                    ModernUIText.CONFIG.mFixedResolution, saveFn));
 
             category.addView(createFloatOption(context, "modernui.center.text.baseFontSize",
-                    ModernUITextMC.Config.BASE_FONT_SIZE_MIN, ModernUITextMC.Config.BASE_FONT_SIZE_MAX,
-                    5, ModernUITextMC.CONFIG.mBaseFontSize, saveFn));
+                    ModernUIText.Config.BASE_FONT_SIZE_MIN, ModernUIText.Config.BASE_FONT_SIZE_MAX,
+                    5, ModernUIText.CONFIG.mBaseFontSize, saveFn));
 
             category.addView(createFloatOption(context, "modernui.center.text.baselineShift",
-                    ModernUITextMC.Config.BASELINE_MIN, ModernUITextMC.Config.BASELINE_MAX,
-                    5, ModernUITextMC.CONFIG.mBaselineShift, saveFn));
+                    ModernUIText.Config.BASELINE_MIN, ModernUIText.Config.BASELINE_MAX,
+                    5, ModernUIText.CONFIG.mBaselineShift, saveFn));
 
             category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
-                    ModernUITextMC.Config.SHADOW_OFFSET_MIN, ModernUITextMC.Config.SHADOW_OFFSET_MAX,
-                    5, ModernUITextMC.CONFIG.mShadowOffset, saveFn));
+                    ModernUIText.Config.SHADOW_OFFSET_MIN, ModernUIText.Config.SHADOW_OFFSET_MAX,
+                    5, ModernUIText.CONFIG.mShadowOffset, saveFn));
 
             category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
-                    ModernUITextMC.Config.OUTLINE_OFFSET_MIN, ModernUITextMC.Config.OUTLINE_OFFSET_MAX,
-                    5, ModernUITextMC.CONFIG.mOutlineOffset, saveFn));
+                    ModernUIText.Config.OUTLINE_OFFSET_MIN, ModernUIText.Config.OUTLINE_OFFSET_MAX,
+                    5, ModernUIText.CONFIG.mOutlineOffset, saveFn));
 
             content.addView(category);
         }

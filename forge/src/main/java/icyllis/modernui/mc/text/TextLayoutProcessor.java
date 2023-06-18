@@ -824,6 +824,8 @@ public class TextLayoutProcessor {
         final boolean hasEffect = (styleFlags & CharacterStyle.EFFECT_MASK) != 0;
         // Convert to float form for calculation, but actually an integer
         //final float guiScale = mEngine.getGuiScale();
+        final GlyphManager glyphManager = mEngine.getGlyphManager();
+        final long fastKey = glyphManager.computeGlyphKey(font, 0);
 
         if ((styleFlags & CharacterStyle.OBFUSCATED_MASK) != 0) {
             // obfuscated layout, all replacement
@@ -842,7 +844,7 @@ public class TextLayoutProcessor {
                 }*/
 
                 mGlyphs.add(fastChars);
-                mGlyphKeys.add(0);
+                mGlyphKeys.add(fastKey);
                 mPositions.add(pos);
                 mPositions.add(0);
                 mCharFlags.add(styleFlags);
@@ -874,7 +876,6 @@ public class TextLayoutProcessor {
             // If we perform layout with bitmap replacement, we have more runs.
             final float resLevel = mResLevel;
             // HarfBuzz is introduced in Java 11 or higher, perform measure and layout below
-            final GlyphManager glyphManager = mEngine.getGlyphManager();
 
             TextLayoutEngine.FastCharSet fastChars = null;
             //final boolean alignPixels = sAlignPixels;
@@ -923,7 +924,7 @@ public class TextLayoutProcessor {
                                         fastChars = mEngine.lookupFastChars(font);
                                     }
                                     mGlyphs.add(fastChars);
-                                    mGlyphKeys.add(0);
+                                    mGlyphKeys.add(fastKey);
                                     mPositions.add(posX);
                                     mPositions.add(posY);
                                     mCharFlags.add(styleFlags | CharacterStyle.FAST_DIGIT_REPLACEMENT);
@@ -1006,7 +1007,7 @@ public class TextLayoutProcessor {
                                 fastChars = mEngine.lookupFastChars(font);
                             }
                             mGlyphs.add(fastChars);
-                            mGlyphKeys.add(0);
+                            mGlyphKeys.add(fastKey);
                             mPositions.add(posX);
                             mPositions.add(posY);
                             mCharFlags.add(styleFlags | CharacterStyle.FAST_DIGIT_REPLACEMENT);
@@ -1070,7 +1071,7 @@ public class TextLayoutProcessor {
                                         fastChars = mEngine.lookupFastChars(font);
                                     }
                                     mGlyphs.add(fastChars);
-                                    mGlyphKeys.add(0);
+                                    mGlyphKeys.add(fastKey);
                                     mPositions.add(posX);
                                     mPositions.add(posY);
                                     mCharFlags.add(styleFlags | CharacterStyle.FAST_DIGIT_REPLACEMENT);
@@ -1152,7 +1153,7 @@ public class TextLayoutProcessor {
                                 fastChars = mEngine.lookupFastChars(font);
                             }
                             mGlyphs.add(fastChars);
-                            mGlyphKeys.add(0);
+                            mGlyphKeys.add(fastKey);
                             mPositions.add(posX);
                             mPositions.add(posY);
                             mCharFlags.add(styleFlags | CharacterStyle.FAST_DIGIT_REPLACEMENT);
@@ -1194,7 +1195,6 @@ public class TextLayoutProcessor {
         } else {
             final float resLevel = mResLevel;
             // HarfBuzz is introduced in Java 11 or higher, perform measure and layout below
-            final GlyphManager glyphManager = mEngine.getGlyphManager();
 
             // Measure grapheme cluster in logical order
             BreakIterator breaker = BreakIterator.getCharacterInstance(locale);
@@ -1256,7 +1256,7 @@ public class TextLayoutProcessor {
                         fastChars = mEngine.lookupFastChars(font);
                     }
                     mGlyphs.add(fastChars);
-                    mGlyphKeys.add(0);
+                    mGlyphKeys.add(fastKey);
                     mPositions.add(posX);
                     mPositions.add(posY);
                     mCharFlags.add(styleFlags | CharacterStyle.FAST_DIGIT_REPLACEMENT);

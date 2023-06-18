@@ -24,6 +24,8 @@ import com.mojang.blaze3d.vertex.*;
 import icyllis.arc3d.engine.SamplerState;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.core.Core;
+import icyllis.modernui.graphics.RefCnt;
+import icyllis.modernui.graphics.SharedPtr;
 import icyllis.modernui.mc.forge.ModernUIForge;
 import icyllis.modernui.mc.text.mixin.AccessRenderBuffers;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
@@ -86,6 +88,7 @@ public class TextRenderType extends RenderType {
     private static final BufferBuilder sFirstSDFStrokeBuffer = new BufferBuilder(131072);
 
     // SDF requires bilinear sampling
+    @SharedPtr
     private static GLSampler sLinearFontSampler;
 
     static {
@@ -272,6 +275,7 @@ public class TextRenderType extends RenderType {
         sSeeThroughTypes.clear();
         sFirstSDFFillBuffer.clear();
         sFirstSDFStrokeBuffer.clear();
+        sLinearFontSampler = RefCnt.move(sLinearFontSampler);
     }
 
     public static ShaderInstance getShaderNormal() {
@@ -302,7 +306,7 @@ public class TextRenderType extends RenderType {
         final var fallback = source.asProvider();
         final var provider = (ResourceProvider) location -> {
             // don't worry, ShaderInstance ctor will close it
-            @SuppressWarnings("resource") final var stream = ModernUITextMC.class
+            @SuppressWarnings("resource") final var stream = ModernUIText.class
                     .getResourceAsStream("/assets/" + location.getNamespace() + "/" + location.getPath());
             if (stream == null) {
                 // fallback to vanilla

@@ -78,6 +78,7 @@
   "modernui.center.text.cacheLifespan": "Layout Cache Lifespan",
   "modernui.center.text.rehashThreshold": "Cache Rehash Threshold",
   "modernui.center.font.fontFamily": "Font Family",
+  "modernui.center.font.vanillaFont": "Use Vanilla Default Font",
   "modernui.center.font.antiAliasing": "Anti-Aliasing",
   "modernui.center.font.autoHinting": "Auto Font Hinting",
   "modernui.center.font.linearSampling": "Linear Sampling",

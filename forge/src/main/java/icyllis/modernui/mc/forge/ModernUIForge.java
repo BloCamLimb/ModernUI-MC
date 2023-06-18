@@ -21,7 +21,7 @@ package icyllis.modernui.mc.forge;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.font.*;
-import icyllis.modernui.mc.text.ModernUITextMC;
+import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.ViewManager;
 import net.minecraft.client.Minecraft;
@@ -239,7 +239,7 @@ public final class ModernUIForge {
         ModLoader.get().addWarning(new ModLoadingWarning(null, ModLoadingStage.SIDED_SETUP, key, args));
     }*/
 
-    private static void loadFonts(@Nonnull List<? extends String> configs, @Nonnull Set<FontFamily> selected) {
+    private static void loadFonts(@Nonnull Collection<String> configs, @Nonnull Set<FontFamily> selected) {
         boolean hasFail = false;
         for (String cfg : configs) {
             if (StringUtils.isEmpty(cfg)) {
@@ -265,14 +265,19 @@ public final class ModernUIForge {
                 continue;
             } catch (Exception ignored) {
             }
-            Optional<FontFamily> family = FontFamily.getSystemFontMap().values().stream()
-                    .filter(f -> f.getFamilyName().equalsIgnoreCase(cfg))
-                    .findFirst();
-            if (family.isPresent()) {
-                FontFamily f = family.get();
-                selected.add(f);
+            FontFamily family = FontFamily.getSystemFontMap().get(cfg);
+            if (family == null) {
+                Optional<FontFamily> optional = FontFamily.getSystemFontMap().values().stream()
+                        .filter(f -> f.getFamilyName().equalsIgnoreCase(cfg))
+                        .findFirst();
+                if (optional.isPresent()) {
+                    family = optional.get();
+                }
+            }
+            if (family != null) {
+                selected.add(family);
                 LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as SYSTEM FONT",
-                        f.getFamilyName(), cfg);
+                        family.getFamilyName(), cfg);
                 continue;
             }
             hasFail = true;
@@ -320,10 +325,10 @@ public final class ModernUIForge {
             super();
             sInstance = this;
             if ((getBootstrapLevel() & BOOTSTRAP_DISABLE_TEXT_ENGINE) == 0) {
-                ModernUITextMC.init();
+                ModernUIText.init();
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
-            ModernUITextMC.initConfig();
+            ModernUIText.initConfig();
             if (sDevelopment) {
                 FMLJavaModLoadingContext.get().getModEventBus().register(Registration.ModClientDev.class);
             }
@@ -364,7 +369,7 @@ public final class ModernUIForge {
                     Set<FontFamily> set = new LinkedHashSet<>();
                     List<? extends String> configs = Config.CLIENT.mFontFamily.get();
                     if (configs != null) {
-                        loadFonts(configs, set);
+                        loadFonts(new LinkedHashSet<>(configs), set);
                     }
                     mTypeface = Typeface.createTypeface(set.toArray(new FontFamily[0]));
                     // do some warm-up, but do not block ourselves

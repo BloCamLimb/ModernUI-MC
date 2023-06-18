@@ -78,6 +78,7 @@
   "modernui.center.text.cacheLifespan": "布局缓存生命期限",
   "modernui.center.text.rehashThreshold": "缓存重哈希阈值",
   "modernui.center.font.fontFamily": "字体族",
+  "modernui.center.font.vanillaFont": "使用原版默认字体",
   "modernui.center.font.antiAliasing": "抗锯齿",
   "modernui.center.font.autoHinting": "自动字体微调",
   "modernui.center.font.linearSampling": "线性采样",

@@ -117,6 +117,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
      */
     public static boolean sForceUseDistanceField;
 
+    public static boolean sUseVanillaFont = false;
+
     /**
      * Matches Slack emoji shortcode.
      */
@@ -252,6 +254,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
     // vanilla's font manager, used only for compatibility
     private FontManager mVanillaFontManager;
 
+    private boolean mVanillaFontUsed = false;
+
     /*
      * Remove all formatting code even though it's invalid {@link #getFormattingByCode(char)} == null
      */
@@ -335,6 +339,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
      * Reload layout engine.
      * Called when resolution level or language changed. This will call {@link #clear()}.
      */
+    @RenderThread
     public void reload() {
         clear();
 
@@ -368,6 +373,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
             default -> layoutRtl ? TextDirectionHeuristics.FIRSTSTRONG_RTL :
                     TextDirectionHeuristics.FIRSTSTRONG_LTR;
         };
+
+        injectVanillaFont();
 
         if (oldLevel == 0) {
             LOGGER.info(MARKER, "Loaded text layout engine, res level: {}, locale: {}, layout RTL: {}",
@@ -404,6 +411,33 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public TextLayoutEngine injectFontManager(@Nonnull FontManager manager) {
         mVanillaFontManager = manager;
         return this;
+    }
+
+    @RenderThread
+    private void injectVanillaFont() {
+        if (mVanillaFontUsed != sUseVanillaFont) {
+            if (sUseVanillaFont) {
+                LinkedHashSet<FontFamily> fonts = new LinkedHashSet<>();
+                try (InputStream inputStream = Minecraft.getInstance().getResourceManager()
+                        .open(ModernUIForge.location("font/default.ttf"))) {
+                    Font f = Font.createFont(Font.TRUETYPE_FONT, inputStream);
+                    fonts.add(new FontFamily(f));
+                } catch (Exception e) {
+                    LOGGER.warn(MARKER, "Failed to load default.ttf", e);
+                }
+                if (!fonts.isEmpty()) {
+                    fonts.addAll(ModernUI.getSelectedTypeface().getFontCollection().getFamilies());
+                    FontCollection fc = new FontCollection(fonts.toArray(new FontFamily[0]));
+                    mFontCollections.put(Minecraft.DEFAULT_FONT, fc);
+                    mFontCollections.put(Minecraft.UNIFORM_FONT, fc);
+                    LOGGER.info(MARKER, "Using Minecraft default font for Minecraft text");
+                }
+            } else {
+                mFontCollections.remove(Minecraft.DEFAULT_FONT);
+                mFontCollections.remove(Minecraft.UNIFORM_FONT);
+            }
+            mVanillaFontUsed = sUseVanillaFont;
+        }
     }
 
     /**
@@ -476,6 +510,9 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 fontSets.put(name, fontSet);
             });
         }
+        // vanilla font
+        mVanillaFontUsed = false;
+        injectVanillaFont();
         // reload emojis
         mEmojiMap.clear();
         mEmojiShortcodes.clear();
