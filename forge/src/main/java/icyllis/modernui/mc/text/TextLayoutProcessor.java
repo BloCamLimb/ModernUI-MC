@@ -27,6 +27,7 @@ import icyllis.modernui.mc.text.mixin.*;
 import icyllis.modernui.text.*;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
@@ -109,6 +110,10 @@ public class TextLayoutProcessor {
      * The order is visually left-to-right (i.e. in visual order).
      */
     private final List<GLBakedGlyph> mGlyphs = new ArrayList<>();
+    /**
+     * The glyph key of {@link #mGlyphs}, same order. Can be 0 for fast chars or bitmap.
+     */
+    private final LongArrayList mGlyphKeys = new LongArrayList();
     /**
      * Position x1 y1 x2 y2... relative to the same point, for rendering glyphs.
      * These values are not offset to glyph additional baseline but aligned.
@@ -195,6 +200,7 @@ public class TextLayoutProcessor {
     private boolean mHasEffect;
     private boolean mHasFastDigit;
     private boolean mHasColorBitmap;
+    private int mResLevel;
 
     /**
      * Always LTR.
@@ -365,6 +371,7 @@ public class TextLayoutProcessor {
         mStyles.clear();
         mFonts.clear();
         mGlyphs.clear();
+        mGlyphKeys.clear();
         mCharIndices.clear();
         mPositions.clear();
         mAdvances.clear();
@@ -377,8 +384,9 @@ public class TextLayoutProcessor {
     }
 
     @Nonnull
-    public TextLayout performVanillaLayout(@Nonnull String text, @Nonnull Style style) {
+    public TextLayout performVanillaLayout(@Nonnull String text, @Nonnull Style style, int resLevel) {
         StringDecomposer.iterateFormatted(text, style, mSequenceBuilder);
+        mResLevel = resLevel;
         TextLayout layout = performFullLayout(text); // do fast digit replacement
         if (DEBUG) {
             ModernUI.LOGGER.info("Performed Vanilla Layout: {}, {}, {}", mBuilder.toString(), text, layout);
@@ -388,8 +396,9 @@ public class TextLayoutProcessor {
     }
 
     @Nonnull
-    public TextLayout performComplexLayout(@Nonnull FormattedText text, @Nonnull Style style) {
+    public TextLayout performComplexLayout(@Nonnull FormattedText text, @Nonnull Style style, int resLevel) {
         text.visit(mContentBuilder, style);
+        mResLevel = resLevel;
         TextLayout layout = performFullLayout(null);
         if (DEBUG) {
             ModernUI.LOGGER.info("Performed Complex Layout: {}, {}, {}", mBuilder.toString(), text, layout);
@@ -399,8 +408,9 @@ public class TextLayoutProcessor {
     }
 
     @Nonnull
-    public TextLayout performSequenceLayout(@Nonnull FormattedCharSequence sequence) {
+    public TextLayout performSequenceLayout(@Nonnull FormattedCharSequence sequence, int resLevel) {
         sequence.accept(mSequenceBuilder);
+        mResLevel = resLevel;
         TextLayout layout = performFullLayout(null);
         if (DEBUG) {
             ModernUI.LOGGER.info("Performed Sequence Layout: {}, {}, {}", mBuilder.toString(), sequence, layout);
@@ -521,9 +531,11 @@ public class TextLayoutProcessor {
                     float guiScale = mEngine.getGuiScale();
                     mTotalAdvance = Math.round(mTotalAdvance * guiScale) / guiScale;
                 }*/
-                return new TextLayout(textBuf, mGlyphs.toArray(new GLBakedGlyph[0]), mPositions.toFloatArray(),
+                return new TextLayout(textBuf, mGlyphs.toArray(new GLBakedGlyph[0]),
+                        mGlyphKeys.toLongArray(), mPositions.toFloatArray(),
                         mAdvances.toFloatArray(), mCharFlags.toIntArray(), mCharIndices.toIntArray(),
-                        mLineBoundaries.toIntArray(), mTotalAdvance, mHasEffect, mHasFastDigit, mHasColorBitmap);
+                        mLineBoundaries.toIntArray(), mTotalAdvance, mHasEffect, mHasFastDigit, mHasColorBitmap,
+                        mResLevel);
             }
         }
         // all invisible and no measure info
@@ -770,7 +782,7 @@ public class TextLayoutProcessor {
             fontStyle |= Font.ITALIC;
         }
         // Note max font size is 96, see FontPaint, font size will be (8 * res) in Minecraft by default
-        float fontSize = Math.min(sBaseFontSize * mEngine.getResLevel(), 96);
+        float fontSize = Math.min(sBaseFontSize * mResLevel, 96);
 
         final List<FontCollection.Run> items = mEngine.getFontCollection(fontName)
                 .itemize(text, start, limit);
@@ -812,12 +824,14 @@ public class TextLayoutProcessor {
         final boolean hasEffect = (styleFlags & CharacterStyle.EFFECT_MASK) != 0;
         // Convert to float form for calculation, but actually an integer
         //final float guiScale = mEngine.getGuiScale();
+        final GlyphManager glyphManager = mEngine.getGlyphManager();
+        final long fastKey = glyphManager.computeGlyphKey(font, 0);
 
         if ((styleFlags & CharacterStyle.OBFUSCATED_MASK) != 0) {
             // obfuscated layout, all replacement
             final TextLayoutEngine.FastCharSet fastChars = mEngine.lookupFastChars(font);
             //final boolean alignPixels = sAlignPixels;
-            final float advance = fastChars.offsets[0];
+            final float advance = fastChars.offsets[0] / mResLevel;
 
             float offset = mTotalAdvance;
             // Process code point in visual order
@@ -830,6 +844,7 @@ public class TextLayoutProcessor {
                 }*/
 
                 mGlyphs.add(fastChars);
+                mGlyphKeys.add(fastKey);
                 mPositions.add(pos);
                 mPositions.add(0);
                 mCharFlags.add(styleFlags);
@@ -859,9 +874,8 @@ public class TextLayoutProcessor {
             }*/
         } else if (sColorEmoji) {
             // If we perform layout with bitmap replacement, we have more runs.
-            final float resLevel = mEngine.getResLevel();
+            final float resLevel = mResLevel;
             // HarfBuzz is introduced in Java 11 or higher, perform measure and layout below
-            final GlyphManager glyphManager = mEngine.getGlyphManager();
 
             TextLayoutEngine.FastCharSet fastChars = null;
             //final boolean alignPixels = sAlignPixels;
@@ -910,6 +924,7 @@ public class TextLayoutProcessor {
                                         fastChars = mEngine.lookupFastChars(font);
                                     }
                                     mGlyphs.add(fastChars);
+                                    mGlyphKeys.add(fastKey);
                                     mPositions.add(posX);
                                     mPositions.add(posY);
                                     mCharFlags.add(styleFlags | CharacterStyle.FAST_DIGIT_REPLACEMENT);
@@ -918,9 +933,11 @@ public class TextLayoutProcessor {
                                     mHasFastDigit = true;
                                 } else {
                                     int glyphCode = vector.getGlyphCode(i);
-                                    GLBakedGlyph glyph = glyphManager.lookupGlyph(font, glyphCode);
+                                    long key = glyphManager.computeGlyphKey(font ,glyphCode);
+                                    GLBakedGlyph glyph = glyphManager.lookupGlyph(key);
                                     if (glyph != null) {
                                         mGlyphs.add(glyph);
+                                        mGlyphKeys.add(key);
                                         mPositions.add(posX);
                                         mPositions.add(posY);
                                         mCharFlags.add(styleFlags);
@@ -940,7 +957,9 @@ public class TextLayoutProcessor {
                         mAdvances.set(currPos, TextLayoutEngine.EMOJI_BASE_SIZE + 1);
 
                         mGlyphs.add(emoji);
-                        mPositions.add(/*alignPixels ? Math.round(mTotalAdvance * guiScale) / guiScale : */mTotalAdvance);
+                        mGlyphKeys.add(0);
+                        mPositions.add(/*alignPixels ? Math.round(mTotalAdvance * guiScale) / guiScale :
+                         */mTotalAdvance);
                         mPositions.add(0);
                         mCharFlags.add(0xFFFFFF | CharacterStyle.BITMAP_REPLACEMENT);
                         mCharIndices.add(currPos);
@@ -988,6 +1007,7 @@ public class TextLayoutProcessor {
                                 fastChars = mEngine.lookupFastChars(font);
                             }
                             mGlyphs.add(fastChars);
+                            mGlyphKeys.add(fastKey);
                             mPositions.add(posX);
                             mPositions.add(posY);
                             mCharFlags.add(styleFlags | CharacterStyle.FAST_DIGIT_REPLACEMENT);
@@ -996,9 +1016,11 @@ public class TextLayoutProcessor {
                             mHasFastDigit = true;
                         } else {
                             int glyphCode = vector.getGlyphCode(i);
-                            GLBakedGlyph glyph = glyphManager.lookupGlyph(font, glyphCode);
+                            long key = glyphManager.computeGlyphKey(font ,glyphCode);
+                            GLBakedGlyph glyph = glyphManager.lookupGlyph(key);
                             if (glyph != null) {
                                 mGlyphs.add(glyph);
+                                mGlyphKeys.add(key);
                                 mPositions.add(posX);
                                 mPositions.add(posY);
                                 mCharFlags.add(styleFlags);
@@ -1049,6 +1071,7 @@ public class TextLayoutProcessor {
                                         fastChars = mEngine.lookupFastChars(font);
                                     }
                                     mGlyphs.add(fastChars);
+                                    mGlyphKeys.add(fastKey);
                                     mPositions.add(posX);
                                     mPositions.add(posY);
                                     mCharFlags.add(styleFlags | CharacterStyle.FAST_DIGIT_REPLACEMENT);
@@ -1057,9 +1080,11 @@ public class TextLayoutProcessor {
                                     mHasFastDigit = true;
                                 } else {
                                     int glyphCode = vector.getGlyphCode(i);
-                                    GLBakedGlyph glyph = glyphManager.lookupGlyph(font, glyphCode);
+                                    long key = glyphManager.computeGlyphKey(font ,glyphCode);
+                                    GLBakedGlyph glyph = glyphManager.lookupGlyph(key);
                                     if (glyph != null) {
                                         mGlyphs.add(glyph);
+                                        mGlyphKeys.add(key);
                                         mPositions.add(posX);
                                         mPositions.add(posY);
                                         mCharFlags.add(styleFlags);
@@ -1079,6 +1104,7 @@ public class TextLayoutProcessor {
                         mAdvances.set(prevPos, TextLayoutEngine.EMOJI_BASE_SIZE + 1);
 
                         mGlyphs.add(emoji);
+                        mGlyphKeys.add(0);
                         mPositions.add(/*alignPixels ? Math.round(mTotalAdvance * guiScale) / guiScale : */mTotalAdvance);
                         mPositions.add(0);
                         mCharFlags.add(0xFFFFFF | CharacterStyle.BITMAP_REPLACEMENT);
@@ -1127,6 +1153,7 @@ public class TextLayoutProcessor {
                                 fastChars = mEngine.lookupFastChars(font);
                             }
                             mGlyphs.add(fastChars);
+                            mGlyphKeys.add(fastKey);
                             mPositions.add(posX);
                             mPositions.add(posY);
                             mCharFlags.add(styleFlags | CharacterStyle.FAST_DIGIT_REPLACEMENT);
@@ -1135,9 +1162,11 @@ public class TextLayoutProcessor {
                             mHasFastDigit = true;
                         } else {
                             int glyphCode = vector.getGlyphCode(i);
-                            GLBakedGlyph glyph = glyphManager.lookupGlyph(font, glyphCode);
+                            long key = glyphManager.computeGlyphKey(font ,glyphCode);
+                            GLBakedGlyph glyph = glyphManager.lookupGlyph(key);
                             if (glyph != null) {
                                 mGlyphs.add(glyph);
+                                mGlyphKeys.add(key);
                                 mPositions.add(posX);
                                 mPositions.add(posY);
                                 mCharFlags.add(styleFlags);
@@ -1164,9 +1193,8 @@ public class TextLayoutProcessor {
             }
 
         } else {
-            final float resLevel = mEngine.getResLevel();
+            final float resLevel = mResLevel;
             // HarfBuzz is introduced in Java 11 or higher, perform measure and layout below
-            final GlyphManager glyphManager = mEngine.getGlyphManager();
 
             // Measure grapheme cluster in logical order
             BreakIterator breaker = BreakIterator.getCharacterInstance(locale);
@@ -1228,6 +1256,7 @@ public class TextLayoutProcessor {
                         fastChars = mEngine.lookupFastChars(font);
                     }
                     mGlyphs.add(fastChars);
+                    mGlyphKeys.add(fastKey);
                     mPositions.add(posX);
                     mPositions.add(posY);
                     mCharFlags.add(styleFlags | CharacterStyle.FAST_DIGIT_REPLACEMENT);
@@ -1236,9 +1265,11 @@ public class TextLayoutProcessor {
                     mHasFastDigit = true;
                 } else {
                     int glyphCode = vector.getGlyphCode(i);
-                    GLBakedGlyph glyph = glyphManager.lookupGlyph(font, glyphCode);
+                    long key = glyphManager.computeGlyphKey(font ,glyphCode);
+                    GLBakedGlyph glyph = glyphManager.lookupGlyph(key);
                     if (glyph != null) {
                         mGlyphs.add(glyph);
+                        mGlyphKeys.add(key);
                         mPositions.add(posX);
                         mPositions.add(posY);
                         mCharFlags.add(styleFlags);
@@ -1297,6 +1328,7 @@ public class TextLayoutProcessor {
             mAdvances.set(i, glyph.advance);
 
             mGlyphs.add(glyph);
+            mGlyphKeys.add(0);
             mPositions.add(offset);
             mPositions.add(0);
             mCharFlags.add(styleFlags | CharacterStyle.BITMAP_REPLACEMENT);

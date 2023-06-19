@@ -24,6 +24,7 @@ import com.mojang.blaze3d.font.GlyphProvider;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.font.*;
 import icyllis.modernui.mc.forge.*;
@@ -115,6 +116,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
      * @see icyllis.modernui.mc.text.mixin.MixinGameRenderer
      */
     public static boolean sForceUseDistanceField;
+
+    public static boolean sUseVanillaFont = false;
 
     /**
      * Matches Slack emoji shortcode.
@@ -242,11 +245,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     /**
      * Determine font size. Integer.
      */
-    private float mGuiScale;
-    /**
-     * Determine font size. Integer.
-     */
-    private float mResLevel;
+    private int mResLevel;
     /**
      * Text direction.
      */
@@ -254,6 +253,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
 
     // vanilla's font manager, used only for compatibility
     private FontManager mVanillaFontManager;
+
+    private boolean mVanillaFontUsed = false;
 
     /*
      * Remove all formatting code even though it's invalid {@link #getFormattingByCode(char)} == null
@@ -338,6 +339,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
      * Reload layout engine.
      * Called when resolution level or language changed. This will call {@link #clear()}.
      */
+    @RenderThread
     public void reload() {
         clear();
 
@@ -358,7 +360,6 @@ public class TextLayoutEngine implements PreparableReloadListener {
             }*/
             mResLevel = Math.min(scale, MuiForgeApi.MAX_GUI_SCALE);
         }
-        mGuiScale = scale;
 
         Locale locale = ModernUI.getSelectedLocale();
         boolean layoutRtl = TextUtils.getLayoutDirectionFromLocale(locale) == View.LAYOUT_DIRECTION_RTL;
@@ -372,6 +373,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
             default -> layoutRtl ? TextDirectionHeuristics.FIRSTSTRONG_RTL :
                     TextDirectionHeuristics.FIRSTSTRONG_LTR;
         };
+
+        injectVanillaFont();
 
         if (oldLevel == 0) {
             LOGGER.info(MARKER, "Loaded text layout engine, res level: {}, locale: {}, layout RTL: {}",
@@ -408,6 +411,33 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public TextLayoutEngine injectFontManager(@Nonnull FontManager manager) {
         mVanillaFontManager = manager;
         return this;
+    }
+
+    @RenderThread
+    private void injectVanillaFont() {
+        if (mVanillaFontUsed != sUseVanillaFont) {
+            if (sUseVanillaFont) {
+                LinkedHashSet<FontFamily> fonts = new LinkedHashSet<>();
+                try (InputStream inputStream = Minecraft.getInstance().getResourceManager()
+                        .open(ModernUIForge.location("font/default.ttf"))) {
+                    Font f = Font.createFont(Font.TRUETYPE_FONT, inputStream);
+                    fonts.add(new FontFamily(f));
+                } catch (Exception e) {
+                    LOGGER.warn(MARKER, "Failed to load default.ttf", e);
+                }
+                if (!fonts.isEmpty()) {
+                    fonts.addAll(ModernUI.getSelectedTypeface().getFontCollection().getFamilies());
+                    FontCollection fc = new FontCollection(fonts.toArray(new FontFamily[0]));
+                    mFontCollections.put(Minecraft.DEFAULT_FONT, fc);
+                    mFontCollections.put(Minecraft.UNIFORM_FONT, fc);
+                    LOGGER.info(MARKER, "Using Minecraft default font for Minecraft text");
+                }
+            } else {
+                mFontCollections.remove(Minecraft.DEFAULT_FONT);
+                mFontCollections.remove(Minecraft.UNIFORM_FONT);
+            }
+            mVanillaFontUsed = sUseVanillaFont;
+        }
     }
 
     /**
@@ -480,6 +510,9 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 fontSets.put(name, fontSet);
             });
         }
+        // vanilla font
+        mVanillaFontUsed = false;
+        injectVanillaFont();
         // reload emojis
         mEmojiMap.clear();
         mEmojiShortcodes.clear();
@@ -693,6 +726,11 @@ public class TextLayoutEngine implements PreparableReloadListener {
     ////// END Resource Reloading
 
 
+    public static int getResLevelForSDF(int resLevel) {
+        return Math.max(resLevel, 4);
+    }
+
+
     ////// START Cache Retrieval
 
     /**
@@ -713,7 +751,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
         }
         TextLayout layout = mVanillaCache.get(mVanillaLookupKey.update(text, Style.EMPTY));
         if (layout == null) {
-            layout = mProcessor.performVanillaLayout(text, Style.EMPTY);
+            layout = mProcessor.performVanillaLayout(text, Style.EMPTY, mResLevel);
             mVanillaCache.put(mVanillaLookupKey.copy(), layout);
             return layout;
         }
@@ -739,7 +777,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
         }
         TextLayout layout = mVanillaCache.get(mVanillaLookupKey.update(text, style));
         if (layout == null) {
-            layout = mProcessor.performVanillaLayout(text, style);
+            layout = mProcessor.performVanillaLayout(text, style, mResLevel);
             mVanillaCache.put(mVanillaLookupKey.copy(), layout);
             return layout;
         }
@@ -768,14 +806,14 @@ public class TextLayoutEngine implements PreparableReloadListener {
         if (text instanceof MutableComponent component) {
             layout = mComponentCache.get(component);
             if (layout == null) {
-                layout = mProcessor.performComplexLayout(text, Style.EMPTY);
+                layout = mProcessor.performComplexLayout(text, Style.EMPTY, mResLevel);
                 mComponentCache.put(component, layout);
                 return layout;
             }
         } else {
             layout = mFormattedCache.get(mFormattedLayoutKey.update(text, Style.EMPTY));
             if (layout == null) {
-                layout = mProcessor.performComplexLayout(text, Style.EMPTY);
+                layout = mProcessor.performComplexLayout(text, Style.EMPTY, mResLevel);
                 mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
                 return layout;
             }
@@ -806,7 +844,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
         if (style.isEmpty() && text instanceof MutableComponent component) {
             layout = mComponentCache.get(component);
             if (layout == null) {
-                layout = mProcessor.performComplexLayout(text, Style.EMPTY);
+                layout = mProcessor.performComplexLayout(text, Style.EMPTY, mResLevel);
                 mComponentCache.put(component, layout);
                 return layout;
             }
@@ -814,7 +852,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
             // the more complex case (multi-component)
             layout = mFormattedCache.get(mFormattedLayoutKey.update(text, style));
             if (layout == null) {
-                layout = mProcessor.performComplexLayout(text, style);
+                layout = mProcessor.performComplexLayout(text, style, mResLevel);
                 mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
                 return layout;
             }
@@ -853,7 +891,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
             if (text instanceof MutableComponent component) {
                 layout = mComponentCache.get(component);
                 if (layout == null) {
-                    layout = mProcessor.performComplexLayout(text, Style.EMPTY);
+                    layout = mProcessor.performComplexLayout(text, Style.EMPTY, mResLevel);
                     mComponentCache.put(component, layout);
                     return layout;
                 }
@@ -861,7 +899,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 // the more complex case (multi-component)
                 layout = mFormattedCache.get(mFormattedLayoutKey.update(text, Style.EMPTY));
                 if (layout == null) {
-                    layout = mProcessor.performComplexLayout(text, Style.EMPTY);
+                    layout = mProcessor.performComplexLayout(text, Style.EMPTY, mResLevel);
                     mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
                     return layout;
                 }
@@ -871,7 +909,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
             // the most complex case (multi-component)
             TextLayout layout = mFormattedCache.get(mFormattedLayoutKey.update(sequence));
             if (layout == null) {
-                layout = mProcessor.performSequenceLayout(sequence);
+                layout = mProcessor.performSequenceLayout(sequence, mResLevel);
                 mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
                 return layout;
             }
@@ -1105,24 +1143,6 @@ public class TextLayoutEngine implements PreparableReloadListener {
     }
 
     /**
-     * Returns current GUI scale for texts.
-     *
-     * @return scale factor, an integer value but converted to float
-     */
-    public float getGuiScale() {
-        return mGuiScale;
-    }
-
-    /**
-     * Returns current resolution level for texts.
-     *
-     * @return resolution level, an integer value but converted to float
-     */
-    public float getResLevel() {
-        return mResLevel;
-    }
-
-    /**
      * Returns current text direction algorithm.
      *
      * @return text dir
@@ -1216,17 +1236,12 @@ public class TextLayoutEngine implements PreparableReloadListener {
             glyphs = Arrays.copyOf(glyphs, n);
             offsets = Arrays.copyOf(offsets, n);
         }
-        // the cache will be reset when resolution level changed
-        float level = getResLevel();
-        for (int i = 0; i < n; i++) {
-            offsets[i] /= level;
-        }
         return new FastCharSet(glyphs, offsets);
     }
 
     /**
      * FastCharSet have uniform advances. Offset[0] is the advance for all glyphs.
-     * Other offsets is the relative offset to center the glyph. Normalized to
+     * Other offsets is the relative offset to center the glyph. UN-normalized to
      * Minecraft GUI system.
      * <p>
      * This is used to render fast digits and obfuscated chars.

@@ -28,7 +28,7 @@ import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
 import icyllis.modernui.graphics.drawable.StateListDrawable;
 import icyllis.modernui.mc.forge.ui.RectangleDrawable;
-import icyllis.modernui.mc.text.ModernUITextMC;
+import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.text.InputFilter;
 import icyllis.modernui.text.TextPaint;
 import icyllis.modernui.text.method.DigitsInputFilter;
@@ -334,17 +334,17 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             {
                 var option = createInputOption("modernui.center.text.cacheLifespan");
                 var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(ModernUITextMC.CONFIG.mCacheLifespan.get().toString());
+                input.setText(ModernUIText.CONFIG.mCacheLifespan.get().toString());
                 input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale()), new InputFilter.LengthFilter(2));
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v = (EditText) view;
                         int value = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
-                                ModernUITextMC.Config.LIFESPAN_MIN, ModernUITextMC.Config.LIFESPAN_MAX);
+                                ModernUIText.Config.LIFESPAN_MIN, ModernUIText.Config.LIFESPAN_MAX);
                         v.setText(Integer.toString(value));
-                        if (value != ModernUITextMC.CONFIG.mCacheLifespan.get()) {
-                            ModernUITextMC.CONFIG.mCacheLifespan.set(value);
-                            ModernUITextMC.CONFIG.saveAndReloadAsync();
+                        if (value != ModernUIText.CONFIG.mCacheLifespan.get()) {
+                            ModernUIText.CONFIG.mCacheLifespan.set(value);
+                            ModernUIText.CONFIG.saveAndReloadAsync();
                         }
                     }
                 });
@@ -353,17 +353,17 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             {
                 var option = createInputOption("modernui.center.text.rehashThreshold");
                 var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(ModernUITextMC.CONFIG.mRehashThreshold.get().toString());
+                input.setText(ModernUIText.CONFIG.mRehashThreshold.get().toString());
                 input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale()), new InputFilter.LengthFilter(4));
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v = (EditText) view;
                         int value = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
-                                ModernUITextMC.Config.REHASH_MIN, ModernUITextMC.Config.REHASH_MAX);
+                                ModernUIText.Config.REHASH_MIN, ModernUIText.Config.REHASH_MAX);
                         v.setText(Integer.toString(value));
-                        if (value != ModernUITextMC.CONFIG.mRehashThreshold.get()) {
-                            ModernUITextMC.CONFIG.mRehashThreshold.set(value);
-                            ModernUITextMC.CONFIG.saveAndReloadAsync();
+                        if (value != ModernUIText.CONFIG.mRehashThreshold.get()) {
+                            ModernUIText.CONFIG.mRehashThreshold.set(value);
+                            ModernUIText.CONFIG.saveAndReloadAsync();
                         }
                     }
                 });

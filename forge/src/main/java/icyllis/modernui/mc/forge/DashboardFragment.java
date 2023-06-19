@@ -37,7 +37,6 @@ public class DashboardFragment extends Fragment {
 
     public static final String CREDIT_TEXT = """
             Modern UI 3.7.0
-            Release Candidate
             by
             BloCamLimb
             (Icyllis Milica)
@@ -150,7 +149,7 @@ public class DashboardFragment extends Fragment {
         if (editable.length() < CREDIT_TEXT.length()) {
             editable.append(CREDIT_TEXT.charAt(editable.length()));
             if (editable.length() < CREDIT_TEXT.length()) {
-                mSideBox.postDelayed(mUpdateText, 200);
+                mSideBox.postDelayed(mUpdateText, 250);
             }
         }
     }

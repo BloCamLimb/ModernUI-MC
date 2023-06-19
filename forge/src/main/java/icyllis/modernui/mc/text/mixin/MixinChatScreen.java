@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import icyllis.modernui.mc.text.ModernUITextMC;
+import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -47,7 +47,7 @@ public class MixinChatScreen {
         String msg = input.getValue();
         if (!mBroadcasting &&
                 !msg.startsWith("/") &&
-                ModernUITextMC.CONFIG.mEmojiShortcodes.get() &&
+                ModernUIText.CONFIG.mEmojiShortcodes.get() &&
                 msg.contains(":")) {
             final TextLayoutEngine engine = TextLayoutEngine.getInstance();
             final Matcher matcher = TextLayoutEngine.EMOJI_SHORTCODE_PATTERN.matcher(msg);

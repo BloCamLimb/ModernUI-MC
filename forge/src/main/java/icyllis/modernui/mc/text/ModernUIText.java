@@ -44,9 +44,9 @@ import javax.annotation.Nonnull;
 import static icyllis.modernui.ModernUI.*;
 
 /**
- * Modern UI Text MC can bootstrap independently.
+ * Modern UI Text for Minecraft can bootstrap independently.
  */
-public final class ModernUITextMC {
+public final class ModernUIText {
 
     static {
         assert FMLEnvironment.dist.isClient();
@@ -55,11 +55,11 @@ public final class ModernUITextMC {
     public static Config CONFIG;
     private static ForgeConfigSpec CONFIG_SPEC;
 
-    private ModernUITextMC() {
+    private ModernUIText() {
     }
 
     public static void init() {
-        FMLJavaModLoadingContext.get().getModEventBus().register(ModernUITextMC.class);
+        FMLJavaModLoadingContext.get().getModEventBus().register(ModernUIText.class);
     }
 
     public static void initConfig() {
@@ -204,6 +204,7 @@ public final class ModernUITextMC {
         //public final ForgeConfigSpec.BooleanValue mBitmapReplacement;
         public final ForgeConfigSpec.BooleanValue mEmojiShortcodes;
         //public final ForgeConfigSpec.BooleanValue mUseDistanceField;
+        public final ForgeConfigSpec.BooleanValue mUseVanillaFont;
 
         //private final ForgeConfigSpec.BooleanValue antiAliasing;
         //private final ForgeConfigSpec.BooleanValue highPrecision;
@@ -269,6 +270,9 @@ public final class ModernUITextMC {
             mEmojiShortcodes = builder.comment(
                             "Allow Slack or Discord shortcodes to replace Unicode Emoji Sequences in chat.")
                     .define("emojiShortcodes", true);
+            mUseVanillaFont = builder.comment(
+                            "Whether to use Minecraft default font for basic Latin letters.")
+                    .define("useVanillaFont", false);
             /*mUseDistanceField = builder.comment(
                             "Enable to use distance field for text rendering in 3D world.",
                             "It improves performance with deferred rendering and sharpens when doing 3D transform.")
@@ -342,6 +346,10 @@ public final class ModernUITextMC {
             }
             if (TextLayoutProcessor.sColorEmoji != mColorEmoji.get()) {
                 TextLayoutProcessor.sColorEmoji = mColorEmoji.get();
+                reload = true;
+            }
+            if (TextLayoutEngine.sUseVanillaFont != mUseVanillaFont.get()) {
+                TextLayoutEngine.sUseVanillaFont = mUseVanillaFont.get();
                 reload = true;
             }
             if (reload) {

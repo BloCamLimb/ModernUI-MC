@@ -55,7 +55,7 @@ public class EffectRenderType extends RenderType {
         }
         WHITE.setSwizzle(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
         STATES = ImmutableList.of(
-                TextRenderType.RENDERTYPE_MODERN_TEXT_BITMAP,
+                TextRenderType.RENDERTYPE_MODERN_TEXT_NORMAL,
                 TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,

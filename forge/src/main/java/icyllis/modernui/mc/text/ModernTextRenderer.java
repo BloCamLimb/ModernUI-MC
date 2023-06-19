@@ -99,8 +99,8 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
+        int mode = chooseMode(seeThrough);
         TextLayout layout = engine.lookupVanillaLayout(text);
-        float resLevel = engine.getResLevel();
         if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
@@ -108,13 +108,13 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, text, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    seeThrough, colorBackground, packedLight, resLevel);
-            matrix = matrix.copy(); // if not drop shadow, we don't need to copy the matrix
+                    mode, colorBackground, packedLight);
+            matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, text, x, y, r, g, b, a, false,
-                seeThrough, colorBackground, packedLight, resLevel);
+                mode, colorBackground, packedLight);
         return x;
     }
 
@@ -138,8 +138,8 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
+        int mode = chooseMode(seeThrough);
         TextLayout layout = engine.lookupComplexLayout(text);
-        float resLevel = engine.getResLevel();
         if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
@@ -147,13 +147,13 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, null, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    seeThrough, colorBackground, packedLight, resLevel);
-            matrix = matrix.copy(); // if not drop shadow, we don't need to copy the matrix
+                    mode, colorBackground, packedLight);
+            matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, null, x, y, r, g, b, a, false,
-                seeThrough, colorBackground, packedLight, resLevel);
+                mode, colorBackground, packedLight);
         return x;
     }
 
@@ -177,8 +177,8 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
+        int mode = chooseMode(seeThrough);
         TextLayout layout = engine.lookupSequenceLayout(text);
-        float resLevel = engine.getResLevel();
         if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
@@ -186,17 +186,27 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, null, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    seeThrough, colorBackground, packedLight, resLevel);
-            matrix = matrix.copy(); // if not drop shadow, we don't need to copy the matrix
+                    mode, colorBackground, packedLight);
+            matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, null, x, y, r, g, b, a, false,
-                seeThrough, colorBackground, packedLight, resLevel);
+                mode, colorBackground, packedLight);
         return x;
     }
 
-    public static void drawText8xOutline(@Nonnull FormattedText text, float x, float y,
+    public static int chooseMode(boolean seeThrough) {
+        if (seeThrough) {
+            return TextRenderType.MODE_SEE_THROUGH;
+        } else if (TextLayoutEngine.sForceUseDistanceField) {
+            return TextRenderType.MODE_SDF_FILL;
+        } else {
+            return TextRenderType.MODE_NORMAL;
+        }
+    }
+
+    /*public static void drawText8xOutline(@Nonnull FormattedText text, float x, float y,
                                          int color, int outlineColor, @Nonnull Matrix4f matrix,
                                          @Nonnull MultiBufferSource source) {
         if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
@@ -229,7 +239,7 @@ public final class ModernTextRenderer {
         matrix.translate(OUTLINE_OFFSET);
 
         layout.drawTextGlow(matrix, source, x, y, or, og, ob, oa, LightTexture.FULL_BRIGHT, resLevel);
-    }
+    }*/
 
     public static void drawText8xOutline(@Nonnull FormattedCharSequence text, float x, float y,
                                          int color, int outlineColor, @Nonnull Matrix4f matrix,
@@ -252,18 +262,17 @@ public final class ModernTextRenderer {
 
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
         TextLayout layout = engine.lookupSequenceLayout(text);
-        float resLevel = engine.getResLevel();
         if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
 
-        matrix = matrix.copy();
+        matrix = new Matrix4f(matrix);
         layout.drawText(matrix, source, null, x, y, r, g, b, a, false,
-                false, 0, packedLight, resLevel);
+                TextRenderType.MODE_SDF_FILL, 0, packedLight);
         matrix.translate(OUTLINE_OFFSET);
 
-        layout.drawTextGlow(matrix, source, x, y, or, og, ob, oa, packedLight, resLevel);
+        layout.drawTextOutline(matrix, source, x, y, or, og, ob, oa, packedLight);
     }
 
     /*public static void change(boolean global, boolean shadow) {
