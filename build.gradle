@@ -2,6 +2,19 @@ plugins {
     id 'maven-publish'
 }
 
+publishing {
+    repositories {
+        maven {
+            name 'IzzelAliz'
+            url 'https://maven.izzel.io/releases'
+            credentials {
+                username = project.findProperty("maven_user")
+                password = project.findProperty("izzel_maven_token")
+            }
+        }
+    }
+}
+
 allprojects {
     apply plugin: 'java'
 
