@@ -304,7 +304,7 @@ public class TestMain {
         }*/
         //ModernUI.LOGGER.info(Gravity.TOP & Gravity.BOTTOM);
         new ModernUI();
-        GLShaderManager.getInstance().addListener(mgr -> mgr.getStage(ModernUI.ID, "a.vert"));
+        //GLShaderManager.getInstance().addListener(mgr -> mgr.getStage(ModernUI.ID, "a.vert"));
         try {
             Thread.currentThread().setName("Main-Thread");
             Core.initialize();
@@ -371,7 +371,6 @@ public class TestMain {
         Core.initOpenGL();
         GLCore.showCapsErrorDialog();
         GLSurfaceCanvas canvas = GLSurfaceCanvas.initialize();
-        GLShaderManager.getInstance().reload();
         Matrix4 projection = new Matrix4();
         //projection = Matrix4.makePerspective(MathUtil.PI_DIV_2, window.getAspectRatio(), 0.01f, 1000);
 

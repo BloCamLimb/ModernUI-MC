@@ -18,9 +18,7 @@
 
 package icyllis.modernui.mc.testforge.shader;
 
-import icyllis.arc3d.opengl.GLProgram;
 import icyllis.modernui.annotation.RenderThread;
-import icyllis.modernui.core.Core;
 import it.unimi.dsi.fastutil.objects.Object2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import net.minecraft.resources.ResourceLocation;
@@ -52,12 +50,12 @@ public final class ShaderShard {
         mId = id;
     }
 
-    public void attach(@Nonnull GLProgram program) {
+    public void attach(int program) {
         if (mAttachCount == Integer.MIN_VALUE) {
             throw new IllegalStateException(this + " has been deleted.");
         }
         ++mAttachCount;
-        glAttachShader(program.get(), mId);
+        glAttachShader(program, mId);
         if (mDeleted) {
             LOGGER.warn(MARKER,
                     "{} is marked as deleted, but the shader is still trying to attach to program {}",
@@ -65,10 +63,10 @@ public final class ShaderShard {
         }
     }
 
-    public void detach(@Nonnull GLProgram program) {
+    public void detach(int program) {
         if (mAttachCount > 0) {
             --mAttachCount;
-            glDetachShader(program.get(), mId);
+            glDetachShader(program, mId);
             if (mAttachCount == 0 && mDeleted) {
                 SHADERS.remove(mLocation);
                 mAttachCount = Integer.MIN_VALUE;

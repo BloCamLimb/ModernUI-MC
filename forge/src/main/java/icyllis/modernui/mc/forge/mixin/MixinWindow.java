@@ -104,7 +104,7 @@ public abstract class MixinWindow {
         GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
         GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
         GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE);
-        final int[][] versions = {{4, 6}, {4, 5}, {3, 3}};
+        final int[][] versions = {{4, 6}, {4, 5}, {4, 1}, {3, 3}};
         long window = 0;
         try {
             for (int[] version : versions) {

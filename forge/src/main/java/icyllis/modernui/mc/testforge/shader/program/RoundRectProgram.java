@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.testforge.shader.program;
 
-import icyllis.arc3d.opengl.GLProgram;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
 import net.minecraft.resources.ResourceLocation;
@@ -27,7 +26,7 @@ import org.lwjgl.opengl.GL43C;
 import javax.annotation.Nonnull;
 
 @Deprecated
-public class RoundRectProgram extends GLProgram {
+public class RoundRectProgram{
 
     private static Fill sFill;
     private static FillTex sFillTex;

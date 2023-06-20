@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.testforge.shader.program;
 
-import icyllis.arc3d.opengl.GLProgram;
 import icyllis.modernui.ModernUI;
 import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL43C;
@@ -26,7 +25,7 @@ import org.lwjgl.opengl.GL43C;
 import javax.annotation.Nonnull;
 
 @Deprecated
-public class RectProgram extends GLProgram {
+public class RectProgram {
 
     public static final ResourceLocation VERT = new ResourceLocation(ModernUI.ID, "shaders/pos_color.vert");
     public static final ResourceLocation VERT_TEX = new ResourceLocation(ModernUI.ID, "shaders/pos_color_tex.vert");
