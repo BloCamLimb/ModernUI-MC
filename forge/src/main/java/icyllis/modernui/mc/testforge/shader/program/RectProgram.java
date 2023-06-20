@@ -18,8 +18,8 @@
 
 package icyllis.modernui.mc.testforge.shader.program;
 
-import icyllis.arc3d.opengl.GLProgram;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.mc.testforge.shader.GLProgram;
 import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL43C;
 

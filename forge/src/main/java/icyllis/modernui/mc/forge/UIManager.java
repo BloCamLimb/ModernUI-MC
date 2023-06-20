@@ -21,6 +21,7 @@ package icyllis.modernui.mc.forge;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
@@ -163,7 +164,7 @@ public final class UIManager implements LifecycleOwner {
     // the UI framebuffer
     private GLFramebufferCompat mFramebuffer;
     GLSurfaceCanvas mCanvas;
-    GLServer mServer;
+    GLDevice mGLDevice;
     private final Matrix4 mProjectionMatrix = new Matrix4();
     boolean mNoRender = false;
     boolean mClearNextMainTarget = false;
@@ -222,8 +223,8 @@ public final class UIManager implements LifecycleOwner {
         }
         Objects.requireNonNull(sInstance);
         sInstance.mCanvas = GLSurfaceCanvas.initialize();
-        sInstance.mServer = (GLServer) Core.getDirectContext().getServer();
-        sInstance.mServer.getContext().getResourceCache().setCacheLimit(1 << 26); // 64MB
+        sInstance.mGLDevice = (GLDevice) Core.getDirectContext().getDevice();
+        sInstance.mGLDevice.getContext().getResourceCache().setCacheLimit(1 << 26); // 64MB
         var framebuffer = new GLFramebufferCompat(4);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
@@ -231,6 +232,7 @@ public final class UIManager implements LifecycleOwner {
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT3, GL_RGBA8);
         framebuffer.addRenderbufferAttachment(GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
         sInstance.mFramebuffer = framebuffer;
+        BufferUploader.invalidate();
         LOGGER.info(MARKER, "UI renderer initialized");
     }
 
@@ -780,8 +782,7 @@ public final class UIManager implements LifecycleOwner {
             textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
-        if (textureMap != null &&
-                ((GLServer) Core.getDirectContext().getServer()).getCaps().hasDSASupport()) {
+        if (textureMap != null && mGLDevice.getCaps().hasDSASupport()) {
             long gpuSize = 0;
             long cpuSize = 0;
             int dynamicTextures = 0;
@@ -908,7 +909,7 @@ public final class UIManager implements LifecycleOwner {
                 true));
         mRoot.flushDrawCommands(mCanvas, mFramebuffer, width, height);
 
-        mServer.getContext().getResourceCache().purge();
+        mGLDevice.getContext().getResourceCache().purge();
 
         glBindVertexArray(oldVertexArray);
         glUseProgram(oldProgram);
@@ -1039,7 +1040,7 @@ public final class UIManager implements LifecycleOwner {
                 /*if (TooltipRenderer.sTooltip) {
                     TooltipRenderer.update(deltaMillis, mFrameTimeNanos / 1000000);
                 }*/
-                if (mClearNextMainTarget || mAlwaysClearMainTarget) {
+                /*if (mClearNextMainTarget || mAlwaysClearMainTarget) {
                     int boundFramebuffer = glGetInteger(GL_FRAMEBUFFER_BINDING);
                     glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                     int error = glGetError();
@@ -1047,7 +1048,7 @@ public final class UIManager implements LifecycleOwner {
                             boundFramebuffer, minecraft.getMainRenderTarget().frameBufferId,
                             Integer.toHexString(error));
                     mClearNextMainTarget = false;
-                }
+                }*/
             }
         } else {
             // main thread

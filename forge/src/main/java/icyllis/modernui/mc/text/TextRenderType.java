@@ -171,9 +171,9 @@ public class TextRenderType extends RenderType {
 
     private static void ensureLinearFontSampler() {
         if (sLinearFontSampler == null) {
-            GLServer server = (GLServer) Core.getDirectContext().getServer();
+            GLDevice device = (GLDevice) Core.getDirectContext().getDevice();
             // default state is bilinear
-            sLinearFontSampler = server.getResourceProvider().findOrCreateCompatibleSampler(
+            sLinearFontSampler = device.getResourceProvider().findOrCreateCompatibleSampler(
                     SamplerState.DEFAULT);
             Objects.requireNonNull(sLinearFontSampler, "Failed to create sampler object");
         }

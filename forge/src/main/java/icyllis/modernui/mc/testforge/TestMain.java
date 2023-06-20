@@ -33,6 +33,7 @@ import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.graphics.Paint;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.font.*;
+import icyllis.modernui.mc.testforge.shader.GLShaderManager;
 import icyllis.modernui.mc.text.CharSequenceBuilder;
 import icyllis.modernui.text.*;
 import icyllis.modernui.text.style.*;
@@ -60,7 +61,7 @@ import static icyllis.arc3d.opengl.GLCore.*;
 import static icyllis.modernui.ModernUI.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
 
-@SuppressWarnings({"unused"})
+@Deprecated
 public class TestMain {
 
     public static final Marker MARKER = MarkerManager.getMarker("Test");
