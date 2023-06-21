@@ -28,7 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(RenderSystem.class)
 public class MixinRenderSystem {
 
-    @Inject(method = "initRenderer", at = @At("TAIL"))
+    @Inject(method = "initRenderer", at = @At("TAIL"), remap = false)
     private static void onInitRenderer(int debugLevel, boolean debugSync, CallbackInfo ci) {
         TextRenderType.preloadShaders();
     }

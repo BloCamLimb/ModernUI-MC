@@ -27,9 +27,9 @@ import icyllis.modernui.graphics.BitmapFactory;
 import icyllis.modernui.graphics.font.*;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import net.minecraft.client.gui.font.providers.BitmapProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.GsonHelper;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -53,7 +53,7 @@ import static icyllis.arc3d.opengl.GLCore.*;
  */
 public class BitmapFont extends FontFamily implements AutoCloseable {
 
-    private final ResourceLocation mLocation;
+    private final ResourceLocation mName;
 
     private Bitmap mBitmap; // null after uploading to texture
     private final Int2ObjectMap<Glyph> mGlyphs = new Int2ObjectOpenHashMap<>();
@@ -67,11 +67,11 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
     private final int mSpriteHeight;
     private final float mScaleFactor;
 
-    private BitmapFont(ResourceLocation location, Bitmap bitmap,
-                       int[][] map, int rows, int cols,
+    private BitmapFont(ResourceLocation name, Bitmap bitmap,
+                       int[][] grid, int rows, int cols,
                        int height, int ascent) {
         super(null);
-        mLocation = location;
+        mName = name;
         mBitmap = bitmap;
         mAscent = ascent;
         mDescent = height - ascent;
@@ -80,9 +80,8 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
         mScaleFactor = (float) height / mSpriteHeight;
 
         for (int r = 0; r < rows; r++) {
-            int[] rowData = map[r];
             for (int c = 0; c < cols; c++) {
-                int ch = rowData[c];
+                int ch = grid[r][c];
                 if (ch == '\u0000') {
                     continue; // padding
                 }
@@ -98,47 +97,34 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
                 glyph.v2 = (float) (r * mSpriteHeight + mSpriteHeight) / bitmap.getHeight();
                 if (mGlyphs.put(ch, glyph) != null) {
                     ModernUI.LOGGER.warn("Codepoint '{}' declared multiple times in {}",
-                            Integer.toHexString(ch), mLocation);
+                            Integer.toHexString(ch), mName);
                 }
             }
         }
     }
 
     @Nonnull
-    public static BitmapFont create(JsonObject metadata, ResourceManager manager) {
-        int height = GsonHelper.getAsInt(metadata, "height", TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE);
-        int ascent = GsonHelper.getAsInt(metadata, "ascent");
+    public static BitmapFont create(BitmapProvider.Definition definition, ResourceManager manager) {
+        int height = definition.height();
+        int ascent = definition.ascent();
         if (ascent > height) {
             throw new JsonParseException("Ascent " + ascent + " higher than height " + height);
         }
-        JsonArray chars = GsonHelper.getAsJsonArray(metadata, "chars");
-        int[][] map = new int[chars.size()][]; // indices to code points
-        for (int i = 0; i < map.length; i++) {
-            String row = GsonHelper.convertToString(chars.get(i), "chars[" + i + "]");
-            int[] data = row.codePoints().toArray();
-            if (i > 0) {
-                int length = map[0].length;
-                if (data.length != length) {
-                    throw new JsonParseException("Elements of chars have to be the same length (found: " +
-                            data.length + ", expected: " + length + "), pad with space or \\u0000");
-                }
-            }
-            map[i] = data;
-        }
-        if (map.length == 0 || map[0].length == 0) {
+        int[][] grid = definition.codepointGrid();
+        if (grid.length == 0 || grid[0].length == 0) {
             throw new JsonParseException("Expected to find data in chars, found none.");
         }
-        int rows = map.length;
-        int cols = map[0].length;
-        var file = new ResourceLocation(GsonHelper.getAsString(metadata, "file"));
-        var location = new ResourceLocation(file.getNamespace(), "textures/" + file.getPath());
+        int rows = grid.length;
+        int cols = grid[0].length;
+        var file = definition.file();
+        var location = file.withPrefix("textures/");
         try (InputStream stream = manager.open(location)) {
             // Minecraft doesn't use texture views, read swizzles may not work, so we always use RGBA (colored)
             var opts = new BitmapFactory.Options();
             opts.inPreferredFormat = Bitmap.Format.RGBA_8888;
             Bitmap bitmap = BitmapFactory.decodeStream(stream, opts);
             Objects.requireNonNull(bitmap);
-            return new BitmapFont(location, bitmap, map, rows, cols, height, ascent);
+            return new BitmapFont(file, bitmap, grid, rows, cols, height, ascent);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -222,20 +208,20 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
     }
 
     @Override
-    public boolean hasGlyph(int codePoint) {
-        return mGlyphs.containsKey(codePoint);
+    public boolean hasGlyph(int ch) {
+        return mGlyphs.containsKey(ch);
     }
 
     @Override
     public String getFamilyName() {
         // the bitmap name
-        return mLocation.toString();
+        return mName.toString();
     }
 
     @Override
     public int hashCode() {
         int result = 0;
-        result = 31 * result + mLocation.hashCode();
+        result = 31 * result + mName.hashCode();
         result = 31 * result + mAscent;
         result = 31 * result + mDescent;
         result = 31 * result + mSpriteWidth;
@@ -254,7 +240,7 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
         if (mSpriteWidth != that.mSpriteWidth) return false;
         if (mSpriteHeight != that.mSpriteHeight) return false;
         if (mScaleFactor != that.mScaleFactor) return false;
-        return mLocation.equals(that.mLocation);
+        return mName.equals(that.mName);
     }
 
     @Override

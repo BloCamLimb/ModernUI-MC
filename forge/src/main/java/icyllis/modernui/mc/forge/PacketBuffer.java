@@ -163,7 +163,7 @@ public final class PacketBuffer extends FriendlyByteBuf {
      * @param entity the entity is tracking
      */
     public void sendToTrackingEntity(@Nonnull Entity entity) {
-        ((ServerLevel) entity.level).getChunkSource().broadcast(entity,
+        ((ServerLevel) entity.level()).getChunkSource().broadcast(entity,
                 new ClientboundCustomPayloadPacket(mName, this));
     }
 
@@ -178,7 +178,7 @@ public final class PacketBuffer extends FriendlyByteBuf {
      * @param entity the entity is tracking
      */
     public void sendToTrackingAndSelf(@Nonnull Entity entity) {
-        ((ServerLevel) entity.level).getChunkSource().broadcastAndSend(entity,
+        ((ServerLevel) entity.level()).getChunkSource().broadcastAndSend(entity,
                 new ClientboundCustomPayloadPacket(mName, this));
     }
 

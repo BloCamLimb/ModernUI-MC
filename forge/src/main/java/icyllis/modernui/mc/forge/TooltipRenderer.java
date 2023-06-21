@@ -20,21 +20,21 @@ package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import icyllis.arc3d.opengl.GLSurfaceCanvas;
 import icyllis.modernui.graphics.Matrix4;
 import icyllis.modernui.graphics.Paint;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.nio.FloatBuffer;
 import java.util.List;
 
@@ -293,14 +293,11 @@ public final class TooltipRenderer {
         sTempTexts.clear();
     }*/
 
-    static void drawTooltip(@Nonnull GLSurfaceCanvas canvas, @Nonnull Window window, @Nonnull PoseStack poseStack,
+    static void drawTooltip(@Nonnull GLSurfaceCanvas canvas, @Nonnull Window window, @Nonnull GuiGraphics gr,
                             @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
-                            @Nonnull Font font, float screenWidth, float screenHeight,
-                            double cursorX, double cursorY, @Nonnull ItemRenderer itemRenderer) {
+                            @Nonnull Font font, int screenWidth, int screenHeight,
+                            float partialX, float partialY, @Nullable ClientTooltipPositioner positioner) {
         //sDraw = true;
-
-        float partialX = (float) (cursorX - (int) cursorX);
-        float partialY = (float) (cursorY - (int) cursorY);
 
         int tooltipWidth;
         int tooltipHeight;
@@ -311,31 +308,40 @@ public final class TooltipRenderer {
         } else {
             tooltipWidth = 0;
             tooltipHeight = 0;
-            for (var c : list) {
-                tooltipWidth = Math.max(tooltipWidth, c.getWidth(font));
-                tooltipHeight += c.getHeight();
+            for (ClientTooltipComponent component : list) {
+                tooltipWidth = Math.max(tooltipWidth, component.getWidth(font));
+                tooltipHeight += component.getHeight();
             }
         }
 
         float tooltipX;
-        if (sLayoutRTL) {
-            tooltipX = mouseX + TOOLTIP_SPACE + partialX - 24 - tooltipWidth;
-            if (tooltipX - partialX < 4) {
-                tooltipX += 24 + tooltipWidth;
-            }
+        float tooltipY;
+        if (positioner != null) {
+            var pos = positioner.positionTooltip(screenWidth, screenHeight,
+                    mouseX, mouseY,
+                    tooltipWidth, tooltipHeight);
+            tooltipX = pos.x();
+            tooltipY = pos.y();
         } else {
-            tooltipX = mouseX + TOOLTIP_SPACE + partialX;
-            if (tooltipX - partialX + tooltipWidth + 4 > screenWidth) {
-                tooltipX -= 28 + tooltipWidth;
+            if (sLayoutRTL) {
+                tooltipX = mouseX + TOOLTIP_SPACE + partialX - 24 - tooltipWidth;
+                if (tooltipX - partialX < 4) {
+                    tooltipX += 24 + tooltipWidth;
+                }
+            } else {
+                tooltipX = mouseX + TOOLTIP_SPACE + partialX;
+                if (tooltipX - partialX + tooltipWidth + 4 > screenWidth) {
+                    tooltipX -= 28 + tooltipWidth;
+                }
             }
-        }
-        partialX = (tooltipX - (int) tooltipX);
+            partialX = (tooltipX - (int) tooltipX);
 
-        float tooltipY = mouseY - TOOLTIP_SPACE + partialY;
-        if (tooltipY + tooltipHeight + 6 > screenHeight) {
-            tooltipY = screenHeight - tooltipHeight - 6;
+            tooltipY = mouseY - TOOLTIP_SPACE + partialY;
+            if (tooltipY + tooltipHeight + 6 > screenHeight) {
+                tooltipY = screenHeight - tooltipHeight - 6;
+            }
+            partialY = (tooltipY - (int) tooltipY);
         }
-        partialY = (tooltipY - (int) tooltipY);
 
         // we should disable depth test, because texts may be translucent
         // for compatibility reasons, we keep this enabled, and it doesn't seem to be a big problem
@@ -343,10 +349,10 @@ public final class TooltipRenderer {
         RenderSystem.enableBlend();
         RenderSystem.blendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-        poseStack.pushPose();
+        gr.pose().pushPose();
         // because of the order of draw calls, we actually don't need z-shifting
-        poseStack.translate(0, 0, 400);
-        final Matrix4f mat = poseStack.last().pose();
+        gr.pose().translate(0, 0, 400);
+        final Matrix4f pose = gr.pose().last().pose();
 
         final int oldVertexArray = glGetInteger(GL_VERTEX_ARRAY_BINDING);
         final int oldProgram = glGetInteger(GL_CURRENT_PROGRAM);
@@ -364,8 +370,7 @@ public final class TooltipRenderer {
         sMyMat.set(sMatBuf.rewind());
         canvas.concat(sMyMat);
 
-        // Sodium check the remaining
-        mat.get(sMatBuf.rewind());
+        pose.get(sMatBuf.rewind());
         sMyMat.set(sMatBuf.rewind());
         // RenderSystem.getModelViewMatrix() has Z translation normalized to -1
         // We have to offset against our canvas Z translation, see restore matrix in GLCanvas
@@ -416,38 +421,36 @@ public final class TooltipRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        final MultiBufferSource.BufferSource source =
-                MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-        poseStack.translate(partialX, partialY, 0);
+        final MultiBufferSource.BufferSource source = gr.bufferSource();
+        gr.pose().translate(partialX, partialY, 0);
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
             if (sLayoutRTL) {
-                component.renderText(font, drawX + tooltipWidth - component.getWidth(font), drawY, mat, source);
+                component.renderText(font, drawX + tooltipWidth - component.getWidth(font), drawY, pose, source);
             } else {
-                component.renderText(font, drawX, drawY, mat, source);
+                component.renderText(font, drawX, drawY, pose, source);
             }
             if (i == 0) {
                 drawY += TITLE_GAP;
             }
             drawY += component.getHeight();
         }
-        source.endBatch();
+        gr.flush();
 
         drawY = (int) tooltipY;
 
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
             if (sLayoutRTL) {
-                component.renderImage(font, drawX + tooltipWidth - component.getWidth(font), drawY,
-                        poseStack, itemRenderer);
+                component.renderImage(font, drawX + tooltipWidth - component.getWidth(font), drawY, gr);
             } else {
-                component.renderImage(font, drawX, drawY, poseStack, itemRenderer);
+                component.renderImage(font, drawX, drawY, gr);
             }
             if (i == 0) {
                 drawY += TITLE_GAP;
             }
             drawY += component.getHeight();
         }
-        poseStack.popPose();
+        gr.pose().popPose();
     }
 }

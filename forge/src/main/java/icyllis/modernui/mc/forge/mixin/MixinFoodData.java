@@ -47,7 +47,7 @@ public class MixinFoodData {
             prevExhaustionLevel = exhaustionLevel;
             needSync = true;
         }
-        if (needSync && (player.level.getGameTime() & 0x7) == 0) {
+        if (needSync && (player.level().getGameTime() & 0x7) == 0) {
             //NetworkMessages.syncFood(saturationLevel, exhaustionLevel).sendToPlayer(player);
             needSync = false;
         }

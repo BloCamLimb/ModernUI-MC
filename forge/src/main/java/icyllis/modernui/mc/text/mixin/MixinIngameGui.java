@@ -18,13 +18,10 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import icyllis.modernui.mc.text.ModernStringSplitter;
 import icyllis.modernui.mc.text.ModernTextRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.*;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -60,7 +57,7 @@ public abstract class MixinIngameGui {
     }
 
     @Inject(method = "renderExperienceBar", at = @At("TAIL"))
-    private void drawExperience(PoseStack pStack, int i, CallbackInfo ci) {
+    private void drawExperience(GuiGraphics gr, int i, CallbackInfo ci) {
         LocalPlayer player = minecraft.player;
         if (player != null && player.experienceLevel > 0) {
             String s = Integer.toString(player.experienceLevel);
@@ -68,25 +65,24 @@ public abstract class MixinIngameGui {
             float x = (screenWidth - w) / 2;
             float y = screenHeight - 31 - 4;
             float offset = ModernTextRenderer.sOutlineOffset;
-            Matrix4f matrix = pStack.last().pose();
+            Matrix4f pose = gr.pose().last().pose();
             // end batch for each draw to prevent transparency sorting
-            MultiBufferSource.BufferSource source = MultiBufferSource.immediate(
-                    Tesselator.getInstance().getBuilder());
+            MultiBufferSource.BufferSource source = gr.bufferSource();
             ModernTextRenderer.drawText(s, x + offset, y, 0xff000000, false,
-                    matrix, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                    pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
             ModernTextRenderer.drawText(s, x - offset, y, 0xff000000, false,
-                    matrix, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                    pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
             ModernTextRenderer.drawText(s, x, y + offset, 0xff000000, false,
-                    matrix, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                    pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
             ModernTextRenderer.drawText(s, x, y - offset, 0xff000000, false,
-                    matrix, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                    pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
             ModernTextRenderer.drawText(s, x, y, 0xff80ff20, false,
-                    matrix, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-            source.endBatch();
+                    pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+            gr.flush();
         }
     }
 }

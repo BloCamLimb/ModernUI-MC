@@ -22,6 +22,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.opengl.GLCore;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
+import net.minecraft.util.TimeSource;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Configuration;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,13 +33,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Objects;
-import java.util.function.LongSupplier;
 
 @Mixin(RenderSystem.class)
 public class MixinRenderSystem {
 
-    @Inject(method = "initBackendSystem", at = @At("HEAD"))
-    private static void onInitBackendSystem(CallbackInfoReturnable<LongSupplier> ci) {
+    @Inject(method = "initBackendSystem", at = @At("HEAD"), remap = false)
+    private static void onInitBackendSystem(CallbackInfoReturnable<TimeSource.NanoTimeSource> ci) {
         RenderSystem.assertInInitPhase();
         String name = Configuration.OPENGL_LIBRARY_NAME.get();
         if (name != null) {
@@ -48,7 +48,7 @@ public class MixinRenderSystem {
         }
     }
 
-    @Inject(method = "initRenderer", at = @At("TAIL"))
+    @Inject(method = "initRenderer", at = @At("TAIL"), remap = false)
     private static void onInitRenderer(int debugLevel, boolean debugSync, CallbackInfo ci) {
         Core.initialize();
         if (!Core.initOpenGL()) {
@@ -60,7 +60,7 @@ public class MixinRenderSystem {
      * @author BloCamLimb
      * @reason Disable runtime checks
      */
-    @Overwrite
+    @Overwrite(remap = false)
     public static void assertOnRenderThread() {
     }
 }

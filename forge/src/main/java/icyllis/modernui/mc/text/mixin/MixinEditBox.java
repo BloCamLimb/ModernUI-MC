@@ -18,11 +18,11 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.mc.text.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.renderer.*;
@@ -97,15 +97,15 @@ public abstract class MixinEditBox extends AbstractWidget {
     @Shadow
     private BiFunction<String, Integer, FormattedCharSequence> formatter;
 
-    public MixinEditBox(int x, int y, int w, int h, Component title) {
-        super(x, y, w, h, title);
+    public MixinEditBox(int x, int y, int w, int h, Component msg) {
+        super(x, y, w, h, msg);
     }
 
     @Inject(method = "<init>(Lnet/minecraft/client/gui/Font;IIIILnet/minecraft/client/gui/components/EditBox;" +
             "Lnet/minecraft/network/chat/Component;)V",
             at = @At("RETURN"))
-    public void E_EditBox(Font font, int x, int y, int w, int h, @Nullable EditBox src, Component title,
-                          CallbackInfo ci) {
+    public void EditBox(Font font, int x, int y, int w, int h, @Nullable EditBox src, Component msg,
+                        CallbackInfo ci) {
         // fast path
         formatter = (s, i) -> null;
     }
@@ -125,14 +125,14 @@ public abstract class MixinEditBox extends AbstractWidget {
      */
     @Override
     @Overwrite
-    public void renderWidget(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float deltaTicks) {
+    public void renderWidget(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTicks) {
         if (!isVisible()) {
             return;
         }
         if (bordered) {
             int color = isFocused() ? BORDER_COLOR_FOCUSED : BORDER_COLOR;
-            fill(poseStack, getX() - 1, getY() - 1, getX() + width + 1, getY() + height + 1, color);
-            fill(poseStack, getX(), getY(), getX() + width, getY() + height, BACKGROUND_COLOR);
+            gr.fill(getX() - 1, getY() - 1, getX() + width + 1, getY() + height + 1, color);
+            gr.fill(getX(), getY(), getX() + width, getY() + height, BACKGROUND_COLOR);
         }
         final int color = isEditable ? textColor : textColorUneditable;
 
@@ -148,9 +148,8 @@ public abstract class MixinEditBox extends AbstractWidget {
         final int baseY = bordered ? getY() + (height - 8) / 2 : getY();
         float seqX = baseX;
 
-        final Matrix4f matrix = poseStack.last().pose();
-        final MultiBufferSource.BufferSource bufferSource =
-                MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+        final Matrix4f matrix = gr.pose().last().pose();
+        final MultiBufferSource.BufferSource bufferSource = gr.bufferSource();
 
         final boolean separate;
         if (!viewText.isEmpty()) {
@@ -211,7 +210,7 @@ public abstract class MixinEditBox extends AbstractWidget {
         }
 
         if (viewCursorPos != clampedViewHighlightPos) {
-            bufferSource.endBatch();
+            gr.flush();
 
             TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(viewText);
             float startX = baseX;
@@ -237,53 +236,46 @@ public abstract class MixinEditBox extends AbstractWidget {
                 endX = getX() + width;
             }
 
-            BufferBuilder builder = Tesselator.getInstance().getBuilder();
-            RenderSystem.setShader(GameRenderer::getPositionColorShader);
-            RenderSystem.disableDepthTest();
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-            builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-            builder.vertex(matrix, startX, baseY + 10, 0)
+            VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.gui());
+            consumer.vertex(matrix, startX, baseY + 10, 0)
                     .color(51, 181, 229, 102).endVertex();
-            builder.vertex(matrix, endX, baseY + 10, 0)
+            consumer.vertex(matrix, endX, baseY + 10, 0)
                     .color(51, 181, 229, 102).endVertex();
-            builder.vertex(matrix, endX, baseY - 1, 0)
+            consumer.vertex(matrix, endX, baseY - 1, 0)
                     .color(51, 181, 229, 102).endVertex();
-            builder.vertex(matrix, startX, baseY - 1, 0)
+            consumer.vertex(matrix, startX, baseY - 1, 0)
                     .color(51, 181, 229, 102).endVertex();
-            BufferUploader.drawWithShader(builder.end());
-            RenderSystem.enableDepthTest();
+            gr.flush();
         } else if (cursorVisible) {
             if (cursorNotAtEnd) {
-                bufferSource.endBatch();
+                gr.flush();
 
-                BufferBuilder builder = Tesselator.getInstance().getBuilder();
-                RenderSystem.setShader(GameRenderer::getPositionColorShader);
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
-                builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-                builder.vertex(matrix, cursorX - 0.5f, baseY + 10, 0)
+                VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.gui());
+                consumer.vertex(matrix, cursorX - 0.5f, baseY + 10, 0)
                         .color(208, 208, 208, 255).endVertex();
-                builder.vertex(matrix, cursorX + 0.5f, baseY + 10, 0)
+                consumer.vertex(matrix, cursorX + 0.5f, baseY + 10, 0)
                         .color(208, 208, 208, 255).endVertex();
-                builder.vertex(matrix, cursorX + 0.5f, baseY - 1, 0)
+                consumer.vertex(matrix, cursorX + 0.5f, baseY - 1, 0)
                         .color(208, 208, 208, 255).endVertex();
-                builder.vertex(matrix, cursorX - 0.5f, baseY - 1, 0)
+                consumer.vertex(matrix, cursorX - 0.5f, baseY - 1, 0)
                         .color(208, 208, 208, 255).endVertex();
-                BufferUploader.drawWithShader(builder.end());
+                gr.flush();
             } else {
                 ModernTextRenderer.drawText(CURSOR_APPEND_CHARACTER, cursorX, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
 
-                bufferSource.endBatch();
+                gr.flush();
             }
         } else {
-            bufferSource.endBatch();
+            gr.flush();
         }
     }
 
+    /**
+     * Reset blink.
+     */
     @Inject(method = "setCursorPosition", at = @At("RETURN"))
-    public void E_setCursorPosition(int pos, CallbackInfo ci) {
+    public void onSetCursorPosition(int pos, CallbackInfo ci) {
         frame = 0;
     }
 }

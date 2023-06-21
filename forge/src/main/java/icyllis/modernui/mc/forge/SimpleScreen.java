@@ -18,9 +18,9 @@
 
 package icyllis.modernui.mc.forge;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.modernui.fragment.Fragment;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.CommonComponents;
@@ -77,11 +77,11 @@ final class SimpleScreen extends Screen implements MuiScreen {
     }
 
     @Override
-    public void render(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float deltaTick) {
+    public void render(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
         ScreenCallback callback = getCallback();
         if (callback == null || callback.hasDefaultBackground()) {
-            BlurHandler.INSTANCE.drawScreenBackground(poseStack, 0, 0, this.width, this.height);
-            MinecraftForge.EVENT_BUS.post(new ScreenEvent.BackgroundRendered(this, poseStack));
+            BlurHandler.INSTANCE.drawScreenBackground(gr, 0, 0, this.width, this.height);
+            MinecraftForge.EVENT_BUS.post(new ScreenEvent.BackgroundRendered(this, gr));
         }
         mHost.render();
     }

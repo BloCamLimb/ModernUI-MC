@@ -45,10 +45,11 @@ import icyllis.modernui.widget.EditText;
 import net.minecraft.*;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
+import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.texture.*;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
@@ -828,7 +829,8 @@ public final class UIManager implements LifecycleOwner {
                         /*for (var sprite : textures.values()) {
                             for (var image : (com.mojang.blaze3d.platform.NativeImage[]) MAIN_IMAGE.get(sprite)) {
                                 if (image != null && IMAGE_PIXELS.getLong(image) != 0) {
-                                    cpuSize += (long) image.getWidth() * image.getHeight() * image.format().components();
+                                    cpuSize += (long) image.getWidth() * image.getHeight() * image.format()
+                                    .components();
                                 }
                             }
                             atlasSprites++;
@@ -878,19 +880,19 @@ public final class UIManager implements LifecycleOwner {
     @RenderThread
     void render() {
         if (mCanvas == null || mNoRender) {
-            if (mScreen != null) {
+            /*if (mScreen != null) {
                 String error = Language.getInstance().getOrDefault("error.modernui.gl_caps");
                 int x = (mWindow.getGuiScaledWidth() - minecraft.font.width(error)) / 2;
                 int y = (mWindow.getGuiScaledHeight() - 8) / 2;
                 minecraft.font.draw(mEmptyPoseStack, error, x, y, 0xFFFF0000);
-            }
+            }*/
             return;
         }
         RenderSystem.disableCull();
         RenderSystem.enableBlend();
         RenderSystem.activeTexture(GL_TEXTURE0);
         RenderSystem.disableDepthTest();
-        glDisable(GL_DEPTH_TEST);
+        //glDisable(GL_DEPTH_TEST);
 
         // Minecraft.mainRenderTarget has no transparency (=== 1)
         // UI layer has a transparent background, with premultiplied alpha
@@ -956,22 +958,32 @@ public final class UIManager implements LifecycleOwner {
                 TestHUD.sTooltip = false;
                 return;
             }*/
+
+            // screen coordinates to pixels for rendering
             final Window window = mWindow;
-            // screen coordinates to pixels for rendering
             final MouseHandler mouseHandler = minecraft.mouseHandler;
-            // screen coordinates to pixels for rendering
-            double cursorX = mouseHandler.xpos() *
+            final double cursorX = mouseHandler.xpos() *
                     (double) window.getGuiScaledWidth() / (double) window.getScreenWidth();
-            double cursorY = mouseHandler.ypos() *
+            final double cursorY = mouseHandler.ypos() *
                     (double) window.getGuiScaledHeight() / (double) window.getScreenHeight();
-            //if (event.getLines().isEmpty()) {
-            mRoot.drawExtTooltipLocked(event, cursorX, cursorY); // need a lock
-            /*} else {
-                TooltipRenderer.drawTooltip(mCanvas, event.getLines(), event.getFontRenderer(), event.getStack(),
-                        event.getMatrixStack(), event.getX(), event.getY(), (float) cursorX, (float) cursorY,
-                        event.getMaxWidth(), event.getScreenWidth(), event.getScreenHeight(), window.getWidth(),
-                        window.getHeight());
-            }*/
+            final int mouseX = (int) cursorX;
+            final int mouseY = (int) cursorY;
+            final float partialX;
+            final float partialY;
+            final ClientTooltipPositioner positioner =
+                    event.getTooltipPositioner() instanceof DefaultTooltipPositioner
+                            ? null
+                            : event.getTooltipPositioner();
+            if (event.getX() == mouseX && event.getY() == mouseY && positioner == null) {
+                // use our exact pixel positioning
+                partialX = (float) (cursorX - mouseX);
+                partialY = (float) (cursorY - mouseY);
+            } else {
+                partialX = 0;
+                partialY = 0;
+            }
+
+            mRoot.drawExtTooltipLocked(event, partialX, partialY, positioner); // need a lock
 
             // our tooltip is translucent, need transparency sorting
             // we will cancel this event later, see below
@@ -1180,15 +1192,16 @@ public final class UIManager implements LifecycleOwner {
             }
         }
 
-        private void drawExtTooltipLocked(@Nonnull RenderTooltipEvent.Pre event, double cursorX, double cursorY) {
+        private void drawExtTooltipLocked(@Nonnull RenderTooltipEvent.Pre event, float partialX, float partialY,
+                                          @Nullable ClientTooltipPositioner positioner) {
             if (mCanvas == null) {
                 return;
             }
             synchronized (mRenderLock) {
                 if (!mRedrawn) {
-                    TooltipRenderer.drawTooltip(mCanvas, mWindow, event.getPoseStack(), event.getComponents(),
+                    TooltipRenderer.drawTooltip(mCanvas, mWindow, event.getGraphics(), event.getComponents(),
                             event.getX(), event.getY(), event.getFont(), event.getScreenWidth(),
-                            event.getScreenHeight(), cursorX, cursorY, minecraft.getItemRenderer());
+                            event.getScreenHeight(), partialX, partialY, positioner);
                 }
             }
         }

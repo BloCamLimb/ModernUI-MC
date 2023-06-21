@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[45,)"
+loaderVersion="[46,)"
 issueTrackerURL="https://github.com/BloCamLimb/ModernUI/issues"
 logoFile= "modernui_logo.png"
 license="All rights reserved"
@@ -19,12 +19,12 @@ license="All rights reserved"
 [[dependencies.modernui]]
     modId="forge"
     mandatory=true
-    versionRange="[45.1.0,)"
+    versionRange="[46.0.14,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.modernui]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.19.4, 1.20)"
+    versionRange="[1.20, 1.21)"
     ordering="NONE"
     side="BOTH"

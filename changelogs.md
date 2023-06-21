@@ -1,5 +1,11 @@
 Changelogs
 ===
+### Modern UI 3.7.0.5 (2023-06-21)
+#### Forge Extension 1.20.1-47.0.14
+* Port to 1.20
+#### Modern Text Engine 1.20.1
+* Port to 1.20
+
 ### Modern UI 3.7.0.2 (2023-06-20)
 #### Forge Extension 1.19.4-45.1.0
 * Add config to use vanilla font for convenience

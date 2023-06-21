@@ -24,6 +24,7 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.animation.ColorEvaluator;
 import icyllis.modernui.mc.forge.mixin.AccessPostChain;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.*;
 import net.minecraft.resources.ResourceLocation;
@@ -209,40 +210,33 @@ public enum BlurHandler {
     }
 
     // INTERNAL HOOK
-    public void drawScreenBackground(@Nonnull PoseStack stack, int x1, int y1, int x2, int y2) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        Matrix4f matrix = stack.last().pose();
+    public void drawScreenBackground(@Nonnull GuiGraphics gr, int x1, int y1, int x2, int y2) {
+        VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.gui());
+        Matrix4f pose = gr.pose().last().pose();
         int z = 0;
-        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         if (minecraft.level == null) {
-            builder.vertex(matrix, x2, y1, z)
+            consumer.vertex(pose, x2, y1, z)
                     .color(25, 25, 25, 255).endVertex();
-            builder.vertex(matrix, x1, y1, z)
+            consumer.vertex(pose, x1, y1, z)
                     .color(25, 25, 25, 255).endVertex();
-            builder.vertex(matrix, x1, y2, z)
+            consumer.vertex(pose, x1, y2, z)
                     .color(25, 25, 25, 255).endVertex();
-            builder.vertex(matrix, x2, y2, z)
+            consumer.vertex(pose, x2, y2, z)
                     .color(25, 25, 25, 255).endVertex();
         } else {
             int color = mBackgroundColor[1];
-            builder.vertex(matrix, x2, y1, z)
+            consumer.vertex(pose, x2, y1, z)
                     .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
             color = mBackgroundColor[0];
-            builder.vertex(matrix, x1, y1, z)
+            consumer.vertex(pose, x1, y1, z)
                     .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
             color = mBackgroundColor[3];
-            builder.vertex(matrix, x1, y2, z)
+            consumer.vertex(pose, x1, y2, z)
                     .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
             color = mBackgroundColor[2];
-            builder.vertex(matrix, x2, y2, z)
+            consumer.vertex(pose, x2, y2, z)
                     .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
         }
-        BufferUploader.drawWithShader(builder.end());
-
-        RenderSystem.disableBlend();
+        gr.flush();
     }
 }

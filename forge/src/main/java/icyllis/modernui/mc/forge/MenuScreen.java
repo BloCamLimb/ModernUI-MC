@@ -18,9 +18,9 @@
 
 package icyllis.modernui.mc.forge;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.modernui.fragment.Fragment;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -87,16 +87,16 @@ final class MenuScreen<T extends AbstractContainerMenu> extends AbstractContaine
     }
 
     @Override
-    public void render(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float deltaTick) {
+    public void render(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
         ScreenCallback callback = getCallback();
         if (callback == null || callback.hasDefaultBackground()) {
-            renderBackground(poseStack);
+            renderBackground(gr);
         }
         mHost.render();
     }
 
     @Override
-    protected void renderBg(@Nonnull PoseStack poseStack, float deltaTick, int x, int y) {
+    protected void renderBg(@Nonnull GuiGraphics gr, float deltaTick, int x, int y) {
     }
 
     @Override

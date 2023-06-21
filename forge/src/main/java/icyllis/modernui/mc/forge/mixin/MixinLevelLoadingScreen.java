@@ -68,7 +68,7 @@ public class MixinLevelLoadingScreen extends Screen {
         CanvasForge.getInstance().drawArc(width / 2.0f, height / 2.0f - 36.0f, 15 + amp, -90, mSweep, paint);*/
     }
 
-    @Redirect(method = "render",
+    /*@Redirect(method = "render",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/screens/LevelLoadingScreen;drawCenteredString(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/gui/Font;Ljava/lang/String;III)V"
@@ -76,5 +76,5 @@ public class MixinLevelLoadingScreen extends Screen {
     )
     private void drawP(PoseStack matrixStack, Font fontRenderer, String progress, int x, int y, int color) {
         drawCenteredString(matrixStack, fontRenderer, progress, x, y - 6, color);
-    }
+    }*/
 }

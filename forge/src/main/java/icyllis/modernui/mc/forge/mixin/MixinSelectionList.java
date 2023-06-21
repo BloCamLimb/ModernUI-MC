@@ -18,10 +18,10 @@
 
 package icyllis.modernui.mc.forge.mixin;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.modernui.mc.forge.MuiForgeApi;
 import icyllis.modernui.mc.forge.ScrollController;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSelectionList;
 import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.*;
@@ -74,7 +74,7 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
     }
 
     @Inject(method = "render", at = @At("HEAD"))
-    private void preRender(PoseStack matrix, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+    private void preRender(GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         if (mScrollController == null) {
             mScrollController = new ScrollController(this);
             skipAnimationTo(scrollAmount);
@@ -83,31 +83,32 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client" +
-            "/gui/components/AbstractSelectionList;renderHeader(Lcom/mojang/blaze3d/vertex/PoseStack;II)V"))
-    private void preRenderHeader(@Nonnull PoseStack ps, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        ps.pushPose();
-        ps.translate(0,
+            "/gui/components/AbstractSelectionList;renderHeader(Lnet/minecraft/client/gui/GuiGraphics;II)V"))
+    private void preRenderHeader(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        gr.pose().pushPose();
+        gr.pose().translate(0,
                 ((int) (((int) getScrollAmount() - getScrollAmount()) * minecraft.getWindow().getGuiScale())) / minecraft.getWindow().getGuiScale(), 0);
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client/gui" +
-            "/components/AbstractSelectionList;renderHeader(Lcom/mojang/blaze3d/vertex/PoseStack;II)V"))
-    private void postRenderHeader(@Nonnull PoseStack ps, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        ps.popPose();
+    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client" +
+            "/gui/components/AbstractSelectionList;renderHeader(Lnet/minecraft/client/gui/GuiGraphics;II)V"))
+    private void postRenderHeader(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks,
+                                  CallbackInfo ci) {
+        gr.pose().popPose();
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client" +
-            "/gui/components/AbstractSelectionList;renderList(Lcom/mojang/blaze3d/vertex/PoseStack;IIF)V"))
-    private void preRenderList(@Nonnull PoseStack ps, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        ps.pushPose();
-        ps.translate(0,
+            "/gui/components/AbstractSelectionList;renderList(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
+    private void preRenderList(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        gr.pose().pushPose();
+        gr.pose().translate(0,
                 ((int) (((int) getScrollAmount() - getScrollAmount()) * minecraft.getWindow().getGuiScale())) / minecraft.getWindow().getGuiScale(), 0);
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client/gui" +
-            "/components/AbstractSelectionList;renderList(Lcom/mojang/blaze3d/vertex/PoseStack;IIF)V"))
-    private void postRenderList(@Nonnull PoseStack ps, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        ps.popPose();
+    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client" +
+            "/gui/components/AbstractSelectionList;renderList(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
+    private void postRenderList(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        gr.pose().popPose();
     }
 
     /**

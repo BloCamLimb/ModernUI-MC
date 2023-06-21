@@ -18,10 +18,10 @@
 
 package icyllis.modernui.mc.forge.mixin;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.modernui.mc.forge.MuiForgeApi;
 import icyllis.modernui.mc.forge.ScrollController;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraftforge.client.gui.widget.ScrollPanel;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -76,24 +76,24 @@ public abstract class MixinScrollPanel implements ScrollController.IListener {
     }
 
     @Inject(method = "render", at = @At("HEAD"))
-    private void preRender(PoseStack matrix, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+    private void preRender(GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         mScrollController.update(MuiForgeApi.getElapsedTime());
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraftforge" +
-            "/client/gui/widget/ScrollPanel;drawPanel(Lcom/mojang/blaze3d/vertex/PoseStack;" +
+            "/client/gui/widget/ScrollPanel;drawPanel(Lnet/minecraft/client/gui/GuiGraphics;" +
             "IILcom/mojang/blaze3d/vertex/Tesselator;II)V"), remap = false)
-    private void preDrawPanel(@Nonnull PoseStack ps, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        ps.pushPose();
-        ps.translate(0,
+    private void preDrawPanel(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        gr.pose().pushPose();
+        gr.pose().translate(0,
                 ((int) (((int) scrollDistance - scrollDistance) * client.getWindow().getGuiScale())) / client.getWindow().getGuiScale(), 0);
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraftforge" +
-            "/client/gui/widget/ScrollPanel;drawPanel(Lcom/mojang/blaze3d/vertex/PoseStack;" +
+            "/client/gui/widget/ScrollPanel;drawPanel(Lnet/minecraft/client/gui/GuiGraphics;" +
             "IILcom/mojang/blaze3d/vertex/Tesselator;II)V"), remap = false)
-    private void postDrawPanel(@Nonnull PoseStack ps, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        ps.popPose();
+    private void postDrawPanel(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+        gr.pose().popPose();
     }
 
     @Override
