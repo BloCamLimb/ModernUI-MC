@@ -20,8 +20,8 @@ package icyllis.modernui.mc.testforge;
 
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
+import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.graphics.Paint;
-import icyllis.modernui.mc.forge.CanvasForge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
@@ -55,7 +55,7 @@ public class TestHUD {
     }
 
     @Deprecated
-    private void drawBars(@Nonnull CanvasForge canvas) {
+    private void drawBars(@Nonnull Canvas canvas) {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         //RenderSystem.disableAlphaTest();

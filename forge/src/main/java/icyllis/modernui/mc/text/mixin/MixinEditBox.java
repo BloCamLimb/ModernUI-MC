@@ -236,7 +236,7 @@ public abstract class MixinEditBox extends AbstractWidget {
                 endX = getX() + width;
             }
 
-            VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.gui());
+            VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.guiOverlay());
             consumer.vertex(matrix, startX, baseY + 10, 0)
                     .color(51, 181, 229, 102).endVertex();
             consumer.vertex(matrix, endX, baseY + 10, 0)
@@ -250,7 +250,7 @@ public abstract class MixinEditBox extends AbstractWidget {
             if (cursorNotAtEnd) {
                 gr.flush();
 
-                VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.gui());
+                VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.guiOverlay());
                 consumer.vertex(matrix, cursorX - 0.5f, baseY + 10, 0)
                         .color(208, 208, 208, 255).endVertex();
                 consumer.vertex(matrix, cursorX + 0.5f, baseY + 10, 0)

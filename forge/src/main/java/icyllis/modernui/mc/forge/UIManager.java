@@ -23,6 +23,7 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
+import icyllis.arc3d.engine.Engine;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
@@ -147,7 +148,7 @@ public final class UIManager implements LifecycleOwner {
     private volatile ViewRootImpl mRoot;
 
     // the top-level view of the window
-    private CoordinatorLayout mDecor;
+    private WindowGroup mDecor;
     private FragmentContainerView mFragmentContainerView;
 
 
@@ -165,7 +166,7 @@ public final class UIManager implements LifecycleOwner {
     // the UI framebuffer
     private GLFramebufferCompat mFramebuffer;
     GLSurfaceCanvas mCanvas;
-    GLDevice mGLDevice;
+    GLEngine mEngine;
     private final Matrix4 mProjectionMatrix = new Matrix4();
     boolean mNoRender = false;
     boolean mClearNextMainTarget = false;
@@ -224,8 +225,8 @@ public final class UIManager implements LifecycleOwner {
         }
         Objects.requireNonNull(sInstance);
         sInstance.mCanvas = GLSurfaceCanvas.initialize();
-        sInstance.mGLDevice = (GLDevice) Core.getDirectContext().getDevice();
-        sInstance.mGLDevice.getContext().getResourceCache().setCacheLimit(1 << 26); // 64MB
+        sInstance.mEngine = (GLEngine) Core.requireDirectContext().getEngine();
+        sInstance.mEngine.getContext().getResourceCache().setCacheLimit(1 << 26); // 64MB
         var framebuffer = new GLFramebufferCompat(4);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
@@ -322,7 +323,7 @@ public final class UIManager implements LifecycleOwner {
         return sInstance.mFrameTimeNanos;
     }
 
-    CoordinatorLayout getDecorView() {
+    WindowGroup getDecorView() {
         return mDecor;
     }
 
@@ -417,17 +418,13 @@ public final class UIManager implements LifecycleOwner {
 
         mRoot = this.new ViewRootImpl();
 
-        mDecor = new CoordinatorLayout(ModernUI.getInstance());
-        // make the root view clickable through, so that views can lose focus
-        mDecor.setClickable(true);
-        mDecor.setFocusableInTouchMode(true);
+        mDecor = new WindowGroup(ModernUI.getInstance());
         mDecor.setWillNotDraw(true);
         mDecor.setId(R.id.content);
         updateLayoutDir(false);
 
         mFragmentContainerView = new FragmentContainerView(ModernUI.getInstance());
-        mFragmentContainerView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT));
+        mFragmentContainerView.setLayoutParams(new WindowManager.LayoutParams());
         mFragmentContainerView.setWillNotDraw(true);
         mFragmentContainerView.setId(fragment_container);
         mDecor.addView(mFragmentContainerView);
@@ -783,7 +780,7 @@ public final class UIManager implements LifecycleOwner {
             textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
-        if (textureMap != null && mGLDevice.getCaps().hasDSASupport()) {
+        if (textureMap != null && mEngine.getCaps().hasDSASupport()) {
             long gpuSize = 0;
             long cpuSize = 0;
             int dynamicTextures = 0;
@@ -905,13 +902,14 @@ public final class UIManager implements LifecycleOwner {
         int width = mWindow.getWidth();
         int height = mWindow.getHeight();
 
+        mEngine.markContextDirty(Engine.GLBackendState.kPixelStore);
         // TODO need multiple canvas instances, tooltip shares this now, but different thread; remove Z transform
         mCanvas.setProjection(mProjectionMatrix.setOrthographic(
                 width, height, 0, icyllis.modernui.core.Window.LAST_SYSTEM_WINDOW * 2 + 1,
                 true));
         mRoot.flushDrawCommands(mCanvas, mFramebuffer, width, height);
 
-        mGLDevice.getContext().getResourceCache().purge();
+        mEngine.getContext().getResourceCache().purge();
 
         glBindVertexArray(oldVertexArray);
         glUseProgram(oldProgram);
@@ -1145,7 +1143,7 @@ public final class UIManager implements LifecycleOwner {
                     View v = mDecor.findFocus();
                     if (v instanceof EditText) {
                         if (event.getKeyCode() == KeyEvent.KEY_ESCAPE) {
-                            mDecor.requestFocus();
+                            v.clearFocus();
                         }
                     } else {
                         mOnBackPressedDispatcher.onBackPressed();

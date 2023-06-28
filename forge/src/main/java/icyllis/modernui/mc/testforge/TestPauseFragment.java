@@ -27,7 +27,7 @@ import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
-import icyllis.modernui.mc.forge.CanvasForge;
+import icyllis.modernui.mc.forge.ContainerDrawHelper;
 import icyllis.modernui.text.*;
 import icyllis.modernui.text.style.ForegroundColorSpan;
 import icyllis.modernui.util.*;
@@ -77,7 +77,8 @@ public class TestPauseFragment extends Fragment {
             if (i == 2) {
                 button.setOnClickListener(__ -> {
                     DateFormat dateFormat = SimpleDateFormat.getDateInstance(SimpleDateFormat.FULL, Locale.CHINA);
-                    Toast.makeText("Hello, Toast! " + dateFormat.format(new Date()), Toast.LENGTH_LONG).show();
+                    Toast.makeText(__.getContext(), "Hello, Toast! " + dateFormat.format(new Date()),
+                            Toast.LENGTH_LONG).show();
                 });
             }
             if (i == 3) {
@@ -86,7 +87,7 @@ public class TestPauseFragment extends Fragment {
                     SpannableString text = new SpannableString(s);
                     text.setSpan(new ForegroundColorSpan(0xFFCF1515), 0, s.length(),
                             Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    Toast.makeText(text, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(__.getContext(), text, Toast.LENGTH_SHORT).show();
                 });
             }
         }
@@ -408,10 +409,9 @@ public class TestPauseFragment extends Fragment {
             if (boxAlpha > 0) {
                 canvas.drawRect(centerX - mSize * .5f, py2 - mSize * 2.1f,
                         centerX + mSize * .5f, py2 - mSize * 1.1f, mBoxPaint);
-                paint.reset();
-                paint.setAlpha(Math.min(255, boxAlpha << 1));
-                CanvasForge.get(canvas).drawItemStack(mItem, centerX, py2 - mSize * 1.6f, mSize, paint);
+                ContainerDrawHelper.drawItem(canvas, mItem, centerX, py2 - mSize * 1.6f, 0, mSize, 0);
             }
+            paint.recycle();
         }
     }
 }

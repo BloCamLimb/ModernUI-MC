@@ -23,7 +23,7 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.font.*;
 import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.text.Typeface;
-import icyllis.modernui.view.ViewManager;
+import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
@@ -394,9 +394,7 @@ public final class ModernUIForge {
         }
 
         @Override
-        public ViewManager getViewManager() {
-            //TODO use a window manager, since a single view tree can have only one focus
-            // we want multiple focuses, e.g., for a popup window
+        public WindowManager getWindowManager() {
             return UIManager.getInstance().getDecorView();
         }
     }

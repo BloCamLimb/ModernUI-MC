@@ -213,7 +213,9 @@ public class PreferencesFragment extends Fragment {
                             if (!Config.CLIENT.mFontFamily.get().equals(result)) {
                                 Config.CLIENT.mFontFamily.set(result);
                                 Config.CLIENT.saveAsync();
-                                Toast.makeText(I18n.get("gui.modernui.restart_to_work"), Toast.LENGTH_SHORT)
+                                Toast.makeText(v.getContext(),
+                                                I18n.get("gui.modernui.restart_to_work"),
+                                                Toast.LENGTH_SHORT)
                                         .show();
                             }
                         }
@@ -377,7 +379,9 @@ public class PreferencesFragment extends Fragment {
                         level |= ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING;
                     }
                     ModernUIForge.setBootstrapLevel(level);
-                    Toast.makeText(I18n.get("gui.modernui.restart_to_work"), Toast.LENGTH_SHORT)
+                    Toast.makeText(__.getContext(),
+                                    I18n.get("gui.modernui.restart_to_work"),
+                                    Toast.LENGTH_SHORT)
                             .show();
                 });
                 list.addView(option);
@@ -449,7 +453,9 @@ public class PreferencesFragment extends Fragment {
                     level |= ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE;
                 }
                 ModernUIForge.setBootstrapLevel(level);
-                Toast.makeText(I18n.get("gui.modernui.restart_to_work"), Toast.LENGTH_SHORT)
+                Toast.makeText(__.getContext(),
+                                I18n.get("gui.modernui.restart_to_work"),
+                                Toast.LENGTH_SHORT)
                         .show();
             });
             category.addView(option);
