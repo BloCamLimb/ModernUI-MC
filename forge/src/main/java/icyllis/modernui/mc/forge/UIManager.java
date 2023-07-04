@@ -41,7 +41,6 @@ import icyllis.modernui.text.*;
 import icyllis.modernui.view.*;
 import icyllis.modernui.view.menu.ContextMenuBuilder;
 import icyllis.modernui.view.menu.MenuHelper;
-import icyllis.modernui.widget.CoordinatorLayout;
 import icyllis.modernui.widget.EditText;
 import net.minecraft.*;
 import net.minecraft.client.*;
@@ -249,7 +248,12 @@ public final class UIManager implements LifecycleOwner {
 
     @UiThread
     private void run() {
-        init();
+        try {
+            init();
+        } catch (Throwable e) {
+            LOGGER.fatal(MARKER, "UI manager failed to initialize");
+            return;
+        }
         while (mRunning) {
             try {
                 Looper.loop();

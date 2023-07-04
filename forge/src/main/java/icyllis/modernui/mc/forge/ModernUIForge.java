@@ -28,6 +28,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -132,8 +133,7 @@ public final class ModernUIForge {
         Config.init();
         LocalStorage.init();
 
-        // the 'new' method is in another class, so it's class-loading-safe
-        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> Client::new);
+        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> Loader::init);
 
         if ((getBootstrapLevel() & BOOTSTRAP_ENABLE_DEBUG_INJECTORS) != 0) {
             MinecraftForge.EVENT_BUS.register(EventHandler.ClientDebug.class);
@@ -311,6 +311,14 @@ public final class ModernUIForge {
         }
     }
 
+    private static class Loader {
+        @SuppressWarnings("resource")
+        public static void init() {
+            new Client();
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
     public static class Client extends ModernUI {
 
         private static volatile Client sInstance;

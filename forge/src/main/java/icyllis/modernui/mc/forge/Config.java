@@ -468,11 +468,14 @@ final class Config {
                 handler.post(() -> {
                     UIManager.getInstance().updateLayoutDir(mForceRtl.get());
                     ModernUIForge.sFontScale = (mFontScale.get().floatValue());
-                    Resources res = ModernUI.getInstance().getResources();
-                    DisplayMetrics metrics = new DisplayMetrics();
-                    metrics.setTo(res.getDisplayMetrics());
-                    metrics.scaledDensity = ModernUIForge.sFontScale * metrics.density;
-                    res.updateMetrics(metrics);
+                    var ctx = ModernUI.getInstance();
+                    if (ctx != null) {
+                        Resources res = ctx.getResources();
+                        DisplayMetrics metrics = new DisplayMetrics();
+                        metrics.setTo(res.getDisplayMetrics());
+                        metrics.scaledDensity = ModernUIForge.sFontScale * metrics.density;
+                        res.updateMetrics(metrics);
+                    }
                 });
             }
 

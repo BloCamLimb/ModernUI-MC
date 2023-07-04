@@ -344,8 +344,14 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public void reload() {
         clear();
 
-        final int scale = Math.round(ModernUI.getInstance().getResources()
-                .getDisplayMetrics().density * 2);
+        var ctx = ModernUI.getInstance();
+        final int scale;
+        if (ctx != null) {
+            scale = Math.round(ctx.getResources()
+                    .getDisplayMetrics().density * 2);
+        } else {
+            scale = 2;
+        }
         final int oldLevel = mResLevel;
         if (sFixedResolution) {
             // make font size to 16 (8 * 2)
