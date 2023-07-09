@@ -88,7 +88,10 @@ public abstract class MixinWindow {
             metrics.xdpi = 25.4f * mode.getWidth() / w[0];
             metrics.ydpi = 25.4f * mode.getHeight() / h[0];
         }
-        ModernUI.getInstance().getResources().updateMetrics(metrics);
+        var ctx = ModernUI.getInstance();
+        if (ctx != null) {
+            ctx.getResources().updateMetrics(metrics);
+        }
 
         ModernUIForge.dispatchOnWindowResize(getWidth(), getHeight(), newScale, oldScale);
     }

@@ -20,14 +20,15 @@ package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.graphics.font.*;
+import icyllis.modernui.graphics.text.*;
 import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.text.Typeface;
-import icyllis.modernui.view.ViewManager;
+import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -43,14 +44,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.awt.*;
 import java.io.*;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.*;
 
 import static icyllis.modernui.ModernUI.*;
@@ -132,8 +131,7 @@ public final class ModernUIForge {
         Config.init();
         LocalStorage.init();
 
-        // the 'new' method is in another class, so it's class-loading-safe
-        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> Client::new);
+        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> Loader::init);
 
         if ((getBootstrapLevel() & BOOTSTRAP_ENABLE_DEBUG_INJECTORS) != 0) {
             MinecraftForge.EVENT_BUS.register(EventHandler.ClientDebug.class);
@@ -248,24 +246,24 @@ public final class ModernUIForge {
             try {
                 try (InputStream inputStream = Minecraft.getInstance().getResourceManager()
                         .open(new ResourceLocation(cfg))) {
-                    Font f = Font.createFont(Font.TRUETYPE_FONT, inputStream);
-                    selected.add(new FontFamily(f));
+                    FontFamily f = FontFamily.createFamily(inputStream, true);
+                    selected.add(f);
                     LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as RESOURCE PACK",
-                            f.getFamily(Locale.ROOT), cfg);
+                            f.getFamilyName(), cfg);
                     continue;
                 }
             } catch (Exception ignored) {
             }
             try {
-                Font f = Font.createFont(Font.TRUETYPE_FONT, new File(
-                        cfg.replaceAll("\\\\", "/")));
-                selected.add(new FontFamily(f));
+                FontFamily f = FontFamily.createFamily(new File(
+                        cfg.replaceAll("\\\\", "/")), true);
+                selected.add(f);
                 LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as LOCAL FILE",
-                        f.getFamily(Locale.ROOT), cfg);
+                        f.getFamilyName(), cfg);
                 continue;
             } catch (Exception ignored) {
             }
-            FontFamily family = FontFamily.getSystemFontMap().get(cfg);
+            FontFamily family = FontFamily.getSystemFontWithAlias(cfg);
             if (family == null) {
                 Optional<FontFamily> optional = FontFamily.getSystemFontMap().values().stream()
                         .filter(f -> f.getFamilyName().equalsIgnoreCase(cfg))
@@ -311,6 +309,14 @@ public final class ModernUIForge {
         }
     }
 
+    private static class Loader {
+        @SuppressWarnings("resource")
+        public static void init() {
+            new Client();
+        }
+    }
+
+    @OnlyIn(Dist.CLIENT)
     public static class Client extends ModernUI {
 
         private static volatile Client sInstance;
@@ -373,8 +379,8 @@ public final class ModernUIForge {
                     }
                     mTypeface = Typeface.createTypeface(set.toArray(new FontFamily[0]));
                     // do some warm-up, but do not block ourselves
-                    Minecraft.getInstance().tell(() -> LayoutCache.getOrCreate(ID, 0, 1, false,
-                            new FontPaint(), false, false));
+                    Minecraft.getInstance().tell(() -> LayoutCache.getOrCreate(ID, 0, 1, 0, 1, false,
+                            new FontPaint()));
                     LOGGER.info(MARKER, "Loaded typeface: {}", mTypeface);
                 }
             }
@@ -394,9 +400,7 @@ public final class ModernUIForge {
         }
 
         @Override
-        public ViewManager getViewManager() {
-            //TODO use a window manager, since a single view tree can have only one focus
-            // we want multiple focuses, e.g., for a popup window
+        public WindowManager getWindowManager() {
             return UIManager.getInstance().getDecorView();
         }
     }

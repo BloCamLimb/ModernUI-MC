@@ -671,7 +671,7 @@ public final class ModernStringSplitter {
 
         private void updateLineWidth(char c, float adv) {
             mCharsAdvance += adv;
-            if (!icyllis.modernui.graphics.font.LineBreaker.isLineEndSpace(c)) {
+            if (!icyllis.modernui.graphics.text.LineBreaker.isLineEndSpace(c)) {
                 mLineWidth = mCharsAdvance;
             }
         }

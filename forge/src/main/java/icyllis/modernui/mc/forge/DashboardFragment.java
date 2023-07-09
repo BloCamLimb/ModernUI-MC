@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.forge;
 
-import icyllis.arc3d.opengl.GLSurfaceCanvas;
 import icyllis.modernui.animation.LayoutTransition;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
@@ -36,7 +35,7 @@ import javax.annotation.Nonnull;
 public class DashboardFragment extends Fragment {
 
     public static final String CREDIT_TEXT = """
-            Modern UI 3.7.0
+            Modern UI 3.7.1
             by
             BloCamLimb
             (Icyllis Milica)

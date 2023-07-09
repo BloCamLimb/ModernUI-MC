@@ -1,5 +1,13 @@
 Changelogs
 ===
+### Modern UI 3.7.1.2 (2023-07-09)
+#### Forge Extension 1.19.4-45.1.0
+* Fix crash on dedicated server
+* Fix possible startup crash
+* Add ContainerDrawHelper
+#### Modern Text Engine 1.19.4
+* Fix obfuscated text crash in world using SDF
+
 ### Modern UI 3.7.0.2 (2023-06-20)
 #### Forge Extension 1.19.4-45.1.0
 * Add config to use vanilla font for convenience

@@ -72,8 +72,8 @@ dependencies {
     shadow("icyllis.modernui:ModernUI-Core:${core_version}") {
         transitive = false
     }
-    implementation(forgeDependencies("icyllis.modernui:ModernUI-ViewPager:1.0.0"))
-    shadow("icyllis.modernui:ModernUI-ViewPager:1.0.0") {
+    implementation(forgeDependencies("icyllis.modernui:ModernUI-ViewPager:${core_version}"))
+    shadow("icyllis.modernui:ModernUI-ViewPager:${core_version}") {
         transitive = false
     }
 
