@@ -642,7 +642,6 @@ public class TextLayoutEngine implements PreparableReloadListener {
                                 }
                             });
                 }
-                list.add(new AllMissingGlyphProvider());
                 remap.put(name, list);
             } else {
                 var set = new LinkedHashSet<FontFamily>();
