@@ -22,7 +22,9 @@ import com.ibm.icu.text.*;
 import com.ibm.icu.util.ULocale;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
-import icyllis.modernui.graphics.font.*;
+import icyllis.modernui.graphics.font.GLBakedGlyph;
+import icyllis.modernui.graphics.font.GlyphManager;
+import icyllis.modernui.graphics.text.*;
 import icyllis.modernui.mc.text.mixin.*;
 import icyllis.modernui.text.*;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
@@ -62,8 +64,8 @@ import java.util.*;
  * @see net.minecraft.network.chat.Component
  * @see net.minecraft.network.chat.SubStringSource
  * @see net.minecraft.client.resources.language.FormattedBidiReorder
- * @see icyllis.modernui.graphics.font.GraphemeBreak
- * @see icyllis.modernui.graphics.font.LineBreaker
+ * @see icyllis.modernui.graphics.text.GraphemeBreak
+ * @see icyllis.modernui.graphics.text.LineBreaker
  */
 @RenderThread
 public class TextLayoutProcessor {
@@ -933,7 +935,7 @@ public class TextLayoutProcessor {
                                     mHasFastDigit = true;
                                 } else {
                                     int glyphCode = vector.getGlyphCode(i);
-                                    long key = glyphManager.computeGlyphKey(font ,glyphCode);
+                                    long key = glyphManager.computeGlyphKey(font, glyphCode);
                                     GLBakedGlyph glyph = glyphManager.lookupGlyph(key);
                                     if (glyph != null) {
                                         mGlyphs.add(glyph);
@@ -1016,7 +1018,7 @@ public class TextLayoutProcessor {
                             mHasFastDigit = true;
                         } else {
                             int glyphCode = vector.getGlyphCode(i);
-                            long key = glyphManager.computeGlyphKey(font ,glyphCode);
+                            long key = glyphManager.computeGlyphKey(font, glyphCode);
                             GLBakedGlyph glyph = glyphManager.lookupGlyph(key);
                             if (glyph != null) {
                                 mGlyphs.add(glyph);
@@ -1080,7 +1082,7 @@ public class TextLayoutProcessor {
                                     mHasFastDigit = true;
                                 } else {
                                     int glyphCode = vector.getGlyphCode(i);
-                                    long key = glyphManager.computeGlyphKey(font ,glyphCode);
+                                    long key = glyphManager.computeGlyphKey(font, glyphCode);
                                     GLBakedGlyph glyph = glyphManager.lookupGlyph(key);
                                     if (glyph != null) {
                                         mGlyphs.add(glyph);
@@ -1105,7 +1107,8 @@ public class TextLayoutProcessor {
 
                         mGlyphs.add(emoji);
                         mGlyphKeys.add(0);
-                        mPositions.add(/*alignPixels ? Math.round(mTotalAdvance * guiScale) / guiScale : */mTotalAdvance);
+                        mPositions.add(/*alignPixels ? Math.round(mTotalAdvance * guiScale) / guiScale :
+                        */mTotalAdvance);
                         mPositions.add(0);
                         mCharFlags.add(0xFFFFFF | CharacterStyle.BITMAP_REPLACEMENT);
                         mCharIndices.add(prevPos);
@@ -1162,7 +1165,7 @@ public class TextLayoutProcessor {
                             mHasFastDigit = true;
                         } else {
                             int glyphCode = vector.getGlyphCode(i);
-                            long key = glyphManager.computeGlyphKey(font ,glyphCode);
+                            long key = glyphManager.computeGlyphKey(font, glyphCode);
                             GLBakedGlyph glyph = glyphManager.lookupGlyph(key);
                             if (glyph != null) {
                                 mGlyphs.add(glyph);
@@ -1265,7 +1268,7 @@ public class TextLayoutProcessor {
                     mHasFastDigit = true;
                 } else {
                     int glyphCode = vector.getGlyphCode(i);
-                    long key = glyphManager.computeGlyphKey(font ,glyphCode);
+                    long key = glyphManager.computeGlyphKey(font, glyphCode);
                     GLBakedGlyph glyph = glyphManager.lookupGlyph(key);
                     if (glyph != null) {
                         mGlyphs.add(glyph);

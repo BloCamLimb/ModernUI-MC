@@ -262,7 +262,7 @@ public class TextLayout {
                         font = font.deriveFont(fontSize);
                         lastDeriveFont = font;
                     }
-                    if ((flag & CharacterStyle.FAST_DIGIT_REPLACEMENT) != 0) {
+                    if ((flag & (CharacterStyle.FAST_DIGIT_REPLACEMENT | CharacterStyle.OBFUSCATED_MASK)) != 0) {
                         mGlyphsForSDF[i] = engine.lookupFastChars(font);
                     } else {
                         int glyphCode = GlyphManager.getGlyphCodeFromKey(key);

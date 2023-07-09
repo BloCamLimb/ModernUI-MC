@@ -99,7 +99,7 @@ public final class ModernStringSplitter {
      * If forwards=false, returns the minimum index from the end instead (but still
      * indexing from the start).
      *
-     * @param layout     the measured text to break
+     * @param layout   the measured text to break
      * @param forwards the leading position
      * @param width    the max width in GUI scaled pixels
      * @return break index (without formatting codes)
@@ -671,7 +671,7 @@ public final class ModernStringSplitter {
 
         private void updateLineWidth(char c, float adv) {
             mCharsAdvance += adv;
-            if (!icyllis.modernui.graphics.font.LineBreaker.isLineEndSpace(c)) {
+            if (!icyllis.modernui.graphics.text.LineBreaker.isLineEndSpace(c)) {
                 mLineWidth = mCharsAdvance;
             }
         }

@@ -24,7 +24,9 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.BitmapFactory;
-import icyllis.modernui.graphics.font.*;
+import icyllis.modernui.graphics.font.GLBakedGlyph;
+import icyllis.modernui.graphics.font.GlyphManager;
+import icyllis.modernui.graphics.text.FontFamily;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.resources.ResourceLocation;
@@ -36,6 +38,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Objects;
 
 import static icyllis.arc3d.opengl.GLCore.*;
@@ -70,7 +73,7 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
     private BitmapFont(ResourceLocation location, Bitmap bitmap,
                        int[][] map, int rows, int cols,
                        int height, int ascent) {
-        super(null);
+        super(location.toString());
         mLocation = location;
         mBitmap = bitmap;
         mAscent = ascent;
@@ -227,9 +230,8 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
     }
 
     @Override
-    public String getFamilyName() {
-        // the bitmap name
-        return mLocation.toString();
+    public String getFamilyName(Locale locale) {
+        return super.getFamilyName();
     }
 
     @Override

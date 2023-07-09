@@ -21,7 +21,6 @@
     "MixinScreen",
     "MixinScrollPanel",
     "MixinSelectionList",
-    "MixinShaderInstance",
     "MixinWindow"
   ]
 }

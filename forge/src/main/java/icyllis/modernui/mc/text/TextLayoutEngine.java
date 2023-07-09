@@ -27,6 +27,7 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.font.*;
+import icyllis.modernui.graphics.text.*;
 import icyllis.modernui.mc.forge.*;
 import icyllis.modernui.mc.text.mixin.AccessFontManager;
 import icyllis.modernui.mc.text.mixin.MixinClientLanguage;
@@ -343,8 +344,14 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public void reload() {
         clear();
 
-        final int scale = Math.round(ModernUI.getInstance().getResources()
-                .getDisplayMetrics().density * 2);
+        var ctx = ModernUI.getInstance();
+        final int scale;
+        if (ctx != null) {
+            scale = Math.round(ctx.getResources()
+                    .getDisplayMetrics().density * 2);
+        } else {
+            scale = 2;
+        }
         final float oldLevel = mResLevel;
         if (sFixedResolution) {
             // make font size to 16 (8 * 2)
@@ -420,13 +427,12 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 LinkedHashSet<FontFamily> fonts = new LinkedHashSet<>();
                 try (InputStream inputStream = Minecraft.getInstance().getResourceManager()
                         .open(ModernUIForge.location("font/default.ttf"))) {
-                    Font f = Font.createFont(Font.TRUETYPE_FONT, inputStream);
-                    fonts.add(new FontFamily(f));
+                    fonts.add(FontFamily.createFamily(inputStream, false));
                 } catch (Exception e) {
                     LOGGER.warn(MARKER, "Failed to load default.ttf", e);
                 }
                 if (!fonts.isEmpty()) {
-                    fonts.addAll(ModernUI.getSelectedTypeface().getFontCollection().getFamilies());
+                    fonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
                     FontCollection fc = new FontCollection(fonts.toArray(new FontFamily[0]));
                     mFontCollections.put(Minecraft.DEFAULT_FONT, fc);
                     mFontCollections.put(Minecraft.UNIFORM_FONT, fc);
@@ -509,6 +515,11 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 fontSet.reload(list);
                 fontSets.put(name, fontSet);
             });
+        } else {
+            for (var list : results.vanilla.values()) {
+                list.forEach(GlyphProvider::close);
+            }
+            LOGGER.warn(MARKER, "Where is font manager?");
         }
         // vanilla font
         mVanillaFontUsed = false;
@@ -619,8 +630,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
         var file = new ResourceLocation(GsonHelper.getAsString(metadata, "file"));
         var location = new ResourceLocation(file.getNamespace(), "font/" + file.getPath());
         try (var stream = resources.open(location)) {
-            var f = Font.createFont(Font.TRUETYPE_FONT, stream);
-            return new FontFamily(f);
+            return FontFamily.createFamily(stream, true);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -948,7 +958,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public FontCollection getFontCollection(@Nonnull ResourceLocation fontName) {
         FontCollection fc;
         return (fc = mFontCollections.get(fontName)) != null ? fc :
-                ModernUI.getSelectedTypeface().getFontCollection();
+                ModernUI.getSelectedTypeface();
     }
 
     public void dumpBitmapFonts() {

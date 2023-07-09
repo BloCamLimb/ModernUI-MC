@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.forge;
 
-import icyllis.arc3d.opengl.GLSurfaceCanvas;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.*;
 import icyllis.modernui.annotation.NonNull;
