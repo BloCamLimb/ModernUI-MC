@@ -33,6 +33,7 @@ import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.graphics.Paint;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.font.*;
+import icyllis.modernui.graphics.text.*;
 import icyllis.modernui.mc.testforge.shader.GLShaderManager;
 import icyllis.modernui.mc.text.CharSequenceBuilder;
 import icyllis.modernui.text.*;

@@ -20,9 +20,7 @@ package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import icyllis.arc3d.opengl.GLSurfaceCanvas;
-import icyllis.modernui.graphics.Matrix4;
-import icyllis.modernui.graphics.Paint;
+import icyllis.modernui.graphics.*;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;

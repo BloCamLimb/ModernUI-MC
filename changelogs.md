@@ -1,5 +1,15 @@
 Changelogs
 ===
+### Modern UI 3.7.1.3 (2023-07-09)
+#### Forge Extension 1.20.1-47.0.14
+* Fix crash on dedicated server
+* Fix possible startup crash
+* Add ContainerDrawHelper
+#### Modern Text Engine 1.20.1
+* Fix EditBox selection highlight
+* Fix per-glyph rendering for compatibility
+* Fix obfuscated text crash in world using SDF
+
 ### Modern UI 3.7.0.5 (2023-06-21)
 #### Forge Extension 1.20.1-47.0.14
 * Port to 1.20

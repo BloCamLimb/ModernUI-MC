@@ -20,7 +20,7 @@ package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.graphics.font.*;
+import icyllis.modernui.graphics.text.*;
 import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
@@ -44,14 +44,12 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.awt.*;
 import java.io.*;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.*;
 
 import static icyllis.modernui.ModernUI.*;
@@ -248,24 +246,24 @@ public final class ModernUIForge {
             try {
                 try (InputStream inputStream = Minecraft.getInstance().getResourceManager()
                         .open(new ResourceLocation(cfg))) {
-                    Font f = Font.createFont(Font.TRUETYPE_FONT, inputStream);
-                    selected.add(new FontFamily(f));
+                    FontFamily f = FontFamily.createFamily(inputStream, true);
+                    selected.add(f);
                     LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as RESOURCE PACK",
-                            f.getFamily(Locale.ROOT), cfg);
+                            f.getFamilyName(), cfg);
                     continue;
                 }
             } catch (Exception ignored) {
             }
             try {
-                Font f = Font.createFont(Font.TRUETYPE_FONT, new File(
-                        cfg.replaceAll("\\\\", "/")));
-                selected.add(new FontFamily(f));
+                FontFamily f = FontFamily.createFamily(new File(
+                        cfg.replaceAll("\\\\", "/")), true);
+                selected.add(f);
                 LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as LOCAL FILE",
-                        f.getFamily(Locale.ROOT), cfg);
+                        f.getFamilyName(), cfg);
                 continue;
             } catch (Exception ignored) {
             }
-            FontFamily family = FontFamily.getSystemFontMap().get(cfg);
+            FontFamily family = FontFamily.getSystemFontWithAlias(cfg);
             if (family == null) {
                 Optional<FontFamily> optional = FontFamily.getSystemFontMap().values().stream()
                         .filter(f -> f.getFamilyName().equalsIgnoreCase(cfg))
@@ -381,8 +379,8 @@ public final class ModernUIForge {
                     }
                     mTypeface = Typeface.createTypeface(set.toArray(new FontFamily[0]));
                     // do some warm-up, but do not block ourselves
-                    Minecraft.getInstance().tell(() -> LayoutCache.getOrCreate(ID, 0, 1, false,
-                            new FontPaint(), false, false));
+                    Minecraft.getInstance().tell(() -> LayoutCache.getOrCreate(ID, 0, 1, 0, 1, false,
+                            new FontPaint()));
                     LOGGER.info(MARKER, "Loaded typeface: {}", mTypeface);
                 }
             }

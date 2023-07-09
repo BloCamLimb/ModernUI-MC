@@ -29,6 +29,7 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.font.*;
+import icyllis.modernui.graphics.text.*;
 import icyllis.modernui.mc.forge.*;
 import icyllis.modernui.mc.text.mixin.AccessFontManager;
 import icyllis.modernui.mc.text.mixin.MixinClientLanguage;
@@ -37,7 +38,8 @@ import icyllis.modernui.view.View;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.font.*;
+import net.minecraft.client.gui.font.FontManager;
+import net.minecraft.client.gui.font.FontSet;
 import net.minecraft.client.gui.font.providers.*;
 import net.minecraft.client.renderer.texture.MipmapGenerator;
 import net.minecraft.network.chat.*;
@@ -427,13 +429,12 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 LinkedHashSet<FontFamily> fonts = new LinkedHashSet<>();
                 try (InputStream inputStream = Minecraft.getInstance().getResourceManager()
                         .open(ModernUIForge.location("font/default.ttf"))) {
-                    Font f = Font.createFont(Font.TRUETYPE_FONT, inputStream);
-                    fonts.add(new FontFamily(f));
+                    fonts.add(FontFamily.createFamily(inputStream, false));
                 } catch (Exception e) {
                     LOGGER.warn(MARKER, "Failed to load default.ttf", e);
                 }
                 if (!fonts.isEmpty()) {
-                    fonts.addAll(ModernUI.getSelectedTypeface().getFontCollection().getFamilies());
+                    fonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
                     FontCollection fc = new FontCollection(fonts.toArray(new FontFamily[0]));
                     mFontCollections.put(Minecraft.DEFAULT_FONT, fc);
                     mFontCollections.put(Minecraft.UNIFORM_FONT, fc);
@@ -731,8 +732,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     private static FontFamily createTTF(@Nonnull ResourceLocation file, ResourceManager resources) {
         var location = file.withPrefix("font/");
         try (var stream = resources.open(location)) {
-            var f = Font.createFont(Font.TRUETYPE_FONT, stream);
-            return new FontFamily(f);
+            return FontFamily.createFamily(stream, true);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -1059,7 +1059,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public FontCollection getFontCollection(@Nonnull ResourceLocation fontName) {
         FontCollection fc;
         return (fc = mFontCollections.get(fontName)) != null ? fc :
-                ModernUI.getSelectedTypeface().getFontCollection();
+                ModernUI.getSelectedTypeface();
     }
 
     public void dumpBitmapFonts() {

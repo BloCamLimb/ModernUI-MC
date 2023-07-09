@@ -20,7 +20,6 @@ package icyllis.modernui.mc.forge.mixin;
 
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
-import icyllis.arc3d.opengl.GLSurfaceCanvas;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.client.renderer.ShaderInstance;
 import org.spongepowered.asm.mixin.Final;
@@ -30,6 +29,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import javax.annotation.Nonnull;
 import java.util.List;
 
+@Deprecated
 @Mixin(ShaderInstance.class)
 public class MixinShaderInstance /*implements CanvasForge.FastShader*/ {
 
@@ -53,7 +53,7 @@ public class MixinShaderInstance /*implements CanvasForge.FastShader*/ {
     private List<Uniform> uniforms;
 
     //@Override
-    public void fastApply(@Nonnull GLSurfaceCanvas canvas, @Nonnull Object2IntMap<String> units) {
+    /*public void fastApply(@Nonnull GLSurfaceCanvas canvas, @Nonnull Object2IntMap<String> units) {
         dirty = false;
         //canvas.useProgram(programId);
 
@@ -74,5 +74,5 @@ public class MixinShaderInstance /*implements CanvasForge.FastShader*/ {
         for (Uniform uniform : uniforms) {
             uniform.upload();
         }
-    }
+    }*/
 }

@@ -24,7 +24,6 @@ import com.mojang.blaze3d.vertex.*;
 import icyllis.arc3d.engine.DirectContext;
 import icyllis.arc3d.engine.DrawableInfo;
 import icyllis.arc3d.opengl.GLCore;
-import icyllis.arc3d.opengl.GLSurfaceCanvas;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.util.Pools;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;

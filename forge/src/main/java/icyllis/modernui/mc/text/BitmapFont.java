@@ -18,13 +18,15 @@
 
 package icyllis.modernui.mc.text;
 
-import com.google.gson.*;
+import com.google.gson.JsonParseException;
 import icyllis.arc3d.opengl.GLTextureCompat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.BitmapFactory;
-import icyllis.modernui.graphics.font.*;
+import icyllis.modernui.graphics.font.GLBakedGlyph;
+import icyllis.modernui.graphics.font.GlyphManager;
+import icyllis.modernui.graphics.text.FontFamily;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.gui.font.providers.BitmapProvider;
@@ -36,6 +38,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Objects;
 
 import static icyllis.arc3d.opengl.GLCore.*;
@@ -70,7 +73,7 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
     private BitmapFont(ResourceLocation name, Bitmap bitmap,
                        int[][] grid, int rows, int cols,
                        int height, int ascent) {
-        super(null);
+        super(name.toString());
         mName = name;
         mBitmap = bitmap;
         mAscent = ascent;
@@ -213,9 +216,13 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
     }
 
     @Override
-    public String getFamilyName() {
-        // the bitmap name
-        return mName.toString();
+    public boolean hasGlyph(int ch, int vs) {
+        return hasGlyph(ch);
+    }
+
+    @Override
+    public String getFamilyName(Locale locale) {
+        return getFamilyName();
     }
 
     @Override
