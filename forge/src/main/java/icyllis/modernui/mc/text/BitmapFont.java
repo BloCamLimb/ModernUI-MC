@@ -225,13 +225,18 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
     }
 
     @Override
-    public boolean hasGlyph(int codePoint) {
-        return mGlyphs.containsKey(codePoint);
+    public boolean hasGlyph(int ch) {
+        return mGlyphs.containsKey(ch);
+    }
+
+    @Override
+    public boolean hasGlyph(int ch, int vs) {
+        return hasGlyph(ch);
     }
 
     @Override
     public String getFamilyName(Locale locale) {
-        return super.getFamilyName();
+        return getFamilyName();
     }
 
     @Override
