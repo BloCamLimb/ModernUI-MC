@@ -103,6 +103,15 @@ public abstract class MixinWindow {
             remap = false
     )
     private void onInit(int x, int y) {
+        try {
+            String version = net.minecraftforge.fml.loading.ImmediateWindowHandler.getGLVersion();
+            if (!"3.2".equals(version)) {
+                ModernUI.LOGGER.info(ModernUI.MARKER, "Detected OpenGL {} Core Profile from FML Early Window",
+                    version);
+                return;
+            }
+        } catch (Exception ignored) {
+        }
         GLFWErrorCallback callback = GLFW.glfwSetErrorCallback(null);
         GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
         GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
@@ -113,7 +122,7 @@ public abstract class MixinWindow {
             for (int[] version : versions) {
                 GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, version[0]);
                 GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, version[1]);
-                window = GLFW.glfwCreateWindow(16, 16, "", 0, 0);
+                window = GLFW.glfwCreateWindow(16, 16, "Proxy Window", 0, 0);
                 if (window != 0) {
                     ModernUI.LOGGER.info(ModernUI.MARKER, "Promoted to OpenGL {}.{} Core Profile",
                             version[0], version[1]);

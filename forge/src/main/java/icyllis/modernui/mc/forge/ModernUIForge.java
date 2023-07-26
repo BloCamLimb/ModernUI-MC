@@ -26,14 +26,14 @@ import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -349,9 +349,13 @@ public final class ModernUIForge {
         @Nonnull
         @Override
         protected Locale onGetSelectedLocale() {
-            var manager = Minecraft.getInstance().getLanguageManager();
-            if (manager != null) {
-                return manager.getJavaLocale();
+            // Minecraft can be null if we're running DataGen
+            // LanguageManager can be null if this method is being called too early
+            Minecraft minecraft;
+            LanguageManager languageManager;
+            if ((minecraft = Minecraft.getInstance()) != null &&
+                    (languageManager = minecraft.getLanguageManager()) != null) {
+                return languageManager.getJavaLocale();
             }
             return super.onGetSelectedLocale();
         }
