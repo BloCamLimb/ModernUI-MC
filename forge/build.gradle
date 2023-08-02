@@ -66,7 +66,7 @@ dependencies {
     modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
     modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"
 
-    if(rootProject.file('../ModernUI').exists()) {
+    if (rootProject.file('../ModernUI').exists()) {
         implementation(forgeDependencies("icyllis.modernui:ModernUI-Core"))
         shadow("icyllis.modernui:ModernUI-Core") {
             transitive = false

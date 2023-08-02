@@ -15,7 +15,7 @@ pluginManagement {
 
 rootProject.name = 'ModernUI-MC'
 
-if(file('../ModernUI').exists()) {
+if (file('../ModernUI').exists()) {
     includeBuild '../ModernUI'
 }
 
