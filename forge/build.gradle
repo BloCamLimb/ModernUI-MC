@@ -45,7 +45,6 @@ repositories {
             includeGroup 'org.parchmentmc.data'
         }
     }
-    mavenLocal()
     maven {
         url 'https://maven.izzel.io/releases/'
     }
@@ -67,13 +66,24 @@ dependencies {
     modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
     modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"
 
-    implementation(forgeDependencies("icyllis.modernui:ModernUI-Core:${core_version}"))
-    shadow("icyllis.modernui:ModernUI-Core:${core_version}") {
-        transitive = false
-    }
-    implementation(forgeDependencies("icyllis.modernui:ModernUI-ViewPager:1.0.0"))
-    shadow("icyllis.modernui:ModernUI-ViewPager:1.0.0") {
-        transitive = false
+    if (rootProject.file('../ModernUI').exists()) {
+        implementation(forgeDependencies("icyllis.modernui:ModernUI-Core"))
+        shadow("icyllis.modernui:ModernUI-Core") {
+            transitive = false
+        }
+        implementation(forgeDependencies("icyllis.modernui:ModernUI-ViewPager"))
+        shadow("icyllis.modernui:ModernUI-ViewPager") {
+            transitive = false
+        }
+    } else {
+        implementation(forgeDependencies("icyllis.modernui:ModernUI-Core:${core_version}"))
+        shadow("icyllis.modernui:ModernUI-Core:${core_version}") {
+            transitive = false
+        }
+        implementation(forgeDependencies("icyllis.modernui:ModernUI-ViewPager:1.0.0"))
+        shadow("icyllis.modernui:ModernUI-ViewPager:1.0.0") {
+            transitive = false
+        }
     }
 
     implementation 'org.openjdk.jmh:jmh-core:1.35'
