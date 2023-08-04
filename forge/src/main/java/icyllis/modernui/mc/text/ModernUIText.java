@@ -333,8 +333,8 @@ public final class ModernUIText {
                 TextLayoutEngine.sTextDirection = mTextDirection.get().key;
                 reload = true;
             }
-            if (TextLayoutProcessor.sColorEmoji != mColorEmoji.get()) {
-                TextLayoutProcessor.sColorEmoji = mColorEmoji.get();
+            if (TextLayoutEngine.sUseColorEmoji != mColorEmoji.get()) {
+                TextLayoutEngine.sUseColorEmoji = mColorEmoji.get();
                 reload = true;
             }
             if (TextLayoutEngine.sUseVanillaFont != mUseVanillaFont.get()) {

@@ -123,7 +123,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
      */
     public static boolean sForceUseDistanceField;
 
-    public static boolean sUseVanillaFont = false;
+    public static volatile boolean sUseVanillaFont = false;
+    public static volatile boolean sUseColorEmoji = true;
 
     /**
      * Matches Slack emoji shortcode.
@@ -274,7 +275,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     private FontManager mVanillaFontManager;
 
     private boolean mVanillaFontUsed = false;
-    private boolean mEmojiFontUsed = false;
+    private boolean mColorEmojiUsed = false;
 
     private final ModernTextRenderer mTextRenderer;
     private final ModernStringSplitter mStringSplitter;
@@ -454,37 +455,40 @@ public class TextLayoutEngine implements PreparableReloadListener {
 
     @RenderThread
     private void injectAdditionalFonts() {
-        if (mVanillaFontUsed != sUseVanillaFont) {
-            if (sUseVanillaFont) {
-                LinkedHashSet<FontFamily> fonts = new LinkedHashSet<>();
-                try (InputStream inputStream = Minecraft.getInstance().getResourceManager()
-                        .open(ModernUIForge.location("font/default.ttf"))) {
-                    fonts.add(FontFamily.createFamily(inputStream, false));
-                } catch (Exception e) {
-                    LOGGER.warn(MARKER, "Failed to load default.ttf", e);
-                }
-                if (!fonts.isEmpty()) {
-                    fonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
-                    FontCollection fc = new FontCollection(fonts.toArray(new FontFamily[0]));
-                    mFontCollections.put(Minecraft.DEFAULT_FONT, fc);
-                    mFontCollections.put(Minecraft.UNIFORM_FONT, fc);
-                    LOGGER.info(MARKER, "Using Minecraft default font for Minecraft text");
-                }
-            } else {
+        if (mVanillaFontUsed != sUseVanillaFont ||
+                mColorEmojiUsed != sUseColorEmoji) {
+            if (!sUseVanillaFont && !sUseColorEmoji) {
                 mFontCollections.remove(Minecraft.DEFAULT_FONT);
                 mFontCollections.remove(Minecraft.UNIFORM_FONT);
+                mVanillaFontUsed = false;
+                mColorEmojiUsed = false;
+            } else {
+                LinkedHashSet<FontFamily> fonts = new LinkedHashSet<>();
+                if (sUseVanillaFont) {
+                    try (InputStream inputStream = Minecraft.getInstance().getResourceManager()
+                            .open(ModernUIForge.location("font/default.ttf"))) {
+                        fonts.add(FontFamily.createFamily(inputStream, false));
+                    } catch (Exception e) {
+                        LOGGER.warn(MARKER, "Failed to load default.ttf", e);
+                    }
+                }
+                mVanillaFontUsed = sUseVanillaFont;
+
+                fonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
+
+                if (sUseColorEmoji) {
+                    if (mEmojiFont != null) {
+                        fonts.add(new FontFamily(mEmojiFont));
+                        mColorEmojiUsed = true;
+                    }
+                } else {
+                    mColorEmojiUsed = false;
+                }
+
+                FontCollection fc = new FontCollection(fonts.toArray(new FontFamily[0]));
+                mFontCollections.put(Minecraft.DEFAULT_FONT, fc);
+                mFontCollections.put(Minecraft.UNIFORM_FONT, fc);
             }
-            mVanillaFontUsed = sUseVanillaFont;
-        }
-        if (!mEmojiFontUsed && mEmojiFont != null) {
-            LinkedHashSet<FontFamily> fonts = new LinkedHashSet<>(
-                    ModernUI.getSelectedTypeface().getFamilies()
-            );
-            fonts.add(new FontFamily(mEmojiFont));
-            FontCollection fc = new FontCollection(fonts.toArray(new FontFamily[0]));
-            mFontCollections.put(Minecraft.DEFAULT_FONT, fc);
-            mFontCollections.put(Minecraft.UNIFORM_FONT, fc);
-            mEmojiFontUsed = true;
         }
     }
 
@@ -570,7 +574,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
         mEmojiFont = results.emojiFont;
         // vanilla font
         mVanillaFontUsed = false;
-        mEmojiFontUsed = false;
+        mColorEmojiUsed = false;
         injectAdditionalFonts();
         // reload the whole engine
         reloadAll();
@@ -2311,7 +2315,10 @@ public class TextLayoutEngine implements PreparableReloadListener {
         coverage.add(0xfe836);
         coverage.add(0xfe837);
         results.emojiFont = new EmojiFont("GoogleNotoEmoji",
-                coverage, 36, 28, 2, 32, map);
+                coverage, EMOJI_BASE_SIZE * BITMAP_SCALE,
+                TextLayout.DEFAULT_BASELINE_OFFSET * BITMAP_SCALE,
+                (int) (0.5 * BITMAP_SCALE + 0.5),
+                TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE * BITMAP_SCALE, map);
     }
 
     //FIXME Minecraft 1.20.1 still uses ICU-71.1, but Unicode 15 CLDR was added in ICU-72
@@ -2752,7 +2759,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 if (subImage != null) {
                     subImage.close();
                 }
-                glyph.x = (int) (0.5 * BITMAP_SCALE); // there's 0.5px space at head and tail
+                glyph.x = 0;
                 glyph.y = -TextLayout.DEFAULT_BASELINE_OFFSET * BITMAP_SCALE;
                 glyph.width = EMOJI_SIZE;
                 glyph.height = EMOJI_SIZE;
@@ -2946,7 +2953,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 GlyphVector vector = mGlyphManager.createGlyphVector(font, chars);
                 advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
                 // too wide
-                if (advance + 0.5f > offsets[0]) {
+                if (advance + 1f > offsets[0]) {
                     continue;
                 }
                 glyph = mGlyphManager.lookupGlyph(font, vector.getGlyphCode(0));
@@ -2958,7 +2965,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 }
                 advance = gl.advance;
                 // too wide
-                if (advance + 0.5f > offsets[0]) {
+                if (advance + 1f > offsets[0]) {
                     continue;
                 }
                 glyph = gl;
@@ -2981,7 +2988,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 GlyphVector vector = mGlyphManager.createGlyphVector(font, chars);
                 advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
                 // too wide
-                if (advance + 0.5f > offsets[0]) {
+                if (advance + 1 > offsets[0]) {
                     continue;
                 }
                 glyph = mGlyphManager.lookupGlyph(font, vector.getGlyphCode(0));
@@ -2993,7 +3000,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 }
                 advance = gl.advance;
                 // too wide
-                if (advance + 0.5f > offsets[0]) {
+                if (advance + 1 > offsets[0]) {
                     continue;
                 }
                 glyph = gl;

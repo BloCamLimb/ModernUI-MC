@@ -80,7 +80,6 @@ public class TextLayoutProcessor {
      */
     public static volatile float sBaseFontSize = DEFAULT_BASE_FONT_SIZE;
     //public static volatile boolean sAlignPixels = false;
-    public static volatile boolean sColorEmoji = true;
 
     private final TextLayoutEngine mEngine;
 

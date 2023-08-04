@@ -6,6 +6,16 @@ Changelogs
 * Add animated tooltip border colors
 * Block NUL char for input method
 #### Modern Text Engine 1.20.1
+* Make color emoji work in font itemization rather than brute force with grapheme cluster
+* Enhance and optimize text layout engine
+  * Only compute the required information
+  * Make text layout asynchronous
+  * Mix layout processor into LayoutCore to increase cache hit
+  * Adjust paragraph layout lifespan
+  * Reduce performance and memory impact
+* Remove fast digit replacement
+* Make obfuscated style work with bitmap fonts
+* Adjust EditBox highlight color
 
 ### Modern UI 3.7.1.3 (2023-07-09)
 #### Forge Extension 1.20.1-47.0.14
