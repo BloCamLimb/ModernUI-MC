@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.forge;
 
+import icyllis.arc3d.core.MathUtil;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.*;
 import icyllis.modernui.annotation.NonNull;
@@ -370,15 +371,14 @@ public class PreferencesFragment extends Fragment {
             {
                 var option = createSwitchLayout(context, "modernui.center.extension.smoothScrolling");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked((ModernUIForge.getBootstrapLevel() & ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING) == 0);
+                button.setChecked(!Boolean.parseBoolean(
+                        ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
+                ));
                 button.setOnCheckedChangeListener((__, checked) -> {
-                    int level = ModernUIForge.getBootstrapLevel();
-                    if (checked) {
-                        level &= ~ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING;
-                    } else {
-                        level |= ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING;
-                    }
-                    ModernUIForge.setBootstrapLevel(level);
+                    ModernUIForge.setBootstrapProperty(
+                            ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING,
+                            Boolean.toString(!checked)
+                    );
                     Toast.makeText(__.getContext(),
                                     I18n.get("gui.modernui.restart_to_work"),
                                     Toast.LENGTH_SHORT)
@@ -444,15 +444,14 @@ public class PreferencesFragment extends Fragment {
 
             var option = createSwitchLayout(context, "modernui.center.text.textEngine");
             var button = option.<SwitchButton>requireViewById(R.id.button1);
-            button.setChecked((ModernUIForge.getBootstrapLevel() & ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE) == 0);
+            button.setChecked(!Boolean.parseBoolean(
+                    ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
+            ));
             button.setOnCheckedChangeListener((__, checked) -> {
-                int level = ModernUIForge.getBootstrapLevel();
-                if (checked) {
-                    level &= ~ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE;
-                } else {
-                    level |= ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE;
-                }
-                ModernUIForge.setBootstrapLevel(level);
+                ModernUIForge.setBootstrapProperty(
+                        ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE,
+                        Boolean.toString(!checked)
+                );
                 Toast.makeText(__.getContext(),
                                 I18n.get("gui.modernui.restart_to_work"),
                                 Toast.LENGTH_SHORT)

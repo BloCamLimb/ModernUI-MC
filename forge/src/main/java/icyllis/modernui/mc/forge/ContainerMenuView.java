@@ -18,7 +18,9 @@
 
 package icyllis.modernui.mc.forge;
 
+import icyllis.arc3d.core.*;
 import icyllis.modernui.core.Context;
+import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.view.View;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -79,7 +81,7 @@ public class ContainerMenuView extends View implements CustomDrawable {
     @Override
     public DrawHandler snapDrawHandler(int backendApi,
                                        Matrix4 viewMatrix,
-                                       Rect clipBounds,
+                                       Rect2i clipBounds,
                                        ImageInfo targetInfo) {
         return null;
     }

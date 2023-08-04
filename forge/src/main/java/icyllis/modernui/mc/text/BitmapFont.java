@@ -19,16 +19,16 @@
 package icyllis.modernui.mc.text;
 
 import com.google.gson.JsonParseException;
+import icyllis.arc3d.core.Strike;
 import icyllis.arc3d.opengl.GLTextureCompat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
-import icyllis.modernui.graphics.Bitmap;
-import icyllis.modernui.graphics.BitmapFactory;
-import icyllis.modernui.graphics.font.GLBakedGlyph;
+import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.font.BakedGlyph;
 import icyllis.modernui.graphics.font.GlyphManager;
-import icyllis.modernui.graphics.text.FontFamily;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import icyllis.modernui.graphics.text.*;
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import it.unimi.dsi.fastutil.ints.*;
 import net.minecraft.client.gui.font.providers.BitmapProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -44,8 +44,8 @@ import java.util.Objects;
 import static icyllis.arc3d.opengl.GLCore.*;
 
 /**
- * Behaves like FontFamily, but directly provides a bitmap (which maybe colored) to replace
- * Unicode code points without text shaping. If such a font family wins the font itemization,
+ * Directly provides a bitmap (mask format may be RGBA or grayscale) to replace
+ * Unicode code points without text shaping. If such a font wins the font itemization,
  * the layout engine will create a ReplacementRun, just like color emojis.
  * <p>
  * The bitmap is just a single texture atlas.
@@ -54,7 +54,7 @@ import static icyllis.arc3d.opengl.GLCore.*;
  * @see net.minecraft.client.gui.font.providers.BitmapProvider
  * @since 3.6
  */
-public class BitmapFont extends FontFamily implements AutoCloseable {
+public class BitmapFont implements Font, AutoCloseable {
 
     private final ResourceLocation mName;
 
@@ -73,7 +73,6 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
     private BitmapFont(ResourceLocation name, Bitmap bitmap,
                        int[][] grid, int rows, int cols,
                        int height, int ascent) {
-        super(name.toString());
         mName = name;
         mBitmap = bitmap;
         mAscent = ascent;
@@ -91,9 +90,9 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
                 int actualWidth = getActualGlyphWidth(bitmap, mSpriteWidth, mSpriteHeight, c, r);
                 Glyph glyph = new Glyph(Math.round(actualWidth * mScaleFactor) + 1);
                 glyph.x = 0;
-                glyph.y = -mAscent * TextLayoutEngine.BITMAP_SCALE;
-                glyph.width = Math.round(mSpriteWidth * mScaleFactor * TextLayoutEngine.BITMAP_SCALE);
-                glyph.height = Math.round(mSpriteHeight * mScaleFactor * TextLayoutEngine.BITMAP_SCALE);
+                glyph.y = (short) (-mAscent * TextLayoutEngine.BITMAP_SCALE);
+                glyph.width = (short) Math.round(mSpriteWidth * mScaleFactor * TextLayoutEngine.BITMAP_SCALE);
+                glyph.height = (short) Math.round(mSpriteHeight * mScaleFactor * TextLayoutEngine.BITMAP_SCALE);
                 glyph.u1 = (float) (c * mSpriteWidth) / bitmap.getWidth();
                 glyph.v1 = (float) (r * mSpriteHeight) / bitmap.getHeight();
                 glyph.u2 = (float) (c * mSpriteWidth + mSpriteWidth) / bitmap.getWidth();
@@ -122,7 +121,8 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
         var file = definition.file();
         var location = file.withPrefix("textures/");
         try (InputStream stream = manager.open(location)) {
-            // Minecraft doesn't use texture views, read swizzles may not work, so we always use RGBA (colored)
+            //XXX: Minecraft doesn't use texture views, read swizzles may not work,
+            // so we always use RGBA (colored)
             var opts = new BitmapFactory.Options();
             opts.inPreferredFormat = Bitmap.Format.RGBA_8888;
             Bitmap bitmap = BitmapFactory.decodeStream(stream, opts);
@@ -158,9 +158,6 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
                     0, 0, 0, 1,
                     GL_RGBA, GL_UNSIGNED_BYTE, pixels);
             mTexture.setFilter(GL_NEAREST, GL_NEAREST);
-            for (Glyph glyph : mGlyphs.values()) {
-                glyph.texture = mTexture.get();
-            }
         } finally {
             mBitmap.close();
             mBitmap = null;
@@ -180,6 +177,27 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
         }
     }
 
+    @Override
+    public int getStyle() {
+        return FontPaint.NORMAL;
+    }
+
+    @Override
+    public String getFullName(@Nonnull Locale locale) {
+        return mName.toString();
+    }
+
+    @Override
+    public String getFamilyName(@Nonnull Locale locale) {
+        return mName.toString();
+    }
+
+    @Override
+    public int getMetrics(@Nonnull FontPaint paint, FontMetricsInt fm) {
+        // unused in Minecraft
+        return 0;
+    }
+
     // Render thread only
     @Nullable
     public Glyph getGlyph(int ch) {
@@ -188,6 +206,10 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
         }
         assert mBitmap == null;
         return mGlyphs.get(ch);
+    }
+
+    public int getCurrentTexture() {
+        return mTexture.get();
     }
 
     public int getAscent() {
@@ -211,18 +233,81 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
     }
 
     @Override
-    public boolean hasGlyph(int ch) {
+    public boolean hasGlyph(int ch, int vs) {
         return mGlyphs.containsKey(ch);
     }
 
     @Override
-    public boolean hasGlyph(int ch, int vs) {
-        return hasGlyph(ch);
+    public float doSimpleLayout(char[] buf, int start, int limit,
+                                FontPaint paint, IntArrayList glyphs,
+                                FloatArrayList positions, float x, float y) {
+        return doComplexLayout(buf, start, limit, start, limit,
+                false, paint, glyphs, positions, null, 0,
+                null, x, y);
     }
 
     @Override
-    public String getFamilyName(Locale locale) {
-        return getFamilyName();
+    public float doComplexLayout(char[] buf,
+                                 int contextStart, int contextLimit,
+                                 int layoutStart, int layoutLimit,
+                                 boolean isRtl, FontPaint paint,
+                                 IntArrayList glyphs, FloatArrayList positions,
+                                 float[] advances, int advanceOffset,
+                                 Rect bounds, float x, float y) {
+        // Measure code point in visual order
+        // We simply ignore the context range
+
+        // No text shaping, no BiDi support
+
+        // Bitmap font cannot be scaled
+        float scaleUp = (int) (paint.getFontSize() / TextLayoutProcessor.sBaseFontSize + 0.5);
+
+        char _c1, _c2;
+        float advance = 0;
+        // Process code point in visual order
+        for (int index = layoutStart; index < layoutLimit; index++) {
+            int ch, i = index;
+            _c1 = buf[index];
+            if (Character.isHighSurrogate(_c1) && index + 1 < layoutLimit) {
+                _c2 = buf[index + 1];
+                if (Character.isLowSurrogate(_c2)) {
+                    ch = Character.toCodePoint(_c1, _c2);
+                    ++index;
+                } else {
+                    ch = _c1;
+                }
+            } else {
+                ch = _c1;
+            }
+
+            Glyph glyph = getGlyph(ch);
+            if (glyph == null) {
+                continue;
+            }
+
+            float adv = glyph.advance * scaleUp;
+            if (advances != null) {
+                advances[i - advanceOffset] = adv;
+            }
+
+            if (glyphs != null) {
+                glyphs.add(ch);
+            }
+            if (positions != null) {
+                positions.add(x + advance);
+                positions.add(y);
+            }
+
+            advance += adv;
+        }
+
+        return advance;
+    }
+
+    @Override
+    public Strike findOrCreateStrike(FontPaint paint) {
+        // no support except for Minecraft
+        return null;
     }
 
     @Override
@@ -259,7 +344,7 @@ public class BitmapFont extends FontFamily implements AutoCloseable {
         mTexture.close();
     }
 
-    public static class Glyph extends GLBakedGlyph {
+    public static class Glyph extends BakedGlyph {
 
         public final float advance;
 

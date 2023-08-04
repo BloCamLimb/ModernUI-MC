@@ -21,7 +21,7 @@ package icyllis.modernui.mc.text;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import icyllis.arc3d.SharedPtr;
+import icyllis.arc3d.core.SharedPtr;
 import icyllis.arc3d.engine.SamplerState;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.core.Core;
@@ -171,7 +171,7 @@ public class TextRenderType extends RenderType {
 
     private static void ensureLinearFontSampler() {
         if (sLinearFontSampler == null) {
-            GLEngine engine = (GLEngine) Core.requireDirectContext().getEngine();
+            GLServer engine = (GLServer) Core.requireDirectContext().getServer();
             // default state is bilinear
             sLinearFontSampler = engine.getResourceProvider().findOrCreateCompatibleSampler(
                     SamplerState.DEFAULT);

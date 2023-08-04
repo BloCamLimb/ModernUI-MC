@@ -20,6 +20,7 @@ package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
+import icyllis.arc3d.core.Matrix4;
 import icyllis.modernui.graphics.*;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -68,16 +69,16 @@ public final class TooltipRenderer {
     private static final Matrix4 sMyMat = new Matrix4();
 
     //private static final int[] sActiveFillColor = new int[4];
-    //private static final int[] sActiveStrokeColor = new int[4];
+    private static final int[] sActiveStrokeColor = new int[4];
     //static volatile float sAnimationDuration; // milliseconds
 
     static volatile boolean sLayoutRTL;
 
-    /*private static boolean sDraw;
-    public static float sAlpha = 1;*/
+    private static boolean sDraw;
+    //public static float sAlpha = 1;
 
-    /*static void update(long deltaMillis, long timeMillis) {
-        if (sAnimationDuration <= 0) {
+    static void update(long deltaMillis, long timeMillis) {
+        /*if (sAnimationDuration <= 0) {
             sAlpha = 1;
         } else if (sDraw) {
             if (sAlpha < 1) {
@@ -86,37 +87,29 @@ public final class TooltipRenderer {
             sDraw = false;
         } else if (sAlpha > 0) {
             sAlpha = Math.max(sAlpha - deltaMillis / sAnimationDuration, 0);
-        }
-        if (sAlpha > 0) {
+        }*/
+        if (sDraw) {
+            sDraw = false;
             float p = (timeMillis % 1000) / 1000f;
-            switch ((int) ((timeMillis / 1000) & 3)) {
-                case 0: {
-                    sUseStrokeColor[0] = ColorEvaluator.evaluate(p, sStrokeColor[2], sStrokeColor[0]);
-                    sUseStrokeColor[1] = ColorEvaluator.evaluate(p, sStrokeColor[0], sStrokeColor[1]);
-                    sUseStrokeColor[3] = ColorEvaluator.evaluate(p, sStrokeColor[1], sStrokeColor[3]);
-                    sUseStrokeColor[2] = ColorEvaluator.evaluate(p, sStrokeColor[3], sStrokeColor[2]);
-                }
-                case 1: {
-                    sUseStrokeColor[0] = ColorEvaluator.evaluate(p, sStrokeColor[3], sStrokeColor[2]);
-                    sUseStrokeColor[1] = ColorEvaluator.evaluate(p, sStrokeColor[2], sStrokeColor[0]);
-                    sUseStrokeColor[3] = ColorEvaluator.evaluate(p, sStrokeColor[0], sStrokeColor[1]);
-                    sUseStrokeColor[2] = ColorEvaluator.evaluate(p, sStrokeColor[1], sStrokeColor[3]);
-                }
-                case 2: {
-                    sUseStrokeColor[0] = ColorEvaluator.evaluate(p, sStrokeColor[1], sStrokeColor[3]);
-                    sUseStrokeColor[1] = ColorEvaluator.evaluate(p, sStrokeColor[3], sStrokeColor[2]);
-                    sUseStrokeColor[3] = ColorEvaluator.evaluate(p, sStrokeColor[2], sStrokeColor[0]);
-                    sUseStrokeColor[2] = ColorEvaluator.evaluate(p, sStrokeColor[0], sStrokeColor[1]);
-                }
-                case 3: {
-                    sUseStrokeColor[0] = ColorEvaluator.evaluate(p, sStrokeColor[0], sStrokeColor[1]);
-                    sUseStrokeColor[1] = ColorEvaluator.evaluate(p, sStrokeColor[1], sStrokeColor[3]);
-                    sUseStrokeColor[3] = ColorEvaluator.evaluate(p, sStrokeColor[3], sStrokeColor[2]);
-                    sUseStrokeColor[2] = ColorEvaluator.evaluate(p, sStrokeColor[2], sStrokeColor[0]);
-                }
+            int pos = 3 - (int) ((timeMillis / 1000) & 3);
+            for (int i = 0; i < 4; i++) {
+                sActiveStrokeColor[i] = lerpInLinearSpace(p,
+                        sStrokeColor[(i + pos) & 3],
+                        sStrokeColor[(i + pos + 3) & 3]);
             }
         }
-    }*/
+    }
+
+    static int lerpInLinearSpace(float fraction, int startValue, int endValue) {
+        int result = 0;
+        for (int i = 0; i < 4; i++) {
+            float s = ((startValue >> (i << 3)) & 0xff) / 255.0f;
+            float t = ((endValue >> (i << 3)) & 0xff) / 255.0f;
+            float v = MathUtil.lerp(s, t, fraction);
+            result |= Math.round(v * 255.0f) << (i << 3);
+        }
+        return result;
+    }
 
     private TooltipRenderer() {
     }
@@ -295,7 +288,7 @@ public final class TooltipRenderer {
                             @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
                             @Nonnull Font font, int screenWidth, int screenHeight,
                             float partialX, float partialY, @Nullable ClientTooltipPositioner positioner) {
-        //sDraw = true;
+        sDraw = true;
 
         int tooltipWidth;
         int tooltipHeight;
@@ -400,8 +393,8 @@ public final class TooltipRenderer {
         canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
                 tooltipX + tooltipWidth + H_BORDER,
                 tooltipY + tooltipHeight + V_BORDER,
-                sStrokeColor[0], sStrokeColor[1],
-                sStrokeColor[2], sStrokeColor[3],
+                sActiveStrokeColor[0], sActiveStrokeColor[1],
+                sActiveStrokeColor[2], sActiveStrokeColor[3],
                 3, paint);
 
         paint.recycle();

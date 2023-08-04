@@ -91,7 +91,7 @@ public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
      * For example, {@link ScreenCallback} to describe the screen properties.
      * <p>
      * Note: You should not interact player inventory or block container via the Fragment.
-     * Instead, use {@link T ContainerMenu} and ContainerMenuView.
+     * Instead, use {@link T ContainerMenu} and {@link ContainerMenuView}.
      *
      * @param menu the container menu
      * @return the main fragment

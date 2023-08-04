@@ -44,18 +44,16 @@ public final class ModernStringSplitter {
         }
     }
 
-    //private final TextLayoutEngine mFontEngine = TextLayoutEngine.getInstance();
+    private final TextLayoutEngine mEngine;
 
     //private final MutableFloat v = new MutableFloat();
 
-    /*
+    /**
      * Constructor
-     *
-     * @param vanillaWidths retrieve char width with given codePoint and Style(BOLD)
      */
-    /*public ModernStringSplitter(WidthProvider vanillaWidths) {
-        super(vanillaWidths);
-    }*/
+    public ModernStringSplitter(TextLayoutEngine engine) {
+        mEngine = engine;
+    }
 
     /**
      * Measure the text and get the text advance.
@@ -64,11 +62,11 @@ public final class ModernStringSplitter {
      * @param text the text to measure
      * @return text advance in GUI scaled pixels
      */
-    public static float measureText(@Nullable String text) {
+    public float measureText(@Nullable String text) {
         if (text == null) {
             return 0;
         }
-        return TextLayoutEngine.getInstance().lookupVanillaLayout(text).getTotalAdvance();
+        return mEngine.lookupVanillaLayout(text).getTotalAdvance();
     }
 
     /**
@@ -78,8 +76,8 @@ public final class ModernStringSplitter {
      * @param text the text to measure
      * @return text advance in GUI scaled pixels
      */
-    public static float measureText(@Nonnull FormattedText text) {
-        return TextLayoutEngine.getInstance().lookupComplexLayout(text).getTotalAdvance();
+    public float measureText(@Nonnull FormattedText text) {
+        return mEngine.lookupFormattedLayout(text).getTotalAdvance();
     }
 
     /**
@@ -88,8 +86,8 @@ public final class ModernStringSplitter {
      * @param text the text to measure
      * @return text advance in GUI scaled pixels
      */
-    public static float measureText(@Nonnull FormattedCharSequence text) {
-        return TextLayoutEngine.getInstance().lookupSequenceLayout(text).getTotalAdvance();
+    public float measureText(@Nonnull FormattedCharSequence text) {
+        return mEngine.lookupFormattedLayout(text).getTotalAdvance();
     }
 
     /**
@@ -99,13 +97,13 @@ public final class ModernStringSplitter {
      * If forwards=false, returns the minimum index from the end instead (but still
      * indexing from the start).
      *
-     * @param layout     the measured text to break
+     * @param layout   the measured text to break
      * @param forwards the leading position
      * @param width    the max width in GUI scaled pixels
      * @return break index (without formatting codes)
      */
     public static int breakText(@Nonnull TextLayout layout, boolean forwards, float width) {
-        final int limit = layout.getLength();
+        final int limit = layout.getCharCount();
         if (forwards) {
             // TruncateAt.END
             int i = 0;
@@ -146,12 +144,13 @@ public final class ModernStringSplitter {
      * @param forwards the leading position
      * @return break index
      */
-    public static int breakText(@Nonnull String text, float width, @Nonnull Style style, boolean forwards) {
+    public int breakText(@Nonnull String text, float width, @Nonnull Style style, boolean forwards) {
         if (text.isEmpty() || width < 0) {
             return 0;
         }
 
-        final TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(text, style);
+        final TextLayout layout = mEngine.lookupVanillaLayout(text, style,
+                TextLayoutEngine.COMPUTE_ADVANCES);
         if (width >= layout.getTotalAdvance()) {
             return forwards ? text.length() : 0;
         }
@@ -184,7 +183,7 @@ public final class ModernStringSplitter {
      * @return the length of the text when it is trimmed to be at most /
      * the number of characters from text that will fit inside width
      */
-    public static int indexByWidth(@Nonnull String text, float width, @Nonnull Style style) {
+    public int indexByWidth(@Nonnull String text, float width, @Nonnull Style style) {
         return breakText(text, width, style, true);
     }
 
@@ -198,7 +197,7 @@ public final class ModernStringSplitter {
      * @return the trimmed text
      */
     @Nonnull
-    public static String headByWidth(@Nonnull String text, float width, @Nonnull Style style) {
+    public String headByWidth(@Nonnull String text, float width, @Nonnull Style style) {
         return text.substring(0, indexByWidth(text, width, style));
     }
 
@@ -212,7 +211,7 @@ public final class ModernStringSplitter {
      * @return the trimmed text
      */
     @Nonnull
-    public static String tailByWidth(@Nonnull String text, float width, @Nonnull Style style) {
+    public String tailByWidth(@Nonnull String text, float width, @Nonnull Style style) {
         return text.substring(breakText(text, width, style, false));
     }
 
@@ -225,12 +224,13 @@ public final class ModernStringSplitter {
      * @return the text style or null
      */
     @Nullable
-    public static Style styleAtWidth(@Nonnull FormattedText text, float width) {
+    public Style styleAtWidth(@Nonnull FormattedText text, float width) {
         if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY || width < 0) {
             return null;
         }
 
-        final TextLayout layout = TextLayoutEngine.getInstance().lookupComplexLayout(text);
+        final TextLayout layout = mEngine.lookupFormattedLayout(text,
+                Style.EMPTY, TextLayoutEngine.COMPUTE_ADVANCES);
         if (width >= layout.getTotalAdvance()) {
             return null;
         }
@@ -268,7 +268,7 @@ public final class ModernStringSplitter {
      * @return the text style or null
      */
     @Nullable
-    public static Style styleAtWidth(@Nonnull FormattedCharSequence text, float width) {
+    public Style styleAtWidth(@Nonnull FormattedCharSequence text, float width) {
         if (text == FormattedCharSequence.EMPTY || width < 0) {
             return null;
         }
@@ -278,7 +278,8 @@ public final class ModernStringSplitter {
             return styleAtWidth(((FormattedTextWrapper) text).mText, width);
         }
 
-        final TextLayout layout = TextLayoutEngine.getInstance().lookupSequenceLayout(text);
+        final TextLayout layout = mEngine.lookupFormattedLayout(text,
+                TextLayoutEngine.COMPUTE_ADVANCES);
         if (width >= layout.getTotalAdvance()) {
             return null;
         }
@@ -311,12 +312,13 @@ public final class ModernStringSplitter {
      * @return the trimmed text or the original text
      */
     @Nonnull
-    public static FormattedText headByWidth(@Nonnull FormattedText text, float width, @Nonnull Style style) {
+    public FormattedText headByWidth(@Nonnull FormattedText text, float width, @Nonnull Style style) {
         if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY || width < 0) {
             return FormattedText.EMPTY;
         }
 
-        final TextLayout layout = TextLayoutEngine.getInstance().lookupComplexLayout(text, style);
+        final TextLayout layout = mEngine.lookupFormattedLayout(text, style,
+                TextLayoutEngine.COMPUTE_ADVANCES);
         if (width >= layout.getTotalAdvance()) {
             return text;
         }
@@ -368,17 +370,18 @@ public final class ModernStringSplitter {
      * @param base     the base style
      * @param consumer accept each line result, params lineBaseStyle, startIndex (inclusive), endIndex (exclusive)
      */
-    public static void computeLineBreaks(@Nonnull String text, float width, @Nonnull Style base,
-                                         @Nonnull StringSplitter.LinePosConsumer consumer) {
+    public void computeLineBreaks(@Nonnull String text, float width, @Nonnull Style base,
+                                  @Nonnull StringSplitter.LinePosConsumer consumer) {
         if (text.isEmpty() || width < 0) {
             return;
         }
 
-        final TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(text, base);
+        final TextLayout layout = mEngine.lookupVanillaLayout(text, base,
+                TextLayoutEngine.COMPUTE_ADVANCES | TextLayoutEngine.COMPUTE_LINE_BOUNDARIES);
         final char[] buf = layout.getTextBuf();
         if (width >= layout.getTotalAdvance()) {
             boolean hasLineFeed = false;
-            for (int i = 0, e = layout.getLength(); i < e; i++) {
+            for (int i = 0, e = layout.getCharCount(); i < e; i++) {
                 if (buf[i] == '\n') {
                     hasLineFeed = true;
                     break;
@@ -392,7 +395,7 @@ public final class ModernStringSplitter {
 
         // ignore styles generated from formatting codes
         final LineBreaker lineBreaker = new LineBreaker(width);
-        final int end = layout.getLength();
+        final int end = layout.getCharCount();
 
         int nextBoundaryIndex = 0;
         int paraEnd;
@@ -459,17 +462,18 @@ public final class ModernStringSplitter {
      * @param base     the base style
      * @param consumer the line consumer, second boolean false meaning it's the first line of a paragraph
      */
-    public static void computeLineBreaks(@Nonnull FormattedText text, float width, @Nonnull Style base,
-                                         @Nonnull BiConsumer<FormattedText, Boolean> consumer) {
+    public void computeLineBreaks(@Nonnull FormattedText text, float width, @Nonnull Style base,
+                                  @Nonnull BiConsumer<FormattedText, Boolean> consumer) {
         if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY || width < 0) {
             return;
         }
 
-        final TextLayout layout = TextLayoutEngine.getInstance().lookupComplexLayout(text, base);
+        final TextLayout layout = mEngine.lookupFormattedLayout(text, base,
+                TextLayoutEngine.COMPUTE_ADVANCES | TextLayoutEngine.COMPUTE_LINE_BOUNDARIES);
         final char[] buf = layout.getTextBuf();
         if (width >= layout.getTotalAdvance()) {
             boolean hasLineFeed = false;
-            for (int i = 0, e = layout.getLength(); i < e; i++) {
+            for (int i = 0, e = layout.getCharCount(); i < e; i++) {
                 if (buf[i] == '\n') {
                     hasLineFeed = true;
                     break;
@@ -483,7 +487,7 @@ public final class ModernStringSplitter {
 
         // ignore styles generated from formatting codes
         final LineBreaker lineBreaker = new LineBreaker(width);
-        final int end = layout.getLength();
+        final int end = layout.getCharCount();
 
         int nextBoundaryIndex = 0;
         int paraEnd;

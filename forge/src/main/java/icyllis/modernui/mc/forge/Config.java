@@ -251,13 +251,13 @@ final class Config {
                             "Whether to enable Modern UI rounded tooltip style, or back to vanilla style.")
                     .define("enable", true);
             mTooltipFill = builder.comment(
-                            "The tooltip FILL color in #RRGGBB or #AARRGGBB format. Default: #D4000000",
+                            "The tooltip FILL color in #RRGGBB or #AARRGGBB format. Default: #E0000000",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
                             "Multiple values produce a gradient effect, whereas one value produces a solid color.")
                     .defineList("colorFill", () -> {
                         List<String> list = new ArrayList<>();
-                        list.add("#D4000000");
+                        list.add("#E0000000");
                         return list;
                     }, $ -> true);
             mTooltipStroke = builder.comment(

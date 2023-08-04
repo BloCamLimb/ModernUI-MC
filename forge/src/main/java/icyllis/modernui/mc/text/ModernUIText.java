@@ -26,7 +26,6 @@ import icyllis.modernui.text.TextUtils;
 import icyllis.modernui.view.View;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.language.I18n;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModContainer;
@@ -101,17 +100,6 @@ public final class ModernUIText {
             pw.println(", EmojiAtlasSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
             GlyphManager.getInstance().dumpInfo(pw);
         });
-        {
-            int[] codePoints = {0x1f469, 0x1f3fc, 0x200d, 0x2764, 0xfe0f, 0x200d, 0x1f48b, 0x200d, 0x1f469, 0x1f3fd};
-            var builder = new CharSequenceBuilder();
-            for (int cp : codePoints) {
-                builder.addCodePoint(cp);
-            }
-            String string = new String(codePoints, 0, codePoints.length);
-            if (builder.hashCode() != string.hashCode() || builder.hashCode() != builder.toString().hashCode()) {
-                throw new RuntimeException("Bad String.hashCode() implementation");
-            }
-        }
         //MinecraftForge.EVENT_BUS.register(EventHandler.class);
         LOGGER.info(MARKER, "Loaded modern text engine");
     }
@@ -184,10 +172,10 @@ public final class ModernUIText {
         public static final float SHADOW_OFFSET_MAX = 2;
         public static final float OUTLINE_OFFSET_MIN = 0.2f;
         public static final float OUTLINE_OFFSET_MAX = 2;
-        public static final int LIFESPAN_MIN = 2;
+        /*public static final int LIFESPAN_MIN = 2;
         public static final int LIFESPAN_MAX = 60;
         public static final int REHASH_MIN = 0;
-        public static final int REHASH_MAX = 2000;
+        public static final int REHASH_MAX = 2000;*/
 
         //final ForgeConfigSpec.BooleanValue globalRenderer;
         public final ForgeConfigSpec.BooleanValue mAllowShadow;
@@ -198,8 +186,8 @@ public final class ModernUIText {
         public final ForgeConfigSpec.DoubleValue mOutlineOffset;
         //public final ForgeConfigSpec.BooleanValue mSuperSampling;
         //public final ForgeConfigSpec.BooleanValue mAlignPixels;
-        public final ForgeConfigSpec.IntValue mCacheLifespan;
-        public final ForgeConfigSpec.IntValue mRehashThreshold;
+        /*public final ForgeConfigSpec.IntValue mCacheLifespan;
+        public final ForgeConfigSpec.IntValue mRehashThreshold;*/
         public final ForgeConfigSpec.EnumValue<TextDirection> mTextDirection;
         public final ForgeConfigSpec.BooleanValue mColorEmoji;
         //public final ForgeConfigSpec.BooleanValue mBitmapReplacement;
@@ -242,7 +230,7 @@ public final class ModernUIText {
                             BASELINE_MIN, BASELINE_MAX);
             mShadowOffset = builder.comment(
                             "Control the text shadow offset for vanilla text rendering, in GUI scaled pixels.")
-                    .defineInRange("shadowOffset", 1.0, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
+                    .defineInRange("shadowOffset", 0.8, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
             mOutlineOffset = builder.comment(
                             "Control the text outline offset for vanilla text rendering, in GUI scaled pixels.")
                     .defineInRange("outlineOffset", 0.5, OUTLINE_OFFSET_MIN, OUTLINE_OFFSET_MAX);
@@ -254,11 +242,11 @@ public final class ModernUIText {
                             "Enable to make each glyph pixel-aligned in text layout in screen-space.",
                             "Text rendering may be better with bitmap fonts / fixed resolution / linear sampling.")
                     .define("alignPixels", false);*/
-            mCacheLifespan = builder.comment(
+            /*mCacheLifespan = builder.comment(
                             "Set the recycle time of layout cache in seconds, using least recently used algorithm.")
                     .defineInRange("cacheLifespan", 12, LIFESPAN_MIN, LIFESPAN_MAX);
             mRehashThreshold = builder.comment("Set the rehash threshold of layout cache")
-                    .defineInRange("rehashThreshold", 100, REHASH_MIN, REHASH_MAX);
+                    .defineInRange("rehashThreshold", 100, REHASH_MIN, REHASH_MAX);*/
             mTextDirection = builder.comment(
                             "Control bidirectional text heuristic algorithm.")
                     .defineEnum("textDirection", TextDirection.FIRST_STRONG);
@@ -339,8 +327,8 @@ public final class ModernUIText {
                 TextLayoutProcessor.sAlignPixels = mAlignPixels.get();
                 reload = true;
             }*/
-            TextLayoutEngine.sCacheLifespan = mCacheLifespan.get();
-            TextLayoutEngine.sRehashThreshold = mRehashThreshold.get();
+            /*TextLayoutEngine.sCacheLifespan = mCacheLifespan.get();
+            TextLayoutEngine.sRehashThreshold = mRehashThreshold.get();*/
             if (TextLayoutEngine.sTextDirection != mTextDirection.get().key) {
                 TextLayoutEngine.sTextDirection = mTextDirection.get().key;
                 reload = true;

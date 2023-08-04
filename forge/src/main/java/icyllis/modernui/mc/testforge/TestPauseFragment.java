@@ -176,8 +176,8 @@ public class TestPauseFragment extends Fragment {
             paint.setColor(NETWORK_COLOR);
             canvas.drawRoundRect(b.left + start, b.top + start, b.right - start, b.bottom - start, mRadius, paint);
 
-            canvas.drawText("BloCamLimb's Network", 0, 20, b.exactCenterX(), b.top + mRadius * 1.8f,
-                    mTextPaint);
+            /*canvas.drawText("BloCamLimb's Network", 0, 20, b.exactCenterX(), b.top + mRadius * 1.8f,
+                    mTextPaint);*/
             paint.recycle();
         }
     }

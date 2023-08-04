@@ -1,5 +1,12 @@
 Changelogs
 ===
+### Modern UI 3.8.0.4
+#### Forge Extension 1.20.1-47.0.14
+* Use bootstrap.properties instead of bootstrap file
+* Add animated tooltip border colors
+* Block NUL char for input method
+#### Modern Text Engine 1.20.1
+
 ### Modern UI 3.7.1.3 (2023-07-09)
 #### Forge Extension 1.20.1-47.0.14
 * Fix crash on dedicated server

@@ -44,7 +44,7 @@ public class CharacterStyle {
      *      11    EFFECT_MASK
      *     1      OBFUSCATED
      *     11111  LAYOUT_MASK
-     *    1       DIGIT_REPLACEMENT
+     *    1       COLOR_EMOJI_REPLACEMENT
      *   1        BITMAP_REPLACEMENT
      *  1         IMPLICIT_COLOR
      * |--------|
@@ -86,15 +86,19 @@ public class CharacterStyle {
     public static final int LAYOUT_MASK = FONT_STYLE_MASK | EFFECT_MASK | OBFUSCATED_MASK;
 
     /**
-     * Represent to use fast digit replacement. Then advances will not change, just
-     * replace their ASCII backed glyphs with new input string.
+     * Represent to use a color emoji.
      */
-    public static final int FAST_DIGIT_REPLACEMENT = 0x20000000;
+    public static final int COLOR_EMOJI_REPLACEMENT = 0x20000000;
+
+    /**
+     * Represent to use a bitmap glyph.
+     */
+    public static final int BITMAP_REPLACEMENT = 0x40000000;
 
     /**
      * Represent to use a color emoji or a bitmap glyph.
      */
-    public static final int BITMAP_REPLACEMENT = 0x40000000;
+    public static final int ANY_BITMAP_REPLACEMENT = COLOR_EMOJI_REPLACEMENT | BITMAP_REPLACEMENT;
 
     /**
      * 0xRRGGBB color mask.
@@ -141,7 +145,7 @@ public class CharacterStyle {
      *
      * @param style style to flatten
      * @return a packed integer
-     * @see #isAppearanceAffecting(Style, Style)
+     * @see #equalsForTextLayout(Style, Style)
      */
     public static int flatten(@Nonnull Style style) {
         int v = NORMAL;
@@ -175,14 +179,14 @@ public class CharacterStyle {
      *
      * @see #flatten(Style)
      */
-    public static boolean isAppearanceAffecting(@Nonnull Style a, @Nonnull Style b) {
-        return a != b && (a.isBold() != b.isBold() ||
-                a.isItalic() != b.isItalic() ||
-                a.isUnderlined() != b.isUnderlined() ||
-                a.isStrikethrough() != b.isStrikethrough() ||
-                a.isObfuscated() != b.isObfuscated() ||
-                !Objects.equals(a.getColor(), b.getColor()) ||
-                !Objects.equals(a.getFont(), b.getFont()));
+    public static boolean equalsForTextLayout(@Nonnull Style a, @Nonnull Style b) {
+        return a == b || (a.isBold() == b.isBold() &&
+                a.isItalic() == b.isItalic() &&
+                a.isUnderlined() == b.isUnderlined() &&
+                a.isStrikethrough() == b.isStrikethrough() &&
+                a.isObfuscated() == b.isObfuscated() &&
+                Objects.equals(a.getColor(), b.getColor()) &&
+                Objects.equals(a.getFont(), b.getFont()));
     }
 
     /**

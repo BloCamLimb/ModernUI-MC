@@ -19,18 +19,22 @@
 package icyllis.modernui.mc.text.mixin;
 
 import icyllis.modernui.mc.text.ModernTextRenderer;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import org.joml.Matrix4f;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.*;
 
 import javax.annotation.Nonnull;
 
 @Mixin(Font.class)
 public abstract class MixinFontRenderer {
+
+    @Unique
+    private final ModernTextRenderer modernUI_MC$textRenderer =
+            TextLayoutEngine.getInstance().getTextRenderer();
 
     /**
      * @author BloCamLimb
@@ -40,7 +44,7 @@ public abstract class MixinFontRenderer {
     public int drawInBatch(@Nonnull String text, float x, float y, int color, boolean dropShadow,
                            @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
                            int colorBackground, int packedLight, @Deprecated boolean bidiFlag) {
-        return (int) ModernTextRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
+        return (int) modernUI_MC$textRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
                 displayMode, colorBackground, packedLight) + (dropShadow ? 1 : 0);
     }
 
@@ -52,7 +56,7 @@ public abstract class MixinFontRenderer {
     public int drawInBatch(@Nonnull Component text, float x, float y, int color, boolean dropShadow,
                            @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
                            int colorBackground, int packedLight) {
-        return (int) ModernTextRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
+        return (int) modernUI_MC$textRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
                 displayMode, colorBackground, packedLight) + (dropShadow ? 1 : 0);
     }
 
@@ -71,7 +75,7 @@ public abstract class MixinFontRenderer {
                     FormattedText.STOP_ITERATION : Optional.empty(), Style.EMPTY).isPresent())
                 return callDrawInternal(text, x, y, color, dropShadow, matrix, source, seeThrough, colorBackground,
                         packedLight);*/
-        return (int) ModernTextRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
+        return (int) modernUI_MC$textRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
                 displayMode, colorBackground, packedLight) + (dropShadow ? 1 : 0);
     }
 
@@ -100,6 +104,6 @@ public abstract class MixinFontRenderer {
     @Overwrite
     public void drawInBatch8xOutline(@Nonnull FormattedCharSequence text, float x, float y, int color, int outlineColor,
                                      @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, int packedLight) {
-        ModernTextRenderer.drawText8xOutline(text, x, y, color, outlineColor, matrix, source, packedLight);
+        modernUI_MC$textRenderer.drawText8xOutline(text, x, y, color, outlineColor, matrix, source, packedLight);
     }
 }

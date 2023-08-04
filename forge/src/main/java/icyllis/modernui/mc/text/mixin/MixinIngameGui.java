@@ -18,8 +18,8 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import icyllis.modernui.mc.text.ModernStringSplitter;
 import icyllis.modernui.mc.text.ModernTextRenderer;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.*;
 import net.minecraft.client.player.LocalPlayer;
@@ -61,26 +61,27 @@ public abstract class MixinIngameGui {
         LocalPlayer player = minecraft.player;
         if (player != null && player.experienceLevel > 0) {
             String s = Integer.toString(player.experienceLevel);
-            float w = ModernStringSplitter.measureText(s);
+            TextLayoutEngine engine = TextLayoutEngine.getInstance();
+            float w = engine.getStringSplitter().measureText(s);
             float x = (screenWidth - w) / 2;
             float y = screenHeight - 31 - 4;
             float offset = ModernTextRenderer.sOutlineOffset;
             Matrix4f pose = gr.pose().last().pose();
             // end batch for each draw to prevent transparency sorting
             MultiBufferSource.BufferSource source = gr.bufferSource();
-            ModernTextRenderer.drawText(s, x + offset, y, 0xff000000, false,
+            engine.getTextRenderer().drawText(s, x + offset, y, 0xff000000, false,
                     pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
-            ModernTextRenderer.drawText(s, x - offset, y, 0xff000000, false,
+            engine.getTextRenderer().drawText(s, x - offset, y, 0xff000000, false,
                     pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
-            ModernTextRenderer.drawText(s, x, y + offset, 0xff000000, false,
+            engine.getTextRenderer().drawText(s, x, y + offset, 0xff000000, false,
                     pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
-            ModernTextRenderer.drawText(s, x, y - offset, 0xff000000, false,
+            engine.getTextRenderer().drawText(s, x, y - offset, 0xff000000, false,
                     pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();
-            ModernTextRenderer.drawText(s, x, y, 0xff80ff20, false,
+            engine.getTextRenderer().drawText(s, x, y, 0xff80ff20, false,
                     pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             gr.flush();
         }

@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.text;
 
+import icyllis.modernui.graphics.text.CharSequenceBuilder;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.FormattedCharSink;

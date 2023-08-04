@@ -19,19 +19,22 @@
 package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import icyllis.modernui.graphics.font.GLBakedGlyph;
-import icyllis.modernui.graphics.font.GlyphManager;
+import icyllis.arc3d.engine.Engine;
+import icyllis.modernui.graphics.MathUtil;
+import icyllis.modernui.graphics.font.BakedGlyph;
+import icyllis.modernui.graphics.text.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.awt.*;
 import java.util.Arrays;
 import java.util.Random;
 
 /**
  * The layout contains all glyph layout information and rendering information.
+ * <p>
+ * This is a Minecraft alternative of framework's {@link icyllis.modernui.graphics.text.ShapedText}.
  */
 public class TextLayout {
 
@@ -45,8 +48,8 @@ public class TextLayout {
      * <p>
      * This singleton cannot be inserted into the cache!
      */
-    public static final TextLayout EMPTY = new TextLayout(new char[0], new GLBakedGlyph[0], new long[0],
-            new float[0], new float[0], new int[0], new int[0], new int[0], 0, false, false, false, 2) {
+    public static final TextLayout EMPTY = new TextLayout(new char[0], new int[0], new float[0],
+            null, new Font[0], new float[0], new int[0], new int[]{0}, 0, false, false, 2, ~0) {
         @Nonnull
         @Override
         TextLayout get() {
@@ -54,12 +57,12 @@ public class TextLayout {
         }
 
         @Override
-        boolean tick(int threshold) {
+        boolean tick() {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, @Nullable String raw,
+        public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
                               float x, float y, int r, int g, int b, int a, boolean isShadow,
                               int preferredMode, int bgColor, int packedLight) {
             return 0;
@@ -92,9 +95,9 @@ public class TextLayout {
      * The order is visually left-to-right (i.e. in visual order). Fast digit chars and
      * obfuscated chars are {@link icyllis.modernui.mc.text.TextLayoutEngine.FastCharSet}.
      */
-    private final GLBakedGlyph[] mGlyphs;
-    private final long[] mGlyphKeys;
-    private transient GLBakedGlyph[] mGlyphsForSDF;
+    private final int[] mGlyphs;
+    private transient BakedGlyph[] mBakedGlyphs;
+    private transient BakedGlyph[] mBakedGlyphsForSDF;
 
     /**
      * Position x1 y1 x2 y2... relative to the same point, for rendering glyphs.
@@ -104,6 +107,9 @@ public class TextLayout {
      * Note the values are scaled to Minecraft GUI coordinates.
      */
     private final float[] mPositions;
+
+    private final byte[] mFontIndices;
+    private final Font[] mFonts;
 
     /**
      * The length and order are relative to the raw string (with formatting codes).
@@ -124,7 +130,7 @@ public class TextLayout {
      *       1    UNDERLINE
      *      1     STRIKETHROUGH
      *     1      OBFUSCATED
-     *    1       FAST_DIGIT_REPLACEMENT
+     *    1       COLOR_EMOJI_REPLACEMENT
      *   1        BITMAP_REPLACEMENT
      *  1         IMPLICIT_COLOR
      * |--------|
@@ -132,15 +138,15 @@ public class TextLayout {
     /**
      * Glyph rendering flags. Same indexing with {@link #mGlyphs}, in visual order.
      */
-    private final int[] mCharFlags;
+    private final int[] mGlyphFlags;
 
-    /**
+    /*
      * Glyphs to relative char indices of the strip string (without formatting codes).
      * For vanilla layout ({@link VanillaLayoutKey} and {@link TextLayoutEngine#lookupVanillaLayout(String)}),
      * these will be adjusted to string index (with formatting codes).
      * Same indexing with {@link #mGlyphs}, in visual order.
      */
-    private final int[] mCharIndices;
+    //private final int[] mCharIndices;
 
     /**
      * Strip indices that are boundaries for Unicode line breaking, in logical order.
@@ -159,9 +165,10 @@ public class TextLayout {
      * Precomputed value that indicates whether flags array contains any text effect flag.
      */
     private final boolean mHasEffect;
-    private final boolean mHasFastDigit;
-    private final boolean mHasColorBitmap;
-    private final int mCreatedResLevel;
+    //private final boolean mHasFastDigit;
+    private final boolean mHasColorEmoji;
+    final int mCreatedResLevel;
+    final int mComputedFlags;
 
     /**
      * Elapsed time in seconds since last use.
@@ -171,42 +178,42 @@ public class TextLayout {
     private TextLayout(@Nonnull TextLayout layout) {
         mTextBuf = layout.mTextBuf;
         mGlyphs = layout.mGlyphs;
-        mGlyphKeys = layout.mGlyphKeys;
         mPositions = layout.mPositions;
+        mFontIndices = layout.mFontIndices;
+        mFonts = layout.mFonts;
         mAdvances = layout.mAdvances;
-        mCharFlags = layout.mCharFlags;
-        mCharIndices = layout.mCharIndices;
+        mGlyphFlags = layout.mGlyphFlags;
         mLineBoundaries = layout.mLineBoundaries;
         mTotalAdvance = layout.mTotalAdvance;
         mHasEffect = layout.mHasEffect;
-        mHasFastDigit = layout.mHasFastDigit;
-        mHasColorBitmap = layout.mHasColorBitmap;
+        mHasColorEmoji = layout.mHasColorEmoji;
         mCreatedResLevel = layout.mCreatedResLevel;
+        mComputedFlags = layout.mComputedFlags;
     }
 
-    TextLayout(@Nonnull char[] textBuf, @Nonnull GLBakedGlyph[] glyphs,
-               @Nonnull long[] glyphKeys, @Nonnull float[] positions,
-               @Nonnull float[] advances, @Nonnull int[] charFlags, @Nonnull int[] charIndices,
-               @Nonnull int[] lineBoundaries, float totalAdvance, boolean hasEffect,
-               boolean hasFastDigit, boolean hasColorBitmap, int createdResLevel) {
+    TextLayout(@Nonnull char[] textBuf, @Nonnull int[] glyphs,
+               @Nonnull float[] positions, @Nullable byte[] fontIndices,
+               @Nonnull Font[] fonts, @Nullable float[] advances,
+               @Nonnull int[] glyphFlags, @Nullable int[] lineBoundaries,
+               float totalAdvance, boolean hasEffect, boolean hasColorEmoji,
+               int createdResLevel, int computedFlags) {
         mTextBuf = textBuf;
         mGlyphs = glyphs;
-        mGlyphKeys = glyphKeys;
         mPositions = positions;
+        mFontIndices = fontIndices;
+        mFonts = fonts;
         mAdvances = advances;
-        mCharFlags = charFlags;
-        mCharIndices = charIndices;
+        mGlyphFlags = glyphFlags;
         mLineBoundaries = lineBoundaries;
         mTotalAdvance = totalAdvance;
         mHasEffect = hasEffect;
-        mHasFastDigit = hasFastDigit;
-        mHasColorBitmap = hasColorBitmap;
+        mHasColorEmoji = hasColorEmoji;
         mCreatedResLevel = createdResLevel;
-        assert mTextBuf.length == mAdvances.length;
+        mComputedFlags = computedFlags;
+        assert mAdvances == null ||
+                mTextBuf.length == mAdvances.length;
         assert mGlyphs.length * 2 == mPositions.length;
-        assert mGlyphs.length == mCharFlags.length;
-        assert mGlyphs.length == mCharIndices.length;
-        assert mGlyphs.length == mGlyphKeys.length;
+        assert mGlyphs.length == mGlyphFlags.length;
     }
 
     /**
@@ -235,43 +242,45 @@ public class TextLayout {
      *
      * @return true to recycle
      */
-    boolean tick(int threshold) {
-        return ++mTimer > threshold;
+    boolean tick() {
+        // Evict if not used in 3 seconds
+        return ++mTimer > 3;
     }
 
-    private GLBakedGlyph[] getGlyphs(int resLevel) {
-        if (resLevel == mCreatedResLevel) {
-            return mGlyphs;
-        }
-        if (mGlyphsForSDF == null) {
-            GlyphManager glyphManager = GlyphManager.getInstance();
-            TextLayoutEngine engine = TextLayoutEngine.getInstance();
-            float fontSize = Math.min(TextLayoutProcessor.sBaseFontSize * resLevel, 96);
-            mGlyphsForSDF = mGlyphs.clone();
-            Font lastFont = null;
-            Font lastDeriveFont = null;
-            for (int i = 0, e = mGlyphsForSDF.length; i < e; i++) {
-                final int flag = mCharFlags[i];
-                if ((flag & CharacterStyle.BITMAP_REPLACEMENT) == 0) {
-                    long key = mGlyphKeys[i];
-                    Font font = glyphManager.getFontFromKey(key);
-                    if (lastFont == font) {
-                        font = lastDeriveFont;
-                    } else {
-                        lastFont = font;
-                        font = font.deriveFont(fontSize);
-                        lastDeriveFont = font;
-                    }
-                    if ((flag & (CharacterStyle.FAST_DIGIT_REPLACEMENT | CharacterStyle.OBFUSCATED_MASK)) != 0) {
-                        mGlyphsForSDF[i] = engine.lookupFastChars(font);
-                    } else {
-                        int glyphCode = GlyphManager.getGlyphCodeFromKey(key);
-                        mGlyphsForSDF[i] = glyphManager.lookupGlyph(font, glyphCode);
-                    }
-                }
+    @Nonnull
+    private BakedGlyph[] prepareGlyphs(int resLevel) {
+        TextLayoutEngine engine = TextLayoutEngine.getInstance();
+        BakedGlyph[] glyphs = new BakedGlyph[mGlyphs.length];
+        for (int i = 0; i < glyphs.length; i++) {
+            if ((mGlyphFlags[i] & CharacterStyle.OBFUSCATED_MASK) != 0) {
+                glyphs[i] = engine.lookupFastChars(
+                        getFont(i),
+                        resLevel
+                );
+            } else {
+                glyphs[i] = engine.lookupGlyph(
+                        getFont(i),
+                        resLevel,
+                        mGlyphs[i]
+                );
             }
         }
-        return mGlyphsForSDF;
+        return glyphs;
+    }
+
+    @Nonnull
+    private BakedGlyph[] getGlyphs(int resLevel) {
+        if (resLevel == mCreatedResLevel) {
+            if (mBakedGlyphs == null) {
+                mBakedGlyphs = prepareGlyphs(resLevel);
+            }
+            return mBakedGlyphs;
+        } else {
+            if (mBakedGlyphsForSDF == null) {
+                mBakedGlyphsForSDF = prepareGlyphs(resLevel);
+            }
+            return mBakedGlyphsForSDF;
+        }
     }
 
     /**
@@ -279,7 +288,6 @@ public class TextLayout {
      *
      * @param matrix        the transform matrix
      * @param source        the vertex buffer source
-     * @param raw           the raw string of vanilla layout for fast digit replacement
      * @param x             the left pos of the text line to render
      * @param y             the baseline of the text line to render
      * @param r             the default red value (0...255, was divided by 4 if isShadow=true)
@@ -292,13 +300,9 @@ public class TextLayout {
      * @param packedLight   see {@link net.minecraft.client.renderer.LightTexture}
      * @return the total advance, always positive
      */
-    public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, @Nullable String raw,
+    public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
                           float x, float y, int r, int g, int b, int a, boolean isShadow,
                           int preferredMode, int bgColor, int packedLight) {
-        if (mGlyphs.length == 0) {
-            // e.g. text contains only spaces, no render, but provides ident
-            return mTotalAdvance;
-        }
         final int startR = r;
         final int startG = g;
         final int startB = b;
@@ -308,24 +312,31 @@ public class TextLayout {
 
         final var glyphs = getGlyphs((int) resLevel);
         final var positions = mPositions;
-        final var flags = mCharFlags;
+        final var flags = mGlyphFlags;
         //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
 
         y += sBaselineOffset;
 
-        int texture = -1;
+        int prevTexture = -1;
         VertexConsumer builder = null;
+
+        int standardTexture = TextLayoutEngine.getInstance().getGlyphManager()
+                .getCurrentTexture(Engine.MASK_FORMAT_A8);
 
         boolean seeThrough = preferredMode == TextRenderType.MODE_SEE_THROUGH;
         for (int i = 0, e = glyphs.length; i < e; i++) {
             var glyph = glyphs[i];
-            final int flag = flags[i];
-            final float rx;
+            if (glyph == null) {
+                continue;
+            }
+            final int bits = flags[i];
+            float rx = 0;
             final float ry;
             final float w;
             final float h;
             final int effMode;
-            if ((flag & CharacterStyle.BITMAP_REPLACEMENT) != 0) {
+            final int texture;
+            if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 if (isShadow) {
                     continue;
                 }
@@ -334,61 +345,47 @@ public class TextLayout {
                 w = (float) glyph.width / TextLayoutEngine.BITMAP_SCALE;
                 h = (float) glyph.height / TextLayoutEngine.BITMAP_SCALE;
                 effMode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL;
+                texture = TextLayoutEngine.getInstance().getCurrentTexture(getFont(i));
             } else {
                 effMode = preferredMode;
-                if (raw != null && (flag & CharacterStyle.FAST_DIGIT_REPLACEMENT) != 0) {
-                    var chars = (TextLayoutEngine.FastCharSet) glyph;
-                    int fastIndex = raw.charAt(mCharIndices[i]) - '0';
-                    if (fastIndex < 0 || fastIndex > 9) {
-                        continue;
-                    }
-                    glyph = chars.glyphs[fastIndex];
-                    if (fastIndex != 0) {
-                        rx = x + positions[i << 1] + (glyph.x + chars.offsets[fastIndex]) / resLevel;
-                    } else {
-                        // 0 is standard, no additional offset
-                        rx = x + positions[i << 1] + glyph.x / resLevel;
-                    }
-                } else if ((flag & CharacterStyle.OBFUSCATED_MASK) != 0) {
+                if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
                     var chars = (TextLayoutEngine.FastCharSet) glyph;
                     int fastIndex = RANDOM.nextInt(chars.glyphs.length);
                     glyph = chars.glyphs[fastIndex];
+                    // 0 is standard, no additional offset
                     if (fastIndex != 0) {
-                        rx = x + positions[i << 1] + (glyph.x + chars.offsets[fastIndex]) / resLevel;
-                    } else {
-                        // 0 is standard, no additional offset
-                        rx = x + positions[i << 1] + glyph.x / resLevel;
+                        rx += chars.offsets[fastIndex];
                     }
-                } else {
-                    rx = x + positions[i << 1] + glyph.x / resLevel;
                 }
+                rx += x + positions[i << 1] + glyph.x / resLevel;
                 ry = y + positions[i << 1 | 1] + glyph.y / resLevel;
 
                 w = glyph.width / resLevel;
                 h = glyph.height / resLevel;
+                texture = standardTexture;
             }
             /*if (alignPixels) {
                 rx = Math.round(rx * scale) / scale;
                 ry = Math.round(ry * scale) / scale;
             }*/
-            if ((flag & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
+            if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
                 r = startR;
                 g = startG;
                 b = startB;
             } else {
-                r = flag >> 16 & 0xff;
-                g = flag >> 8 & 0xff;
-                b = flag & 0xff;
+                r = bits >> 16 & 0xff;
+                g = bits >> 8 & 0xff;
+                b = bits & 0xff;
                 if (isShadow) {
                     r >>= 2;
                     g >>= 2;
                     b >>= 2;
                 }
             }
-            if (builder == null || texture != glyph.texture) {
+            if (builder == null || prevTexture != texture) {
                 // bitmap texture and grayscale texture are different
-                texture = glyph.texture;
-                builder = source.getBuffer(TextRenderType.getOrCreate(texture, effMode));
+                prevTexture = texture;
+                builder = source.getBuffer(TextRenderType.getOrCreate(prevTexture, effMode));
             }
             builder.vertex(matrix, rx, ry, 0)
                     .color(r, g, b, a)
@@ -435,7 +432,6 @@ public class TextLayout {
                         b >>= 2;
                     }
                 }
-                //TODO wrong in RTL direction
                 final float rx1 = x + positions[i << 1];
                 final float rx2 = x + ((i + 1 == e) ? mTotalAdvance : positions[(i + 1) << 1]);
                 if ((flag & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
@@ -489,45 +485,46 @@ public class TextLayout {
     @SuppressWarnings("UnnecessaryLocalVariable")
     public void drawTextOutline(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
                                 float x, float y, int r, int g, int b, int a, int packedLight) {
-        if (mGlyphs.length == 0) {
-            return;
-        }
         final float resLevel = TextLayoutEngine.getResLevelForSDF(mCreatedResLevel);
 
         final var glyphs = getGlyphs((int) resLevel);
         final var positions = mPositions;
-        final var flags = mCharFlags;
+        final var flags = mGlyphFlags;
         //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
 
         y += sBaselineOffset;
-
-        int texture = -1;
-        VertexConsumer builder = null;
+        VertexConsumer builder = source.getBuffer(
+                TextRenderType.getOrCreate(
+                        TextLayoutEngine.getInstance().getGlyphManager()
+                                .getCurrentTexture(Engine.MASK_FORMAT_A8),
+                        TextRenderType.MODE_SDF_STROKE
+                )
+        );
 
         final float sBloat = 1.0f / resLevel;
         for (int i = 0, e = glyphs.length; i < e; i++) {
             var glyph = glyphs[i];
-            final int flag = flags[i];
-            final float rx;
+            if (glyph == null) {
+                continue;
+            }
+            final int bits = flags[i];
+            float rx = 0;
             final float ry;
             final float w;
             final float h;
-            if ((flag & CharacterStyle.BITMAP_REPLACEMENT) != 0) {
+            if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 continue;
             } else {
-                if ((flag & CharacterStyle.OBFUSCATED_MASK) != 0) {
+                if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
                     var chars = (TextLayoutEngine.FastCharSet) glyph;
                     int fastIndex = RANDOM.nextInt(chars.glyphs.length);
                     glyph = chars.glyphs[fastIndex];
+                    // 0 is standard, no additional offset
                     if (fastIndex != 0) {
-                        rx = x + positions[i << 1] + (glyph.x + chars.offsets[fastIndex]) / resLevel;
-                    } else {
-                        // 0 is standard, no additional offset
-                        rx = x + positions[i << 1] + glyph.x / resLevel;
+                        rx += chars.offsets[fastIndex];
                     }
-                } else {
-                    rx = x + positions[i << 1] + glyph.x / resLevel;
                 }
+                rx += x + positions[i << 1] + glyph.x / resLevel;
                 ry = y + positions[i << 1 | 1] + glyph.y / resLevel;
 
                 w = glyph.width / resLevel;
@@ -537,10 +534,6 @@ public class TextLayout {
                 rx = Math.round(rx * scale) / scale;
                 ry = Math.round(ry * scale) / scale;
             }*/
-            if (builder == null || texture != glyph.texture) {
-                texture = glyph.texture;
-                builder = source.getBuffer(TextRenderType.getOrCreate(texture, TextRenderType.MODE_SDF_STROKE));
-            }
             float uBloat = (glyph.u2 - glyph.u1) / glyph.width;
             float vBloat = (glyph.v2 - glyph.v1) / glyph.height;
             builder.vertex(matrix, rx - sBloat, ry - sBloat, -0.001f)
@@ -580,7 +573,7 @@ public class TextLayout {
      * obfuscated chars are {@link icyllis.modernui.mc.text.TextLayoutEngine.FastCharSet}.
      */
     @Nonnull
-    public GLBakedGlyph[] getGlyphs() {
+    public int[] getGlyphs() {
         return mGlyphs;
     }
 
@@ -604,9 +597,21 @@ public class TextLayout {
      * <p>
      * Note the values are scaled to Minecraft GUI coordinates.
      */
-    @Nonnull
     public float[] getAdvances() {
         return mAdvances;
+    }
+
+    /**
+     * Returns which font should be used for the i-th glyph.
+     *
+     * @param i the index
+     * @return the font
+     */
+    public Font getFont(int i) {
+        if (mFontIndices != null) {
+            return mFonts[mFontIndices[i]];
+        }
+        return mFonts[0];
     }
 
     /**
@@ -615,7 +620,7 @@ public class TextLayout {
      *
      * @return length of the text
      */
-    public int getLength() {
+    public int getCharCount() {
         return mTextBuf.length;
     }
 
@@ -625,26 +630,25 @@ public class TextLayout {
      * @see CharacterStyle
      */
     @Nonnull
-    public int[] getCharFlags() {
-        return mCharFlags;
+    public int[] getGlyphFlags() {
+        return mGlyphFlags;
     }
 
-    /**
+    /*
      * Glyphs to relative char indices of the strip string (without formatting codes). However,
      * for vanilla layout {@link VanillaLayoutKey} and {@link TextLayoutEngine#lookupVanillaLayout(String)},
      * these will be adjusted to string index (with formatting codes).
      * Same indexing with {@link #getGlyphs()}, in visual order.
      */
-    @Nonnull
+    /*@Nonnull
     public int[] getCharIndices() {
         return mCharIndices;
-    }
+    }*/
 
     /**
      * Strip indices that are boundaries for Unicode line breaking, in logical order.
      * 0 is not included. Last value is always the text length (without formatting codes).
      */
-    @Nonnull
     public int[] getLineBoundaries() {
         return mLineBoundaries;
     }
@@ -666,32 +670,38 @@ public class TextLayout {
     }
 
     /**
-     * Precomputed value that indicates whether flags array contains any fast digit replacement flag.
+     * Precomputed value that indicates whether flags array contains any color emoji replacement flag.
      */
-    public boolean hasFastDigit() {
-        return mHasFastDigit;
-    }
-
-    /**
-     * Precomputed value that indicates whether flags array contains any bitmap replacement flag.
-     */
-    public boolean hasColorBitmap() {
-        return mHasColorBitmap;
+    public boolean hasColorEmoji() {
+        return mHasColorEmoji;
     }
 
     /**
      * @return measurable memory size in bytes of this object
      */
     public int getMemorySize() {
-        int size = 0;
-        int glyphs = mGlyphs.length;
-        size += 32 + (((glyphs + 1) >> 1) << 4); // glyphs + charIndices
-        size += 16 + (((glyphs + 1) >> 1) << 3); // flags
-        size += 16 + (glyphs << 3); // positions
-        size += 16 + (((mTextBuf.length + 3) >> 1) << 2);
-        size += 16 + (((mAdvances.length + 1) >> 1) << 3);
-        size += 16 + (((mLineBoundaries.length + 1) >> 1) << 3);
-        return size + 24;
+        int m = 0;
+        m += 16 + MathUtil.align8(mTextBuf.length << 1);
+        m += 16 + MathUtil.align8(mGlyphs.length << 2); // glyphs
+        m += 16 + MathUtil.align8(mPositions.length << 2); // positions
+        if (mFontIndices != null) {
+            m += 16 + MathUtil.align8(mFontIndices.length);
+        }
+        m += 16 + MathUtil.align8(mFonts.length << 2);
+        if (mAdvances != null) {
+            m += 16 + MathUtil.align8(mAdvances.length << 2);
+        }
+        m += 16 + MathUtil.align8(mGlyphFlags.length << 2); // flags
+        if (mLineBoundaries != null) {
+            m += 16 + MathUtil.align8(mLineBoundaries.length << 2);
+        }
+        if (mBakedGlyphs != null) {
+            m += 16 + MathUtil.align8(mBakedGlyphs.length << 2);
+        }
+        if (mBakedGlyphsForSDF != null) {
+            m += 16 + MathUtil.align8(mBakedGlyphsForSDF.length << 2);
+        }
+        return m + 24;
     }
 
     @Override
@@ -702,13 +712,11 @@ public class TextLayout {
                 ",length=" + mTextBuf.length +
                 ",positions=" + toPositionString(mPositions) +
                 ",advances=" + Arrays.toString(mAdvances) +
-                ",charFlags=" + toFlagString(mCharFlags) +
-                ",charIndices=" + Arrays.toString(mCharIndices) +
+                ",charFlags=" + toFlagString(mGlyphFlags) +
                 ",lineBoundaries" + Arrays.toString(mLineBoundaries) +
                 ",totalAdvance=" + mTotalAdvance +
                 ",hasEffect=" + mHasEffect +
-                ",hasFastDigit=" + mHasFastDigit +
-                ",hasColorBitmap=" + mHasColorBitmap +
+                ",hasColorEmoji=" + mHasColorEmoji +
                 '}';
     }
 

@@ -19,7 +19,8 @@
 package icyllis.modernui.mc.text.mixin;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import icyllis.modernui.mc.text.*;
+import icyllis.modernui.mc.text.TextLayout;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -129,6 +130,7 @@ public abstract class MixinEditBox extends AbstractWidget {
         if (!isVisible()) {
             return;
         }
+        TextLayoutEngine engine = TextLayoutEngine.getInstance();
         if (bordered) {
             int color = isFocused() ? BORDER_COLOR_FOCUSED : BORDER_COLOR;
             gr.fill(getX() - 1, getY() - 1, getX() + width + 1, getY() + height + 1, color);
@@ -137,7 +139,7 @@ public abstract class MixinEditBox extends AbstractWidget {
         final int color = isEditable ? textColor : textColorUneditable;
 
         final String viewText =
-                ModernStringSplitter.headByWidth(value.substring(displayPos), getInnerWidth(), Style.EMPTY);
+                engine.getStringSplitter().headByWidth(value.substring(displayPos), getInnerWidth(), Style.EMPTY);
         final int viewCursorPos = cursorPos - displayPos;
         final int clampedViewHighlightPos = Mth.clamp(highlightPos - displayPos, 0, viewText.length());
 
@@ -157,11 +159,11 @@ public abstract class MixinEditBox extends AbstractWidget {
             FormattedCharSequence subSequence = formatter.apply(subText, displayPos);
             if (subSequence != null) {
                 separate = true;
-                seqX = ModernTextRenderer.drawText(subSequence, seqX, baseY, color, true,
+                seqX = engine.getTextRenderer().drawText(subSequence, seqX, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             } else {
                 separate = false;
-                seqX = ModernTextRenderer.drawText(viewText, seqX, baseY, color, true,
+                seqX = engine.getTextRenderer().drawText(viewText, seqX, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             }
         } else {
@@ -174,7 +176,8 @@ public abstract class MixinEditBox extends AbstractWidget {
         final float cursorX;
         if (cursorInRange) {
             if (!separate && !viewText.isEmpty()) {
-                TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(viewText);
+                TextLayout layout = engine.lookupVanillaLayout(viewText,
+                        Style.EMPTY, TextLayoutEngine.COMPUTE_ADVANCES);
                 float accAdv = 0;
                 int seekIndex = 0;
                 for (int i = 0; i < viewCursorPos; i++) {
@@ -196,23 +199,24 @@ public abstract class MixinEditBox extends AbstractWidget {
             String subText = viewText.substring(viewCursorPos);
             FormattedCharSequence subSequence = formatter.apply(subText, cursorPos);
             if (subSequence != null) {
-                ModernTextRenderer.drawText(subSequence, seqX, baseY, color, true,
+                engine.getTextRenderer().drawText(subSequence, seqX, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             } else {
-                ModernTextRenderer.drawText(subText, seqX, baseY, color, true,
+                engine.getTextRenderer().drawText(subText, seqX, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             }
         }
 
         if (!cursorNotAtEnd && suggestion != null) {
-            ModernTextRenderer.drawText(suggestion, cursorX, baseY, 0xFF808080, true,
+            engine.getTextRenderer().drawText(suggestion, cursorX, baseY, 0xFF808080, true,
                     matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
         }
 
         if (viewCursorPos != clampedViewHighlightPos) {
             gr.flush();
 
-            TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(viewText);
+            TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(viewText,
+                    Style.EMPTY, TextLayoutEngine.COMPUTE_ADVANCES);
             float startX = baseX;
             float endX = cursorX;
             int seekIndex = 0;
@@ -238,13 +242,13 @@ public abstract class MixinEditBox extends AbstractWidget {
 
             VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.guiOverlay());
             consumer.vertex(matrix, startX, baseY + 10, 0)
-                    .color(51, 181, 229, 102).endVertex();
+                    .color(51, 181, 229, 56).endVertex();
             consumer.vertex(matrix, endX, baseY + 10, 0)
-                    .color(51, 181, 229, 102).endVertex();
+                    .color(51, 181, 229, 56).endVertex();
             consumer.vertex(matrix, endX, baseY - 1, 0)
-                    .color(51, 181, 229, 102).endVertex();
+                    .color(51, 181, 229, 56).endVertex();
             consumer.vertex(matrix, startX, baseY - 1, 0)
-                    .color(51, 181, 229, 102).endVertex();
+                    .color(51, 181, 229, 56).endVertex();
             gr.flush();
         } else if (cursorVisible) {
             if (cursorNotAtEnd) {
@@ -261,7 +265,7 @@ public abstract class MixinEditBox extends AbstractWidget {
                         .color(208, 208, 208, 255).endVertex();
                 gr.flush();
             } else {
-                ModernTextRenderer.drawText(CURSOR_APPEND_CHARACTER, cursorX, baseY, color, true,
+                engine.getTextRenderer().drawText(CURSOR_APPEND_CHARACTER, cursorX, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
 
                 gr.flush();

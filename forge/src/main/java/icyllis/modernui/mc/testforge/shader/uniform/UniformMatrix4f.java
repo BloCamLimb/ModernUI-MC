@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc.testforge.shader.uniform;
 
-import icyllis.modernui.graphics.Matrix4;
+import icyllis.arc3d.core.Matrix4;
 import icyllis.modernui.mc.testforge.shader.ShaderUniform;
 
 import javax.annotation.Nonnull;

@@ -23,6 +23,8 @@ import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
+import icyllis.arc3d.core.MathUtil;
+import icyllis.arc3d.core.Matrix4;
 import icyllis.arc3d.engine.Engine;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
@@ -33,6 +35,7 @@ import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.*;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.font.GlyphManager;
+import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.lifecycle.*;
 import icyllis.modernui.mc.testforge.TestPauseFragment;
 import icyllis.modernui.mc.text.ModernStringSplitter;
@@ -165,7 +168,7 @@ public final class UIManager implements LifecycleOwner {
     // the UI framebuffer
     private GLFramebufferCompat mFramebuffer;
     GLSurfaceCanvas mCanvas;
-    GLEngine mEngine;
+    GLServer mServer;
     private final Matrix4 mProjectionMatrix = new Matrix4();
     boolean mNoRender = false;
     boolean mClearNextMainTarget = false;
@@ -224,8 +227,8 @@ public final class UIManager implements LifecycleOwner {
         }
         Objects.requireNonNull(sInstance);
         sInstance.mCanvas = GLSurfaceCanvas.initialize();
-        sInstance.mEngine = (GLEngine) Core.requireDirectContext().getEngine();
-        sInstance.mEngine.getContext().getResourceCache().setCacheLimit(1 << 26); // 64MB
+        sInstance.mServer = (GLServer) Core.requireDirectContext().getServer();
+        sInstance.mServer.getContext().getResourceCache().setCacheLimit(1 << 26); // 64MB
         var framebuffer = new GLFramebufferCompat(4);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
@@ -381,7 +384,9 @@ public final class UIManager implements LifecycleOwner {
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f));
             }
             if (ModernUIForge.isOptiFineLoaded() &&
-                    (ModernUIForge.getBootstrapLevel() & ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE) == 0) {
+                    !Boolean.parseBoolean(
+                            ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
+                    )) {
                 OptiFineIntegration.setFastRender(false);
                 LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
             }
@@ -624,7 +629,7 @@ public final class UIManager implements LifecycleOwner {
                 case GLFW_KEY_P -> dump();
                 case GLFW_KEY_M -> changeRadialBlur();
                 case GLFW_KEY_T -> {
-                    String text = "\u09b9\u09cd\u09af\u09be\n\u09b2\u09cb" + ChatFormatting.RED + "\uD83E\uDD14" +
+                    /*String text = "\u09b9\u09cd\u09af\u09be\n\u09b2\u09cb" + ChatFormatting.RED + "\uD83E\uDD14" +
                             ChatFormatting.BOLD + "\uD83E\uDD14\uD83E\uDD14";
                     for (int i = 1; i <= 10; i++) {
                         float width = i * 5;
@@ -633,7 +638,7 @@ public final class UIManager implements LifecycleOwner {
                         index = ModernStringSplitter.breakText(text, width, Style.EMPTY, false);
                         LOGGER.info("Break backwards: width {} index:{}", width, index);
                     }
-                    LOGGER.info(TextLayoutEngine.getInstance().lookupVanillaLayout(text));
+                    LOGGER.info(TextLayoutEngine.getInstance().lookupVanillaLayout(text));*/
                 }
                 case GLFW_KEY_G ->
                 /*if (minecraft.screen == null && minecraft.isLocalServer() &&
@@ -784,7 +789,7 @@ public final class UIManager implements LifecycleOwner {
             textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
-        if (textureMap != null && mEngine.getCaps().hasDSASupport()) {
+        if (textureMap != null && mServer.getCaps().hasDSASupport()) {
             long gpuSize = 0;
             long cpuSize = 0;
             int dynamicTextures = 0;
@@ -851,6 +856,13 @@ public final class UIManager implements LifecycleOwner {
             pw.println(", CPUMemory=" + TextUtils.binaryCompact(cpuSize) + " (" + cpuSize + " bytes)");
         }
 
+        {
+            int coreN = LayoutCache.getSize();
+            int coreMem = LayoutCache.getMemoryUsage();
+            pw.printf("LayoutCore: Count=%d, Size=%s (%d bytes)\n",
+                    coreN, TextUtils.binaryCompact(coreMem), coreMem);
+        }
+
         ModernUIForge.dispatchOnDebugDump(pw);
     }
 
@@ -862,6 +874,10 @@ public final class UIManager implements LifecycleOwner {
         /*if (mKeyboard != null) {
             return mKeyboard.onCharTyped(codePoint, modifiers);
         }*/
+        // block NUL and DEL character
+        if (ch == '\0' || ch == '\u007F') {
+            return false;
+        }
         Message msg = Message.obtain(mRoot.mHandler, () -> {
             if (mDecor.findFocus() instanceof EditText text) {
                 final Editable content = text.getText();
@@ -906,14 +922,14 @@ public final class UIManager implements LifecycleOwner {
         int width = mWindow.getWidth();
         int height = mWindow.getHeight();
 
-        mEngine.markContextDirty(Engine.GLBackendState.kPixelStore);
+        mServer.markContextDirty(Engine.GLBackendState.kPixelStore);
         // TODO need multiple canvas instances, tooltip shares this now, but different thread; remove Z transform
         mCanvas.setProjection(mProjectionMatrix.setOrthographic(
                 width, height, 0, icyllis.modernui.core.Window.LAST_SYSTEM_WINDOW * 2 + 1,
                 true));
         mRoot.flushDrawCommands(mCanvas, mFramebuffer, width, height);
 
-        mEngine.getContext().getResourceCache().purge();
+        mServer.getContext().getResourceCache().purge();
 
         glBindVertexArray(oldVertexArray);
         glUseProgram(oldProgram);
@@ -1051,9 +1067,9 @@ public final class UIManager implements LifecycleOwner {
                 mRoot.mChoreographer.scheduleFrameAsync(mFrameTimeNanos);
                 // update extension animations
                 BlurHandler.INSTANCE.update(mElapsedTimeMillis);
-                /*if (TooltipRenderer.sTooltip) {
+                if (TooltipRenderer.sTooltip) {
                     TooltipRenderer.update(deltaMillis, mFrameTimeNanos / 1000000);
-                }*/
+                }
                 /*if (mClearNextMainTarget || mAlwaysClearMainTarget) {
                     int boundFramebuffer = glGetInteger(GL_FRAMEBUFFER_BINDING);
                     glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

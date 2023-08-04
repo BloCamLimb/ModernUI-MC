@@ -30,10 +30,10 @@ import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.*;
+import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -47,9 +47,7 @@ import javax.annotation.Nullable;
 import java.io.*;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.*;
 
 import static icyllis.modernui.ModernUI.*;
@@ -63,9 +61,12 @@ import static icyllis.modernui.ModernUI.*;
 public final class ModernUIForge {
 
     // false to disable extensions
-    public static final int BOOTSTRAP_DISABLE_TEXT_ENGINE = 0x1;
-    public static final int BOOTSTRAP_DISABLE_SMOOTH_SCROLLING = 0x2;
-    public static final int BOOTSTRAP_ENABLE_DEBUG_INJECTORS = 0x4;
+    public static final String BOOTSTRAP_DISABLE_TEXT_ENGINE = "modernui_mc_disableTextEngine";
+    public static final String BOOTSTRAP_DISABLE_SMOOTH_SCROLLING = "modernui_mc_disableSmoothScrolling";
+    //public static final int BOOTSTRAP_ENABLE_DEBUG_INJECTORS = 0x4;
+
+    private static final Path BOOTSTRAP_PATH = FMLPaths.getOrCreateGameRelativePath(
+            FMLPaths.CONFIGDIR.get().resolve(NAME_CPT)).resolve("bootstrap.properties");
 
     private static boolean sOptiFineLoaded;
 
@@ -73,8 +74,6 @@ public final class ModernUIForge {
 
     static volatile boolean sDevelopment;
     static volatile boolean sDeveloperMode;
-
-    static volatile Integer sBootstrapLevel;
 
     public static boolean sInventoryScreenPausesGame;
     //public static boolean sRemoveMessageSignature;
@@ -133,10 +132,10 @@ public final class ModernUIForge {
 
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> Loader::init);
 
-        if ((getBootstrapLevel() & BOOTSTRAP_ENABLE_DEBUG_INJECTORS) != 0) {
+        /*if ((getBootstrapLevel() & BOOTSTRAP_ENABLE_DEBUG_INJECTORS) != 0) {
             MinecraftForge.EVENT_BUS.register(EventHandler.ClientDebug.class);
             LOGGER.debug(MARKER, "Enable Modern UI debug injectors");
-        }
+        }*/
 
         if (sDevelopment) {
             ModList.get().forEachModContainer((modid, container) -> {
@@ -181,50 +180,28 @@ public final class ModernUIForge {
     }
 
     // INTERNAL
-    public static int getBootstrapLevel() {
-        if (sBootstrapLevel != null) {
-            return sBootstrapLevel;
+    public static String getBootstrapProperty(String key) {
+        Properties props = DistExecutor.safeCallWhenOn(Dist.CLIENT,
+                () -> Loader::getBootstrapProperties);
+        if (props != null) {
+            return props.getProperty(key);
         }
-        synchronized (ModernUIForge.class) {
-            if (sBootstrapLevel == null) {
-                Path path = FMLPaths.getOrCreateGameRelativePath(FMLPaths.CONFIGDIR.get().resolve(NAME_CPT))
-                        .resolve("bootstrap");
-                if (Files.exists(path)) {
-                    try {
-                        sBootstrapLevel = Integer.parseUnsignedInt(Files.readString(path, StandardCharsets.UTF_8));
-                        LOGGER.debug(MARKER, "Bootstrap level: 0x{}", Integer.toHexString(sBootstrapLevel));
-                    } catch (Exception ignored) {
-                    }
-                } else {
-                    try {
-                        Files.createFile(path);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            if (sBootstrapLevel == null) {
-                setBootstrapLevel(0);
-            }
-        }
-        return sBootstrapLevel;
+        return null;
     }
 
-    public static void setBootstrapLevel(int level) {
-        sBootstrapLevel = level;
-        Path path = FMLPaths.getOrCreateGameRelativePath(FMLPaths.CONFIGDIR.get().resolve(NAME_CPT))
-                .resolve("bootstrap");
-        if (!Files.exists(path)) {
+    public static void setBootstrapProperty(String key, String value) {
+        Properties props = DistExecutor.safeCallWhenOn(Dist.CLIENT,
+                () -> Loader::getBootstrapProperties);
+        if (props != null) {
+            props.setProperty(key, value);
             try {
-                Files.createFile(path);
+                props.store(Files.newOutputStream(BOOTSTRAP_PATH,
+                                StandardOpenOption.WRITE,
+                                StandardOpenOption.TRUNCATE_EXISTING),
+                        "Modern UI bootstrap file");
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }
-        try {
-            Files.writeString(path, Integer.toString(level), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -310,9 +287,34 @@ public final class ModernUIForge {
     }
 
     private static class Loader {
+
         @SuppressWarnings("resource")
         public static void init() {
             new Client();
+        }
+
+        private static volatile boolean sBootstrap;
+
+        public static Properties getBootstrapProperties() {
+            if (!sBootstrap) {
+                synchronized (ModernUIForge.class) {
+                    if (!sBootstrap) {
+                        try {
+                            if (Files.exists(BOOTSTRAP_PATH)) {
+                                Client.props.load(
+                                        Files.newInputStream(BOOTSTRAP_PATH, StandardOpenOption.READ)
+                                );
+                            } else {
+                                Files.createFile(BOOTSTRAP_PATH);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        sBootstrap = true;
+                    }
+                }
+            }
+            return Client.props;
         }
     }
 
@@ -330,7 +332,9 @@ public final class ModernUIForge {
         private Client() {
             super();
             sInstance = this;
-            if ((getBootstrapLevel() & BOOTSTRAP_DISABLE_TEXT_ENGINE) == 0) {
+            if (!Boolean.parseBoolean(
+                    Loader.getBootstrapProperties().getProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
+            )) {
                 ModernUIText.init();
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
@@ -383,8 +387,12 @@ public final class ModernUIForge {
                     }
                     mTypeface = Typeface.createTypeface(set.toArray(new FontFamily[0]));
                     // do some warm-up, but do not block ourselves
-                    Minecraft.getInstance().tell(() -> LayoutCache.getOrCreate(ID, 0, 1, 0, 1, false,
-                            new FontPaint()));
+                    var paint = new FontPaint();
+                    paint.setFont(mTypeface);
+                    paint.setLocale(Locale.ROOT);
+                    paint.setFontSize(12);
+                    Minecraft.getInstance().tell(() -> LayoutCache.getOrCreate(new char[]{'M'},
+                            0, 1, 0, 1, false, paint, 0));
                     LOGGER.info(MARKER, "Loaded typeface: {}", mTypeface);
                 }
             }

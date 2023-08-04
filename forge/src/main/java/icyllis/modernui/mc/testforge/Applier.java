@@ -18,8 +18,8 @@
 
 package icyllis.modernui.mc.testforge;
 
+import icyllis.arc3d.core.MathUtil;
 import icyllis.modernui.animation.TimeInterpolator;
-import icyllis.modernui.graphics.MathUtil;
 
 import javax.annotation.Nonnull;
 import java.util.function.Consumer;

@@ -19,7 +19,8 @@
 package icyllis.modernui.mc.text;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.*;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.Sheets;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
@@ -80,9 +81,15 @@ public final class ModernTextRenderer {
         }
     }*/
 
-    public static float drawText(@Nonnull String text, float x, float y, int color, boolean dropShadow,
-                                 @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
-                                 int colorBackground, int packedLight) {
+    private final TextLayoutEngine mEngine;
+
+    public ModernTextRenderer(TextLayoutEngine engine) {
+        mEngine = engine;
+    }
+
+    public float drawText(@Nonnull String text, float x, float y, int color, boolean dropShadow,
+                          @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
+                          int colorBackground, int packedLight) {
         if (text.isEmpty()) {
             return x;
         }
@@ -99,29 +106,29 @@ public final class ModernTextRenderer {
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
 
-        TextLayoutEngine engine = TextLayoutEngine.getInstance();
         int mode = chooseMode(matrix, displayMode);
-        TextLayout layout = engine.lookupVanillaLayout(text);
-        if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
+        TextLayout layout = mEngine.lookupVanillaLayout(text);
+        if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
-            layout.drawText(matrix, source, text, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
+            layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
                     mode, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
-        x += layout.drawText(matrix, source, text, x, y, r, g, b, a, false,
+        x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
                 mode, colorBackground, packedLight);
         return x;
     }
 
-    public static float drawText(@Nonnull FormattedText text, float x, float y, int color, boolean dropShadow,
-                                 @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
-                                 int colorBackground, int packedLight) {
+    public float drawText(@Nonnull FormattedText text, float x, float y, int color, boolean dropShadow,
+                          @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
+                          Font.DisplayMode displayMode,
+                          int colorBackground, int packedLight) {
         if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
             return x;
         }
@@ -138,29 +145,29 @@ public final class ModernTextRenderer {
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
 
-        TextLayoutEngine engine = TextLayoutEngine.getInstance();
         int mode = chooseMode(matrix, displayMode);
-        TextLayout layout = engine.lookupComplexLayout(text);
-        if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
+        TextLayout layout = mEngine.lookupFormattedLayout(text);
+        if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
-            layout.drawText(matrix, source, null, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
+            layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
                     mode, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
-        x += layout.drawText(matrix, source, null, x, y, r, g, b, a, false,
+        x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
                 mode, colorBackground, packedLight);
         return x;
     }
 
-    public static float drawText(@Nonnull FormattedCharSequence text, float x, float y, int color, boolean dropShadow,
-                                 @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
-                                 int colorBackground, int packedLight) {
+    public float drawText(@Nonnull FormattedCharSequence text, float x, float y, int color, boolean dropShadow,
+                          @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
+                          Font.DisplayMode displayMode,
+                          int colorBackground, int packedLight) {
         if (text == FormattedCharSequence.EMPTY) {
             return x;
         }
@@ -177,22 +184,21 @@ public final class ModernTextRenderer {
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
 
-        TextLayoutEngine engine = TextLayoutEngine.getInstance();
         int mode = chooseMode(matrix, displayMode);
-        TextLayout layout = engine.lookupSequenceLayout(text);
-        if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
+        TextLayout layout = mEngine.lookupFormattedLayout(text);
+        if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
-            layout.drawText(matrix, source, null, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
+            layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
                     mode, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
-        x += layout.drawText(matrix, source, null, x, y, r, g, b, a, false,
+        x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
                 mode, colorBackground, packedLight);
         return x;
     }
@@ -248,9 +254,9 @@ public final class ModernTextRenderer {
         layout.drawTextOutline(matrix, source, x, y, or, og, ob, oa, LightTexture.FULL_BRIGHT);
     }*/
 
-    public static void drawText8xOutline(@Nonnull FormattedCharSequence text, float x, float y,
-                                         int color, int outlineColor, @Nonnull Matrix4f matrix,
-                                         @Nonnull MultiBufferSource source, int packedLight) {
+    public void drawText8xOutline(@Nonnull FormattedCharSequence text, float x, float y,
+                                  int color, int outlineColor, @Nonnull Matrix4f matrix,
+                                  @Nonnull MultiBufferSource source, int packedLight) {
         if (text == FormattedCharSequence.EMPTY) {
             return;
         }
@@ -267,15 +273,14 @@ public final class ModernTextRenderer {
         int og = outlineColor >> 8 & 0xff;
         int ob = outlineColor & 0xff;
 
-        TextLayoutEngine engine = TextLayoutEngine.getInstance();
-        TextLayout layout = engine.lookupSequenceLayout(text);
-        if (layout.hasColorBitmap() && source instanceof MultiBufferSource.BufferSource) {
+        TextLayout layout = mEngine.lookupFormattedLayout(text);
+        if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
 
         matrix = new Matrix4f(matrix);
-        layout.drawText(matrix, source, null, x, y, r, g, b, a, false,
+        layout.drawText(matrix, source, x, y, r, g, b, a, false,
                 TextRenderType.MODE_SDF_FILL, 0, packedLight);
         matrix.translate(OUTLINE_OFFSET);
 
