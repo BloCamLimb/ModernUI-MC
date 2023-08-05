@@ -121,7 +121,13 @@ public class TextLayoutEngine implements PreparableReloadListener {
      *
      * @see icyllis.modernui.mc.text.mixin.MixinGameRenderer
      */
-    public static boolean sForceUseDistanceField;
+    public static boolean sCurrentInWorldRendering;
+
+    /**
+     * Whether to use our rendering pipeline in 3D world?
+     * False for compatibility with OptiFine shaders.
+     */
+    public static volatile boolean sUseTextShadersInWorld = true;
 
     public static volatile boolean sUseVanillaFont = false;
     public static volatile boolean sUseColorEmoji = true;
@@ -414,7 +420,10 @@ public class TextLayoutEngine implements PreparableReloadListener {
                     TextDirectionHeuristics.FIRSTSTRONG_LTR;
         };
 
-        injectAdditionalFonts();
+        if (oldLevel != 0) {
+            // inject after first load
+            injectAdditionalFonts();
+        }
 
         if (oldLevel == 0) {
             LOGGER.info(MARKER, "Loaded text layout engine, res level: {}, locale: {}, layout RTL: {}",
@@ -474,8 +483,6 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 }
                 mVanillaFontUsed = sUseVanillaFont;
 
-                fonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
-
                 if (sUseColorEmoji) {
                     if (mEmojiFont != null) {
                         fonts.add(new FontFamily(mEmojiFont));
@@ -484,6 +491,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 } else {
                     mColorEmojiUsed = false;
                 }
+
+                fonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
 
                 FontCollection fc = new FontCollection(fonts.toArray(new FontFamily[0]));
                 mFontCollections.put(Minecraft.DEFAULT_FONT, fc);

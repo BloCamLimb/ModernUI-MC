@@ -370,14 +370,13 @@ final class Config {
                     .defineList("fontFamily", () -> {
                         List<String> list = new ArrayList<>();
                         list.add("modernui:font/biliw.otf");
-                        list.add("Microsoft YaHei UI");
-                        list.add("Segoe UI");
                         list.add("Noto Sans");
+                        list.add("Segoe UI");
                         list.add("San Francisco");
-                        list.add("Calibri");
+                        list.add("Open Sans");
                         list.add("SimHei");
                         list.add("STHeiti");
-                        list.add("SansSerif");
+                        list.add("Segoe UI Variable");
                         list.add("modernui:font/muii18ncompat/muii18ncompat.ttf");
                         return list;
                     }, s -> true);

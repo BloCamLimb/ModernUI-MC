@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.text.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.text.TextRenderType;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.*;
@@ -50,13 +51,15 @@ public class MixinLevelRenderer {
                               LightTexture lightTexture,
                               Matrix4f projectionMatrix,
                               CallbackInfo ci) {
-        TextRenderType firstSDFFillType = TextRenderType.getFirstSDFFillType();
-        TextRenderType firstSDFStrokeType = TextRenderType.getFirstSDFStrokeType();
-        if (firstSDFFillType != null) {
-            renderBuffers.bufferSource().endBatch(firstSDFFillType);
-        }
-        if (firstSDFStrokeType != null) {
-            renderBuffers.bufferSource().endBatch(firstSDFStrokeType);
+        if (TextLayoutEngine.sUseTextShadersInWorld) {
+            TextRenderType firstSDFFillType = TextRenderType.getFirstSDFFillType();
+            TextRenderType firstSDFStrokeType = TextRenderType.getFirstSDFStrokeType();
+            if (firstSDFFillType != null) {
+                renderBuffers.bufferSource().endBatch(firstSDFFillType);
+            }
+            if (firstSDFStrokeType != null) {
+                renderBuffers.bufferSource().endBatch(firstSDFStrokeType);
+            }
         }
     }
 }

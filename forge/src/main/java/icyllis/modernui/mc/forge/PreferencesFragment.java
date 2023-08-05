@@ -442,25 +442,34 @@ public class PreferencesFragment extends Fragment {
         {
             var category = createCategoryList(context, "modernui.center.category.text");
 
-            var option = createSwitchLayout(context, "modernui.center.text.textEngine");
-            var button = option.<SwitchButton>requireViewById(R.id.button1);
-            button.setChecked(!Boolean.parseBoolean(
-                    ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
-            ));
-            button.setOnCheckedChangeListener((__, checked) -> {
-                ModernUIForge.setBootstrapProperty(
-                        ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE,
-                        Boolean.toString(!checked)
-                );
-                Toast.makeText(__.getContext(),
-                                I18n.get("gui.modernui.restart_to_work"),
-                                Toast.LENGTH_SHORT)
-                        .show();
-            });
-            category.addView(option);
+            {
+                var option = createSwitchLayout(context, "modernui.center.text.textEngine");
+                var button = option.<SwitchButton>requireViewById(R.id.button1);
+                button.setChecked(!Boolean.parseBoolean(
+                        ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
+                ));
+                button.setOnCheckedChangeListener((__, checked) -> {
+                    ModernUIForge.setBootstrapProperty(
+                            ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE,
+                            Boolean.toString(!checked)
+                    );
+                    Toast.makeText(__.getContext(),
+                                    I18n.get("gui.modernui.restart_to_work"),
+                                    Toast.LENGTH_SHORT)
+                            .show();
+                });
+                category.addView(option);
+            }
+
+            {
+                var option = createBooleanOption(context, "modernui.center.text.textShadersInWorld",
+                        ModernUIText.CONFIG.mUseTextShadersInWorld, saveFn);
+                option.setTooltipText(I18n.get("modernui.center.text.textShadersInWorld.desc"));
+                category.addView(option);
+            }
 
             category.addView(createBooleanOption(context, "modernui.center.text.colorEmoji",
-                    ModernUIText.CONFIG.mColorEmoji, saveFn));
+                    ModernUIText.CONFIG.mUseColorEmoji, saveFn));
 
             category.addView(createBooleanOption(context, "modernui.center.text.emojiShortcodes",
                     ModernUIText.CONFIG.mEmojiShortcodes, saveFn));

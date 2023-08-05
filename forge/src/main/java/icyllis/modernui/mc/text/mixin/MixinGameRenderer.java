@@ -34,11 +34,11 @@ public class MixinGameRenderer {
 
     @Inject(method = "renderLevel", at = @At("HEAD"))
     private void renderLevelStart(float partialTick, long frameTimeNanos, PoseStack pStack, CallbackInfo ci) {
-        TextLayoutEngine.sForceUseDistanceField = true;
+        TextLayoutEngine.sCurrentInWorldRendering = true;
     }
 
     @Inject(method = "renderLevel", at = @At("TAIL"))
     private void renderLevelEnd(float partialTick, long frameTimeNanos, PoseStack pStack, CallbackInfo ci) {
-        TextLayoutEngine.sForceUseDistanceField = false;
+        TextLayoutEngine.sCurrentInWorldRendering = false;
     }
 }

@@ -44,7 +44,7 @@ public final class ModernTextRenderer {
     }
 
     public static final Vector3f SHADOW_OFFSET = new Vector3f(0.0F, 0.0F, 0.03F);
-    public static final Vector3f OUTLINE_OFFSET = new Vector3f(0.0F, 0.0F, 0.001F);
+    public static final Vector3f OUTLINE_OFFSET = new Vector3f(0.0F, 0.0F, 0.01F);
 
     /*
      * Render thread instance
@@ -206,7 +206,7 @@ public final class ModernTextRenderer {
     public static int chooseMode(Matrix4f transform, Font.DisplayMode mode) {
         if (mode == Font.DisplayMode.SEE_THROUGH) {
             return TextRenderType.MODE_SEE_THROUGH;
-        } else if (TextLayoutEngine.sForceUseDistanceField) {
+        } else if (TextLayoutEngine.sCurrentInWorldRendering) {
             return TextRenderType.MODE_SDF_FILL;
         } else {
             if ((transform.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {

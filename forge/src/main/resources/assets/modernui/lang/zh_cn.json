@@ -55,6 +55,8 @@
   "modernui.center.extension.tooltipBorderColor": "工具提示边框颜色",
   "modernui.center.extension.smoothScrolling": "平滑滚动",
   "modernui.center.text.textEngine": "现代文本引擎",
+  "modernui.center.text.textShadersInWorld": "在 3D 世界中使用现代文字着色器",
+  "modernui.center.text.textShadersInWorld.desc": "启用时，该选项允许 Modern UI 在 3D 世界中使用距离场文字渲染，此外它还能处理透明度顺序并提升渲染性能。然而，在 OptiFine 光影或 Iris 光影启用时，你应该禁用该选项。",
   "modernui.center.text.colorEmoji": "彩色表情符号",
   "modernui.center.text.bitmapRepl": "位图替换",
   "modernui.center.text.emojiShortcodes": "表情符号短代码",

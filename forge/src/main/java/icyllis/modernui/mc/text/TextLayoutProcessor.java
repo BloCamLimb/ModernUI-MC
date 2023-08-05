@@ -545,52 +545,49 @@ public class TextLayoutProcessor {
             // make a copied buffer
             final char[] textBuf = mBuilder.toCharArray();
             // steps 2-5
-            analyzeBidi(textBuf /*fastDigit*/);
-            if (mTotalAdvance > 0) {
-                /*if (raw != null) {
-                    adjustForFastDigit(raw);
-                }*/
-                /*if (sAlignPixels) {
-                    float guiScale = mEngine.getGuiScale();
-                    mTotalAdvance = Math.round(mTotalAdvance * guiScale) / guiScale;
-                }*/
-                float[] positions = mPositions.toFloatArray();
-                for (int i = 0; i < positions.length; i++) {
-                    positions[i] /= resLevel;
-                }
-                byte[] fontIndices;
-                if (mFontVec.size() > 1) {
-                    fontIndices = mFontIndices.toByteArray();
-                } else {
-                    fontIndices = null;
-                }
-                float[] advances;
-                if (mComputeAdvances) {
-                    advances = mAdvances.toFloatArray();
-                    for (int i = 0; i < mBuilder.length(); i++) {
-                        advances[i] /= resLevel;
-                    }
-                } else {
-                    advances = null;
-                }
-                int[] lineBoundaries;
-                if (mComputeLineBoundaries) {
-                    lineBoundaries = mLineBoundaries.toIntArray();
-                    // sort line boundaries to logical order, because runs are in visual order
-                    Arrays.sort(lineBoundaries);
-                } else {
-                    lineBoundaries = null;
-                }
-                mTotalAdvance /= resLevel;
-                return new TextLayout(textBuf, mGlyphs.toIntArray(),
-                        positions, fontIndices,
-                        mFontVec.toArray(new Font[0]),
-                        advances, mGlyphFlags.toIntArray(),
-                        lineBoundaries, mTotalAdvance,
-                        mHasEffect, mHasColorEmoji, resLevel, computeFlags);
+            analyzeBidi(textBuf);
+            /*if (raw != null) {
+                adjustForFastDigit(raw);
+            }*/
+            /*if (sAlignPixels) {
+                float guiScale = mEngine.getGuiScale();
+                mTotalAdvance = Math.round(mTotalAdvance * guiScale) / guiScale;
+            }*/
+            float[] positions = mPositions.toFloatArray();
+            for (int i = 0; i < positions.length; i++) {
+                positions[i] /= resLevel;
             }
+            byte[] fontIndices;
+            if (mFontVec.size() > 1) {
+                fontIndices = mFontIndices.toByteArray();
+            } else {
+                fontIndices = null;
+            }
+            float[] advances;
+            if (mComputeAdvances) {
+                advances = mAdvances.toFloatArray();
+                for (int i = 0; i < mBuilder.length(); i++) {
+                    advances[i] /= resLevel;
+                }
+            } else {
+                advances = null;
+            }
+            int[] lineBoundaries;
+            if (mComputeLineBoundaries) {
+                lineBoundaries = mLineBoundaries.toIntArray();
+                // sort line boundaries to logical order, because runs are in visual order
+                Arrays.sort(lineBoundaries);
+            } else {
+                lineBoundaries = null;
+            }
+            mTotalAdvance /= resLevel;
+            return new TextLayout(textBuf, mGlyphs.toIntArray(),
+                    positions, fontIndices,
+                    mFontVec.toArray(new Font[0]),
+                    advances, mGlyphFlags.toIntArray(),
+                    lineBoundaries, mTotalAdvance,
+                    mHasEffect, mHasColorEmoji, resLevel, computeFlags);
         }
-        // no measure info
         return TextLayout.makeEmpty();
     }
 
@@ -868,7 +865,7 @@ public class TextLayoutProcessor {
             ) {
                 var run = items.get(runIndex);
 
-                var font = run.family().getClosestMatch(fontStyle);
+                var font = run.getBestFont(text, fontStyle);
                 int runStart = run.start();
                 int runLimit = run.limit();
 

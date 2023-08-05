@@ -189,11 +189,12 @@ public final class ModernUIText {
         /*public final ForgeConfigSpec.IntValue mCacheLifespan;
         public final ForgeConfigSpec.IntValue mRehashThreshold;*/
         public final ForgeConfigSpec.EnumValue<TextDirection> mTextDirection;
-        public final ForgeConfigSpec.BooleanValue mColorEmoji;
+        public final ForgeConfigSpec.BooleanValue mUseColorEmoji;
         //public final ForgeConfigSpec.BooleanValue mBitmapReplacement;
         public final ForgeConfigSpec.BooleanValue mEmojiShortcodes;
         //public final ForgeConfigSpec.BooleanValue mUseDistanceField;
         public final ForgeConfigSpec.BooleanValue mUseVanillaFont;
+        public final ForgeConfigSpec.BooleanValue mUseTextShadersInWorld;
 
         //private final ForgeConfigSpec.BooleanValue antiAliasing;
         //private final ForgeConfigSpec.BooleanValue highPrecision;
@@ -225,7 +226,7 @@ public final class ModernUIText {
                             BASE_FONT_SIZE_MIN, BASE_FONT_SIZE_MAX);
             mBaselineShift = builder.comment(
                             "Control vertical baseline for vanilla text layout, in GUI scaled pixels.",
-                            "For smaller font, 6 is recommended. The default value is 7.")
+                            "The vanilla default value is 7.")
                     .defineInRange("baselineShift", TextLayout.DEFAULT_BASELINE_OFFSET,
                             BASELINE_MIN, BASELINE_MAX);
             mShadowOffset = builder.comment(
@@ -248,11 +249,13 @@ public final class ModernUIText {
             mRehashThreshold = builder.comment("Set the rehash threshold of layout cache")
                     .defineInRange("rehashThreshold", 100, REHASH_MIN, REHASH_MAX);*/
             mTextDirection = builder.comment(
-                            "Control bidirectional text heuristic algorithm.")
+                            "The bidirectional text heuristic algorithm.",
+                            "This will affect which BiDi algorithm to use during text layout.")
                     .defineEnum("textDirection", TextDirection.FIRST_STRONG);
-            mColorEmoji = builder.comment(
-                            "Enable to use colored emoji, otherwise grayscale emoji (faster).")
-                    .define("colorEmoji", true);
+            mUseColorEmoji = builder.comment(
+                            "Whether to use Google Noto Color Emoji, otherwise grayscale emoji (faster).",
+                            "See Unicode 15.0 specification for details on how this affects text layout.")
+                    .define("useColorEmoji", true);
             /*mBitmapReplacement = builder.comment(
                             "Whether to use bitmap replacement for non-Emoji character sequences. Restart is required.")
                     .define("bitmapReplacement", false);*/
@@ -260,8 +263,14 @@ public final class ModernUIText {
                             "Allow Slack or Discord shortcodes to replace Unicode Emoji Sequences in chat.")
                     .define("emojiShortcodes", true);
             mUseVanillaFont = builder.comment(
-                            "Whether to use Minecraft default font for basic Latin letters.")
+                            "Whether to use Minecraft default bitmap font for basic Latin letters.")
                     .define("useVanillaFont", false);
+            mUseTextShadersInWorld = builder.comment(
+                            "Whether to use Modern UI text rendering pipeline in 3D world.",
+                            "Disabling this means that SDF text and rendering optimization are no longer effective.",
+                            "But text rendering can be compatible with OptiFine Shaders and Iris Shaders.",
+                            "This does not affect text rendering in GUI.")
+                    .define("useTextShadersInWorld", true);
             /*mUseDistanceField = builder.comment(
                             "Enable to use distance field for text rendering in 3D world.",
                             "It improves performance with deferred rendering and sharpens when doing 3D transform.")
@@ -333,12 +342,16 @@ public final class ModernUIText {
                 TextLayoutEngine.sTextDirection = mTextDirection.get().key;
                 reload = true;
             }
-            if (TextLayoutEngine.sUseColorEmoji != mColorEmoji.get()) {
-                TextLayoutEngine.sUseColorEmoji = mColorEmoji.get();
+            if (TextLayoutEngine.sUseColorEmoji != mUseColorEmoji.get()) {
+                TextLayoutEngine.sUseColorEmoji = mUseColorEmoji.get();
                 reload = true;
             }
             if (TextLayoutEngine.sUseVanillaFont != mUseVanillaFont.get()) {
                 TextLayoutEngine.sUseVanillaFont = mUseVanillaFont.get();
+                reload = true;
+            }
+            if (TextLayoutEngine.sUseTextShadersInWorld != mUseTextShadersInWorld.get()) {
+                TextLayoutEngine.sUseTextShadersInWorld = mUseTextShadersInWorld.get();
                 reload = true;
             }
             if (reload) {

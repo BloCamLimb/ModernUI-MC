@@ -340,10 +340,15 @@ public class TextLayout {
                 if (isShadow) {
                     continue;
                 }
-                rx = x + positions[i << 1] + (float) glyph.x / TextLayoutEngine.BITMAP_SCALE;
-                ry = y + positions[i << 1 | 1] + (float) glyph.y / TextLayoutEngine.BITMAP_SCALE;
-                w = (float) glyph.width / TextLayoutEngine.BITMAP_SCALE;
-                h = (float) glyph.height / TextLayoutEngine.BITMAP_SCALE;
+                float scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
+                if ((bits & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0) {
+                    scaleFactor *= TextLayoutProcessor.sBaseFontSize / TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE;
+                }
+                rx = x + positions[i << 1] + (float) glyph.x * scaleFactor;
+                ry = y + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
+
+                w = (float) glyph.width * scaleFactor;
+                h = (float) glyph.height * scaleFactor;
                 effMode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL;
                 texture = TextLayoutEngine.getInstance().getCurrentTexture(getFont(i));
             } else {
@@ -387,22 +392,22 @@ public class TextLayout {
                 prevTexture = texture;
                 builder = source.getBuffer(TextRenderType.getOrCreate(prevTexture, effMode));
             }
-            builder.vertex(matrix, rx, ry, 0)
+            builder.vertex(matrix, rx, ry, 0.0025f)
                     .color(r, g, b, a)
                     .uv(glyph.u1, glyph.v1)
                     .uv2(packedLight)
                     .endVertex();
-            builder.vertex(matrix, rx, ry + h, 0)
+            builder.vertex(matrix, rx, ry + h, 0.0025f)
                     .color(r, g, b, a)
                     .uv(glyph.u1, glyph.v2)
                     .uv2(packedLight)
                     .endVertex();
-            builder.vertex(matrix, rx + w, ry + h, 0)
+            builder.vertex(matrix, rx + w, ry + h, 0.0025f)
                     .color(r, g, b, a)
                     .uv(glyph.u2, glyph.v2)
                     .uv2(packedLight)
                     .endVertex();
-            builder.vertex(matrix, rx + w, ry, 0)
+            builder.vertex(matrix, rx + w, ry, 0.0025f)
                     .color(r, g, b, a)
                     .uv(glyph.u2, glyph.v1)
                     .uv2(packedLight)
@@ -536,12 +541,12 @@ public class TextLayout {
             }*/
             float uBloat = (glyph.u2 - glyph.u1) / glyph.width;
             float vBloat = (glyph.v2 - glyph.v1) / glyph.height;
-            builder.vertex(matrix, rx - sBloat, ry - sBloat, -0.001f)
+            builder.vertex(matrix, rx - sBloat, ry - sBloat, 0.002f)
                     .color(r, g, b, a)
                     .uv(glyph.u1 - uBloat, glyph.v1 - vBloat)
                     .uv2(packedLight)
                     .endVertex();
-            builder.vertex(matrix, rx - sBloat, ry + h + sBloat, -0.001f)
+            builder.vertex(matrix, rx - sBloat, ry + h + sBloat, 0.002f)
                     .color(r, g, b, a)
                     .uv(glyph.u1 - uBloat, glyph.v2 + vBloat)
                     .uv2(packedLight)
