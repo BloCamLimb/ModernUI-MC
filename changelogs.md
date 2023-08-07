@@ -2,8 +2,10 @@ Changelogs
 ===
 ### Modern UI 3.8.0.4
 #### Forge Extension 1.20.1-47.0.14
+* Add tooltips for some options
+* Add in-game option for background opacity
 * Use bootstrap.properties instead of bootstrap file
-* Add animated tooltip border colors
+* Add dynamic tooltip border colors and presets
 * Block NUL char for input method
 #### Modern Text Engine 1.20.1
 * Make color emoji work in font itemization rather than brute force with grapheme cluster

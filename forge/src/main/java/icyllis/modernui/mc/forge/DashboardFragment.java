@@ -25,7 +25,10 @@ import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
+import icyllis.modernui.markdown.*;
+import icyllis.modernui.markdown.core.CorePlugin;
 import icyllis.modernui.mc.forge.ui.ThemeControl;
+import icyllis.modernui.text.method.LinkMovementMethod;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
 import icyllis.modernui.widget.*;
@@ -35,7 +38,7 @@ import javax.annotation.Nonnull;
 public class DashboardFragment extends Fragment {
 
     public static final String CREDIT_TEXT = """
-            Modern UI 3.7.1
+            Modern UI 3.8
             by
             BloCamLimb
             (Icyllis Milica)
@@ -84,17 +87,25 @@ public class DashboardFragment extends Fragment {
             TextView tv;
             if (mInfoBox == null) {
                 tv = new TextView(getContext());
-                tv.setText("""
-                        What's New in Modern UI 3.7
-                                                
-                        • Unicode 15.0 Emoji List
-                        • Arc 3D Graphics Engine
-                        • New UI Components
-                        • New Rendering Effects
-                        • And More…
-                        """);
                 tv.setTextSize(16);
-                tv.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+                // leading margin is based on para dir, not view dir
+                tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
+                tv.setMovementMethod(LinkMovementMethod.getInstance());
+                Markdown.builder(requireContext())
+                        .usePlugin(CorePlugin.create())
+                        .setBufferType(TextView.BufferType.SPANNABLE)
+                        .build()
+                        .setMarkdown(tv, """
+                                What's New in Modern UI 3.8
+                                ----
+                                * Enhanced Text Layout
+                                * Basic Markdown Support
+                                * Unicode 15.0 Emoji List
+                                * New UI Components
+                                * And More…
+                                
+                                > Author: BloCamLimb \s
+                                  Source Code: [Modern UI](https://github.com/BloCamLimb/ModernUI)""");
                 mInfoBox = tv;
             } else {
                 tv = mInfoBox;
@@ -104,6 +115,16 @@ public class DashboardFragment extends Fragment {
                     ViewGroup.LayoutParams.WRAP_CONTENT);
             params.setMarginStart(tv.dp(120));
             params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
+            layout.addView(tv, params);
+        }
+
+        {
+            var tv = new TextView(getContext());
+            tv.setTextSize(14);
+            tv.setText("Copyright © 2019-2023 BloCamLimb. All rights reserved.");
+            var params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+            params.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
             layout.addView(tv, params);
         }
 

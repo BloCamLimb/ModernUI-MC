@@ -52,8 +52,8 @@ public final class TooltipRenderer {
     // config value
     public static volatile boolean sTooltip = true;
 
-    static int[] sFillColor = new int[4];
-    static int[] sStrokeColor = new int[4];
+    static final int[] sFillColor = new int[4];
+    static final int[] sStrokeColor = new int[4];
 
     // space between mouse and tooltip
     private static final int TOOLTIP_SPACE = 12;
@@ -65,19 +65,23 @@ public final class TooltipRenderer {
 
     //private static final List<FormattedText> sTempTexts = new ArrayList<>();
 
-    private static final FloatBuffer sMatBuf = BufferUtils.createFloatBuffer(16);
-    private static final Matrix4 sMyMat = new Matrix4();
+    private final FloatBuffer mMatBuf = BufferUtils.createFloatBuffer(16);
+    private final Matrix4 mCoreMat = new Matrix4();
 
     //private static final int[] sActiveFillColor = new int[4];
-    private static final int[] sActiveStrokeColor = new int[4];
+    private final int[] mActiveStrokeColor = new int[4];
     //static volatile float sAnimationDuration; // milliseconds
+    static volatile int sBorderColorCycle = 1000; // milliseconds
 
-    static volatile boolean sLayoutRTL;
+    volatile boolean mLayoutRTL;
 
-    private static boolean sDraw;
+    private boolean mDraw;
     //public static float sAlpha = 1;
 
-    static void update(long deltaMillis, long timeMillis) {
+    TooltipRenderer() {
+    }
+
+    void update(long deltaMillis, long timeMillis) {
         /*if (sAnimationDuration <= 0) {
             sAlpha = 1;
         } else if (sDraw) {
@@ -88,14 +92,25 @@ public final class TooltipRenderer {
         } else if (sAlpha > 0) {
             sAlpha = Math.max(sAlpha - deltaMillis / sAnimationDuration, 0);
         }*/
-        if (sDraw) {
-            sDraw = false;
-            float p = (timeMillis % 1000) / 1000f;
-            int pos = 3 - (int) ((timeMillis / 1000) & 3);
-            for (int i = 0; i < 4; i++) {
-                sActiveStrokeColor[i] = lerpInLinearSpace(p,
-                        sStrokeColor[(i + pos) & 3],
-                        sStrokeColor[(i + pos + 3) & 3]);
+        if (mDraw) {
+            mDraw = false;
+            if (sBorderColorCycle > 0) {
+                float p = (timeMillis % sBorderColorCycle) / (float) sBorderColorCycle;
+                if (mLayoutRTL) {
+                    int pos = (int) ((timeMillis / sBorderColorCycle) & 3);
+                    for (int i = 0; i < 4; i++) {
+                        mActiveStrokeColor[i] = lerpInLinearSpace(p,
+                                sStrokeColor[(i + pos) & 3],
+                                sStrokeColor[(i + pos + 1) & 3]);
+                    }
+                } else {
+                    int pos = 3 - (int) ((timeMillis / sBorderColorCycle) & 3);
+                    for (int i = 0; i < 4; i++) {
+                        mActiveStrokeColor[i] = lerpInLinearSpace(p,
+                                sStrokeColor[(i + pos) & 3],
+                                sStrokeColor[(i + pos + 3) & 3]);
+                    }
+                }
             }
         }
     }
@@ -109,9 +124,6 @@ public final class TooltipRenderer {
             result |= Math.round(v * 255.0f) << (i << 3);
         }
         return result;
-    }
-
-    private TooltipRenderer() {
     }
 
     /*public static void drawTooltip(@Nonnull GLCanvas canvas, @Nonnull List<? extends FormattedText> texts,
@@ -284,11 +296,19 @@ public final class TooltipRenderer {
         sTempTexts.clear();
     }*/
 
-    static void drawTooltip(@Nonnull GLSurfaceCanvas canvas, @Nonnull Window window, @Nonnull GuiGraphics gr,
-                            @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
-                            @Nonnull Font font, int screenWidth, int screenHeight,
-                            float partialX, float partialY, @Nullable ClientTooltipPositioner positioner) {
-        sDraw = true;
+    int chooseBorderColor(int corner) {
+        if (sBorderColorCycle > 0) {
+            return mActiveStrokeColor[corner];
+        } else {
+            return sStrokeColor[corner];
+        }
+    }
+
+    void drawTooltip(@Nonnull GLSurfaceCanvas canvas, @Nonnull Window window, @Nonnull GuiGraphics gr,
+                     @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
+                     @Nonnull Font font, int screenWidth, int screenHeight,
+                     float partialX, float partialY, @Nullable ClientTooltipPositioner positioner) {
+        mDraw = true;
 
         int tooltipWidth;
         int tooltipHeight;
@@ -314,7 +334,7 @@ public final class TooltipRenderer {
             tooltipX = pos.x();
             tooltipY = pos.y();
         } else {
-            if (sLayoutRTL) {
+            if (mLayoutRTL) {
                 tooltipX = mouseX + TOOLTIP_SPACE + partialX - 24 - tooltipWidth;
                 if (tooltipX - partialX < 4) {
                     tooltipX += 24 + tooltipWidth;
@@ -352,21 +372,21 @@ public final class TooltipRenderer {
         canvas.reset(window.getWidth(), window.getHeight());
 
         // swap matrices
-        RenderSystem.getProjectionMatrix().get(sMatBuf.rewind());
-        sMyMat.set(sMatBuf.rewind());
-        canvas.setProjection(sMyMat);
+        RenderSystem.getProjectionMatrix().get(mMatBuf.rewind());
+        mCoreMat.set(mMatBuf.rewind());
+        canvas.setProjection(mCoreMat);
 
         canvas.save();
-        RenderSystem.getModelViewMatrix().get(sMatBuf.rewind());
-        sMyMat.set(sMatBuf.rewind());
-        canvas.concat(sMyMat);
+        RenderSystem.getModelViewMatrix().get(mMatBuf.rewind());
+        mCoreMat.set(mMatBuf.rewind());
+        canvas.concat(mCoreMat);
 
-        pose.get(sMatBuf.rewind());
-        sMyMat.set(sMatBuf.rewind());
+        pose.get(mMatBuf.rewind());
+        mCoreMat.set(mMatBuf.rewind());
         // RenderSystem.getModelViewMatrix() has Z translation normalized to -1
         // We have to offset against our canvas Z translation, see restore matrix in GLCanvas
-        sMyMat.preTranslate(0, 0, 3000);
-        canvas.concat(sMyMat);
+        mCoreMat.preTranslate(0, 0, 3000);
+        canvas.concat(mCoreMat);
 
         Paint paint = Paint.obtain();
 
@@ -393,8 +413,8 @@ public final class TooltipRenderer {
         canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
                 tooltipX + tooltipWidth + H_BORDER,
                 tooltipY + tooltipHeight + V_BORDER,
-                sActiveStrokeColor[0], sActiveStrokeColor[1],
-                sActiveStrokeColor[2], sActiveStrokeColor[3],
+                chooseBorderColor(0), chooseBorderColor(1),
+                chooseBorderColor(2), chooseBorderColor(3),
                 3, paint);
 
         paint.recycle();
@@ -416,7 +436,7 @@ public final class TooltipRenderer {
         gr.pose().translate(partialX, partialY, 0);
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
-            if (sLayoutRTL) {
+            if (mLayoutRTL) {
                 component.renderText(font, drawX + tooltipWidth - component.getWidth(font), drawY, pose, source);
             } else {
                 component.renderText(font, drawX, drawY, pose, source);
@@ -432,7 +452,7 @@ public final class TooltipRenderer {
 
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
-            if (sLayoutRTL) {
+            if (mLayoutRTL) {
                 component.renderImage(font, drawX + tooltipWidth - component.getWidth(font), drawY, gr);
             } else {
                 component.renderImage(font, drawX, drawY, gr);

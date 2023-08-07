@@ -52,7 +52,7 @@
   "modernui.center.extension.smoothScrolling": "Smooth Scrolling",
   "modernui.center.text.textEngine": "Modern Text Engine",
   "modernui.center.text.textShadersInWorld": "Use Modern Text Shaders in 3D World",
-  "modernui.center.text.textShadersInWorld.desc": "When enabled, this option allows Modern UI to use distance field text in 3D world. It can also handle the order of transparency and improve rendering performance. However, you should disable this option when OptiFine Shaders or Iris Shaders are active.",
+  "modernui.center.text.textShadersInWorld_desc": "When enabled, this option allows Modern UI to use distance field text in 3D world. It can also handle the order of transparency and improve rendering performance. However, you should disable this option when OptiFine Shaders or Iris Shaders are active.",
   "modernui.center.text.colorEmoji": "Color Emoji",
   "modernui.center.text.bitmapRepl": "Bitmap Replacement",
   "modernui.center.text.emojiShortcodes": "Emoji Shortcodes",

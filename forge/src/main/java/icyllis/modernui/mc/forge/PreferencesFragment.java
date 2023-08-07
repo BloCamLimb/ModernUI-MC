@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.forge;
 
-import icyllis.arc3d.core.MathUtil;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.*;
 import icyllis.modernui.annotation.NonNull;
@@ -26,10 +25,10 @@ import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.Color;
+import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.font.GlyphManager;
-import icyllis.modernui.mc.forge.ui.DividerDrawable;
-import icyllis.modernui.mc.forge.ui.ThemeControl;
+import icyllis.modernui.mc.forge.ui.*;
 import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.text.InputFilter;
 import icyllis.modernui.text.method.DigitsInputFilter;
@@ -45,8 +44,9 @@ import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
@@ -182,6 +182,7 @@ public class PreferencesFragment extends Fragment {
                 {
                     var title = new TextView(context);
                     title.setText(I18n.get("modernui.center.font.fontFamily"));
+                    title.setTooltipText(I18n.get("modernui.center.font.fontFamily_desc"));
                     title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                     title.setTextSize(14);
                     title.setMinWidth(content.dp(60));
@@ -342,12 +343,18 @@ public class PreferencesFragment extends Fragment {
         {
             var list = createCategoryList(context, "modernui.center.category.screen");
 
+            list.addView(createColorOpacityOption(context, "modernui.center.screen.backgroundOpacity",
+                    Config.CLIENT.mBackgroundColor, saveFn));
+
             list.addView(createIntegerOption(context, "modernui.center.screen.backgroundDuration",
                     Config.Client.ANIM_DURATION_MIN, Config.Client.ANIM_DURATION_MAX,
                     3, 50, Config.CLIENT.mBackgroundDuration, saveFn));
-
-            list.addView(createBooleanOption(context, "modernui.center.screen.blurEffect",
-                    Config.CLIENT.mBlurEffect, saveFn));
+            {
+                var option = createBooleanOption(context, "modernui.center.screen.blurEffect",
+                        Config.CLIENT.mBlurEffect, saveFn);
+                option.setTooltipText(I18n.get("modernui.center.screen.blurEffect_desc"));
+                list.addView(option);
+            }
 
             list.addView(createIntegerOption(context, "modernui.center.screen.blurRadius",
                     Config.Client.BLUR_RADIUS_MIN, Config.Client.BLUR_RADIUS_MAX,
@@ -356,8 +363,12 @@ public class PreferencesFragment extends Fragment {
             list.addView(createSpinnerOption(context, "modernui.center.screen.windowMode",
                     Config.Client.WindowMode.values(), Config.CLIENT.mWindowMode, saveFn));
 
-            list.addView(createBooleanOption(context, "modernui.center.screen.inventoryPause",
-                    Config.CLIENT.mInventoryPause, saveFn));
+            {
+                var option = createBooleanOption(context, "modernui.center.screen.inventoryPause",
+                        Config.CLIENT.mInventoryPause, saveFn);
+                option.setTooltipText(I18n.get("modernui.center.screen.inventoryPause_desc"));
+                list.addView(option);
+            }
 
             content.addView(list);
         }
@@ -365,11 +376,16 @@ public class PreferencesFragment extends Fragment {
         {
             var list = createCategoryList(context, "modernui.center.category.extension");
 
-            list.addView(createBooleanOption(context, "modernui.center.extension.ding",
-                    Config.CLIENT.mDing, saveFn));
+            {
+                var option = createBooleanOption(context, "modernui.center.extension.ding",
+                        Config.CLIENT.mDing, saveFn);
+                option.setTooltipText(I18n.get("modernui.center.extension.ding_desc"));
+                list.addView(option);
+            }
 
             {
                 var option = createSwitchLayout(context, "modernui.center.extension.smoothScrolling");
+                option.setTooltipText(I18n.get("modernui.center.extension.smoothScrolling_desc"));
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
                 button.setChecked(!Boolean.parseBoolean(
                         ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
@@ -394,6 +410,9 @@ public class PreferencesFragment extends Fragment {
                     Config.Client.ANIM_DURATION_MIN, Config.Client.ANIM_DURATION_MAX,
                     3, 50, Config.CLIENT.mTooltipDuration, saveFn));*/
 
+            list.addView(createColorOpacityOption(context, "modernui.center.extension.tooltipBgOpacity",
+                    Config.CLIENT.mTooltipFill, saveFn));
+
             {
                 var layout = new LinearLayout(context);
                 layout.setOrientation(LinearLayout.VERTICAL);
@@ -409,22 +428,8 @@ public class PreferencesFragment extends Fragment {
                     var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
                     layout.addView(title, params);
                 }
-                final FourColorPicker picker;
-                {
-                    picker = new FourColorPicker(context,
-                            Config.CLIENT.mTooltipStroke,
-                            saveFn);
-                    picker.setVisibility(View.GONE);
 
-                    var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-                    params.setMargins(0, dp6, 0, 0);
-                    layout.addView(picker, params);
-                }
-
-                title.setOnClickListener((__) ->
-                        picker.setVisibility(picker.getVisibility() == View.GONE
-                                ? View.VISIBLE
-                                : View.GONE));
+                title.setOnClickListener(new TooltipBorderCollapsed(layout, saveFn));
 
                 ThemeControl.addBackground(title);
 
@@ -464,15 +469,19 @@ public class PreferencesFragment extends Fragment {
             {
                 var option = createBooleanOption(context, "modernui.center.text.textShadersInWorld",
                         ModernUIText.CONFIG.mUseTextShadersInWorld, saveFn);
-                option.setTooltipText(I18n.get("modernui.center.text.textShadersInWorld.desc"));
+                option.setTooltipText(I18n.get("modernui.center.text.textShadersInWorld_desc"));
                 category.addView(option);
             }
 
             category.addView(createBooleanOption(context, "modernui.center.text.colorEmoji",
                     ModernUIText.CONFIG.mUseColorEmoji, saveFn));
 
-            category.addView(createBooleanOption(context, "modernui.center.text.emojiShortcodes",
-                    ModernUIText.CONFIG.mEmojiShortcodes, saveFn));
+            {
+                var option = createBooleanOption(context, "modernui.center.text.emojiShortcodes",
+                        ModernUIText.CONFIG.mEmojiShortcodes, saveFn);
+                option.setTooltipText(I18n.get("modernui.center.text.emojiShortcodes_desc"));
+                category.addView(option);
+            }
 
             category.addView(createSpinnerOption(context, "modernui.center.text.bidiHeuristicAlgo",
                     ModernUIText.Config.TextDirection.values(),
@@ -481,6 +490,10 @@ public class PreferencesFragment extends Fragment {
 
             category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
                     ModernUIText.CONFIG.mAllowShadow, saveFn));
+
+            category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
+                    ModernUIText.Config.SHADOW_OFFSET_MIN, ModernUIText.Config.SHADOW_OFFSET_MAX,
+                    5, ModernUIText.CONFIG.mShadowOffset, saveFn));
 
             category.addView(createBooleanOption(context, "modernui.center.text.fixedResolution",
                     ModernUIText.CONFIG.mFixedResolution, saveFn));
@@ -492,10 +505,6 @@ public class PreferencesFragment extends Fragment {
             category.addView(createFloatOption(context, "modernui.center.text.baselineShift",
                     ModernUIText.Config.BASELINE_MIN, ModernUIText.Config.BASELINE_MAX,
                     5, ModernUIText.CONFIG.mBaselineShift, saveFn));
-
-            category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
-                    ModernUIText.Config.SHADOW_OFFSET_MIN, ModernUIText.Config.SHADOW_OFFSET_MAX,
-                    5, ModernUIText.CONFIG.mShadowOffset, saveFn));
 
             category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
                     ModernUIText.Config.OUTLINE_OFFSET_MIN, ModernUIText.Config.OUTLINE_OFFSET_MAX,
@@ -701,12 +710,21 @@ public class PreferencesFragment extends Fragment {
                                                    int minValue, int maxValue, int maxLength, int stepSize,
                                                    ForgeConfigSpec.IntValue config,
                                                    Runnable saveFn) {
+        return createIntegerOption(context, name,
+                minValue, maxValue, maxLength, stepSize,
+                config, config::set, saveFn);
+    }
+
+    public static LinearLayout createIntegerOption(Context context, String name,
+                                                   int minValue, int maxValue, int maxLength, int stepSize,
+                                                   Supplier<Integer> getter, Consumer<Integer> setter,
+                                                   Runnable saveFn) {
         var layout = createInputBoxWithSlider(context, name);
         var slider = layout.<SeekBar>requireViewById(R.id.button2);
         var input = layout.<EditText>requireViewById(R.id.input);
         input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale()),
                 new InputFilter.LengthFilter(maxLength));
-        int curValue = config.get();
+        int curValue = getter.get();
         input.setText(Integer.toString(curValue));
         input.setOnFocusChangeListener((view, hasFocus) -> {
             if (!hasFocus) {
@@ -714,8 +732,8 @@ public class PreferencesFragment extends Fragment {
                 int newValue = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
                         minValue, maxValue);
                 v.setText(Integer.toString(newValue));
-                if (newValue != config.get()) {
-                    config.set(newValue);
+                if (newValue != getter.get()) {
+                    setter.accept(newValue);
                     int curProgress = (newValue - minValue) / stepSize;
                     slider.setProgress(curProgress, true);
                     saveFn.run();
@@ -736,8 +754,8 @@ public class PreferencesFragment extends Fragment {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 int newValue = seekBar.getProgress() * stepSize + minValue;
-                if (newValue != config.get()) {
-                    config.set(newValue);
+                if (newValue != getter.get()) {
+                    setter.accept(newValue);
                     input.setText(Integer.toString(newValue));
                     saveFn.run();
                 }
@@ -746,16 +764,58 @@ public class PreferencesFragment extends Fragment {
         return layout;
     }
 
+    public static LinearLayout createColorOpacityOption(
+            Context context, String name,
+            ForgeConfigSpec.ConfigValue<List<? extends String>> config,
+            Runnable saveFn) {
+        Supplier<Double> getter = () -> {
+            List<? extends String> colors = config.get();
+            if (colors == null || colors.isEmpty()) {
+                return 1.0;
+            } else {
+                return (double) ((Color.parseColor(colors.get(0)) >>> 24) / 255.0f);
+            }
+        };
+        Consumer<Double> setter = (d) -> {
+            int v = (int) (d * 255.0 + 0.5);
+            var newList = new ArrayList<String>(config.get());
+            if (newList.isEmpty()) {
+                newList.add("#FF000000");
+            }
+            for (var it = newList.listIterator();
+                 it.hasNext();
+            ) {
+                int color = Color.parseColor(it.next());
+                color = color & 0xFFFFFF | (v << 24);
+                it.set(
+                        '#' + Integer.toHexString(color)
+                                .toUpperCase(Locale.ROOT)
+                );
+            }
+            config.set(newList);
+        };
+        return createFloatOption(context, name, 0, 1, 4,
+                getter, setter, saveFn);
+    }
+
     public static LinearLayout createFloatOption(Context context, String name,
                                                  float minValue, float maxValue, int maxLength,
                                                  ForgeConfigSpec.DoubleValue config,
+                                                 Runnable saveFn) {
+        return createFloatOption(context, name, minValue, maxValue, maxLength,
+                config, config::set, saveFn);
+    }
+
+    public static LinearLayout createFloatOption(Context context, String name,
+                                                 float minValue, float maxValue, int maxLength,
+                                                 Supplier<Double> getter, Consumer<Double> setter,
                                                  Runnable saveFn) {
         var layout = createInputBoxWithSlider(context, name);
         var slider = layout.<SeekBar>requireViewById(R.id.button2);
         var input = layout.<EditText>requireViewById(R.id.input);
         input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), minValue < 0, true),
                 new InputFilter.LengthFilter(maxLength));
-        float curValue = config.get().floatValue();
+        float curValue = getter.get().floatValue();
         input.setText(Float.toString(curValue));
         input.setOnFocusChangeListener((view, hasFocus) -> {
             if (!hasFocus) {
@@ -763,8 +823,8 @@ public class PreferencesFragment extends Fragment {
                 float newValue = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
                         minValue, maxValue);
                 v.setText(Float.toString(newValue));
-                if (newValue != config.get()) {
-                    config.set((double) newValue);
+                if (newValue != getter.get()) {
+                    setter.accept((double) newValue);
                     int curProgress = (int) Math.round((newValue - minValue) * 10.0);
                     slider.setProgress(curProgress, true);
                     saveFn.run();
@@ -786,8 +846,8 @@ public class PreferencesFragment extends Fragment {
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 double newValue = seekBar.getProgress() / 10.0 + minValue;
-                if (newValue != config.get()) {
-                    config.set((double) (float) newValue);
+                if (newValue != getter.get()) {
+                    setter.accept((double) (float) newValue);
                     input.setText(Float.toString((float) newValue));
                     saveFn.run();
                 }
@@ -796,154 +856,68 @@ public class PreferencesFragment extends Fragment {
         return layout;
     }
 
-    public static class FourColorPicker extends RelativeLayout {
+    public static class TooltipBorderCollapsed implements View.OnClickListener {
 
-        private EditText mULColorField;
-        private EditText mURColorField;
-        private EditText mLRColorField;
-        private EditText mLLColorField;
+        public static final String[][] PRESET_COLORS = {
+                {"#F0AADCF0", "#F0FFC3F7", "#F0BFF2B2", "#F0D27F3D"},
+                {"#F0AADCF0", "#F0DAD0F4", "#F0FFC3F7", "#F0DAD0F4"},
+                {"#F028007F", "#F028007F", "#F014003F", "#F014003F"},
+                {"#F0606060", "#F0101010", "#F0FFFFFF", "#F0B0B0B0"}
+        };
 
-        private int mULColor = ~0;
-        private int mURColor = ~0;
-        private int mLRColor = ~0;
-        private int mLLColor = ~0;
+        final ViewGroup mParent;
+        final Runnable mSaveFn;
 
-        private final Rect mPreviewBox = new Rect();
+        // lazy-init
+        LinearLayout mContent;
+        FourColorPicker mColorPicker;
 
-        private final View.OnFocusChangeListener mOnFieldFocusChange;
+        // this callback is registered on a child view of 'parent'
+        // so no weak ref
+        public TooltipBorderCollapsed(ViewGroup parent, Runnable saveFn) {
+            mParent = parent;
+            mSaveFn = saveFn;
+        }
 
-        public FourColorPicker(Context context,
-                               ForgeConfigSpec.ConfigValue<List<? extends String>> config,
-                               Runnable saveFn) {
-            super(context);
-
-            mOnFieldFocusChange = (v, hasFocus) -> {
-                EditText input = (EditText) v;
-                if (!hasFocus) {
-                    try {
-                        var string = input.getText().toString();
-                        int color = Color.parseColor(string);
-                        int idx = -1;
-                        if (input == mULColorField) {
-                            if (mULColor != color) {
-                                mULColor = color;
-                                idx = 0;
-                            }
-                        } else if (input == mURColorField) {
-                            if (mURColor != color) {
-                                mURColor = color;
-                                idx = 1;
-                            }
-                        } else if (input == mLRColorField) {
-                            if (mLRColor != color) {
-                                mLRColor = color;
-                                idx = 2;
-                            }
-                        } else if (input == mLLColorField) {
-                            if (mLLColor != color) {
-                                mLLColor = color;
-                                idx = 3;
-                            }
-                        }
-                        if (idx != -1) {
-                            invalidate();
-                            var newList = new ArrayList<String>(config.get());
-                            if (newList.isEmpty()) {
-                                newList.add("#FFFFFFFF");
-                            }
-                            while (newList.size() < 4) {
-                                newList.add(newList.get(newList.size() - 1));
-                            }
-                            newList.set(idx, string);
-                            config.set(newList);
-                            saveFn.run();
-                        }
-                        input.setTextColor(0xFF000000 | color);
-                    } catch (Exception e) {
-                        input.setTextColor(0xFFFF0000);
-                    }
+        @Override
+        public void onClick(View v) {
+            if (mContent != null) {
+                // toggle
+                mContent.setVisibility(mContent.getVisibility() == View.GONE
+                        ? View.VISIBLE
+                        : View.GONE);
+                return;
+            }
+            mContent = new LinearLayout(mParent.getContext());
+            mContent.setOrientation(LinearLayout.VERTICAL);
+            {
+                var option = createIntegerOption(mParent.getContext(), "modernui.center.extension.tooltipBorderCycle",
+                        Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MIN, Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MAX,
+                        4, 100, Config.CLIENT.mTooltipCycle, mSaveFn);
+                option.setTooltipText(I18n.get("modernui.center.extension.tooltipBorderCycle_desc"));
+                mContent.addView(option);
+            }
+            var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+            params.setMargins(0, mContent.dp(6), 0, 0);
+            {
+                var buttonGroup = new LinearLayout(mParent.getContext());
+                buttonGroup.setOrientation(LinearLayout.HORIZONTAL);
+                for (int i = 0; i < 4; i++) {
+                    var button = new Button(mParent.getContext());
+                    button.setText(I18n.get("gui.modernui.preset_s", (i + 1)));
+                    final int idx = i;
+                    button.setOnClickListener((__) -> mColorPicker.setColors(
+                            PRESET_COLORS[idx])
+                    );
+                    var p = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
+                    buttonGroup.addView(button, p);
                 }
-            };
-
-            var colors = config.get();
-
-            int dp4 = dp(4);
-            mULColorField = createField(0, colors);
-            {
-                var params = new LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
-                params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-                params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-                params.setMargins(dp4, dp4, dp4, dp4);
-                mULColorField.setId(601);
-                addView(mULColorField, params);
+                mContent.addView(buttonGroup, new LinearLayout.LayoutParams(params));
             }
-            mURColorField = createField(1, colors);
-            {
-                var params = new LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
-                params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-                params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
-                params.setMargins(dp4, dp4, dp4, dp4);
-                mURColorField.setId(602);
-                addView(mURColorField, params);
-            }
-            mLRColorField = createField(2, colors);
-            {
-                var params = new LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
-                params.addRule(RelativeLayout.BELOW, 602);
-                params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
-                params.setMargins(dp4, dp4, dp4, dp4);
-                addView(mLRColorField, params);
-            }
-            mLLColorField = createField(3, colors);
-            {
-                var params = new LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
-                params.addRule(RelativeLayout.BELOW, 601);
-                params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-                params.setMargins(dp4, dp4, dp4, dp4);
-                addView(mLLColorField, params);
-            }
-            mOnFieldFocusChange.onFocusChange(mULColorField, false);
-            mOnFieldFocusChange.onFocusChange(mURColorField, false);
-            mOnFieldFocusChange.onFocusChange(mLRColorField, false);
-            mOnFieldFocusChange.onFocusChange(mLLColorField, false);
-        }
-
-        @NonNull
-        private EditText createField(int idx, List<? extends String> colors) {
-            var field = new EditText(getContext());
-            field.setSingleLine();
-            field.setText(colors.isEmpty()
-                    ? "#FFFFFFFF"
-                    : colors.get(Math.min(idx, colors.size() - 1)));
-            field.setFilters(new InputFilter.LengthFilter(10));
-            field.setTextSize(16);
-            field.setOnFocusChangeListener(mOnFieldFocusChange);
-            return field;
-        }
-
-        @Override
-        protected void onDraw(@NonNull Canvas canvas) {
-            super.onDraw(canvas);
-
-            var paint = Paint.obtain();
-            paint.setStyle(Paint.STROKE);
-            paint.setStrokeWidth(4);
-            canvas.drawRoundRectGradient(mPreviewBox.left, mPreviewBox.top, mPreviewBox.right, mPreviewBox.bottom,
-                    mULColor, mURColor, mLRColor, mLLColor, 8, paint);
-            paint.recycle();
-        }
-
-        @Override
-        protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-            super.onLayout(changed, left, top, right, bottom);
-
-            mPreviewBox.set(
-                    Math.max(mULColorField.getRight(), mLLColorField.getRight()) + 8,
-                    getPaddingTop() + 8,
-                    Math.min(mURColorField.getLeft(), mLRColorField.getLeft()) - 8,
-                    getHeight() - getPaddingBottom() - 8
-            );
-            invalidate();
+            mContent.addView(mColorPicker = new FourColorPicker(mParent.getContext(),
+                    Config.CLIENT.mTooltipStroke,
+                    mSaveFn), new LinearLayout.LayoutParams(params));
+            mParent.addView(mContent, params);
         }
     }
 }

@@ -38,7 +38,6 @@ import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.lifecycle.*;
 import icyllis.modernui.mc.testforge.TestPauseFragment;
-import icyllis.modernui.mc.text.ModernStringSplitter;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.*;
 import icyllis.modernui.view.*;
@@ -54,7 +53,6 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.texture.*;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -173,6 +171,8 @@ public final class UIManager implements LifecycleOwner {
     boolean mNoRender = false;
     boolean mClearNextMainTarget = false;
     boolean mAlwaysClearMainTarget = false;
+
+    final TooltipRenderer mTooltipRenderer = new TooltipRenderer();
 
 
     /// User Interface \\\
@@ -1036,7 +1036,7 @@ public final class UIManager implements LifecycleOwner {
                 TextUtils.getLayoutDirectionFromLocale(ModernUI.getSelectedLocale()) == View.LAYOUT_DIRECTION_RTL;
         mDecor.setLayoutDirection(layoutRtl ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LOCALE);
         mDecor.requestLayout();
-        TooltipRenderer.sLayoutRTL = layoutRtl;
+        mTooltipRenderer.mLayoutRTL = layoutRtl;
     }
 
     @MainThread
@@ -1068,7 +1068,7 @@ public final class UIManager implements LifecycleOwner {
                 // update extension animations
                 BlurHandler.INSTANCE.update(mElapsedTimeMillis);
                 if (TooltipRenderer.sTooltip) {
-                    TooltipRenderer.update(deltaMillis, mFrameTimeNanos / 1000000);
+                    mTooltipRenderer.update(deltaMillis, mFrameTimeNanos / 1000000);
                 }
                 /*if (mClearNextMainTarget || mAlwaysClearMainTarget) {
                     int boundFramebuffer = glGetInteger(GL_FRAMEBUFFER_BINDING);
@@ -1217,7 +1217,7 @@ public final class UIManager implements LifecycleOwner {
             }
             synchronized (mRenderLock) {
                 if (!mRedrawn) {
-                    TooltipRenderer.drawTooltip(mCanvas, mWindow, event.getGraphics(), event.getComponents(),
+                    mTooltipRenderer.drawTooltip(mCanvas, mWindow, event.getGraphics(), event.getComponents(),
                             event.getX(), event.getY(), event.getFont(), event.getScreenWidth(),
                             event.getScreenHeight(), partialX, partialY, positioner);
                 }
