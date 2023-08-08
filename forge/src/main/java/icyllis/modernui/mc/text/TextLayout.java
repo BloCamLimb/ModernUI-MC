@@ -19,7 +19,6 @@
 package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import icyllis.arc3d.engine.Engine;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.font.BakedGlyph;
 import icyllis.modernui.graphics.text.Font;
@@ -63,13 +62,13 @@ public class TextLayout {
 
         @Override
         public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
-                              float x, float y, int r, int g, int b, int a, boolean isShadow,
+                              float x, float top, int r, int g, int b, int a, boolean isShadow,
                               int preferredMode, int bgColor, int packedLight) {
             return 0;
         }
 
         @Override
-        public void drawTextOutline(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, float x, float y,
+        public void drawTextOutline(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, float x, float top,
                                     int r, int g, int b, int a, int packedLight) {
             // noop
         }
@@ -78,12 +77,12 @@ public class TextLayout {
     /**
      * Default vertical adjustment to string position.
      */
-    public static final int DEFAULT_BASELINE_OFFSET = 7;
+    public static final int STANDARD_BASELINE_OFFSET = 7;
 
     /**
      * Config vertical adjustment to string position.
      */
-    public static float sBaselineOffset = DEFAULT_BASELINE_OFFSET;
+    public static float sBaselineOffset = STANDARD_BASELINE_OFFSET;
 
     /**
      * The copied text buffer without formatting codes in logical order.
@@ -258,9 +257,10 @@ public class TextLayout {
                         resLevel
                 );
             } else {
+                int fontSize = Math.min((int) (TextLayoutProcessor.sBaseFontSize * resLevel + 0.5), 96);
                 glyphs[i] = engine.lookupGlyph(
                         getFont(i),
-                        resLevel,
+                        fontSize,
                         mGlyphs[i]
                 );
             }
@@ -289,7 +289,7 @@ public class TextLayout {
      * @param matrix        the transform matrix
      * @param source        the vertex buffer source
      * @param x             the left pos of the text line to render
-     * @param y             the baseline of the text line to render
+     * @param top           the top of the text line to render
      * @param r             the default red value (0...255, was divided by 4 if isShadow=true)
      * @param g             the default green value (0...255, was divided by 4 if isShadow=true)
      * @param b             the default blue value (0...255, was divided by 4 if isShadow=true)
@@ -300,9 +300,12 @@ public class TextLayout {
      * @param packedLight   see {@link net.minecraft.client.renderer.LightTexture}
      * @return the total advance, always positive
      */
-    public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
-                          float x, float y, int r, int g, int b, int a, boolean isShadow,
-                          int preferredMode, int bgColor, int packedLight) {
+    public float drawText(@Nonnull Matrix4f matrix,
+                          @Nonnull MultiBufferSource source,
+                          final float x, final float top,
+                          int r, int g, int b, int a,
+                          boolean isShadow, int preferredMode,
+                          int bgColor, int packedLight) {
         final int startR = r;
         final int startG = g;
         final int startB = b;
@@ -315,13 +318,12 @@ public class TextLayout {
         final var flags = mGlyphFlags;
         //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
 
-        y += sBaselineOffset;
+        final float baseline = top + sBaselineOffset;
 
         int prevTexture = -1;
         VertexConsumer builder = null;
 
-        int standardTexture = TextLayoutEngine.getInstance().getGlyphManager()
-                .getCurrentTexture(Engine.MASK_FORMAT_A8);
+        int standardTexture = -1;
 
         boolean seeThrough = preferredMode == TextRenderType.MODE_SEE_THROUGH;
         for (int i = 0, e = glyphs.length; i < e; i++) {
@@ -331,21 +333,21 @@ public class TextLayout {
             }
             final int bits = flags[i];
             float rx = 0;
-            final float ry;
+            float ry;
             final float w;
             final float h;
             final int effMode;
             final int texture;
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
-                if (isShadow) {
-                    continue;
-                }
                 float scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
                 if ((bits & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0) {
+                    if (isShadow) {
+                        continue;
+                    }
                     scaleFactor *= TextLayoutProcessor.sBaseFontSize / TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE;
                 }
                 rx = x + positions[i << 1] + (float) glyph.x * scaleFactor;
-                ry = y + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
+                ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
 
                 w = (float) glyph.width * scaleFactor;
                 h = (float) glyph.height * scaleFactor;
@@ -363,16 +365,19 @@ public class TextLayout {
                     }
                 }
                 rx += x + positions[i << 1] + glyph.x / resLevel;
-                ry = y + positions[i << 1 | 1] + glyph.y / resLevel;
+                ry = baseline + positions[i << 1 | 1] + glyph.y / resLevel;
 
                 w = glyph.width / resLevel;
                 h = glyph.height / resLevel;
+                if (standardTexture == -1) {
+                    standardTexture = TextLayoutEngine.getInstance().getStandardTexture();
+                }
                 texture = standardTexture;
             }
-            /*if (alignPixels) {
-                rx = Math.round(rx * scale) / scale;
-                ry = Math.round(ry * scale) / scale;
-            }*/
+            if (effMode == TextRenderType.MODE_NORMAL) {
+                rx = (int) (rx * resLevel + 0.5f) / resLevel;
+                ry = (int) (ry * resLevel + 0.5f) / resLevel;
+            }
             if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
                 r = startR;
                 g = startG;
@@ -440,18 +445,17 @@ public class TextLayout {
                 final float rx1 = x + positions[i << 1];
                 final float rx2 = x + ((i + 1 == e) ? mTotalAdvance : positions[(i + 1) << 1]);
                 if ((flag & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
-                    TextRenderEffect.drawStrikethrough(matrix, builder, rx1, rx2, y,
+                    TextRenderEffect.drawStrikethrough(matrix, builder, rx1, rx2, baseline,
                             r, g, b, a, packedLight);
                 }
                 if ((flag & CharacterStyle.UNDERLINE_MASK) != 0) {
-                    TextRenderEffect.drawUnderline(matrix, builder, rx1, rx2, y,
+                    TextRenderEffect.drawUnderline(matrix, builder, rx1, rx2, baseline,
                             r, g, b, a, packedLight);
                 }
             }
         }
 
         if ((bgColor & 0xFF000000) != 0) {
-            y -= sBaselineOffset;
             a = bgColor >>> 24;
             r = bgColor >> 16 & 0xff;
             g = bgColor >> 8 & 0xff;
@@ -459,13 +463,13 @@ public class TextLayout {
             if (builder == null) {
                 builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough));
             }
-            builder.vertex(matrix, x - 1, y + 9, TextRenderEffect.EFFECT_DEPTH)
+            builder.vertex(matrix, x - 1, top + 9, TextRenderEffect.EFFECT_DEPTH)
                     .color(r, g, b, a).uv(0, 1).uv2(packedLight).endVertex();
-            builder.vertex(matrix, x + mTotalAdvance + 1, y + 9, TextRenderEffect.EFFECT_DEPTH)
+            builder.vertex(matrix, x + mTotalAdvance + 1, top + 9, TextRenderEffect.EFFECT_DEPTH)
                     .color(r, g, b, a).uv(1, 1).uv2(packedLight).endVertex();
-            builder.vertex(matrix, x + mTotalAdvance + 1, y - 1, TextRenderEffect.EFFECT_DEPTH)
+            builder.vertex(matrix, x + mTotalAdvance + 1, top - 1, TextRenderEffect.EFFECT_DEPTH)
                     .color(r, g, b, a).uv(1, 0).uv2(packedLight).endVertex();
-            builder.vertex(matrix, x - 1, y - 1, TextRenderEffect.EFFECT_DEPTH)
+            builder.vertex(matrix, x - 1, top - 1, TextRenderEffect.EFFECT_DEPTH)
                     .color(r, g, b, a).uv(0, 0).uv2(packedLight).endVertex();
         }
 
@@ -480,7 +484,7 @@ public class TextLayout {
      * @param matrix      the position transformation
      * @param source      the vertex buffer source
      * @param x           the left pos of the text line to render
-     * @param y           the baseline of the text line to render
+     * @param top         the top of the text line to render
      * @param r           the default outline red value (0...255)
      * @param g           the default outline green value (0...255)
      * @param b           the default outline blue value (0...255)
@@ -488,8 +492,11 @@ public class TextLayout {
      * @param packedLight see {@link net.minecraft.client.renderer.LightTexture}
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
-    public void drawTextOutline(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
-                                float x, float y, int r, int g, int b, int a, int packedLight) {
+    public void drawTextOutline(@Nonnull Matrix4f matrix,
+                                @Nonnull MultiBufferSource source,
+                                final float x, final float top,
+                                int r, int g, int b, int a,
+                                int packedLight) {
         final float resLevel = TextLayoutEngine.getResLevelForSDF(mCreatedResLevel);
 
         final var glyphs = getGlyphs((int) resLevel);
@@ -497,15 +504,14 @@ public class TextLayout {
         final var flags = mGlyphFlags;
         //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
 
-        y += sBaselineOffset;
-        VertexConsumer builder = source.getBuffer(
-                TextRenderType.getOrCreate(
-                        TextLayoutEngine.getInstance().getGlyphManager()
-                                .getCurrentTexture(Engine.MASK_FORMAT_A8),
-                        TextRenderType.MODE_SDF_STROKE
-                )
-        );
+        final float baseline = top + sBaselineOffset;
 
+        int prevTexture = -1;
+        VertexConsumer builder = null;
+
+        int standardTexture = -1;
+
+        // outset glyph bounds
         final float sBloat = 1.0f / resLevel;
         for (int i = 0, e = glyphs.length; i < e; i++) {
             var glyph = glyphs[i];
@@ -517,6 +523,7 @@ public class TextLayout {
             final float ry;
             final float w;
             final float h;
+            final int texture;
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 continue;
             } else {
@@ -530,15 +537,25 @@ public class TextLayout {
                     }
                 }
                 rx += x + positions[i << 1] + glyph.x / resLevel;
-                ry = y + positions[i << 1 | 1] + glyph.y / resLevel;
+                ry = baseline + positions[i << 1 | 1] + glyph.y / resLevel;
 
                 w = glyph.width / resLevel;
                 h = glyph.height / resLevel;
+                if (standardTexture == -1) {
+                    standardTexture = TextLayoutEngine.getInstance().getStandardTexture();
+                }
+                texture = standardTexture;
             }
             /*if (alignPixels) {
                 rx = Math.round(rx * scale) / scale;
                 ry = Math.round(ry * scale) / scale;
             }*/
+            if (builder == null || prevTexture != texture) {
+                // bitmap texture and grayscale texture are different
+                prevTexture = texture;
+                builder = source.getBuffer(TextRenderType.getOrCreate(prevTexture,
+                        TextRenderType.MODE_SDF_STROKE));
+            }
             float uBloat = (glyph.u2 - glyph.u1) / glyph.width;
             float vBloat = (glyph.v2 - glyph.v1) / glyph.height;
             builder.vertex(matrix, rx - sBloat, ry - sBloat, 0.002f)
@@ -614,7 +631,7 @@ public class TextLayout {
      */
     public Font getFont(int i) {
         if (mFontIndices != null) {
-            return mFonts[mFontIndices[i]];
+            return mFonts[mFontIndices[i] & 0xFF];
         }
         return mFonts[0];
     }

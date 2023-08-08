@@ -20,10 +20,9 @@ package icyllis.modernui.mc.text;
 
 import com.google.gson.*;
 import com.ibm.icu.text.Bidi;
-import com.mojang.blaze3d.font.GlyphProvider;
+import com.mojang.blaze3d.font.SpaceProvider;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.JsonOps;
 import icyllis.arc3d.engine.Engine;
 import icyllis.modernui.ModernUI;
@@ -38,6 +37,7 @@ import icyllis.modernui.text.*;
 import icyllis.modernui.util.Pools;
 import icyllis.modernui.view.View;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
@@ -48,7 +48,8 @@ import net.minecraft.client.gui.font.providers.*;
 import net.minecraft.client.renderer.texture.MipmapGenerator;
 import net.minecraft.network.chat.*;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.*;
+import net.minecraft.server.packs.resources.PreparableReloadListener;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.*;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraftforge.common.MinecraftForge;
@@ -60,7 +61,6 @@ import org.lwjgl.system.MemoryUtil;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.awt.font.GlyphVector;
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
@@ -129,7 +129,6 @@ public class TextLayoutEngine implements PreparableReloadListener {
      */
     public static volatile boolean sUseTextShadersInWorld = true;
 
-    public static volatile boolean sUseVanillaFont = false;
     public static volatile boolean sUseColorEmoji = true;
 
     /**
@@ -181,13 +180,53 @@ public class TextLayoutEngine implements PreparableReloadListener {
 
     /**
      * Also computes per-cluster advances.
+     *
+     * @see TextLayoutProcessor
      */
     public static final int COMPUTE_ADVANCES = 0x1;
 
     /**
      * Also computes Unicode line boundaries.
+     *
+     * @see TextLayoutProcessor
      */
     public static final int COMPUTE_LINE_BOUNDARIES = 0x4;
+
+
+    /**
+     * Use {@link ModernUI#getSelectedTypeface()} only.
+     */
+    public static final int DEFAULT_FONT_BEHAVIOR_IGNORE_ALL = 0;
+    /**
+     * Include
+     * minecraft:font/ascii.png
+     * minecraft:font/accented.png
+     * minecraft:font/nonlatin_european.png
+     */
+    public static final int DEFAULT_FONT_BEHAVIOR_KEEP_ASCII = 0x1;
+    /**
+     * Include providers in minecraft:font/default.json other than
+     * DEFAULT_FONT_BEHAVIOR_KEEP_ASCII and Unicode font.
+     */
+    public static final int DEFAULT_FONT_BEHAVIOR_KEEP_OTHER = 0x2;
+    /**
+     * Include all except Unicode font.
+     */
+    public static final int DEFAULT_FONT_BEHAVIOR_KEEP_ALL = 0x3;
+
+    /**
+     * For {@link net.minecraft.client.Minecraft#DEFAULT_FONT} and
+     * {@link net.minecraft.client.Minecraft#UNIFORM_FONT},
+     * should we keep some bitmap providers of them?
+     *
+     * @see StandardFontSet
+     */
+    public static volatile int sDefaultFontBehavior =
+            DEFAULT_FONT_BEHAVIOR_KEEP_OTHER; // <- bit mask
+
+
+    public static volatile boolean sUseComponentCache = true;
+
 
     private final GlyphManager mGlyphManager;
 
@@ -201,6 +240,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
 
     /**
      * For styled texts.
+     *
+     * @see #sUseComponentCache
      */
     private Map<MutableComponent, TextLayout> mComponentCache = new HashMap<>();
 
@@ -229,12 +270,14 @@ public class TextLayoutEngine implements PreparableReloadListener {
      */
     private final Map<FontStrikeDesc, FastCharSet> mFastCharMap = new HashMap<>();
     // it's necessary to cache the lambda
-    private final Function<FontStrikeDesc, FastCharSet> mFastCharFunc = this::cacheFastChars;
+    private final Function<FontStrikeDesc, FastCharSet> mCacheFastChars = this::cacheFastChars;
 
     /**
      * All the fonts to use. Maps typeface name to FontCollection.
      */
     private final HashMap<ResourceLocation, FontCollection> mFontCollections = new HashMap<>();
+
+    private FontCollection mDefaultFontCollection;
 
     private EmojiFont mEmojiFont;
 
@@ -249,7 +292,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     /**
      * Emoji sequence to sprite index (used as glyph code in emoji atlas).
      */
-    private final ArrayList<EmojiEntry> mEmojiVec = new ArrayList<>();
+    private final ArrayList<String> mEmojiFiles = new ArrayList<>();
     /**
      * Shortcodes to Emoji char sequences.
      */
@@ -260,13 +303,6 @@ public class TextLayoutEngine implements PreparableReloadListener {
      */
     private GLFontAtlas mEmojiAtlas;
     private ByteBuffer mEmojiBuffer;
-
-    /**
-     * @param image    resource location
-     * @param sequence emoji char sequence
-     */
-    private record EmojiEntry(String image, String sequence) {
-    }
 
     /**
      * Determine font size. Integer.
@@ -280,7 +316,6 @@ public class TextLayoutEngine implements PreparableReloadListener {
     // vanilla's font manager, used only for compatibility
     private FontManager mVanillaFontManager;
 
-    private boolean mVanillaFontUsed = false;
     private boolean mColorEmojiUsed = false;
 
     private final ModernTextRenderer mTextRenderer;
@@ -422,7 +457,16 @@ public class TextLayoutEngine implements PreparableReloadListener {
 
         if (oldLevel != 0) {
             // inject after first load
-            injectAdditionalFonts();
+            injectAdditionalFonts(/*force*/false);
+
+            if (mVanillaFontManager != null) {
+                var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
+                for (var fontSet : fontSets.values()) {
+                    if (fontSet instanceof StandardFontSet standardFontSet) {
+                        standardFontSet.invalidateCache(mResLevel);
+                    }
+                }
+            }
         }
 
         if (oldLevel == 0) {
@@ -447,6 +491,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
             LOGGER.info(MARKER, "Reloaded emoji atlas");
         }
         LayoutCache.clear();
+        injectAdditionalFonts(/*force*/true); // we force it here, so normal reload() won't inject again
         reload();
     }
 
@@ -463,40 +508,71 @@ public class TextLayoutEngine implements PreparableReloadListener {
     }
 
     @RenderThread
-    private void injectAdditionalFonts() {
-        if (mVanillaFontUsed != sUseVanillaFont ||
-                mColorEmojiUsed != sUseColorEmoji) {
-            if (!sUseVanillaFont && !sUseColorEmoji) {
-                mFontCollections.remove(Minecraft.DEFAULT_FONT);
-                mFontCollections.remove(Minecraft.UNIFORM_FONT);
-                mVanillaFontUsed = false;
-                mColorEmojiUsed = false;
-            } else {
-                LinkedHashSet<FontFamily> fonts = new LinkedHashSet<>();
-                if (sUseVanillaFont) {
-                    try (InputStream inputStream = Minecraft.getInstance().getResourceManager()
-                            .open(ModernUIForge.location("font/default.ttf"))) {
-                        fonts.add(FontFamily.createFamily(inputStream, false));
-                    } catch (Exception e) {
-                        LOGGER.warn(MARKER, "Failed to load default.ttf", e);
-                    }
-                }
-                mVanillaFontUsed = sUseVanillaFont;
-
-                if (sUseColorEmoji) {
-                    if (mEmojiFont != null) {
-                        fonts.add(new FontFamily(mEmojiFont));
-                        mColorEmojiUsed = true;
-                    }
+    private void injectAdditionalFonts(boolean force) {
+        if (mColorEmojiUsed != sUseColorEmoji || force) {
+            LinkedHashSet<FontFamily> defaultFonts = new LinkedHashSet<>();
+            if (!sUseColorEmoji) {
+                if (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL) {
+                    mFontCollections.remove(Minecraft.DEFAULT_FONT);
                 } else {
-                    mColorEmojiUsed = false;
+                    populateDefaultFonts(defaultFonts, sDefaultFontBehavior);
+                    defaultFonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
+                    mFontCollections.put(Minecraft.DEFAULT_FONT,
+                            new FontCollection(defaultFonts.toArray(new FontFamily[0])));
                 }
+                mFontCollections.remove(Minecraft.UNIFORM_FONT);
+                mColorEmojiUsed = false;
+            } else if (sUseColorEmoji && mEmojiFont != null) {
+                LinkedHashSet<FontFamily> unicodeFonts = new LinkedHashSet<>();
 
-                fonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
+                FontFamily colorEmojiFamily = new FontFamily(mEmojiFont);
 
-                FontCollection fc = new FontCollection(fonts.toArray(new FontFamily[0]));
-                mFontCollections.put(Minecraft.DEFAULT_FONT, fc);
-                mFontCollections.put(Minecraft.UNIFORM_FONT, fc);
+                defaultFonts.add(colorEmojiFamily);
+                populateDefaultFonts(defaultFonts, sDefaultFontBehavior);
+                defaultFonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
+
+                unicodeFonts.add(colorEmojiFamily);
+                unicodeFonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
+
+                mFontCollections.put(Minecraft.DEFAULT_FONT,
+                        new FontCollection(defaultFonts.toArray(new FontFamily[0])));
+                mFontCollections.put(Minecraft.UNIFORM_FONT,
+                        new FontCollection(unicodeFonts.toArray(new FontFamily[0])));
+                mColorEmojiUsed = true;
+            } else {
+                mColorEmojiUsed = false;
+            }
+            if (force && mVanillaFontManager != null) {
+                var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
+                if (fontSets.get(Minecraft.DEFAULT_FONT) instanceof StandardFontSet sfs) {
+                    sfs.reload(getFontCollection(Minecraft.DEFAULT_FONT), mResLevel);
+                }
+                if (fontSets.get(Minecraft.UNIFORM_FONT) instanceof StandardFontSet sfs) {
+                    sfs.reload(getFontCollection(Minecraft.UNIFORM_FONT), mResLevel);
+                }
+            }
+        }
+    }
+
+    private void populateDefaultFonts(Set<FontFamily> set, int behavior) {
+        if (behavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL) {
+            return;
+        }
+        for (FontFamily family : mDefaultFontCollection.getFamilies()) {
+            switch (family.getFamilyName()) {
+                case "minecraft:font/nonlatin_european.png",
+                        "minecraft:font/accented.png",
+                        "minecraft:font/ascii.png",
+                        "minecraft:include/space / minecraft:space" -> {
+                    if ((behavior & DEFAULT_FONT_BEHAVIOR_KEEP_ASCII) != 0) {
+                        set.add(family);
+                    }
+                }
+                default -> {
+                    if ((behavior & DEFAULT_FONT_BEHAVIOR_KEEP_OTHER) != 0) {
+                        set.add(family);
+                    }
+                }
             }
         }
     }
@@ -520,11 +596,10 @@ public class TextLayoutEngine implements PreparableReloadListener {
     }
 
     private static final class LoadResults {
-        volatile Map<ResourceLocation, FontCollection> map;
-        volatile Map<ResourceLocation, List<GlyphProvider>> remap;
-        volatile List<EmojiEntry> emojiVec;
-        volatile EmojiFont emojiFont;
-        volatile Map<String, String> shortcodes;
+        volatile Map<ResourceLocation, FontCollection> mFontCollections;
+        volatile EmojiFont mEmojiFont;
+        volatile List<String> mEmojiFiles;
+        volatile Map<String, String> mEmojiShortcodes;
     }
 
     // ASYNC
@@ -557,49 +632,43 @@ public class TextLayoutEngine implements PreparableReloadListener {
         }
         // reload fonts
         mFontCollections.clear();
-        mFontCollections.putAll(results.map);
+        mFontCollections.putAll(results.mFontCollections);
+        mDefaultFontCollection = mFontCollections.get(Minecraft.DEFAULT_FONT);
+        if (mDefaultFontCollection == null) {
+            throw new IllegalStateException("Default font failed to load");
+        }
         // vanilla compatibility
         if (mVanillaFontManager != null) {
             var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
             fontSets.values().forEach(FontSet::close);
             fontSets.clear();
             var textureManager = Minecraft.getInstance().textureManager;
-            results.remap.forEach((name, list) -> {
-                var fontSet = new FontSet(textureManager, name);
-                fontSet.reload(list);
-                fontSets.put(name, fontSet);
+            mFontCollections.forEach((fontName, fontCollection) -> {
+                var fontSet = new StandardFontSet(textureManager, fontName);
+                fontSet.reload(fontCollection, mResLevel);
+                fontSets.put(fontName, fontSet);
             });
         } else {
-            for (var list : results.remap.values()) {
-                list.forEach(GlyphProvider::close);
-            }
             LOGGER.warn(MARKER, "Where is font manager?");
         }
         // reload emojis
-        mEmojiVec.clear();
+        mEmojiFiles.clear();
         mEmojiShortcodes.clear();
-        mEmojiVec.addAll(results.emojiVec);
-        mEmojiShortcodes.putAll(results.shortcodes);
-        mEmojiFont = results.emojiFont;
-        // vanilla font
-        mVanillaFontUsed = false;
-        mColorEmojiUsed = false;
-        injectAdditionalFonts();
+        mEmojiFiles.addAll(results.mEmojiFiles);
+        mEmojiShortcodes.putAll(results.mEmojiShortcodes);
+        mEmojiFont = results.mEmojiFont;
         // reload the whole engine
         reloadAll();
         reloadProfiler.pop();
         reloadProfiler.endTick();
     }
 
-    private static boolean shouldRemapFont(@Nonnull ResourceLocation name) {
-        if (name.equals(Minecraft.DEFAULT_FONT) ||
-                name.equals(Minecraft.UNIFORM_FONT)) {
+    private static boolean isUnicodeFont(@Nonnull ResourceLocation name) {
+        if (name.equals(Minecraft.UNIFORM_FONT)) {
             return true;
         }
-        if (name.getNamespace().equals("minecraft")) {
-            return name.getPath().equals("include/default") ||
-                    name.getPath().equals("include/space") ||
-                    name.getPath().equals("include/unifont");
+        if (name.getNamespace().equals(ResourceLocation.DEFAULT_NAMESPACE)) {
+            return name.getPath().equals("include/unifont");
         }
         return false;
     }
@@ -608,13 +677,11 @@ public class TextLayoutEngine implements PreparableReloadListener {
             implements DependencySorter.Entry<ResourceLocation> {
         final ResourceLocation name;
         /**
-         * We load font families other than {@link #shouldRemapFont(ResourceLocation)}.
+         * We load font families other than {@link #isUnicodeFont(ResourceLocation)}.
+         * <p>
+         * Either FontFamily or ResourceLocation (reference).
          */
-        Set<Either<FontFamily, ResourceLocation>> families = new LinkedHashSet<>();
-        /**
-         * We load glyph providers only for {@link #shouldRemapFont(ResourceLocation)}.
-         */
-        List<Either<GlyphProvider, ResourceLocation>> providers = new ArrayList<>();
+        Set<Object> families = new LinkedHashSet<>();
         /**
          * References to other fonts.
          */
@@ -641,19 +708,19 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 .disableHtmlEscaping()
                 .create();
         final var bundles = new ArrayList<RawFontBundle>();
-        for (var fonts : resources.listResourceStacks("font",
+        for (var entry : resources.listResourceStacks("font",
                 res -> res.getPath().endsWith(".json")).entrySet()) {
-            var location = fonts.getKey();
+            var location = entry.getKey();
             var path = location.getPath();
             // remove prefix 'font/' and extension '.json' to get the font name
             var name = location.withPath(path.substring(5, path.length() - 5));
+            if (isUnicodeFont(name)) {
+                continue;
+            }
             var bundle = new RawFontBundle(name);
             bundles.add(bundle);
-            // remap default font to ModernUI, but keep them baked for vanilla
-            // because we found Create mod uses FontSet in some cases
-            var remap = shouldRemapFont(name);
-            for (var font : fonts.getValue()) {
-                try (var reader = font.openAsReader()) {
+            for (var resource : entry.getValue()) {
+                try (var reader = resource.openAsReader()) {
                     var providers = GsonHelper.getAsJsonArray(Objects.requireNonNull(
                             GsonHelper.fromJson(gson, reader, JsonObject.class)), "providers");
                     for (int i = 0; i < providers.size(); i++) {
@@ -666,121 +733,99 @@ public class TextLayoutEngine implements PreparableReloadListener {
                                 ),
                                 JsonParseException::new
                         );
-                        loadSingleFont(resources, name, bundle, remap, font, i, metadata, definition);
+                        loadSingleFont(resources, name, bundle,
+                                resource.sourcePackId(), i, metadata, definition);
                     }
                 } catch (Exception e) {
-                    LOGGER.warn(MARKER, "Failed to load font '{}' in pack: '{}'", name, font.sourcePackId(), e);
+                    LOGGER.warn(MARKER, "Failed to load font '{}' in pack: '{}'",
+                            name, resource.sourcePackId(), e);
                 }
             }
-            if (!remap) {
-                LOGGER.debug(MARKER, "Loaded raw font resource: '{}', font set: [{}]", location,
-                        bundle.families.stream().map(
-                                        either -> either.map(FontFamily::getFamilyName, ResourceLocation::toString))
-                                .collect(Collectors.joining(",")));
-            }
+            LOGGER.debug(MARKER, "Loaded raw font resource: '{}', font set: [{}]", location,
+                    bundle.families.stream().map(object -> {
+                                if (object instanceof FontFamily family) {
+                                    return family.getFamilyName();
+                                }
+                                return object.toString();
+                            })
+                            .collect(Collectors.joining(",")));
         }
         final var sorter = new DependencySorter<ResourceLocation, RawFontBundle>();
         for (var bundle : bundles) {
             sorter.addEntry(bundle.name, bundle);
         }
         final var map = new HashMap<ResourceLocation, FontCollection>();
-        final var remap = new HashMap<ResourceLocation, List<GlyphProvider>>();
         sorter.orderByDependencies((name, bundle) -> {
-            if (shouldRemapFont(name)) {
-                var list = new ArrayList<GlyphProvider>();
-                for (var either : bundle.providers) {
-                    either.ifLeft(list::add)
-                            .ifRight(reference -> {
-                                var resolved = remap.get(reference);
-                                if (resolved != null) {
-                                    list.addAll(resolved);
-                                } else {
-                                    LOGGER.warn(MARKER, "Failed to resolve font: {}", reference);
-                                }
-                            });
-                }
-                remap.put(name, list);
-            } else {
-                var set = new LinkedHashSet<FontFamily>();
-                for (var either : bundle.families) {
-                    either.ifLeft(set::add)
-                            .ifRight(reference -> {
-                                var resolved = map.get(reference);
-                                if (resolved != null) {
-                                    set.addAll(resolved.getFamilies());
-                                } else {
-                                    LOGGER.warn(MARKER, "Failed to resolve font: {}", reference);
-                                }
-                            });
-                }
-                if (!set.isEmpty()) {
-                    map.put(name, new FontCollection(set.toArray(new FontFamily[0])));
-                    LOGGER.info(MARKER, "Loaded font: '{}', font set: [{}]", name,
-                            set.stream().map(FontFamily::getFamilyName).collect(Collectors.joining(",")));
+            if (isUnicodeFont(name)) {
+                return;
+            }
+            var set = new LinkedHashSet<FontFamily>();
+            for (var object : bundle.families) {
+                if (object instanceof FontFamily family) {
+                    set.add(family);
                 } else {
-                    LOGGER.warn(MARKER, "Ignore font: '{}', because it's empty", name);
+                    var reference = (ResourceLocation) object;
+                    FontCollection resolved = map.get(reference);
+                    if (resolved != null) {
+                        set.addAll(resolved.getFamilies());
+                    } else {
+                        LOGGER.warn(MARKER, "Failed to resolve font: {}", reference);
+                    }
                 }
             }
+            if (!set.isEmpty()) {
+                map.put(name, new FontCollection(set.toArray(new FontFamily[0])));
+                LOGGER.info(MARKER, "Loaded font: '{}', font set: [{}]", name,
+                        set.stream().map(FontFamily::getFamilyName).collect(Collectors.joining(",")));
+            } else {
+                LOGGER.warn(MARKER, "Ignore font: '{}', because it's empty", name);
+            }
         });
-        results.map = map;
-        results.remap = remap;
+        results.mFontCollections = map;
     }
 
     private static void loadSingleFont(@Nonnull ResourceManager resources,
                                        ResourceLocation name,
                                        RawFontBundle bundle,
-                                       boolean remap,
-                                       Resource font, int i,
+                                       String sourcePackId, int index,
                                        JsonObject metadata,
-                                       GlyphProviderDefinition definition) {
-        if (remap) {
-            definition.unpack()
-                    .ifLeft(loader -> {
-                        try {
-                            GlyphProvider provider = loader.load(resources);
-                            bundle.providers.add(Either.left(provider));
-                        } catch (IOException e) {
-                            LOGGER.warn(MARKER, "Failed to load providers[{}] in font '{}' in pack: '{}'",
-                                    i, name, font.sourcePackId(), e);
-                        }
-                    })
-                    .ifRight(reference -> {
-                        if (shouldRemapFont(reference.id())) {
-                            bundle.providers.add(Either.right(reference.id()));
-                            bundle.dependencies.add(reference.id());
-                        }
-                    });
-        } else {
-            switch (definition.type()) {
-                case BITMAP -> bundle.families.add(Either.left(
-                        new FontFamily(BitmapFont.create((BitmapProvider.Definition) definition, resources))
-                ));
-                case TTF -> {
-                    if (metadata.has("shift")) {
-                        LOGGER.info(MARKER, "Ignore 'shift' of providers[{}] in font '{}' in pack: '{}'",
-                                i, name, font.sourcePackId());
-                    }
-                    if (metadata.has("skip")) {
-                        LOGGER.info(MARKER, "Ignore 'skip' of providers[{}] in font '{}' in pack: '{}'",
-                                i, name, font.sourcePackId());
-                    }
-                    bundle.families.add(Either.left(
-                            createTTF(((TrueTypeGlyphProviderDefinition) definition).location(),
-                                    resources)
-                    ));
-                }
-                case SPACE -> LOGGER.debug(MARKER, "Ignore provider type 'space' in font '{}' in pack: '{}'",
-                        name, font.sourcePackId());
-                case REFERENCE -> {
-                    var reference = ((ProviderReferenceDefinition) definition).id();
-                    if (!shouldRemapFont(reference)) {
-                        bundle.families.add(Either.right(reference));
-                        bundle.dependencies.add(reference);
-                    }
-                }
-                default -> LOGGER.info(MARKER, "Unknown provider type '{}' in font '{}' in pack: '{}'",
-                        definition.type(), name, font.sourcePackId());
+                                       @Nonnull GlyphProviderDefinition definition) {
+        switch (definition.type()) {
+            case BITMAP -> {
+                var bitmapFont = BitmapFont.create((BitmapProvider.Definition) definition, resources);
+                bundle.families.add(
+                        new FontFamily(bitmapFont)
+                );
             }
+            case TTF -> {
+                if (metadata.has("shift")) {
+                    LOGGER.info(MARKER, "Ignore 'shift' of providers[{}] in font '{}' in pack: '{}'",
+                            index, name, sourcePackId);
+                }
+                if (metadata.has("skip")) {
+                    LOGGER.info(MARKER, "Ignore 'skip' of providers[{}] in font '{}' in pack: '{}'",
+                            index, name, sourcePackId);
+                }
+                bundle.families.add(
+                        createTTF(((TrueTypeGlyphProviderDefinition) definition).location(),
+                                resources)
+                );
+            }
+            case SPACE -> {
+                var spaceFont = SpaceFont.create(name, (SpaceProvider.Definition) definition);
+                bundle.families.add(
+                        new FontFamily(spaceFont)
+                );
+            }
+            case REFERENCE -> {
+                ResourceLocation reference = ((ProviderReferenceDefinition) definition).id();
+                if (!isUnicodeFont(reference)) {
+                    bundle.families.add(reference);
+                    bundle.dependencies.add(reference);
+                }
+            }
+            default -> LOGGER.info(MARKER, "Unknown provider type '{}' in font '{}' in pack: '{}'",
+                    definition.type(), name, sourcePackId);
         }
     }
 
@@ -788,7 +833,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     private static FontFamily createTTF(@Nonnull ResourceLocation file, ResourceManager resources) {
         var location = file.withPrefix("font/");
         try (var stream = resources.open(location)) {
-            return FontFamily.createFamily(stream, true);
+            return FontFamily.createFamily(stream, false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -798,7 +843,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     private void loadEmojis(@Nonnull ResourceManager resources,
                             @Nonnull LoadResults results) {
         final var map = new Object2IntOpenHashMap<CharSequence>();
-        final var vec = new ArrayList<EmojiEntry>();
+        final var files = new ArrayList<String>();
         CYCLE:
         for (var image : resources.listResources("emoji",
                 res -> res.getPath().endsWith(".png")).keySet()) {
@@ -806,8 +851,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
             if (path.length == 0) {
                 continue;
             }
-            var name = path[path.length - 1];
-            var codes = name.substring(0, name.length() - 4).split("_");
+            var fileName = path[path.length - 1];
+            var codes = fileName.substring(0, fileName.length() - 4).split("_");
             int length = codes.length;
             if (length == 0) {
                 continue;
@@ -838,13 +883,745 @@ public class TextLayoutEngine implements PreparableReloadListener {
             var sequence = new String(cps, 0, n);
             if (!map.containsKey(sequence)) {
                 map.put(sequence, map.size() + 1);
-                vec.add(new EmojiEntry(name, sequence));
+                files.add(fileName);
             }
         } // CYCLE end
         LOGGER.info(MARKER, "Scanned emoji map size: {}",
                 map.size());
-        results.emojiVec = vec;
+        results.mEmojiFiles = files;
         IntOpenHashSet coverage = new IntOpenHashSet();
+        _populateEmojiFontCoverage_DONT_COMPILE_(coverage);
+        results.mEmojiFont = new EmojiFont("Google Noto Color Emoji",
+                coverage, EMOJI_BASE_SIZE * BITMAP_SCALE,
+                TextLayout.STANDARD_BASELINE_OFFSET * BITMAP_SCALE,
+                (int) (0.5 * BITMAP_SCALE + 0.5),
+                TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE * BITMAP_SCALE, map);
+    }
+
+    //FIXME Minecraft 1.20.1 still uses ICU-71.1, but Unicode 15 CLDR was added in ICU-72
+    // remove once Minecraft's ICU updated
+    static boolean isEmoji_Unicode15_workaround(int codePoint) {
+        return codePoint == 0x1f6dc ||
+                (0x1fa75 <= codePoint && codePoint <= 0x1fa77) ||
+                codePoint == 0x1fa87 || codePoint == 0x1fa88 ||
+                (0x1faad <= codePoint && codePoint <= 0x1faaf) ||
+                (0x1fabb <= codePoint && codePoint <= 0x1fabd) ||
+                codePoint == 0x1fabf ||
+                codePoint == 0x1face || codePoint == 0x1facf ||
+                codePoint == 0x1fada || codePoint == 0x1fadb ||
+                codePoint == 0x1fae8 ||
+                codePoint == 0x1faf7 || codePoint == 0x1faf8;
+    }
+
+    /**
+     * @see EmojiDataGen
+     */
+    // ASYNC
+    private void loadShortcodes(@Nonnull ResourceManager resources,
+                                @Nonnull LoadResults results) {
+        final var map = new HashMap<String, String>();
+        try (var reader = resources.openAsReader(ModernUIForge.location("emoji_data.json"))) {
+            for (var entry : new Gson().fromJson(reader, JsonArray.class)) {
+                var row = entry.getAsJsonArray();
+                var sequence = row.get(0).getAsString();
+                // map shortcodes -> emoji sequence
+                var shortcodes = row.get(2).getAsJsonArray();
+                if (!shortcodes.isEmpty()) {
+                    map.put(shortcodes.get(0).getAsString(), sequence);
+                    for (int i = 1; i < shortcodes.size(); i++) {
+                        map.putIfAbsent(shortcodes.get(i).getAsString(), sequence);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.info(MARKER, "Failed to load emoji data", e);
+        }
+        LOGGER.info(MARKER, "Scanned emoji shortcodes: {}",
+                map.size());
+        results.mEmojiShortcodes = map;
+    }
+
+    ////// END Resource Reloading
+
+
+    public static int getResLevelForSDF(int resLevel) {
+        return Math.max(resLevel, 4);
+    }
+
+
+    ////// START Cache Retrieval
+
+    /**
+     * Find or create a full text layout for the given text.
+     *
+     * @param text the source text, may contain formatting codes
+     * @return the full layout for the text
+     */
+    @Nonnull
+    public TextLayout lookupVanillaLayout(@Nonnull String text) {
+        return lookupVanillaLayout(text, Style.EMPTY, 0);
+    }
+
+    /**
+     * Find or create a full text layout for the given text.
+     *
+     * @param text  the source text, may contain formatting codes
+     * @param style the base style
+     * @return the full layout for the text
+     */
+    @Nonnull
+    public TextLayout lookupVanillaLayout(@Nonnull String text, @Nonnull Style style) {
+        return lookupVanillaLayout(text, style, 0);
+    }
+
+    /**
+     * Find or create a full text layout for the given text.
+     *
+     * @param text  the source text, may contain formatting codes
+     * @param style the base style
+     * @return the full layout for the text
+     */
+    @Nonnull
+    public TextLayout lookupVanillaLayout(@Nonnull String text, @Nonnull Style style,
+                                          int computeFlags) {
+        if (text.isEmpty()) {
+            return TextLayout.EMPTY;
+        }
+        if (!RenderSystem.isOnRenderThread()) {
+            TextLayoutProcessor proc = mProcessorPool.acquire();
+            if (proc == null) {
+                proc = new TextLayoutProcessor(this);
+            }
+            TextLayout layout = proc.createVanillaLayout(text, style, mResLevel, computeFlags);
+            mProcessorPool.release(proc);
+            return layout;
+        }
+        TextLayout layout = mVanillaCache.get(mVanillaLookupKey.update(text, style, mResLevel));
+        int nowFlags = 0;
+        if (layout == null ||
+                ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
+            layout = mProcessor.createVanillaLayout(text, style, mResLevel,
+                    nowFlags | computeFlags);
+            mVanillaCache.put(mVanillaLookupKey.copy(), layout);
+            return layout;
+        }
+        return layout.get();
+    }
+
+    /**
+     * Find or create a full text layout for the given formatted text, fast digit replacement
+     * is not applicable. To perform bidi analysis, we must have the full text of all contents.
+     *
+     * @param text the text ancestor
+     * @return the full layout for the text
+     * @see FormattedTextWrapper
+     */
+    @Nonnull
+    public TextLayout lookupFormattedLayout(@Nonnull FormattedText text) {
+        return lookupFormattedLayout(text, Style.EMPTY, 0);
+    }
+
+    /**
+     * Find or create a full text layout for the given formatted text, fast digit replacement
+     * is not applicable. To perform bidi analysis, we must have the full text of all contents.
+     *
+     * @param text  the text ancestor
+     * @param style the base style
+     * @return the full layout for the text
+     * @see FormattedTextWrapper
+     */
+    @Nonnull
+    public TextLayout lookupFormattedLayout(@Nonnull FormattedText text, @Nonnull Style style) {
+        return lookupFormattedLayout(text, style, 0);
+    }
+
+    /**
+     * Find or create a full text layout for the given formatted text, fast digit replacement
+     * is not applicable. To perform bidi analysis, we must have the full text of all contents.
+     *
+     * @param text  the text ancestor
+     * @param style the base style
+     * @return the full layout for the text
+     * @see FormattedTextWrapper
+     */
+    @Nonnull
+    public TextLayout lookupFormattedLayout(@Nonnull FormattedText text, @Nonnull Style style,
+                                            int computeFlags) {
+        if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
+            return TextLayout.EMPTY;
+        }
+        if (!RenderSystem.isOnRenderThread()) {
+            TextLayoutProcessor proc = mProcessorPool.acquire();
+            if (proc == null) {
+                proc = new TextLayoutProcessor(this);
+            }
+            TextLayout layout = proc.createTextLayout(text, style, mResLevel, computeFlags);
+            mProcessorPool.release(proc);
+            return layout;
+        }
+        TextLayout layout;
+        int nowFlags = 0;
+        if (style.isEmpty() && sUseComponentCache &&
+                text instanceof MutableComponent component) {
+            layout = mComponentCache.get(component);
+            if (layout == null ||
+                    ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
+                layout = mProcessor.createTextLayout(text, Style.EMPTY, mResLevel,
+                        nowFlags | computeFlags);
+                mComponentCache.put(component, layout);
+                return layout;
+            }
+        } else {
+            // the more complex case (multi-component)
+            layout = mFormattedCache.get(mFormattedLayoutKey.update(text, style, mResLevel));
+            if (layout == null ||
+                    ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
+                layout = mProcessor.createTextLayout(text, style, mResLevel,
+                        nowFlags | computeFlags);
+                mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
+                return layout;
+            }
+        }
+        return layout.get();
+    }
+
+    /**
+     * Find or create a full text layout for the given formatted text, fast digit replacement
+     * is not applicable. To perform bidi analysis, we must have the full text of all contents.
+     * Note: Modern UI removes Minecraft vanilla's BiDi reordering.
+     * <p>
+     * This method should only be used when the text is not originated from FormattedText.
+     *
+     * @param sequence the deeply-processed sequence
+     * @return the full layout
+     * @see FormattedTextWrapper
+     */
+    @Nonnull
+    public TextLayout lookupFormattedLayout(@Nonnull FormattedCharSequence sequence) {
+        return lookupFormattedLayout(sequence, 0);
+    }
+
+    /**
+     * Find or create a full text layout for the given formatted text, fast digit replacement
+     * is not applicable. To perform bidi analysis, we must have the full text of all contents.
+     * Note: Modern UI removes Minecraft vanilla's BiDi reordering.
+     * <p>
+     * This method should only be used when the text is not originated from FormattedText.
+     *
+     * @param sequence the deeply-processed sequence
+     * @return the full layout
+     * @see FormattedTextWrapper
+     */
+    @Nonnull
+    public TextLayout lookupFormattedLayout(@Nonnull FormattedCharSequence sequence,
+                                            int computeFlags) {
+        if (sequence == FormattedCharSequence.EMPTY) {
+            return TextLayout.EMPTY;
+        }
+        if (!RenderSystem.isOnRenderThread()) {
+            TextLayoutProcessor proc = mProcessorPool.acquire();
+            if (proc == null) {
+                proc = new TextLayoutProcessor(this);
+            }
+            TextLayout layout = proc.createSequenceLayout(sequence, mResLevel, computeFlags);
+            mProcessorPool.release(proc);
+            return layout;
+        }
+        int nowFlags = 0;
+        // check if it's intercepted by Language.getVisualOrder()
+        if (sequence instanceof FormattedTextWrapper) {
+            FormattedText text = ((FormattedTextWrapper) sequence).mText;
+            if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
+                return TextLayout.EMPTY;
+            }
+            TextLayout layout;
+            if (sUseComponentCache &&
+                    text instanceof MutableComponent component) {
+                layout = mComponentCache.get(component);
+                if (layout == null ||
+                        ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
+                    layout = mProcessor.createTextLayout(text, Style.EMPTY, mResLevel,
+                            nowFlags | computeFlags);
+                    mComponentCache.put(component, layout);
+                    return layout;
+                }
+            } else {
+                // the more complex case (multi-component)
+                layout = mFormattedCache.get(mFormattedLayoutKey.update(text, Style.EMPTY, mResLevel));
+                if (layout == null ||
+                        ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
+                    layout = mProcessor.createTextLayout(text, Style.EMPTY, mResLevel,
+                            nowFlags | computeFlags);
+                    mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
+                    return layout;
+                }
+            }
+            return layout.get();
+        } else {
+            // the most complex case (multi-component)
+            TextLayout layout = mFormattedCache.get(mFormattedLayoutKey.update(sequence, mResLevel));
+            if (layout == null ||
+                    ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
+                layout = mProcessor.createSequenceLayout(sequence, mResLevel,
+                        nowFlags | computeFlags);
+                mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
+                return layout;
+            }
+            return layout.get();
+        }
+    }
+
+    ////// END Cache Retrieval
+
+
+    /**
+     * Minecraft gives us a deeply processed sequence, so we have to make
+     * it not a reordered text, see {@link MixinClientLanguage}.
+     * So actually it's a copy of original text, then we can use our layout engine later
+     *
+     * @param sequence a char sequence copied from the original string
+     * @param consumer what to do with a part of styled char sequence
+     * @return {@code false} if action stopped on the way, {@code true} if the whole text was handled
+     */
+    @Deprecated
+    public boolean handleSequence(FormattedCharSequence sequence, ReorderTextHandler.IConsumer consumer) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Given a font name, returns the loaded font collection.
+     * <p>
+     * Cache will not be invalidated until resource reloading.
+     *
+     * @param fontName a font name
+     * @return the font collection
+     */
+    @Nonnull
+    public FontCollection getFontCollection(@Nonnull ResourceLocation fontName) {
+        FontCollection fontCollection;
+        return (fontCollection = mFontCollections.get(fontName)) != null
+                ? fontCollection
+                : ModernUI.getSelectedTypeface();
+    }
+
+    public void dumpBitmapFonts() {
+        String basePath = Bitmap.saveDialogGet(
+                Bitmap.SaveFormat.PNG, null, "BitmapFont");
+        if (basePath != null) {
+            // XXX: remove extension name
+            basePath = basePath.substring(0, basePath.length() - 4);
+        }
+        int index = 0;
+        for (var fc : mFontCollections.values()) {
+            for (var family : fc.getFamilies()) {
+                var font = family.getClosestMatch(FontPaint.NORMAL);
+                if (font instanceof BitmapFont bmf) {
+                    if (basePath != null) {
+                        bmf.dumpAtlas(basePath + "_" + index + ".png");
+                        index++;
+                    } else {
+                        bmf.dumpAtlas(null);
+                    }
+                }
+            }
+        }
+    }
+
+    @Nullable
+    public BakedGlyph lookupGlyph(Font font, int fontSize, int glyphId) {
+        if (font instanceof StandardFont standardFont) {
+            java.awt.Font awtFont = standardFont.chooseFont(fontSize);
+            return mGlyphManager.lookupGlyph(awtFont, glyphId);
+        } else if (font == mEmojiFont) {
+            if (glyphId == 0) {
+                return null;
+            }
+            if (mEmojiAtlas == null) {
+                mEmojiAtlas = new GLFontAtlas(Engine.MASK_FORMAT_ARGB);
+                int size = (EMOJI_SIZE + GlyphManager.GLYPH_BORDER * 2);
+                // RGBA, 4 bytes per pixel
+                mEmojiBuffer = MemoryUtil.memCalloc(1, size * size * 4);
+            }
+            BakedGlyph glyph = mEmojiAtlas.getGlyph(glyphId);
+            if (glyph != null && glyph.x == Short.MIN_VALUE) {
+                return cacheEmoji(
+                        glyphId,
+                        mEmojiFiles.get(glyphId - 1),
+                        mEmojiAtlas,
+                        glyph
+                );
+            }
+            return glyph;
+        } else if (font instanceof BitmapFont bitmapFont) {
+            // auto bake
+            return bitmapFont.getGlyph(glyphId);
+        }
+        return null;
+    }
+
+    public int getCurrentTexture(Font font) {
+        if (font == mEmojiFont) {
+            return mEmojiAtlas.mTexture.get();
+        }
+        if (font instanceof BitmapFont bitmapFont) {
+            return bitmapFont.getCurrentTexture();
+        }
+        return getStandardTexture();
+    }
+
+    public int getStandardTexture() {
+        return mGlyphManager.getCurrentTexture(Engine.MASK_FORMAT_A8);
+    }
+
+    /**
+     * Given a grapheme cluster, locate the color emoji's pre-rendered image in the emoji atlas and
+     * return its cache entry. The entry stores the texture with the pre-rendered emoji image,
+     * as well as the position and size of that image within the texture.
+     *
+     * @param buf   the text buffer
+     * @param start the cluster start index (inclusive)
+     * @param end   the cluster end index (exclusive)
+     * @return the cached emoji sprite or null
+     */
+    @Deprecated
+    @Nullable
+    private BakedGlyph lookupEmoji(@Nonnull char[] buf, int start, int end) {
+        return null;
+    }
+
+    /**
+     * Lookup Emoji char sequence from shortcode.
+     *
+     * @param shortcode the shortcode, e.g. cheese
+     * @return the Emoji sequence
+     */
+    @Nullable
+    public String lookupEmojiShortcode(@Nonnull String shortcode) {
+        return mEmojiShortcodes.get(shortcode);
+    }
+
+    public void dumpEmojiAtlas() {
+        if (mEmojiAtlas != null) {
+            String basePath = Bitmap.saveDialogGet(
+                    Bitmap.SaveFormat.PNG, null, "EmojiAtlas");
+            mEmojiAtlas.debug(basePath);
+        }
+    }
+
+    public int getEmojiAtlasMemorySize() {
+        if (mEmojiAtlas != null) {
+            return mEmojiAtlas.getMemorySize();
+        }
+        return 0;
+    }
+
+    // bake emoji sprites
+    @Nullable
+    private BakedGlyph cacheEmoji(int id, @Nonnull String fileName,
+                                  @Nonnull GLFontAtlas atlas, @Nonnull BakedGlyph glyph) {
+        var location = new ResourceLocation(ModernUI.ID, "emoji/" + fileName);
+        try (InputStream inputStream = Minecraft.getInstance().getResourceManager().open(location);
+             NativeImage image = NativeImage.read(inputStream)) {
+            if ((image.getWidth() == EMOJI_SIZE && image.getHeight() == EMOJI_SIZE) ||
+                    (image.getWidth() == EMOJI_SIZE_LARGE && image.getHeight() == EMOJI_SIZE_LARGE)) {
+                long dst = MemoryUtil.memAddress(mEmojiBuffer);
+                NativeImage subImage = null;
+                if (image.getWidth() == EMOJI_SIZE_LARGE) {
+                    // Down-sampling
+                    subImage = MipmapGenerator.generateMipLevels(new NativeImage[]{image}, 1)[1];
+                }
+                long src = UIManager.IMAGE_PIXELS.getLong(subImage != null ? subImage : image);
+                // Add 1 pixel transparent border to prevent texture bleeding
+                // RGBA is 4 bytes per pixel
+                long dstOff = (EMOJI_SIZE + GlyphManager.GLYPH_BORDER * 2 + GlyphManager.GLYPH_BORDER) * 4;
+                for (int i = 0; i < EMOJI_SIZE; i++) {
+                    long srcOff = (i * EMOJI_SIZE * 4);
+                    MemoryUtil.memCopy(src + srcOff, dst + dstOff, EMOJI_SIZE * 4);
+                    dstOff += (EMOJI_SIZE + GlyphManager.GLYPH_BORDER * 2) * 4;
+                }
+                if (subImage != null) {
+                    subImage.close();
+                }
+                glyph.x = 0;
+                glyph.y = -TextLayout.STANDARD_BASELINE_OFFSET * BITMAP_SCALE;
+                glyph.width = EMOJI_SIZE;
+                glyph.height = EMOJI_SIZE;
+                atlas.stitch(glyph, dst);
+                return glyph;
+            } else {
+                atlas.setNoPixels(id);
+                LOGGER.warn(MARKER, "Emoji is not {}x or {}x: {}", EMOJI_SIZE, EMOJI_SIZE_LARGE, location);
+                return null;
+            }
+        } catch (Exception e) {
+            atlas.setNoPixels(id);
+            LOGGER.warn(MARKER, "Failed to load emoji: {}", location, e);
+            return null;
+        }
+    }
+
+    /**
+     * Ticks the caches and clear unused entries.
+     */
+    @SubscribeEvent
+    void onTick(@Nonnull TickEvent.ClientTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            if (mTimer == 0) {
+                //int oldCount = getCacheCount();
+                mVanillaCache.values().removeIf(TextLayout::tick);
+                mComponentCache.values().removeIf(TextLayout::tick);
+                mFormattedCache.values().removeIf(TextLayout::tick);
+                /*if (oldCount >= sRehashThreshold) {
+                    int newCount = getCacheCount();
+                    if (newCount < sRehashThreshold) {
+                        mVanillaCache = new HashMap<>(mVanillaCache);
+                        mComponentCache = new HashMap<>(mComponentCache);
+                        mFormattedCache = new HashMap<>(mFormattedCache);
+                    }
+                }*/
+            }
+            // convert ticks to seconds
+            mTimer = (mTimer + 1) % 20;
+        }
+    }
+
+    /**
+     * @return the number of layout entries
+     */
+    public int getCacheCount() {
+        return mVanillaCache.size() + mComponentCache.size() + mFormattedCache.size();
+    }
+
+    /**
+     * @return measurable cache size in bytes
+     */
+    public int getCacheMemorySize() {
+        int size = 0;
+        for (var n : mVanillaCache.values()) {
+            // key is a view, memory-less
+            size += n.getMemorySize();
+        }
+        for (var n : mComponentCache.values()) {
+            // key is a view, memory-less
+            size += n.getMemorySize();
+        }
+        for (var e : mFormattedCache.entrySet()) {
+            // key is backed ourselves
+            size += e.getKey().getMemorySize();
+            size += e.getValue().getMemorySize();
+        }
+        return size;
+    }
+
+    /**
+     * Get the {@link ChatFormatting} by the given formatting code. Vanilla's method is
+     * overwritten by this, see {@link icyllis.modernui.mc.text.mixin.MixinChatFormatting}.
+     * <p>
+     * Vanilla would create a new String from the char, call String.toLowerCase() and
+     * String.charAt(0), search this char with a clone of ChatFormatting values. However,
+     * it is unnecessary to consider non-ASCII compatibility, so we simplify it to a LUT.
+     *
+     * @param code c, case-insensitive
+     * @return chat formatting, {@code null} if nothing
+     * @see ChatFormatting#getByCode(char)
+     */
+    @Nullable
+    public static ChatFormatting getFormattingByCode(char code) {
+        return code < 128 ? FORMATTING_TABLE[code] : null;
+    }
+
+    /**
+     * Returns current text direction algorithm.
+     *
+     * @return text dir
+     */
+    @Nonnull
+    public TextDirectionHeuristic getTextDirectionHeuristic() {
+        return mTextDirectionHeuristic;
+    }
+
+    /**
+     * Lookup fast char glyph with given font.
+     * The pair right is the offsetX to standard '0' advance alignment (already scaled by GUI factor).
+     * Because we assume FAST digit glyphs are monospaced, no matter whether it's a monospaced font.
+     *
+     * @param font     derived font including style
+     * @param resLevel resolution level
+     * @return array of all fast char glyphs, and others, or null if not supported
+     */
+    @Nullable
+    public FastCharSet lookupFastChars(@Nonnull Font font, int resLevel) {
+        if (font == mEmojiFont) {
+            // Emojis are supported for obfuscated rendering
+            return null;
+        }
+        if (font instanceof BitmapFont) {
+            resLevel = 1;
+        }
+        return mFastCharMap.computeIfAbsent(
+                new FontStrikeDesc(font, resLevel),
+                mCacheFastChars
+        );
+    }
+
+    @Nullable
+    private FastCharSet cacheFastChars(@Nonnull FontStrikeDesc desc) {
+        java.awt.Font awtFont = null;
+        BitmapFont bitmapFont = null;
+        if (desc.font instanceof StandardFont) {
+            int fontSize = Math.min((int) (TextLayoutProcessor.sBaseFontSize * desc.resLevel + 0.5), 96);
+            awtFont = ((StandardFont) desc.font).chooseFont(fontSize);
+        } else if (desc.font instanceof BitmapFont) {
+            bitmapFont = (BitmapFont) desc.font;
+        } else {
+            return null;
+        }
+
+        // initial table
+        BakedGlyph[] glyphs = new BakedGlyph[94]; // 126 - 33 + 1
+        // normalized offsets
+        float[] offsets = new float[glyphs.length];
+
+        char[] chars = new char[1];
+        int n = 0;
+
+        // 48 to 57, always cache all digits for fast digit replacement
+        for (int i = 0; i < 10; i++) {
+            chars[0] = (char) ('0' + i);
+            float advance;
+            BakedGlyph glyph;
+            // no text shaping
+            if (awtFont != null) {
+                GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
+                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
+                glyph = mGlyphManager.lookupGlyph(awtFont, vector.getGlyphCode(0));
+                if (glyph == null && i == 0) {
+                    LOGGER.warn(MARKER, awtFont + " does not support ASCII digits");
+                    return null;
+                }
+                if (glyph == null) {
+                    continue;
+                }
+            } else {
+                var gl = bitmapFont.getGlyph(chars[0]);
+                if (gl == null && i == 0) {
+                    LOGGER.warn(MARKER, bitmapFont + " does not support ASCII digits");
+                    return null;
+                }
+                if (gl == null) {
+                    continue;
+                }
+                advance = gl.advance;
+                glyph = gl;
+            }
+            glyphs[i] = glyph;
+            // '0' is standard, because it's wider than other digits in general
+            if (i == 0) {
+                // 0 is standard advance
+                offsets[n] = advance;
+            } else {
+                // relative offset to standard advance, to center the glyph
+                offsets[n] = (offsets[0] - advance) / 2f;
+            }
+            n++;
+        }
+
+        // 33 to 47, cache only narrow chars
+        for (int i = 0; i < 15; i++) {
+            chars[0] = (char) (33 + i);
+            float advance;
+            BakedGlyph glyph;
+            // no text shaping
+            if (awtFont != null) {
+                GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
+                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
+                // too wide
+                if (advance + 1f > offsets[0]) {
+                    continue;
+                }
+                glyph = mGlyphManager.lookupGlyph(awtFont, vector.getGlyphCode(0));
+            } else {
+                var gl = bitmapFont.getGlyph(chars[0]);
+                // allow empty
+                if (gl == null) {
+                    continue;
+                }
+                advance = gl.advance;
+                // too wide
+                if (advance + 1f > offsets[0]) {
+                    continue;
+                }
+                glyph = gl;
+            }
+            // allow empty
+            if (glyph != null) {
+                glyphs[n] = glyph;
+                offsets[n] = (offsets[0] - advance) / 2f;
+                n++;
+            }
+        }
+
+        // 58 to 126, cache only narrow chars
+        for (int i = 0; i < 69; i++) {
+            chars[0] = (char) (58 + i);
+            float advance;
+            BakedGlyph glyph;
+            // no text shaping
+            if (awtFont != null) {
+                GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
+                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
+                // too wide
+                if (advance + 1 > offsets[0]) {
+                    continue;
+                }
+                glyph = mGlyphManager.lookupGlyph(awtFont, vector.getGlyphCode(0));
+            } else {
+                var gl = bitmapFont.getGlyph(chars[0]);
+                // allow empty
+                if (gl == null) {
+                    continue;
+                }
+                advance = gl.advance;
+                // too wide
+                if (advance + 1 > offsets[0]) {
+                    continue;
+                }
+                glyph = gl;
+            }
+            // allow empty
+            if (glyph != null) {
+                glyphs[n] = glyph;
+                offsets[n] = (offsets[0] - advance) / 2f;
+                n++;
+            }
+        }
+        if (n < glyphs.length) {
+            glyphs = Arrays.copyOf(glyphs, n);
+            offsets = Arrays.copyOf(offsets, n);
+        }
+        return new FastCharSet(glyphs, offsets);
+    }
+
+    /**
+     * FastCharSet have uniform advances. Offset[0] is the advance for all glyphs.
+     * Other offsets is the relative X offset to center the glyph. Normalized to
+     * Minecraft GUI system.
+     * <p>
+     * This is used to render fast digits and obfuscated chars.
+     */
+    public static class FastCharSet extends BakedGlyph {
+
+        public final BakedGlyph[] glyphs;
+        public final float[] offsets;
+
+        public FastCharSet(BakedGlyph[] glyphs, float[] offsets) {
+            this.glyphs = glyphs;
+            this.offsets = offsets;
+        }
+    }
+
+    // We believe that JIT is smart enough not to compile this method
+    static void _populateEmojiFontCoverage_DONT_COMPILE_(IntSet coverage) {
         coverage.add(0x9);
         coverage.add(0xa);
         coverage.add(0xd);
@@ -2323,727 +3100,6 @@ public class TextLayoutEngine implements PreparableReloadListener {
         coverage.add(0xfe835);
         coverage.add(0xfe836);
         coverage.add(0xfe837);
-        results.emojiFont = new EmojiFont("GoogleNotoEmoji",
-                coverage, EMOJI_BASE_SIZE * BITMAP_SCALE,
-                TextLayout.DEFAULT_BASELINE_OFFSET * BITMAP_SCALE,
-                (int) (0.5 * BITMAP_SCALE + 0.5),
-                TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE * BITMAP_SCALE, map);
-    }
-
-    //FIXME Minecraft 1.20.1 still uses ICU-71.1, but Unicode 15 CLDR was added in ICU-72
-    // remove once Minecraft's ICU updated
-    static boolean isEmoji_Unicode15_workaround(int codePoint) {
-        return codePoint == 0x1f6dc ||
-                (0x1fa75 <= codePoint && codePoint <= 0x1fa77) ||
-                codePoint == 0x1fa87 || codePoint == 0x1fa88 ||
-                (0x1faad <= codePoint && codePoint <= 0x1faaf) ||
-                (0x1fabb <= codePoint && codePoint <= 0x1fabd) ||
-                codePoint == 0x1fabf ||
-                codePoint == 0x1face || codePoint == 0x1facf ||
-                codePoint == 0x1fada || codePoint == 0x1fadb ||
-                codePoint == 0x1fae8 ||
-                codePoint == 0x1faf7 || codePoint == 0x1faf8;
-    }
-
-    /**
-     * @see EmojiDataGen
-     */
-    // ASYNC
-    private void loadShortcodes(@Nonnull ResourceManager resources,
-                                @Nonnull LoadResults results) {
-        final var map = new HashMap<String, String>();
-        try (var reader = resources.openAsReader(ModernUIForge.location("emoji_data.json"))) {
-            for (var entry : new Gson().fromJson(reader, JsonArray.class)) {
-                var row = entry.getAsJsonArray();
-                var sequence = row.get(0).getAsString();
-                // map shortcodes -> emoji sequence
-                var shortcodes = row.get(2).getAsJsonArray();
-                if (!shortcodes.isEmpty()) {
-                    map.put(shortcodes.get(0).getAsString(), sequence);
-                    for (int i = 1; i < shortcodes.size(); i++) {
-                        map.putIfAbsent(shortcodes.get(i).getAsString(), sequence);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.info(MARKER, "Failed to load emoji data", e);
-        }
-        LOGGER.info(MARKER, "Scanned emoji shortcodes: {}",
-                map.size());
-        results.shortcodes = map;
-    }
-
-    ////// END Resource Reloading
-
-
-    public static int getResLevelForSDF(int resLevel) {
-        return Math.max(resLevel, 4);
-    }
-
-
-    ////// START Cache Retrieval
-
-    /**
-     * Find or create a full text layout for the given text.
-     *
-     * @param text the source text, may contain formatting codes
-     * @return the full layout for the text
-     */
-    @Nonnull
-    public TextLayout lookupVanillaLayout(@Nonnull String text) {
-        return lookupVanillaLayout(text, Style.EMPTY, 0);
-    }
-
-    /**
-     * Find or create a full text layout for the given text.
-     *
-     * @param text  the source text, may contain formatting codes
-     * @param style the base style
-     * @return the full layout for the text
-     */
-    @Nonnull
-    public TextLayout lookupVanillaLayout(@Nonnull String text, @Nonnull Style style) {
-        return lookupVanillaLayout(text, style, 0);
-    }
-
-    /**
-     * Find or create a full text layout for the given text.
-     *
-     * @param text  the source text, may contain formatting codes
-     * @param style the base style
-     * @return the full layout for the text
-     */
-    @Nonnull
-    public TextLayout lookupVanillaLayout(@Nonnull String text, @Nonnull Style style,
-                                          int computeFlags) {
-        if (text.isEmpty()) {
-            return TextLayout.EMPTY;
-        }
-        if (!RenderSystem.isOnRenderThread()) {
-            TextLayoutProcessor proc = mProcessorPool.acquire();
-            if (proc == null) {
-                proc = new TextLayoutProcessor(this);
-            }
-            TextLayout layout = proc.createVanillaLayout(text, style, mResLevel, computeFlags);
-            mProcessorPool.release(proc);
-            return layout;
-        }
-        TextLayout layout = mVanillaCache.get(mVanillaLookupKey.update(text, style, mResLevel));
-        int nowFlags = 0;
-        if (layout == null ||
-                ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
-            layout = mProcessor.createVanillaLayout(text, style, mResLevel,
-                    nowFlags | computeFlags);
-            mVanillaCache.put(mVanillaLookupKey.copy(), layout);
-            return layout;
-        }
-        return layout.get();
-    }
-
-    /**
-     * Find or create a full text layout for the given formatted text, fast digit replacement
-     * is not applicable. To perform bidi analysis, we must have the full text of all contents.
-     *
-     * @param text the text ancestor
-     * @return the full layout for the text
-     * @see FormattedTextWrapper
-     */
-    @Nonnull
-    public TextLayout lookupFormattedLayout(@Nonnull FormattedText text) {
-        return lookupFormattedLayout(text, Style.EMPTY, 0);
-    }
-
-    /**
-     * Find or create a full text layout for the given formatted text, fast digit replacement
-     * is not applicable. To perform bidi analysis, we must have the full text of all contents.
-     *
-     * @param text  the text ancestor
-     * @param style the base style
-     * @return the full layout for the text
-     * @see FormattedTextWrapper
-     */
-    @Nonnull
-    public TextLayout lookupFormattedLayout(@Nonnull FormattedText text, @Nonnull Style style) {
-        return lookupFormattedLayout(text, style, 0);
-    }
-
-    /**
-     * Find or create a full text layout for the given formatted text, fast digit replacement
-     * is not applicable. To perform bidi analysis, we must have the full text of all contents.
-     *
-     * @param text  the text ancestor
-     * @param style the base style
-     * @return the full layout for the text
-     * @see FormattedTextWrapper
-     */
-    @Nonnull
-    public TextLayout lookupFormattedLayout(@Nonnull FormattedText text, @Nonnull Style style,
-                                            int computeFlags) {
-        if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
-            return TextLayout.EMPTY;
-        }
-        if (!RenderSystem.isOnRenderThread()) {
-            TextLayoutProcessor proc = mProcessorPool.acquire();
-            if (proc == null) {
-                proc = new TextLayoutProcessor(this);
-            }
-            TextLayout layout = proc.createTextLayout(text, style, mResLevel, computeFlags);
-            mProcessorPool.release(proc);
-            return layout;
-        }
-        TextLayout layout;
-        int nowFlags = 0;
-        if (style.isEmpty() && text instanceof MutableComponent component) {
-            layout = mComponentCache.get(component);
-            if (layout == null ||
-                    ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
-                layout = mProcessor.createTextLayout(text, Style.EMPTY, mResLevel,
-                        nowFlags | computeFlags);
-                mComponentCache.put(component, layout);
-                return layout;
-            }
-        } else {
-            // the more complex case (multi-component)
-            layout = mFormattedCache.get(mFormattedLayoutKey.update(text, style, mResLevel));
-            if (layout == null ||
-                    ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
-                layout = mProcessor.createTextLayout(text, style, mResLevel,
-                        nowFlags | computeFlags);
-                mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
-                return layout;
-            }
-        }
-        return layout.get();
-    }
-
-    /**
-     * Find or create a full text layout for the given formatted text, fast digit replacement
-     * is not applicable. To perform bidi analysis, we must have the full text of all contents.
-     * Note: Modern UI removes Minecraft vanilla's BiDi reordering.
-     * <p>
-     * This method should only be used when the text is not originated from FormattedText.
-     *
-     * @param sequence the deeply-processed sequence
-     * @return the full layout
-     * @see FormattedTextWrapper
-     */
-    @Nonnull
-    public TextLayout lookupFormattedLayout(@Nonnull FormattedCharSequence sequence) {
-        return lookupFormattedLayout(sequence, 0);
-    }
-
-    /**
-     * Find or create a full text layout for the given formatted text, fast digit replacement
-     * is not applicable. To perform bidi analysis, we must have the full text of all contents.
-     * Note: Modern UI removes Minecraft vanilla's BiDi reordering.
-     * <p>
-     * This method should only be used when the text is not originated from FormattedText.
-     *
-     * @param sequence the deeply-processed sequence
-     * @return the full layout
-     * @see FormattedTextWrapper
-     */
-    @Nonnull
-    public TextLayout lookupFormattedLayout(@Nonnull FormattedCharSequence sequence,
-                                            int computeFlags) {
-        if (sequence == FormattedCharSequence.EMPTY) {
-            return TextLayout.EMPTY;
-        }
-        if (!RenderSystem.isOnRenderThread()) {
-            TextLayoutProcessor proc = mProcessorPool.acquire();
-            if (proc == null) {
-                proc = new TextLayoutProcessor(this);
-            }
-            TextLayout layout = proc.createSequenceLayout(sequence, mResLevel, computeFlags);
-            mProcessorPool.release(proc);
-            return layout;
-        }
-        int nowFlags = 0;
-        // check if it's intercepted by Language.getVisualOrder()
-        if (sequence instanceof FormattedTextWrapper) {
-            FormattedText text = ((FormattedTextWrapper) sequence).mText;
-            if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
-                return TextLayout.EMPTY;
-            }
-            TextLayout layout;
-            if (text instanceof MutableComponent component) {
-                layout = mComponentCache.get(component);
-                if (layout == null ||
-                        ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
-                    layout = mProcessor.createTextLayout(text, Style.EMPTY, mResLevel,
-                            nowFlags | computeFlags);
-                    mComponentCache.put(component, layout);
-                    return layout;
-                }
-            } else {
-                // the more complex case (multi-component)
-                layout = mFormattedCache.get(mFormattedLayoutKey.update(text, Style.EMPTY, mResLevel));
-                if (layout == null ||
-                        ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
-                    layout = mProcessor.createTextLayout(text, Style.EMPTY, mResLevel,
-                            nowFlags | computeFlags);
-                    mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
-                    return layout;
-                }
-            }
-            return layout.get();
-        } else {
-            // the most complex case (multi-component)
-            TextLayout layout = mFormattedCache.get(mFormattedLayoutKey.update(sequence, mResLevel));
-            if (layout == null ||
-                    ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
-                layout = mProcessor.createSequenceLayout(sequence, mResLevel,
-                        nowFlags | computeFlags);
-                mFormattedCache.put(mFormattedLayoutKey.copy(), layout);
-                return layout;
-            }
-            return layout.get();
-        }
-    }
-
-    ////// END Cache Retrieval
-
-
-    /**
-     * Minecraft gives us a deeply processed sequence, so we have to make
-     * it not a reordered text, see {@link MixinClientLanguage}.
-     * So actually it's a copy of original text, then we can use our layout engine later
-     *
-     * @param sequence a char sequence copied from the original string
-     * @param consumer what to do with a part of styled char sequence
-     * @return {@code false} if action stopped on the way, {@code true} if the whole text was handled
-     */
-    @Deprecated
-    public boolean handleSequence(FormattedCharSequence sequence, ReorderTextHandler.IConsumer consumer) {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Given a font name, returns the loaded font collection. Specially, {@link Minecraft#DEFAULT_FONT}
-     * and {@link Minecraft#UNIFORM_FONT} will always return the user preference.
-     * <p>
-     * Currently, the supplier will return the same font collection, so cache will not be invalidated
-     * until resource reloading.
-     *
-     * @param fontName a font name
-     * @return the font collection
-     */
-    @Nonnull
-    public FontCollection getFontCollection(@Nonnull ResourceLocation fontName) {
-        FontCollection fc;
-        return (fc = mFontCollections.get(fontName)) != null ? fc :
-                ModernUI.getSelectedTypeface();
-    }
-
-    public void dumpBitmapFonts() {
-        String basePath = Bitmap.saveDialogGet(
-                Bitmap.SaveFormat.PNG, null, "BitmapFont");
-        if (basePath != null) {
-            // XXX: remove extension name
-            basePath = basePath.substring(0, basePath.length() - 4);
-        }
-        int index = 0;
-        for (var fc : mFontCollections.values()) {
-            for (var family : fc.getFamilies()) {
-                var font = family.getClosestMatch(FontPaint.NORMAL);
-                if (font instanceof BitmapFont bmf) {
-                    if (basePath != null) {
-                        bmf.dumpAtlas(basePath + "_" + index + ".png");
-                        index++;
-                    } else {
-                        bmf.dumpAtlas(null);
-                    }
-                }
-            }
-        }
-    }
-
-    @Nullable
-    public BakedGlyph lookupGlyph(Font font, int resLevel, int glyphId) {
-        if (font instanceof StandardFont sf) {
-            int fontSize = Math.min((int) (TextLayoutProcessor.sBaseFontSize * resLevel + 0.5), 96);
-            var df = sf.chooseFont(fontSize);
-            return mGlyphManager.lookupGlyph(df, glyphId);
-        } else if (font == mEmojiFont) {
-            if (glyphId == 0) {
-                return null;
-            }
-            if (mEmojiAtlas == null) {
-                mEmojiAtlas = new GLFontAtlas(Engine.MASK_FORMAT_ARGB);
-                int size = (EMOJI_SIZE + GlyphManager.GLYPH_BORDER * 2);
-                // RGBA, 4 bytes per pixel
-                mEmojiBuffer = MemoryUtil.memCalloc(1, size * size * 4);
-            }
-            BakedGlyph glyph = mEmojiAtlas.getGlyph(glyphId);
-            if (glyph != null && glyph.x == Short.MIN_VALUE) {
-                return cacheEmoji(
-                        glyphId,
-                        mEmojiVec.get(glyphId - 1).image,
-                        mEmojiAtlas,
-                        glyph
-                );
-            }
-            return glyph;
-        } else {
-            return ((BitmapFont) font).getGlyph(glyphId);
-        }
-    }
-
-    public int getCurrentTexture(Font font) {
-        if (font == mEmojiFont) {
-            return mEmojiAtlas.mTexture.get();
-        }
-        if (font instanceof BitmapFont bmf) {
-            return bmf.getCurrentTexture();
-        }
-        return mGlyphManager.getCurrentTexture(Engine.MASK_FORMAT_A8);
-    }
-
-    /**
-     * Given a grapheme cluster, locate the color emoji's pre-rendered image in the emoji atlas and
-     * return its cache entry. The entry stores the texture with the pre-rendered emoji image,
-     * as well as the position and size of that image within the texture.
-     *
-     * @param buf   the text buffer
-     * @param start the cluster start index (inclusive)
-     * @param end   the cluster end index (exclusive)
-     * @return the cached emoji sprite or null
-     */
-    @Deprecated
-    @Nullable
-    private BakedGlyph lookupEmoji(@Nonnull char[] buf, int start, int end) {
-        return null;
-    }
-
-    /**
-     * Lookup Emoji char sequence from shortcode.
-     *
-     * @param shortcode the shortcode, e.g. cheese
-     * @return the Emoji sequence
-     */
-    @Nullable
-    public String lookupEmojiShortcode(@Nonnull String shortcode) {
-        return mEmojiShortcodes.get(shortcode);
-    }
-
-    public void dumpEmojiAtlas() {
-        if (mEmojiAtlas != null) {
-            String basePath = Bitmap.saveDialogGet(
-                    Bitmap.SaveFormat.PNG, null, "EmojiAtlas");
-            mEmojiAtlas.debug(basePath);
-        }
-    }
-
-    public int getEmojiAtlasMemorySize() {
-        if (mEmojiAtlas != null) {
-            return mEmojiAtlas.getMemorySize();
-        }
-        return 0;
-    }
-
-    // bake emoji sprites
-    @Nullable
-    private BakedGlyph cacheEmoji(int id, @Nonnull String fileName,
-                                  @Nonnull GLFontAtlas atlas, @Nonnull BakedGlyph glyph) {
-        var location = new ResourceLocation(ModernUI.ID, "emoji/" + fileName);
-        try (InputStream inputStream = Minecraft.getInstance().getResourceManager().open(location);
-             NativeImage image = NativeImage.read(inputStream)) {
-            if ((image.getWidth() == EMOJI_SIZE && image.getHeight() == EMOJI_SIZE) ||
-                    (image.getWidth() == EMOJI_SIZE_LARGE && image.getHeight() == EMOJI_SIZE_LARGE)) {
-                long dst = MemoryUtil.memAddress(mEmojiBuffer);
-                NativeImage subImage = null;
-                if (image.getWidth() == EMOJI_SIZE_LARGE) {
-                    // Down-sampling
-                    subImage = MipmapGenerator.generateMipLevels(new NativeImage[]{image}, 1)[1];
-                }
-                long src = UIManager.IMAGE_PIXELS.getLong(subImage != null ? subImage : image);
-                // Add 1 pixel transparent border to prevent texture bleeding
-                // RGBA is 4 bytes per pixel
-                long dstOff = (EMOJI_SIZE + GlyphManager.GLYPH_BORDER * 2 + GlyphManager.GLYPH_BORDER) * 4;
-                for (int i = 0; i < EMOJI_SIZE; i++) {
-                    long srcOff = (i * EMOJI_SIZE * 4);
-                    MemoryUtil.memCopy(src + srcOff, dst + dstOff, EMOJI_SIZE * 4);
-                    dstOff += (EMOJI_SIZE + GlyphManager.GLYPH_BORDER * 2) * 4;
-                }
-                if (subImage != null) {
-                    subImage.close();
-                }
-                glyph.x = 0;
-                glyph.y = -TextLayout.DEFAULT_BASELINE_OFFSET * BITMAP_SCALE;
-                glyph.width = EMOJI_SIZE;
-                glyph.height = EMOJI_SIZE;
-                atlas.stitch(glyph, dst);
-                return glyph;
-            } else {
-                atlas.setNoPixels(id);
-                LOGGER.warn(MARKER, "Emoji is not {}x or {}x: {}", EMOJI_SIZE, EMOJI_SIZE_LARGE, location);
-                return null;
-            }
-        } catch (Exception e) {
-            atlas.setNoPixels(id);
-            LOGGER.warn(MARKER, "Failed to load emoji: {}", location, e);
-            return null;
-        }
-    }
-
-    /**
-     * Ticks the caches and clear unused entries.
-     */
-    @SubscribeEvent
-    void onTick(@Nonnull TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            if (mTimer == 0) {
-                //int oldCount = getCacheCount();
-                mVanillaCache.values().removeIf(TextLayout::tick);
-                mComponentCache.values().removeIf(TextLayout::tick);
-                mFormattedCache.values().removeIf(TextLayout::tick);
-                /*if (oldCount >= sRehashThreshold) {
-                    int newCount = getCacheCount();
-                    if (newCount < sRehashThreshold) {
-                        mVanillaCache = new HashMap<>(mVanillaCache);
-                        mComponentCache = new HashMap<>(mComponentCache);
-                        mFormattedCache = new HashMap<>(mFormattedCache);
-                    }
-                }*/
-            }
-            // convert ticks to seconds
-            mTimer = (mTimer + 1) % 20;
-        }
-    }
-
-    /**
-     * @return the number of layout entries
-     */
-    public int getCacheCount() {
-        return mVanillaCache.size() + mComponentCache.size() + mFormattedCache.size();
-    }
-
-    /**
-     * @return measurable cache size in bytes
-     */
-    public int getCacheMemorySize() {
-        int size = 0;
-        for (var n : mVanillaCache.values()) {
-            // key is a view, memory-less
-            size += n.getMemorySize();
-        }
-        for (var n : mComponentCache.values()) {
-            // key is a view, memory-less
-            size += n.getMemorySize();
-        }
-        for (var e : mFormattedCache.entrySet()) {
-            // key is backed ourselves
-            size += e.getKey().getMemorySize();
-            size += e.getValue().getMemorySize();
-        }
-        return size;
-    }
-
-    /**
-     * Get the {@link ChatFormatting} by the given formatting code. Vanilla's method is
-     * overwritten by this, see {@link icyllis.modernui.mc.text.mixin.MixinChatFormatting}.
-     * <p>
-     * Vanilla would create a new String from the char, call String.toLowerCase() and
-     * String.charAt(0), search this char with a clone of ChatFormatting values. However,
-     * it is unnecessary to consider non-ASCII compatibility, so we simplify it to a LUT.
-     *
-     * @param code c, case-insensitive
-     * @return chat formatting, {@code null} if nothing
-     * @see ChatFormatting#getByCode(char)
-     */
-    @Nullable
-    public static ChatFormatting getFormattingByCode(char code) {
-        return code < 128 ? FORMATTING_TABLE[code] : null;
-    }
-
-    /**
-     * Returns current text direction algorithm.
-     *
-     * @return text dir
-     */
-    @Nonnull
-    public TextDirectionHeuristic getTextDirectionHeuristic() {
-        return mTextDirectionHeuristic;
-    }
-
-    /**
-     * Lookup fast char glyph with given font.
-     * The pair right is the offsetX to standard '0' advance alignment (already scaled by GUI factor).
-     * Because we assume FAST digit glyphs are monospaced, no matter whether it's a monospaced font.
-     *
-     * @param font     derived font including style
-     * @param resLevel resolution level
-     * @return array of all fast char glyphs, and others, or null if not supported
-     */
-    @Nullable
-    public FastCharSet lookupFastChars(@Nonnull Font font, int resLevel) {
-        if (font == mEmojiFont) {
-            // Emojis are supported for obfuscated rendering
-            return null;
-        }
-        if (font instanceof BitmapFont) {
-            resLevel = 1;
-        }
-        return mFastCharMap.computeIfAbsent(
-                new FontStrikeDesc(font, resLevel),
-                mFastCharFunc
-        );
-    }
-
-    @Nullable
-    private FastCharSet cacheFastChars(@Nonnull FontStrikeDesc desc) {
-        java.awt.Font font = null;
-        BitmapFont bitmapFont = null;
-        if (desc.font instanceof StandardFont) {
-            int fontSize = Math.min((int) (TextLayoutProcessor.sBaseFontSize * desc.resLevel + 0.5), 96);
-            font = ((StandardFont) desc.font).chooseFont(fontSize);
-        } else if (desc.font instanceof BitmapFont) {
-            bitmapFont = (BitmapFont) desc.font;
-        } else {
-            return null;
-        }
-
-        // initial table
-        BakedGlyph[] glyphs = new BakedGlyph[94]; // 126 - 33 + 1
-        // normalized offsets
-        float[] offsets = new float[glyphs.length];
-
-        char[] chars = new char[1];
-        int n = 0;
-
-        // 48 to 57, always cache all digits for fast digit replacement
-        for (int i = 0; i < 10; i++) {
-            chars[0] = (char) ('0' + i);
-            float advance;
-            BakedGlyph glyph;
-            // no text shaping
-            if (font != null) {
-                GlyphVector vector = mGlyphManager.createGlyphVector(font, chars);
-                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
-                glyph = mGlyphManager.lookupGlyph(font, vector.getGlyphCode(0));
-                if (glyph == null && i == 0) {
-                    LOGGER.warn(MARKER, font + " does not support ASCII digits");
-                    return null;
-                }
-                if (glyph == null) {
-                    continue;
-                }
-            } else {
-                var gl = bitmapFont.getGlyph(chars[0]);
-                if (gl == null && i == 0) {
-                    LOGGER.warn(MARKER, bitmapFont + " does not support ASCII digits");
-                    return null;
-                }
-                if (gl == null) {
-                    continue;
-                }
-                advance = gl.advance;
-                glyph = gl;
-            }
-            glyphs[i] = glyph;
-            // '0' is standard, because it's wider than other digits in general
-            if (i == 0) {
-                // 0 is standard advance
-                offsets[n] = advance;
-            } else {
-                // relative offset to standard advance, to center the glyph
-                offsets[n] = (offsets[0] - advance) / 2f;
-            }
-            n++;
-        }
-
-        // 33 to 47, cache only narrow chars
-        for (int i = 0; i < 15; i++) {
-            chars[0] = (char) (33 + i);
-            float advance;
-            BakedGlyph glyph;
-            // no text shaping
-            if (font != null) {
-                GlyphVector vector = mGlyphManager.createGlyphVector(font, chars);
-                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
-                // too wide
-                if (advance + 1f > offsets[0]) {
-                    continue;
-                }
-                glyph = mGlyphManager.lookupGlyph(font, vector.getGlyphCode(0));
-            } else {
-                var gl = bitmapFont.getGlyph(chars[0]);
-                // allow empty
-                if (gl == null) {
-                    continue;
-                }
-                advance = gl.advance;
-                // too wide
-                if (advance + 1f > offsets[0]) {
-                    continue;
-                }
-                glyph = gl;
-            }
-            // allow empty
-            if (glyph != null) {
-                glyphs[n] = glyph;
-                offsets[n] = (offsets[0] - advance) / 2f;
-                n++;
-            }
-        }
-
-        // 58 to 126, cache only narrow chars
-        for (int i = 0; i < 69; i++) {
-            chars[0] = (char) (58 + i);
-            float advance;
-            BakedGlyph glyph;
-            // no text shaping
-            if (font != null) {
-                GlyphVector vector = mGlyphManager.createGlyphVector(font, chars);
-                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
-                // too wide
-                if (advance + 1 > offsets[0]) {
-                    continue;
-                }
-                glyph = mGlyphManager.lookupGlyph(font, vector.getGlyphCode(0));
-            } else {
-                var gl = bitmapFont.getGlyph(chars[0]);
-                // allow empty
-                if (gl == null) {
-                    continue;
-                }
-                advance = gl.advance;
-                // too wide
-                if (advance + 1 > offsets[0]) {
-                    continue;
-                }
-                glyph = gl;
-            }
-            // allow empty
-            if (glyph != null) {
-                glyphs[n] = glyph;
-                offsets[n] = (offsets[0] - advance) / 2f;
-                n++;
-            }
-        }
-        if (n < glyphs.length) {
-            glyphs = Arrays.copyOf(glyphs, n);
-            offsets = Arrays.copyOf(offsets, n);
-        }
-        return new FastCharSet(glyphs, offsets);
-    }
-
-    /**
-     * FastCharSet have uniform advances. Offset[0] is the advance for all glyphs.
-     * Other offsets is the relative offset to center the glyph. UN-normalized to
-     * Minecraft GUI system.
-     * <p>
-     * This is used to render fast digits and obfuscated chars.
-     */
-    public static class FastCharSet extends BakedGlyph {
-
-        public final BakedGlyph[] glyphs;
-        public final float[] offsets;
-
-        public FastCharSet(BakedGlyph[] glyphs, float[] offsets) {
-            this.glyphs = glyphs;
-            this.offsets = offsets;
-        }
     }
 
     /**

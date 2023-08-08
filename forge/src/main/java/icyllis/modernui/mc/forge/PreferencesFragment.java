@@ -238,9 +238,9 @@ public class PreferencesFragment extends Fragment {
                 list.addView(option);
             }
 
-            list.addView(createBooleanOption(context, "modernui.center.font.vanillaFont",
+            /*list.addView(createBooleanOption(context, "modernui.center.font.vanillaFont",
                     ModernUIText.CONFIG.mUseVanillaFont,
-                    ModernUIText.CONFIG::saveAndReloadAsync));
+                    ModernUIText.CONFIG::saveAndReloadAsync));*/
 
             list.addView(createBooleanOption(context, "modernui.center.font.antiAliasing",
                     Config.CLIENT.mAntiAliasing, Config.CLIENT::saveAndReloadAsync));
@@ -473,8 +473,21 @@ public class PreferencesFragment extends Fragment {
                 category.addView(option);
             }
 
-            category.addView(createBooleanOption(context, "modernui.center.text.colorEmoji",
-                    ModernUIText.CONFIG.mUseColorEmoji, saveFn));
+            {
+                var option = createSpinnerOption(context, "modernui.center.text.defaultFontBehavior",
+                        ModernUIText.Config.DefaultFontBehavior.values(),
+                        ModernUIText.CONFIG.mDefaultFontBehavior, saveFn);
+                option.getChildAt(0)
+                        .setTooltipText(I18n.get("modernui.center.text.defaultFontBehavior_desc"));
+                category.addView(option);
+            }
+
+            {
+                var option = createBooleanOption(context, "modernui.center.text.colorEmoji",
+                        ModernUIText.CONFIG.mUseColorEmoji, saveFn);
+                option.setTooltipText(I18n.get("modernui.center.text.colorEmoji_desc"));
+                category.addView(option);
+            }
 
             {
                 var option = createBooleanOption(context, "modernui.center.text.emojiShortcodes",
@@ -494,6 +507,13 @@ public class PreferencesFragment extends Fragment {
             category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
                     ModernUIText.Config.SHADOW_OFFSET_MIN, ModernUIText.Config.SHADOW_OFFSET_MAX,
                     5, ModernUIText.CONFIG.mShadowOffset, saveFn));
+
+            {
+                var option = createBooleanOption(context, "modernui.center.text.useComponentCache",
+                        ModernUIText.CONFIG.mUseComponentCache, saveFn);
+                option.setTooltipText(I18n.get("modernui.center.text.useComponentCache_desc"));
+                category.addView(option);
+            }
 
             category.addView(createBooleanOption(context, "modernui.center.text.fixedResolution",
                     ModernUIText.CONFIG.mFixedResolution, saveFn));

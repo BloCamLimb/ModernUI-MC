@@ -26,6 +26,7 @@ import icyllis.modernui.text.TextUtils;
 import icyllis.modernui.view.View;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModContainer;
@@ -40,6 +41,7 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 
 import javax.annotation.Nonnull;
+import java.util.Locale;
 
 import static icyllis.modernui.ModernUI.*;
 
@@ -193,8 +195,10 @@ public final class ModernUIText {
         //public final ForgeConfigSpec.BooleanValue mBitmapReplacement;
         public final ForgeConfigSpec.BooleanValue mEmojiShortcodes;
         //public final ForgeConfigSpec.BooleanValue mUseDistanceField;
-        public final ForgeConfigSpec.BooleanValue mUseVanillaFont;
+        //public final ForgeConfigSpec.BooleanValue mUseVanillaFont;
         public final ForgeConfigSpec.BooleanValue mUseTextShadersInWorld;
+        public final ForgeConfigSpec.EnumValue<DefaultFontBehavior> mDefaultFontBehavior;
+        public final ForgeConfigSpec.BooleanValue mUseComponentCache;
 
         //private final ForgeConfigSpec.BooleanValue antiAliasing;
         //private final ForgeConfigSpec.BooleanValue highPrecision;
@@ -227,7 +231,7 @@ public final class ModernUIText {
             mBaselineShift = builder.comment(
                             "Control vertical baseline for vanilla text layout, in GUI scaled pixels.",
                             "The vanilla default value is 7.")
-                    .defineInRange("baselineShift", TextLayout.DEFAULT_BASELINE_OFFSET,
+                    .defineInRange("baselineShift", TextLayout.STANDARD_BASELINE_OFFSET,
                             BASELINE_MIN, BASELINE_MAX);
             mShadowOffset = builder.comment(
                             "Control the text shadow offset for vanilla text rendering, in GUI scaled pixels.")
@@ -262,9 +266,9 @@ public final class ModernUIText {
             mEmojiShortcodes = builder.comment(
                             "Allow Slack or Discord shortcodes to replace Unicode Emoji Sequences in chat.")
                     .define("emojiShortcodes", true);
-            mUseVanillaFont = builder.comment(
+            /*mUseVanillaFont = builder.comment(
                             "Whether to use Minecraft default bitmap font for basic Latin letters.")
-                    .define("useVanillaFont", false);
+                    .define("useVanillaFont", false);*/
             mUseTextShadersInWorld = builder.comment(
                             "Whether to use Modern UI text rendering pipeline in 3D world.",
                             "Disabling this means that SDF text and rendering optimization are no longer effective.",
@@ -275,6 +279,20 @@ public final class ModernUIText {
                             "Enable to use distance field for text rendering in 3D world.",
                             "It improves performance with deferred rendering and sharpens when doing 3D transform.")
                     .define("useDistanceField", true);*/
+            mDefaultFontBehavior = builder.comment(
+                            "For DEFAULT_FONT and UNIFORM_FONT, should we keep some bitmap providers of them?",
+                            "Ignore All: Use selectedTypeface only.",
+                            "Keep ASCII: Include minecraft:font/ascii.png, minecraft:font/accented.png, " +
+                                    "minecraft:font/nonlatin_european.png",
+                            "Keep Other: Include providers in minecraft:font/default.json other than Keep ASCII and " +
+                                    "Unicode font.",
+                            "Keep All: Include all except Unicode font.")
+                    .defineEnum("defaultFontBehavior", DefaultFontBehavior.KEEP_OTHER);
+            mUseComponentCache = builder.comment(
+                            "Whether to use text component object as hash key to lookup in layout cache.",
+                            "If you find that Modern UI text rendering is not compatible with some mods,",
+                            "you can disable this option for compatibility, but this will decrease performance a bit.")
+                    .define("useComponentCache", true);
             /*antiAliasing = builder.comment(
                     "Enable font anti-aliasing.")
                     .define("antiAliasing", true);
@@ -320,6 +338,7 @@ public final class ModernUIText {
 
         void reload() {
             boolean reload = false;
+            boolean reloadAll = false;
             ModernTextRenderer.sAllowShadow = mAllowShadow.get();
             if (TextLayoutEngine.sFixedResolution != mFixedResolution.get()) {
                 TextLayoutEngine.sFixedResolution = mFixedResolution.get();
@@ -327,7 +346,7 @@ public final class ModernUIText {
             }
             if (TextLayoutProcessor.sBaseFontSize != mBaseFontSize.get()) {
                 TextLayoutProcessor.sBaseFontSize = mBaseFontSize.get().floatValue();
-                reload = true;
+                reloadAll = true;
             }
             TextLayout.sBaselineOffset = mBaselineShift.get().floatValue();
             ModernTextRenderer.sShadowOffset = mShadowOffset.get().floatValue();
@@ -346,15 +365,17 @@ public final class ModernUIText {
                 TextLayoutEngine.sUseColorEmoji = mUseColorEmoji.get();
                 reload = true;
             }
-            if (TextLayoutEngine.sUseVanillaFont != mUseVanillaFont.get()) {
-                TextLayoutEngine.sUseVanillaFont = mUseVanillaFont.get();
-                reload = true;
-            }
             if (TextLayoutEngine.sUseTextShadersInWorld != mUseTextShadersInWorld.get()) {
                 TextLayoutEngine.sUseTextShadersInWorld = mUseTextShadersInWorld.get();
                 reload = true;
             }
-            if (reload) {
+            if (TextLayoutEngine.sDefaultFontBehavior != mDefaultFontBehavior.get().key) {
+                TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
+                reloadAll = true;
+            }
+            if (reloadAll) {
+                Minecraft.getInstance().submit(() -> TextLayoutEngine.getInstance().reloadAll());
+            } else if (reload) {
                 Minecraft.getInstance().submit(() -> TextLayoutEngine.getInstance().reload());
             }
             /*GlyphManagerForge.sPreferredFont = preferredFont.get();
@@ -386,6 +407,25 @@ public final class ModernUIText {
             @Override
             public String toString() {
                 return text;
+            }
+        }
+
+        public enum DefaultFontBehavior {
+            IGNORE_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_IGNORE_ALL),
+            KEEP_ASCII(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ASCII),
+            KEEP_OTHER(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_OTHER),
+            KEEP_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ALL);
+
+            private final int key;
+
+            DefaultFontBehavior(int key) {
+                this.key = key;
+            }
+
+            @Nonnull
+            @Override
+            public String toString() {
+                return I18n.get("modernui.defaultFontBehavior." + name().toLowerCase(Locale.ROOT));
             }
         }
     }

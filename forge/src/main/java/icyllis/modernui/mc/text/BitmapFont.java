@@ -19,6 +19,8 @@
 package icyllis.modernui.mc.text;
 
 import com.google.gson.JsonParseException;
+import com.mojang.blaze3d.font.GlyphInfo;
+import com.mojang.blaze3d.font.SheetGlyphInfo;
 import icyllis.arc3d.core.Strike;
 import icyllis.arc3d.opengl.GLTextureCompat;
 import icyllis.modernui.ModernUI;
@@ -29,6 +31,7 @@ import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.*;
+import net.minecraft.client.gui.font.glyphs.EmptyGlyph;
 import net.minecraft.client.gui.font.providers.BitmapProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -40,6 +43,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Function;
 
 import static icyllis.arc3d.opengl.GLCore.*;
 
@@ -58,7 +62,8 @@ public class BitmapFont implements Font, AutoCloseable {
 
     private final ResourceLocation mName;
 
-    private Bitmap mBitmap; // null after uploading to texture
+    // this is auto GC, null after uploading to texture
+    private Bitmap mBitmap;
     private final Int2ObjectMap<Glyph> mGlyphs = new Int2ObjectOpenHashMap<>();
 
     private final GLTextureCompat mTexture = new GLTextureCompat(GL_TEXTURE_2D);
@@ -201,10 +206,16 @@ public class BitmapFont implements Font, AutoCloseable {
     // Render thread only
     @Nullable
     public Glyph getGlyph(int ch) {
-        if (mBitmap != null) {
+        Glyph glyph = mGlyphs.get(ch);
+        if (glyph != null && mBitmap != null) {
             createTextureLazy();
+            assert mBitmap == null;
         }
-        assert mBitmap == null;
+        return glyph;
+    }
+
+    @Nullable
+    public Glyph getGlyphInfo(int ch) {
         return mGlyphs.get(ch);
     }
 
@@ -280,7 +291,7 @@ public class BitmapFont implements Font, AutoCloseable {
                 ch = _c1;
             }
 
-            Glyph glyph = getGlyph(ch);
+            Glyph glyph = getGlyphInfo(ch);
             if (glyph == null) {
                 continue;
             }
@@ -344,12 +355,24 @@ public class BitmapFont implements Font, AutoCloseable {
         mTexture.close();
     }
 
-    public static class Glyph extends BakedGlyph {
+    public static class Glyph extends BakedGlyph implements GlyphInfo {
 
         public final float advance;
 
         public Glyph(int advance) {
             this.advance = advance;
+        }
+
+        @Override
+        public float getAdvance() {
+            return advance;
+        }
+
+        @Nonnull
+        @Override
+        public net.minecraft.client.gui.font.glyphs.BakedGlyph bake(
+                @Nonnull Function<SheetGlyphInfo, net.minecraft.client.gui.font.glyphs.BakedGlyph> function) {
+            return EmptyGlyph.INSTANCE;
         }
     }
 }

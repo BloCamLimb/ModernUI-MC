@@ -159,6 +159,15 @@ public class TextRenderType extends RenderType {
         };
     }
 
+    // compatibility
+    @Nonnull
+    public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode) {
+        if (mode == Font.DisplayMode.SEE_THROUGH) {
+            return sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
+        }
+        return sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
+    }
+
     @Nonnull
     private static TextRenderType makeNormalType(int texture) {
         return new TextRenderType("modern_text_normal", 256, () -> {
@@ -235,11 +244,6 @@ public class TextRenderType extends RenderType {
             SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
         }, () -> SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
-    }
-
-    @Nonnull
-    public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode) {
-        throw new IllegalStateException();
     }
 
     /**

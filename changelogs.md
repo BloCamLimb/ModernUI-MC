@@ -8,7 +8,12 @@ Changelogs
 * Add dynamic tooltip border colors and presets
 * Block NUL char for input method
 #### Modern Text Engine 1.20.1
-* Make color emoji work in font itemization rather than brute force with grapheme cluster
+* Add config to control component cache
+* Add default font behavior to control whether to use default font
+* Add SpaceFont for compatibility
+* Add position alignment for direct mask drawing
+* Add StandardFontSet for better mod compatibility
+* Make color emoji work in font itemization rather than brute force
 * Enhance and optimize text layout engine
   * Only compute the required information
   * Make text layout asynchronous
