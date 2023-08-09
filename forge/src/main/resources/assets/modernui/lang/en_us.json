@@ -75,7 +75,7 @@
   "modernui.center.text.distanceField": "Use Distance Field",
   "modernui.center.text.allowShadow": "Allow Shadow",
   "modernui.center.text.useComponentCache": "Use Text Component Cache",
-  "modernui.center.text.useComponentCache_desc": "When enabled, text component object will be used as hash key to lookup in layout cache.\nYou can disable this if there are mods that do not agree with this feature.",
+  "modernui.center.text.useComponentCache_desc": "When enabled, text component object will be used as hash key to lookup in layout cache.\nYou can disable this if there are mods that do not agree with it, but it will lower the performance.",
   "modernui.center.text.fixedResolution": "Fixed Resolution",
   "modernui.center.text.baseFontSize": "Base Font Size",
   "modernui.center.text.baselineShift": "Baseline Shift",

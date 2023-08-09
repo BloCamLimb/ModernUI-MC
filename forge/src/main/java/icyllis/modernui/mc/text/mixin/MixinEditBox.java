@@ -19,8 +19,7 @@
 package icyllis.modernui.mc.text.mixin;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import icyllis.modernui.mc.text.TextLayout;
-import icyllis.modernui.mc.text.TextLayoutEngine;
+import icyllis.modernui.mc.text.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -108,7 +107,7 @@ public abstract class MixinEditBox extends AbstractWidget {
     public void EditBox(Font font, int x, int y, int w, int h, @Nullable EditBox src, Component msg,
                         CallbackInfo ci) {
         // fast path
-        formatter = (s, i) -> null;
+        formatter = (s, i) -> new VanillaTextWrapper(s);
     }
 
     @Shadow
@@ -157,7 +156,8 @@ public abstract class MixinEditBox extends AbstractWidget {
         if (!viewText.isEmpty()) {
             String subText = cursorInRange ? viewText.substring(0, viewCursorPos) : viewText;
             FormattedCharSequence subSequence = formatter.apply(subText, displayPos);
-            if (subSequence != null) {
+            if (subSequence != null &&
+                    !(subSequence instanceof VanillaTextWrapper)) {
                 separate = true;
                 seqX = engine.getTextRenderer().drawText(subSequence, seqX, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
@@ -198,7 +198,8 @@ public abstract class MixinEditBox extends AbstractWidget {
         if (!viewText.isEmpty() && cursorInRange && viewCursorPos < viewText.length() && separate) {
             String subText = viewText.substring(viewCursorPos);
             FormattedCharSequence subSequence = formatter.apply(subText, cursorPos);
-            if (subSequence != null) {
+            if (subSequence != null &&
+                    !(subSequence instanceof VanillaTextWrapper)) {
                 engine.getTextRenderer().drawText(subSequence, seqX, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             } else {

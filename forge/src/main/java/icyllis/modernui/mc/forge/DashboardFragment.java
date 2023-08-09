@@ -99,6 +99,7 @@ public class DashboardFragment extends Fragment {
                                 What's New in Modern UI 3.8
                                 ----
                                 * Enhanced Text Layout
+                                * Better Mod Compatibility
                                 * Basic Markdown Support
                                 * Unicode 15.0 Emoji List
                                 * New UI Components
