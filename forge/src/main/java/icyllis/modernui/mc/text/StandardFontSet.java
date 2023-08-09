@@ -240,7 +240,7 @@ public class StandardFontSet extends FontSet {
 
         @Override
         public float getShadowOffset() {
-            return 0.5f;
+            return ModernTextRenderer.sShadowOffset;
         }
 
         @Nonnull

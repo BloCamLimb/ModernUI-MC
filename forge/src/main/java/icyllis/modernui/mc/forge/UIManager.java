@@ -737,7 +737,7 @@ public final class UIManager implements LifecycleOwner {
     void dump() {
         StringBuilder builder = new StringBuilder();
         try (var w = new PrintWriter(new StringBuilderWriter(builder))) {
-            dump(w);
+            dump(w, true);
         }
         String str = builder.toString();
         if (minecraft.level != null) {
@@ -753,7 +753,7 @@ public final class UIManager implements LifecycleOwner {
     }
 
     @SuppressWarnings("unchecked")
-    private void dump(@Nonnull PrintWriter pw) {
+    void dump(@Nonnull PrintWriter pw, boolean fragments) {
         pw.println(">>> Modern UI dump data <<<");
 
         pw.print("Container Menu: ");
@@ -780,7 +780,7 @@ public final class UIManager implements LifecycleOwner {
             pw.println(screen.getClass());
         }
 
-        if (mFragmentController != null) {
+        if (fragments && mFragmentController != null) {
             mFragmentController.getFragmentManager().dump("", null, pw);
         }
 

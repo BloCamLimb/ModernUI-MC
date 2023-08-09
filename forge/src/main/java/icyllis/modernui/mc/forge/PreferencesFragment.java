@@ -23,11 +23,9 @@ import icyllis.modernui.animation.*;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
-import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.MathUtil;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.mc.forge.ui.*;
 import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.text.InputFilter;
@@ -36,14 +34,10 @@ import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
 import icyllis.modernui.viewpager.widget.*;
 import icyllis.modernui.widget.*;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.OptionInstance;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 
 import javax.annotation.Nonnull;
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -51,8 +45,6 @@ import java.util.function.Supplier;
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class PreferencesFragment extends Fragment {
-
-    private static final Field OPTION_VALUE = ObfuscationReflectionHelper.findField(OptionInstance.class, "f_231481_");
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -251,83 +243,11 @@ public class PreferencesFragment extends Fragment {
             content.addView(list);
         }
 
-        if (ModernUIForge.isDeveloperMode()) {
-            var category = createCategoryList(context, "Developer");
-            {
-                var option = createInputBox(context, "Gamma");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(Minecraft.getInstance().options.gamma().get().toString());
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
-                        new InputFilter.LengthFilter(6));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        double gamma = Double.parseDouble(v.getText().toString());
-                        v.setText(Double.toString(gamma));
-                        // no sync, but safe
-                        try {
-                            // no listener
-                            OPTION_VALUE.set(Minecraft.getInstance().options.gamma(), gamma);
-                        } catch (Exception e) {
-                            Minecraft.getInstance().options.gamma().set(gamma);
-                        }
-                    }
-                });
-                category.addView(option);
-            }
-
-            /*category.addView(createBooleanOption(context, "Remove Message Signature",
-                    Config.CLIENT.mRemoveSignature, Config.CLIENT::saveAndReloadAsync));*/
-
-            category.addView(createBooleanOption(context, "Remove Telemetry Session",
-                    Config.CLIENT.mRemoveTelemetry, Config.CLIENT::saveAndReloadAsync));
-
-            /*category.addView(createBooleanOption(context, "Secure Profile Public Key",
-                    Config.CLIENT.mSecurePublicKey, Config.CLIENT::saveAndReloadAsync));*/
-
-            {
-                var button = createDebugButton(context, "Take UI Screenshot (Y)");
-                button.setOnClickListener((__) ->
-                        Core.postOnRenderThread(() -> UIManager.getInstance().takeScreenshot()));
-                category.addView(button);
-            }
-            {
-                var button = createDebugButton(context, "Dump UI Manager (P)");
-                button.setOnClickListener((__) ->
-                        Core.postOnMainThread(() -> UIManager.getInstance().dump()));
-                category.addView(button);
-            }
-            {
-                var button = createDebugButton(context, "Debug Glyph Manager (G)");
-                button.setOnClickListener((__) ->
-                        Core.postOnMainThread(() -> GlyphManager.getInstance().debug()));
-                category.addView(button);
-            }
-            {
-                var button = createDebugButton(context, "GC (F)");
-                button.setOnClickListener((__) -> System.gc());
-                category.addView(button);
-            }
-            content.addView(category);
-        }
-
         content.setDividerDrawable(new DividerDrawable(content));
         content.setDividerPadding(content.dp(8));
         content.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
 
         return content;
-    }
-
-    public static Button createDebugButton(Context context, String text) {
-        var button = new Button(context);
-        button.setText(text);
-        button.setTextSize(14);
-        button.setGravity(Gravity.START);
-
-        var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-        params.setMargins(button.dp(6), 0, button.dp(6), 0);
-        button.setLayoutParams(params);
-        return button;
     }
 
     public static LinearLayout createFirstPage(Context context) {
@@ -446,25 +366,6 @@ public class PreferencesFragment extends Fragment {
 
         {
             var category = createCategoryList(context, "modernui.center.category.text");
-
-            {
-                var option = createSwitchLayout(context, "modernui.center.text.textEngine");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(!Boolean.parseBoolean(
-                        ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
-                ));
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    ModernUIForge.setBootstrapProperty(
-                            ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE,
-                            Boolean.toString(!checked)
-                    );
-                    Toast.makeText(__.getContext(),
-                                    I18n.get("gui.modernui.restart_to_work"),
-                                    Toast.LENGTH_SHORT)
-                            .show();
-                });
-                category.addView(option);
-            }
 
             {
                 var option = createBooleanOption(context, "modernui.center.text.textShadersInWorld",
