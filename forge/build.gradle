@@ -94,10 +94,10 @@ dependencies {
         }
     }
 
-    implementation 'org.openjdk.jmh:jmh-core:1.35'
-    annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.35'
+    testImplementation 'org.openjdk.jmh:jmh-core:1.35'
+    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.35'
 
-    implementation "io.github.stephankoelle:jamm:0.4.1"
+    testImplementation "io.github.stephankoelle:jamm:0.4.1"
 
     implementation(forgeDependencies("com.github.ben-manes.caffeine:caffeine:${caffeine_version}"))
     implementation(forgeDependencies("com.vladsch.flexmark:flexmark:${flexmark_version}"))
@@ -109,7 +109,7 @@ dependencies {
 
     //shadow "io.reactivex.rxjava3:rxjava:${rxjava_version}"
 
-    shadow ':ModernUI-Fonts-1.0'
+    shadow ':ModernUI-Fonts-2.0'
 
     /*implementation('org.apache.maven:maven-artifact') {
         version {

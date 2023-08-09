@@ -540,6 +540,15 @@ public class TextLayoutEngine implements PreparableReloadListener {
                         new FontCollection(unicodeFonts.toArray(new FontFamily[0])));
                 mColorEmojiUsed = true;
             } else {
+                if (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL) {
+                    mFontCollections.remove(Minecraft.DEFAULT_FONT);
+                } else {
+                    populateDefaultFonts(defaultFonts, sDefaultFontBehavior);
+                    defaultFonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
+                    mFontCollections.put(Minecraft.DEFAULT_FONT,
+                            new FontCollection(defaultFonts.toArray(new FontFamily[0])));
+                }
+                mFontCollections.remove(Minecraft.UNIFORM_FONT);
                 mColorEmojiUsed = false;
             }
             if (force && mVanillaFontManager != null) {
@@ -889,13 +898,17 @@ public class TextLayoutEngine implements PreparableReloadListener {
         LOGGER.info(MARKER, "Scanned emoji map size: {}",
                 map.size());
         results.mEmojiFiles = files;
-        IntOpenHashSet coverage = new IntOpenHashSet();
-        _populateEmojiFontCoverage_DONT_COMPILE_(coverage);
-        results.mEmojiFont = new EmojiFont("Google Noto Color Emoji",
-                coverage, EMOJI_BASE_SIZE * BITMAP_SCALE,
-                TextLayout.STANDARD_BASELINE_OFFSET * BITMAP_SCALE,
-                (int) (0.5 * BITMAP_SCALE + 0.5),
-                TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE * BITMAP_SCALE, map);
+        if (!files.isEmpty()) {
+            IntOpenHashSet coverage = new IntOpenHashSet();
+            _populateEmojiFontCoverage_DONT_COMPILE_(coverage);
+            results.mEmojiFont = new EmojiFont("Google Noto Color Emoji",
+                    coverage, EMOJI_BASE_SIZE * BITMAP_SCALE,
+                    TextLayout.STANDARD_BASELINE_OFFSET * BITMAP_SCALE,
+                    (int) (0.5 * BITMAP_SCALE + 0.5),
+                    TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE * BITMAP_SCALE, map);
+        } else {
+            LOGGER.info(MARKER, "No Emoji font was found");
+        }
     }
 
     //FIXME Minecraft 1.20.1 still uses ICU-71.1, but Unicode 15 CLDR was added in ICU-72
