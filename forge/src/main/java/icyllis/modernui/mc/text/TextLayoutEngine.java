@@ -1469,7 +1469,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
         java.awt.Font awtFont = null;
         BitmapFont bitmapFont = null;
         if (desc.font instanceof StandardFont) {
-            int fontSize = Math.min((int) (TextLayoutProcessor.sBaseFontSize * desc.resLevel + 0.5), 96);
+            int fontSize = TextLayoutProcessor.computeFontSize(desc.resLevel);
             awtFont = ((StandardFont) desc.font).chooseFont(fontSize);
         } else if (desc.font instanceof BitmapFont) {
             bitmapFont = (BitmapFont) desc.font;

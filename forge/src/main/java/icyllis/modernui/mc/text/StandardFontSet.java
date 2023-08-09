@@ -86,7 +86,7 @@ public class StandardFontSet extends FontSet {
         if (mGlyphInfos != null) {
             mGlyphInfos.clear();
         }
-        int fontSize = Math.min((int) (TextLayoutProcessor.sBaseFontSize * newResLevel + 0.5), 96);
+        int fontSize = TextLayoutProcessor.computeFontSize(newResLevel);
         mStandardPaint.setFontSize(fontSize);
         mResLevel = newResLevel;
     }
@@ -107,7 +107,7 @@ public class StandardFontSet extends FontSet {
                 }
             } else if (font instanceof SpaceFont spaceFont) {
                 float adv = spaceFont.getAdvance(codePoint);
-                if (adv != -1) {
+                if (!Float.isNaN(adv)) {
                     return (GlyphInfo.SpaceGlyphInfo) () -> adv;
                 }
             } else if (font instanceof StandardFont standardFont) {
@@ -164,10 +164,12 @@ public class StandardFontSet extends FontSet {
                             y + (float) glyph.height / TextLayoutEngine.BITMAP_SCALE
                     );
                 }
+            } else if (font instanceof SpaceFont) {
+                return EmptyGlyph.INSTANCE;
             } else if (font instanceof StandardFont standardFont) {
                 char[] chars = Character.toChars(codePoint);
                 IntArrayList glyphs = new IntArrayList(1);
-                standardFont.doSimpleLayout(
+                float adv = standardFont.doSimpleLayout(
                         chars,
                         0, chars.length,
                         mStandardPaint, glyphs, null,
@@ -196,6 +198,8 @@ public class StandardFontSet extends FontSet {
                                 y + glyph.height / mResLevel
                         );
                     }
+                }
+                if (adv > 0) {
                     // no pixels, e.g. space
                     return EmptyGlyph.INSTANCE;
                 }

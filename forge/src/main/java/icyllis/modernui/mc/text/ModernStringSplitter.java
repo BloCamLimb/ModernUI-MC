@@ -249,8 +249,7 @@ public final class ModernStringSplitter {
                         i++;
                         continue;
                     }
-                    // End index is exclusive, so ++index not index++
-                    if (++mStripIndex >= breakIndex) {
+                    if (++mStripIndex > breakIndex) {
                         return Optional.of(style); // stop iteration
                     }
                 }
@@ -292,7 +291,7 @@ public final class ModernStringSplitter {
 
             @Override
             public boolean accept(int index, @Nonnull Style style, int codePoint) {
-                if ((mStripIndex += Character.charCount(codePoint)) >= breakIndex) {
+                if ((mStripIndex += Character.charCount(codePoint)) > breakIndex) {
                     result.setValue(style);
                     return false; // stop iteration
                 }
@@ -339,8 +338,7 @@ public final class ModernStringSplitter {
                         i++;
                         continue;
                     }
-                    // End index is exclusive, so ++index not index++
-                    if (mSegmentIndex + ++stripIndex >= breakIndex) {
+                    if (mSegmentIndex + ++stripIndex > breakIndex) {
                         String substring = string.substring(0, stripIndex);
                         if (!substring.isEmpty()) {
                             mCollector.append(FormattedText.of(substring, sty));

@@ -257,7 +257,7 @@ public class TextLayout {
                         resLevel
                 );
             } else {
-                int fontSize = Math.min((int) (TextLayoutProcessor.sBaseFontSize * resLevel + 0.5), 96);
+                int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
                 glyphs[i] = engine.lookupGlyph(
                         getFont(i),
                         fontSize,
@@ -312,6 +312,7 @@ public class TextLayout {
         final float resLevel = preferredMode == TextRenderType.MODE_SDF_FILL
                 ? TextLayoutEngine.getResLevelForSDF(mCreatedResLevel)
                 : mCreatedResLevel;
+        final float invResLevel = 1.0f / resLevel;
 
         final var glyphs = getGlyphs((int) resLevel);
         final var positions = mPositions;
@@ -354,7 +355,7 @@ public class TextLayout {
                 effMode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL;
                 texture = TextLayoutEngine.getInstance().getCurrentTexture(getFont(i));
             } else {
-                effMode = preferredMode;
+                boolean obfuscated = false;
                 if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
                     var chars = (TextLayoutEngine.FastCharSet) glyph;
                     int fastIndex = RANDOM.nextInt(chars.glyphs.length);
@@ -363,20 +364,34 @@ public class TextLayout {
                     if (fastIndex != 0) {
                         rx += chars.offsets[fastIndex];
                     }
+                    obfuscated = true;
                 }
-                rx += x + positions[i << 1] + glyph.x / resLevel;
-                ry = baseline + positions[i << 1 | 1] + glyph.y / resLevel;
+                if (obfuscated && getFont(i) instanceof BitmapFont bitmapFont) {
+                    effMode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL;
+                    float scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
+                    rx += x + positions[i << 1] + (float) glyph.x * scaleFactor;
+                    ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
+                    w = (float) glyph.width * scaleFactor;
+                    h = (float) glyph.height * scaleFactor;
+                    texture = bitmapFont.getCurrentTexture();
+                } else {
+                    effMode = preferredMode;
+                    rx += x + positions[i << 1] + glyph.x * invResLevel;
+                    ry = baseline + positions[i << 1 | 1] + glyph.y * invResLevel;
 
-                w = glyph.width / resLevel;
-                h = glyph.height / resLevel;
-                if (standardTexture == -1) {
-                    standardTexture = TextLayoutEngine.getInstance().getStandardTexture();
+                    w = glyph.width * invResLevel;
+                    h = glyph.height * invResLevel;
+                    if (standardTexture == -1) {
+                        standardTexture = TextLayoutEngine.getInstance().getStandardTexture();
+                    }
+                    texture = standardTexture;
                 }
-                texture = standardTexture;
             }
-            if (effMode == TextRenderType.MODE_NORMAL) {
-                rx = (int) (rx * resLevel + 0.5f) / resLevel;
-                ry = (int) (ry * resLevel + 0.5f) / resLevel;
+            if (effMode == TextRenderType.MODE_NORMAL &&
+                    !TextLayoutEngine.sCurrentInWorldRendering) {
+                // align to screen pixel center in 2D
+                rx = (int) (rx * resLevel + 0.5f) * invResLevel;
+                ry = (int) (ry * resLevel + 0.5f) * invResLevel;
             }
             if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
                 r = startR;
@@ -618,6 +633,8 @@ public class TextLayout {
      * cluster count (invisible glyphs are removed). Logical order.
      * <p>
      * Note the values are scaled to Minecraft GUI coordinates.
+     * <p>
+     * Nonnull only when {@link TextLayoutEngine#COMPUTE_ADVANCES}.
      */
     public float[] getAdvances() {
         return mAdvances;
@@ -670,6 +687,8 @@ public class TextLayout {
     /**
      * Strip indices that are boundaries for Unicode line breaking, in logical order.
      * 0 is not included. Last value is always the text length (without formatting codes).
+     * <p>
+     * Nonnull only when {@link TextLayoutEngine#COMPUTE_LINE_BOUNDARIES}.
      */
     public int[] getLineBoundaries() {
         return mLineBoundaries;

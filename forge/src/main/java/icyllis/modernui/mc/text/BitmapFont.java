@@ -305,7 +305,8 @@ public class BitmapFont implements Font, AutoCloseable {
                 glyphs.add(ch);
             }
             if (positions != null) {
-                positions.add(x + advance);
+                positions.add(x + advance +
+                        scaleUp * 0.5f); // 1px spacing, center it
                 positions.add(y);
             }
 

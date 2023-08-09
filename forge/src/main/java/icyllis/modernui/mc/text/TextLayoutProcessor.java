@@ -331,6 +331,11 @@ public class TextLayoutProcessor {
         mEngine = engine;
     }
 
+    public static int computeFontSize(int resLevel) {
+        // Note max font size is 96, see FontPaint, font size will be (8 * res) in Minecraft by default
+        return Math.min((int) (sBaseFontSize * resLevel + 0.5), 96);
+    }
+
     /*private void finishBidiRun(float adjust) {
         if (adjust != 0) {
             mBidiList.forEach(e -> e.mOffsetX += adjust);
@@ -534,8 +539,7 @@ public class TextLayoutProcessor {
             mComputeAdvances = (computeFlags & TextLayoutEngine.COMPUTE_ADVANCES) != 0;
             mComputeLineBoundaries = (computeFlags & TextLayoutEngine.COMPUTE_LINE_BOUNDARIES) != 0;
 
-            // Note max font size is 96, see FontPaint, font size will be (8 * res) in Minecraft by default
-            int fontSize = Math.min((int) (sBaseFontSize * resLevel + 0.5), 96);
+            int fontSize = computeFontSize(resLevel);
             mFontPaint.setFontSize(fontSize);
 
             // pre allocate memory
