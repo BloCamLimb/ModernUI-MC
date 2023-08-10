@@ -23,6 +23,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.math.Matrix4f;
+import icyllis.arc3d.core.Matrix4;
 import icyllis.modernui.graphics.*;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
@@ -67,58 +68,71 @@ public final class TooltipRenderer {
     private static final FloatBuffer sMatBuf = BufferUtils.createFloatBuffer(16);
     private static final Matrix4 sMyMat = new Matrix4();
 
-    private static final int[] sActiveFillColor = new int[4];
-    private static final int[] sActiveStrokeColor = new int[4];
+    private final int[] mActiveFillColor = new int[4];
+    private final int[] mActiveStrokeColor = new int[4];
     static volatile float sAnimationDuration; // milliseconds
+    static volatile int sBorderColorCycle = 1000; // milliseconds
 
-    static volatile boolean sLayoutRTL;
+    volatile boolean mLayoutRTL;
 
-    private static boolean sDraw;
+    private boolean mDraw;
     public static float sAlpha = 1;
 
-    static void update(long deltaMillis, long timeMillis) {
+    TooltipRenderer() {
+    }
+
+    void update(long deltaMillis, long timeMillis) {
         if (sAnimationDuration <= 0) {
             sAlpha = 1;
-        } else if (sDraw) {
+        } else if (mDraw) {
             if (sAlpha < 1) {
                 sAlpha = Math.min(sAlpha + deltaMillis / sAnimationDuration, 1);
             }
-            sDraw = false;
+            mDraw = false;
         } else if (sAlpha > 0) {
             sAlpha = Math.max(sAlpha - deltaMillis / sAnimationDuration, 0);
         }
-        /*if (sAlpha > 0) {
-            float p = (timeMillis % 1000) / 1000f;
-            switch ((int) ((timeMillis / 1000) & 3)) {
-                case 0: {
-                    sUseStrokeColor[0] = ColorEvaluator.evaluate(p, sStrokeColor[2], sStrokeColor[0]);
-                    sUseStrokeColor[1] = ColorEvaluator.evaluate(p, sStrokeColor[0], sStrokeColor[1]);
-                    sUseStrokeColor[3] = ColorEvaluator.evaluate(p, sStrokeColor[1], sStrokeColor[3]);
-                    sUseStrokeColor[2] = ColorEvaluator.evaluate(p, sStrokeColor[3], sStrokeColor[2]);
-                }
-                case 1: {
-                    sUseStrokeColor[0] = ColorEvaluator.evaluate(p, sStrokeColor[3], sStrokeColor[2]);
-                    sUseStrokeColor[1] = ColorEvaluator.evaluate(p, sStrokeColor[2], sStrokeColor[0]);
-                    sUseStrokeColor[3] = ColorEvaluator.evaluate(p, sStrokeColor[0], sStrokeColor[1]);
-                    sUseStrokeColor[2] = ColorEvaluator.evaluate(p, sStrokeColor[1], sStrokeColor[3]);
-                }
-                case 2: {
-                    sUseStrokeColor[0] = ColorEvaluator.evaluate(p, sStrokeColor[1], sStrokeColor[3]);
-                    sUseStrokeColor[1] = ColorEvaluator.evaluate(p, sStrokeColor[3], sStrokeColor[2]);
-                    sUseStrokeColor[3] = ColorEvaluator.evaluate(p, sStrokeColor[2], sStrokeColor[0]);
-                    sUseStrokeColor[2] = ColorEvaluator.evaluate(p, sStrokeColor[0], sStrokeColor[1]);
-                }
-                case 3: {
-                    sUseStrokeColor[0] = ColorEvaluator.evaluate(p, sStrokeColor[0], sStrokeColor[1]);
-                    sUseStrokeColor[1] = ColorEvaluator.evaluate(p, sStrokeColor[1], sStrokeColor[3]);
-                    sUseStrokeColor[3] = ColorEvaluator.evaluate(p, sStrokeColor[3], sStrokeColor[2]);
-                    sUseStrokeColor[2] = ColorEvaluator.evaluate(p, sStrokeColor[2], sStrokeColor[0]);
+        for (int i = 0; i < 4; i++) {
+            int color = sFillColor[i];
+            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
+            mActiveFillColor[i] = (color & 0xFFFFFF) | (alpha << 24);
+        }
+        if (sAlpha > 0) {
+            if (sBorderColorCycle > 0) {
+                float p = (timeMillis % sBorderColorCycle) / (float) sBorderColorCycle;
+                if (mLayoutRTL) {
+                    int pos = (int) ((timeMillis / sBorderColorCycle) & 3);
+                    for (int i = 0; i < 4; i++) {
+                        mActiveStrokeColor[i] = lerpInLinearSpace(p,
+                                sStrokeColor[(i + pos) & 3],
+                                sStrokeColor[(i + pos + 1) & 3]);
+                    }
+                } else {
+                    int pos = 3 - (int) ((timeMillis / sBorderColorCycle) & 3);
+                    for (int i = 0; i < 4; i++) {
+                        mActiveStrokeColor[i] = lerpInLinearSpace(p,
+                                sStrokeColor[(i + pos) & 3],
+                                sStrokeColor[(i + pos + 3) & 3]);
+                    }
                 }
             }
-        }*/
+        }
+        for (int i = 0; i < 4; i++) {
+            int color = sBorderColorCycle > 0 ? mActiveStrokeColor[i] : sStrokeColor[i];
+            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
+            mActiveStrokeColor[i] = (color & 0xFFFFFF) | (alpha << 24);
+        }
     }
 
-    private TooltipRenderer() {
+    static int lerpInLinearSpace(float fraction, int startValue, int endValue) {
+        int result = 0;
+        for (int i = 0; i < 4; i++) {
+            float s = ((startValue >> (i << 3)) & 0xff) / 255.0f;
+            float t = ((endValue >> (i << 3)) & 0xff) / 255.0f;
+            float v = MathUtil.lerp(s, t, fraction);
+            result |= Math.round(v * 255.0f) << (i << 3);
+        }
+        return result;
     }
 
     /*public static void drawTooltip(@Nonnull GLCanvas canvas, @Nonnull List<? extends FormattedText> texts,
@@ -291,11 +305,11 @@ public final class TooltipRenderer {
         sTempTexts.clear();
     }*/
 
-    static void drawTooltip(@Nonnull GLSurfaceCanvas canvas, @Nonnull Window window, @Nonnull PoseStack poseStack,
-                            @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
-                            @Nonnull Font font, float screenWidth, float screenHeight,
-                            double cursorX, double cursorY, @Nonnull ItemRenderer itemRenderer) {
-        sDraw = true;
+    void drawTooltip(@Nonnull GLSurfaceCanvas canvas, @Nonnull Window window, @Nonnull PoseStack poseStack,
+                     @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
+                     @Nonnull Font font, float screenWidth, float screenHeight,
+                     double cursorX, double cursorY, @Nonnull ItemRenderer itemRenderer) {
+        mDraw = true;
 
         float partialX = (float) (cursorX - (int) cursorX);
         float partialY = (float) (cursorY - (int) cursorY);
@@ -316,7 +330,7 @@ public final class TooltipRenderer {
         }
 
         float tooltipX;
-        if (sLayoutRTL) {
+        if (mLayoutRTL) {
             tooltipX = mouseX + TOOLTIP_SPACE + partialX - 24 - tooltipWidth;
             if (tooltipX - partialX < 4) {
                 tooltipX += 24 + tooltipWidth;
@@ -372,31 +386,21 @@ public final class TooltipRenderer {
 
         Paint paint = Paint.obtain();
 
-        for (int i = 0; i < 4; i++) {
-            int color = sFillColor[i];
-            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
-            sActiveFillColor[i] = (color & 0xFFFFFF) | (alpha << 24);
-        }
         paint.setStyle(Paint.FILL);
         canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
                 tooltipX + tooltipWidth + H_BORDER,
                 tooltipY + tooltipHeight + V_BORDER,
-                sActiveFillColor[0], sActiveFillColor[1],
-                sActiveFillColor[2], sActiveFillColor[3],
+                mActiveFillColor[0], mActiveFillColor[1],
+                mActiveFillColor[2], mActiveFillColor[3],
                 3, paint);
 
-        for (int i = 0; i < 4; i++) {
-            int color = sStrokeColor[i];
-            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
-            sActiveStrokeColor[i] = (color & 0xFFFFFF) | (alpha << 24);
-        }
         paint.setStyle(Paint.STROKE);
         paint.setStrokeWidth(4 / 3f);
         canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
                 tooltipX + tooltipWidth + H_BORDER,
                 tooltipY + tooltipHeight + V_BORDER,
-                sActiveStrokeColor[0], sActiveStrokeColor[1],
-                sActiveStrokeColor[2], sActiveStrokeColor[3],
+                mActiveStrokeColor[0], mActiveStrokeColor[1],
+                mActiveStrokeColor[2], mActiveStrokeColor[3],
                 3, paint);
 
         paint.recycle();
@@ -420,7 +424,7 @@ public final class TooltipRenderer {
         poseStack.translate(partialX, partialY, 0);
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
-            if (sLayoutRTL) {
+            if (mLayoutRTL) {
                 component.renderText(font, drawX + tooltipWidth - component.getWidth(font), drawY, mat, source);
             } else {
                 component.renderText(font, drawX, drawY, mat, source);
@@ -439,7 +443,7 @@ public final class TooltipRenderer {
 
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
-            if (sLayoutRTL) {
+            if (mLayoutRTL) {
                 component.renderImage(font, drawX + tooltipWidth - component.getWidth(font), drawY,
                         poseStack, itemRenderer, 400);
             } else {

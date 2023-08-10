@@ -62,6 +62,8 @@ public class VanillaLayoutKey {
      */
     private int mHash;
 
+    private int mResLevel;
+
     public VanillaLayoutKey() {
     }
 
@@ -73,6 +75,7 @@ public class VanillaLayoutKey {
         mFont = key.mFont;
         mCode = key.mCode;
         mHash = key.mHash;
+        mResLevel = key.mResLevel;
     }
 
     /**
@@ -80,11 +83,12 @@ public class VanillaLayoutKey {
      *
      * @param text the string
      */
-    public VanillaLayoutKey update(@Nonnull String text, @Nonnull Style style) {
+    public VanillaLayoutKey update(@Nonnull String text, @Nonnull Style style, int resLevel) {
         mView = text;
         mFont = style.getFont();
         mCode = CharacterStyle.flatten(style);
         mHash = 0;
+        mResLevel = resLevel;
         return this;
     }
 
@@ -104,19 +108,20 @@ public class VanillaLayoutKey {
             // true if a section mark character was last seen. In this case, if the next character
             // is a digit, it must not be considered equal to any other digit. This forces any string
             // that differs in formatting codes only to have a separate entry in the cache.
-            boolean prefix = false;
+            //boolean prefix = false;
             for (int i = 0, e = s.length(); i < e; i++) {
                 char c = s.charAt(i);
                 // fast digit replacement contract
-                if (!prefix && c <= '9' && c >= '0') {
+                /*if (!prefix && c <= '9' && c >= '0') {
                     c = '0';
-                }
+                }*/
                 h = 31 * h + c;
-                prefix = (c == ChatFormatting.PREFIX_CODE);
+                //prefix = (c == ChatFormatting.PREFIX_CODE);
             }
 
             h = 31 * h + mFont.hashCode();
-            mHash = h = 31 * h + mCode;
+            h = 31 * h + mCode;
+            mHash = h = 31 * h + mResLevel;
         }
 
         return h;
@@ -138,6 +143,9 @@ public class VanillaLayoutKey {
         if (mCode != key.mCode) {
             return false;
         }
+        if (mResLevel != key.mResLevel) {
+            return false;
+        }
         if (!mFont.equals(key.mFont)) {
             return false;
         }
@@ -154,15 +162,15 @@ public class VanillaLayoutKey {
         // true if a section mark character was last seen. In this case, if the next character
         // is a digit, it must not be considered equal to any other digit. This forces any string
         // that differs in formatting codes only to have a separate entry in the cache.
-        boolean prefix = false;
+        //boolean prefix = false;
         for (int i = 0; i < length; i++) {
             char c1 = s1.charAt(i);
             char c2 = s2.charAt(i);
             // fast digit replacement contract
-            if (c1 != c2 && (prefix || c1 > '9' || c1 < '0' || c2 > '9' || c2 < '0')) {
+            if (c1 != c2 /*&& (prefix || c1 > '9' || c1 < '0' || c2 > '9' || c2 < '0')*/) {
                 return false;
             }
-            prefix = (c1 == ChatFormatting.PREFIX_CODE);
+            //prefix = (c1 == ChatFormatting.PREFIX_CODE);
         }
 
         return true;
@@ -175,6 +183,7 @@ public class VanillaLayoutKey {
                 ", mFont=" + mFont +
                 ", mCode=" + mCode +
                 ", mHash=" + mHash +
+                ", mResLevel=" + mResLevel +
                 '}';
     }
 

@@ -19,7 +19,7 @@
 package icyllis.modernui.mc.text;
 
 import com.google.gson.*;
-import icyllis.modernui.text.Emoji;
+import icyllis.modernui.graphics.text.Emoji;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;

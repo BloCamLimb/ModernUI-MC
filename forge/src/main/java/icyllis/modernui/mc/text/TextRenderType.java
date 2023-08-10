@@ -21,7 +21,7 @@ package icyllis.modernui.mc.text;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import icyllis.arc3d.SharedPtr;
+import icyllis.arc3d.core.SharedPtr;
 import icyllis.arc3d.engine.SamplerState;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
@@ -58,13 +58,11 @@ public class TextRenderType extends RenderType {
     private static volatile ShaderInstance sShaderNormal;
     private static volatile ShaderInstance sShaderSDFFill;
     private static volatile ShaderInstance sShaderSDFStroke;
-    private static volatile ShaderInstance sShaderSeeThrough;
 
     static final ShaderStateShard
             RENDERTYPE_MODERN_TEXT_NORMAL = new ShaderStateShard(TextRenderType::getShaderNormal),
             RENDERTYPE_MODERN_TEXT_SDF_FILL = new ShaderStateShard(TextRenderType::getShaderSDFFill),
-            RENDERTYPE_MODERN_TEXT_SDF_STROKE = new ShaderStateShard(TextRenderType::getShaderSDFStroke),
-            RENDERTYPE_MODERN_TEXT_SEE_THROUGH = new ShaderStateShard(TextRenderType::getShaderSeeThrough);
+            RENDERTYPE_MODERN_TEXT_SDF_STROKE = new ShaderStateShard(TextRenderType::getShaderSDFStroke);
 
     /**
      * Only the texture id is different, the rest state are same
@@ -133,7 +131,7 @@ public class TextRenderType extends RenderType {
                 DEFAULT_LINE
         );
         SEE_THROUGH_STATES = ImmutableList.of(
-                RENDERTYPE_MODERN_TEXT_SEE_THROUGH,
+                RENDERTYPE_TEXT_SEE_THROUGH_SHADER,
                 TRANSLUCENT_TRANSPARENCY,
                 NO_DEPTH_TEST,
                 CULL,
@@ -162,20 +160,28 @@ public class TextRenderType extends RenderType {
         };
     }
 
+    // compatibility
+    @Nonnull
+    public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode) {
+        if (mode == Font.DisplayMode.SEE_THROUGH) {
+            return sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
+        }
+        return sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
+    }
+
     @Nonnull
     private static TextRenderType makeNormalType(int texture) {
         return new TextRenderType("modern_text_normal", 256, () -> {
             NORMAL_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.enableTexture();
             RenderSystem.setShaderTexture(0, texture);
         }, () -> NORMAL_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
     private static void ensureLinearFontSampler() {
         if (sLinearFontSampler == null) {
-            GLEngine device = (GLEngine) Core.requireDirectContext().getEngine();
+            GLServer engine = (GLServer) Core.requireDirectContext().getServer();
             // default state is bilinear
-            sLinearFontSampler = device.getResourceProvider().findOrCreateCompatibleSampler(
+            sLinearFontSampler = engine.getResourceProvider().findOrCreateCompatibleSampler(
                     SamplerState.DEFAULT);
             Objects.requireNonNull(sLinearFontSampler, "Failed to create sampler object");
         }
@@ -186,18 +192,23 @@ public class TextRenderType extends RenderType {
         ensureLinearFontSampler();
         TextRenderType renderType = new TextRenderType("modern_text_sdf_fill", 256, () -> {
             SDF_FILL_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.enableTexture();
             RenderSystem.setShaderTexture(0, texture);
-            GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
+            if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
+                GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
+            }
         }, () -> {
             SDF_FILL_STATES.forEach(RenderStateShard::clearRenderState);
-            GLCore.glBindSampler(0, 0);
+            if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
+                GLCore.glBindSampler(0, 0);
+            }
         });
         if (sFirstSDFFillType == null) {
             assert (sSDFFillTypes.isEmpty());
             sFirstSDFFillType = renderType;
-            ((AccessRenderBuffers) Minecraft.getInstance().renderBuffers()).getFixedBuffers()
-                    .put(renderType, sFirstSDFFillBuffer);
+            if (TextLayoutEngine.sUseTextShadersInWorld) {
+                ((AccessRenderBuffers) Minecraft.getInstance().renderBuffers()).getFixedBuffers()
+                        .put(renderType, sFirstSDFFillBuffer);
+            }
         }
         return renderType;
     }
@@ -207,18 +218,23 @@ public class TextRenderType extends RenderType {
         ensureLinearFontSampler();
         TextRenderType renderType = new TextRenderType("modern_text_sdf_stroke", 256, () -> {
             SDF_STROKE_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.enableTexture();
             RenderSystem.setShaderTexture(0, texture);
-            GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
+            if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
+                GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
+            }
         }, () -> {
             SDF_STROKE_STATES.forEach(RenderStateShard::clearRenderState);
-            GLCore.glBindSampler(0, 0);
+            if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
+                GLCore.glBindSampler(0, 0);
+            }
         });
         if (sFirstSDFStrokeType == null) {
             assert (sSDFStrokeTypes.isEmpty());
             sFirstSDFStrokeType = renderType;
-            ((AccessRenderBuffers) Minecraft.getInstance().renderBuffers()).getFixedBuffers()
-                    .put(renderType, sFirstSDFStrokeBuffer);
+            if (TextLayoutEngine.sUseTextShadersInWorld) {
+                ((AccessRenderBuffers) Minecraft.getInstance().renderBuffers()).getFixedBuffers()
+                        .put(renderType, sFirstSDFStrokeBuffer);
+            }
         }
         return renderType;
     }
@@ -227,20 +243,14 @@ public class TextRenderType extends RenderType {
     private static TextRenderType makeSeeThroughType(int texture) {
         return new TextRenderType("modern_text_see_through", 256, () -> {
             SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.enableTexture();
             RenderSystem.setShaderTexture(0, texture);
         }, () -> SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
-    @Nonnull
-    public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode) {
-        throw new IllegalStateException();
-    }
-
     /**
-     * Deferred rendering.
+     * Batch rendering and custom ordering.
      * <p>
-     * We use a universal atlas for deferred rendering to improve performance.
+     * We use a single atlas for batch rendering to improve performance.
      */
     @Nullable
     public static TextRenderType getFirstSDFFillType() {
@@ -261,17 +271,13 @@ public class TextRenderType extends RenderType {
         if (sFirstSDFFillType != null) {
             assert (!sSDFFillTypes.isEmpty());
             var access = (AccessRenderBuffers) Minecraft.getInstance().renderBuffers();
-            if (!access.getFixedBuffers().remove(sFirstSDFFillType, sFirstSDFFillBuffer)) {
-                throw new IllegalStateException();
-            }
+            access.getFixedBuffers().remove(sFirstSDFFillType, sFirstSDFFillBuffer);
             sFirstSDFFillType = null;
         }
         if (sFirstSDFStrokeType != null) {
             assert (!sSDFStrokeTypes.isEmpty());
             var access = (AccessRenderBuffers) Minecraft.getInstance().renderBuffers();
-            if (!access.getFixedBuffers().remove(sFirstSDFStrokeType, sFirstSDFStrokeBuffer)) {
-                throw new IllegalStateException();
-            }
+            access.getFixedBuffers().remove(sFirstSDFStrokeType, sFirstSDFStrokeBuffer);
             sFirstSDFStrokeType = null;
         }
         sNormalTypes.clear();
@@ -284,19 +290,24 @@ public class TextRenderType extends RenderType {
     }
 
     public static ShaderInstance getShaderNormal() {
+        if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
+            return GameRenderer.getRendertypeTextShader();
+        }
         return sShaderNormal;
     }
 
     public static ShaderInstance getShaderSDFFill() {
+        if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
+            return GameRenderer.getRendertypeTextShader();
+        }
         return sShaderSDFFill;
     }
 
     public static ShaderInstance getShaderSDFStroke() {
+        if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
+            return GameRenderer.getRendertypeTextShader();
+        }
         return sShaderSDFStroke;
-    }
-
-    public static ShaderInstance getShaderSeeThrough() {
-        return sShaderSeeThrough;
     }
 
     /**
@@ -327,9 +338,6 @@ public class TextRenderType extends RenderType {
                     DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
             sShaderSDFStroke = new ShaderInstance(provider,
                     ModernUIForge.location("rendertype_modern_text_sdf_stroke"),
-                    DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
-            sShaderSeeThrough = new ShaderInstance(provider,
-                    ModernUIForge.location("rendertype_modern_text_see_through"),
                     DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
         } catch (IOException e) {
             throw new IllegalStateException("Bad text shaders", e);

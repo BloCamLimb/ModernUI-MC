@@ -22,8 +22,7 @@ import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -39,13 +38,14 @@ public class MixinChatScreen {
     @Shadow
     protected EditBox input;
 
-    private boolean mBroadcasting;
+    @Unique
+    private boolean modernUI_MC$broadcasting;
 
     // vanilla widget is REALLY buggy
     @Inject(method = "onEdited", at = @At("HEAD"))
     private void S_onEdited(String s, CallbackInfo ci) {
         String msg = input.getValue();
-        if (!mBroadcasting &&
+        if (!modernUI_MC$broadcasting &&
                 !msg.startsWith("/") &&
                 ModernUIText.CONFIG.mEmojiShortcodes.get() &&
                 msg.contains(":")) {
@@ -76,9 +76,9 @@ public class MixinChatScreen {
             }
             if (replaced) {
                 builder.append(msg, lastEnd, msg.length());
-                mBroadcasting = true;
+                modernUI_MC$broadcasting = true;
                 input.setValue(builder.toString());
-                mBroadcasting = false;
+                modernUI_MC$broadcasting = false;
             }
         }
     }

@@ -24,6 +24,7 @@ import com.ibm.icu.text.BreakIterator;
 import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.util.ast.Node;
+import icyllis.arc3d.core.Matrix4;
 import icyllis.arc3d.opengl.GLCore;
 import icyllis.arc3d.opengl.GLFramebufferCompat;
 import icyllis.modernui.ModernUI;
@@ -34,7 +35,6 @@ import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.graphics.Paint;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.text.*;
-import icyllis.modernui.mc.text.CharSequenceBuilder;
 import icyllis.modernui.text.*;
 import icyllis.modernui.text.style.*;
 import icyllis.modernui.view.Gravity;
@@ -47,6 +47,7 @@ import javax.annotation.Nonnull;
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.*;
+import java.awt.Font;
 import java.awt.font.GlyphVector;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -551,12 +552,12 @@ public class TestMain {
                 /*sGraph.update(delta);*/
                 /*sGraph.draw(canvas, 800, 450);*/
 
-                String tcc = String.format("%d / %d", (int) playTime, (int) sTrack.getLength());
+                /*String tcc = String.format("%d / %d", (int) playTime, (int) sTrack.getLength());
                 canvas.drawText(tcc, 0, tcc.length(), 800, 456, Gravity.CENTER_HORIZONTAL, tps);
 
                 tcc = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1048576 + " / " +
                         Runtime.getRuntime().maxMemory() / 1048576;
-                canvas.drawText(tcc, 0, tcc.length(), 1000, 60, tps);
+                canvas.drawText(tcc, 0, tcc.length(), 1000, 60, tps);*/
                 //canvas.rotate(-30);
 
                 //paint.setStyle(Paint.Style.FILL);
@@ -614,14 +615,14 @@ public class TestMain {
         TextPaint textPaint = new TextPaint();
         textPaint.setColor(0xff000000);
         textPaint.setFontSize(45);
-        canvas.drawText(s, 0, s.length(), 408, 75, textPaint);
+       /* canvas.drawText(s, 0, s.length(), 408, 75, textPaint);
         textPaint.setColor(~0);
         textPaint.setFontSize(44);
         canvas.drawText(s, 0, s.length(), 414, 78, textPaint);
 
         s = "Info";
         textPaint.setFontSize(24);
-        canvas.drawText(s, 0, s.length(), 1310, 56, textPaint);
+        canvas.drawText(s, 0, s.length(), 1310, 56, textPaint);*/
     }
 
     private static void testChars() {

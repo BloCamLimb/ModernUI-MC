@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.text.mixin;
 
 import com.mojang.brigadier.ParseResults;
+import icyllis.modernui.mc.text.VanillaTextWrapper;
 import net.minecraft.client.gui.components.CommandSuggestions;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.util.FormattedCharSequence;
@@ -44,13 +45,12 @@ public abstract class MixinCommandSuggestions {
      * @author BloCamLimb
      * @reason Optimization
      */
-    @Nullable
     @Overwrite
     private FormattedCharSequence formatChat(String viewText, int baseOffset) {
         if (currentParse != null) {
             return callFormatText(currentParse, viewText, baseOffset);
         }
         // fast path
-        return null;
+        return new VanillaTextWrapper(viewText);
     }
 }

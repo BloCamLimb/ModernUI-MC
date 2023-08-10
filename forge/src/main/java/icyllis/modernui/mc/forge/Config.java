@@ -160,6 +160,8 @@ final class Config {
         public static final int BLUR_RADIUS_MAX = 18;
         public static final float FONT_SCALE_MIN = 0.5f;
         public static final float FONT_SCALE_MAX = 2.0f;
+        public static final int TOOLTIP_BORDER_COLOR_ANIM_MIN = 0;
+        public static final int TOOLTIP_BORDER_COLOR_ANIM_MAX = 5000;
 
         public final ForgeConfigSpec.BooleanValue mBlurEffect;
         public final ForgeConfigSpec.IntValue mBackgroundDuration;
@@ -169,6 +171,7 @@ final class Config {
         public final ForgeConfigSpec.BooleanValue mTooltip;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipFill;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
+        public final ForgeConfigSpec.IntValue mTooltipCycle;
         public final ForgeConfigSpec.IntValue mTooltipDuration;
         public final ForgeConfigSpec.BooleanValue mDing;
         //private final ForgeConfigSpec.BooleanValue hudBars;
@@ -274,6 +277,10 @@ final class Config {
                         list.add("#F0DAD0F4");
                         return list;
                     }, $ -> true);
+            mTooltipCycle = builder.comment(
+                            "The cycle time of tooltip border color in milliseconds. (0 = OFF)")
+                    .defineInRange("borderCycleTime", 1000, TOOLTIP_BORDER_COLOR_ANIM_MIN,
+                            TOOLTIP_BORDER_COLOR_ANIM_MAX);
             mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
                     .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);
@@ -451,6 +458,7 @@ final class Config {
                 TooltipRenderer.sStrokeColor[i] = color;
             }
             TooltipRenderer.sAnimationDuration = mTooltipDuration.get();
+            TooltipRenderer.sBorderColorCycle = mTooltipCycle.get();
 
             UIManager.sPlaySoundOnLoaded = mDing.get();
 

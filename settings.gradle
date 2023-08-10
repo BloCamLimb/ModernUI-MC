@@ -15,5 +15,9 @@ pluginManagement {
 
 rootProject.name = 'ModernUI-MC'
 
+if (file('../ModernUI').exists()) {
+    includeBuild '../ModernUI'
+}
+
 include 'forge'
 project(':forge').name = "ModernUI-Forge"

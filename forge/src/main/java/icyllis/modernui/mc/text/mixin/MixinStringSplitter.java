@@ -19,12 +19,12 @@
 package icyllis.modernui.mc.text.mixin;
 
 import icyllis.modernui.mc.text.ModernStringSplitter;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -33,9 +33,9 @@ import java.util.function.BiConsumer;
 @Mixin(StringSplitter.class)
 public class MixinStringSplitter {
 
-    /*@Shadow
-    @Final
-    private StringSplitter.WidthProvider widthProvider;*/
+    @Unique
+    private final ModernStringSplitter modernUI_MC$stringSplitter =
+            TextLayoutEngine.getInstance().getStringSplitter();
 
     /**
      * @author BloCamLimb
@@ -43,7 +43,7 @@ public class MixinStringSplitter {
      */
     @Overwrite
     public float stringWidth(@Nullable String text) {
-        return ModernStringSplitter.measureText(text);
+        return modernUI_MC$stringSplitter.measureText(text);
     }
 
     /**
@@ -52,7 +52,7 @@ public class MixinStringSplitter {
      */
     @Overwrite
     public float stringWidth(@Nonnull FormattedText text) {
-        return ModernStringSplitter.measureText(text);
+        return modernUI_MC$stringSplitter.measureText(text);
     }
 
     /**
@@ -61,7 +61,7 @@ public class MixinStringSplitter {
      */
     @Overwrite
     public float stringWidth(@Nonnull FormattedCharSequence text) {
-        return ModernStringSplitter.measureText(text);
+        return modernUI_MC$stringSplitter.measureText(text);
     }
 
     /**
@@ -70,7 +70,7 @@ public class MixinStringSplitter {
      */
     @Overwrite
     public int plainIndexAtWidth(@Nonnull String text, int width, @Nonnull Style style) {
-        return ModernStringSplitter.indexByWidth(text, width, style);
+        return modernUI_MC$stringSplitter.indexByWidth(text, width, style);
     }
 
     /**
@@ -79,7 +79,7 @@ public class MixinStringSplitter {
      */
     @Overwrite
     public String plainHeadByWidth(@Nonnull String text, int width, @Nonnull Style style) {
-        return ModernStringSplitter.headByWidth(text, width, style);
+        return modernUI_MC$stringSplitter.headByWidth(text, width, style);
     }
 
     /**
@@ -88,7 +88,7 @@ public class MixinStringSplitter {
      */
     @Overwrite
     public String plainTailByWidth(@Nonnull String text, int width, @Nonnull Style style) {
-        return ModernStringSplitter.tailByWidth(text, width, style);
+        return modernUI_MC$stringSplitter.tailByWidth(text, width, style);
     }
 
     /**
@@ -97,7 +97,7 @@ public class MixinStringSplitter {
      */
     @Overwrite
     public int formattedIndexByWidth(@Nonnull String text, int width, @Nonnull Style style) {
-        return ModernStringSplitter.indexByWidth(text, width, style);
+        return modernUI_MC$stringSplitter.indexByWidth(text, width, style);
     }
 
     /**
@@ -107,7 +107,7 @@ public class MixinStringSplitter {
     @Overwrite
     @Nullable
     public Style componentStyleAtWidth(@Nonnull FormattedText text, int width) {
-        return ModernStringSplitter.styleAtWidth(text, width);
+        return modernUI_MC$stringSplitter.styleAtWidth(text, width);
     }
 
     /**
@@ -117,7 +117,7 @@ public class MixinStringSplitter {
     @Overwrite
     @Nullable
     public Style componentStyleAtWidth(@Nonnull FormattedCharSequence text, int width) {
-        return ModernStringSplitter.styleAtWidth(text, width);
+        return modernUI_MC$stringSplitter.styleAtWidth(text, width);
     }
 
     /**
@@ -126,7 +126,7 @@ public class MixinStringSplitter {
      */
     @Overwrite
     public String formattedHeadByWidth(@Nonnull String text, int width, @Nonnull Style style) {
-        return ModernStringSplitter.headByWidth(text, width, style);
+        return modernUI_MC$stringSplitter.headByWidth(text, width, style);
     }
 
     /**
@@ -162,7 +162,7 @@ public class MixinStringSplitter {
             }
             return FormattedText.EMPTY;
         }*/
-        return ModernStringSplitter.headByWidth(text, width, style);
+        return modernUI_MC$stringSplitter.headByWidth(text, width, style);
     }
 
     /**
@@ -172,7 +172,7 @@ public class MixinStringSplitter {
     @Overwrite
     public void splitLines(@Nonnull String text, int width, @Nonnull Style style, boolean withEndSpace,
                            @Nonnull StringSplitter.LinePosConsumer linePos) {
-        ModernStringSplitter.computeLineBreaks(text, width, style, linePos);
+        modernUI_MC$stringSplitter.computeLineBreaks(text, width, style, linePos);
     }
 
     /**
@@ -182,6 +182,6 @@ public class MixinStringSplitter {
     @Overwrite
     public void splitLines(@Nonnull FormattedText text, int width, @Nonnull Style style,
                            @Nonnull BiConsumer<FormattedText, Boolean> consumer) {
-        ModernStringSplitter.computeLineBreaks(text, width, style, consumer);
+        modernUI_MC$stringSplitter.computeLineBreaks(text, width, style, consumer);
     }
 }

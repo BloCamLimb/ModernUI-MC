@@ -18,8 +18,10 @@
 
 package icyllis.modernui.mc.forge.ui;
 
-import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.Canvas;
+import icyllis.modernui.graphics.Paint;
 import icyllis.modernui.graphics.drawable.Drawable;
+import icyllis.modernui.graphics.drawable.ShapeDrawable;
 
 import javax.annotation.Nonnull;
 
@@ -31,7 +33,7 @@ public class RectangleDrawable extends Drawable {
     public void draw(@Nonnull Canvas canvas) {
         Paint paint = Paint.obtain();
         paint.setColor(0x80a0a0a0);
-        paint.setAlpha(MathUtil.modulateAlpha(paint.getAlpha(), mAlpha));
+        paint.setAlpha(ShapeDrawable.modulateAlpha(paint.getAlpha(), mAlpha));
         if (paint.getAlpha() != 0) {
             var b = getBounds();
             canvas.drawRoundRect(b.left, b.top, b.right, b.bottom, 3, paint);

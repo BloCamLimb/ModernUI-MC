@@ -28,11 +28,13 @@ import java.util.Set;
 
 public class MixinConfigPlugin implements IMixinConfigPlugin {
 
-    private int mLevel;
+    private boolean mEnable;
 
     @Override
     public void onLoad(String mixinPackage) {
-        mLevel = ModernUIForge.getBootstrapLevel();
+        mEnable = !Boolean.parseBoolean(
+                ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
+        );
     }
 
     @Override
@@ -42,7 +44,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        return (mLevel & ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE) == 0;
+        return mEnable;
     }
 
     @Override

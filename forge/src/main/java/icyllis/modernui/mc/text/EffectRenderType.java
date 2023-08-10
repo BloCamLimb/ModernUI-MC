@@ -68,7 +68,7 @@ public class EffectRenderType extends RenderType {
                 DEFAULT_LINE
         );
         SEE_THROUGH_STATES = ImmutableList.of(
-                TextRenderType.RENDERTYPE_MODERN_TEXT_SEE_THROUGH,
+                RENDERTYPE_TEXT_SEE_THROUGH_SHADER,
                 TRANSLUCENT_TRANSPARENCY,
                 NO_DEPTH_TEST,
                 CULL,
@@ -82,12 +82,10 @@ public class EffectRenderType extends RenderType {
         );
         TYPE = new EffectRenderType("modern_text_effect", 256, () -> {
             STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.enableTexture();
             RenderSystem.setShaderTexture(0, WHITE.get());
         }, () -> STATES.forEach(RenderStateShard::clearRenderState));
         SEE_THROUGH_TYPE = new EffectRenderType("modern_text_effect_see_through", 256, () -> {
             SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.enableTexture();
             RenderSystem.setShaderTexture(0, WHITE.get());
         }, () -> SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
     }
