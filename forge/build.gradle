@@ -1,12 +1,12 @@
 import net.fabricmc.loom.task.RemapJarTask
 
 plugins {
-    id 'dev.architectury.loom' version '0.12.0-SNAPSHOT'
+    id 'dev.architectury.loom' version '1.1-SNAPSHOT'
     //id 'com.matthewprenger.cursegradle' version '1.4.0'
     id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
-version = "${minecraft_version}-${core_version}" as String
+version = "${minecraft_version}-${mod_version}" as String
 
 configurations {
     shadow
@@ -17,18 +17,17 @@ configurations {
 loom {
     silentMojangMappingsLicense()
     forge {
-        dataGen {
+        /*dataGen {
             mod 'modernui'
-        }
-        mixinConfig "mixins.modernui-forge.json"
-        mixinConfig "mixins.modernui-textmc.json"
+        }*/
+        mixinConfigs "mixins.modernui-forge.json", "mixins.modernui-textmc.json"
     }
-    launches {
-        data {
-            arg "--existing", file("src/main/resources").absolutePath
-        }
+    runs {
+        /*data {
+            programArgs "--existing", file("src/main/resources").absolutePath
+        }*/
     }
-    //runConfigs.each { it.setIdeConfigGenerated(true) } // Uncomment this if run configs not generated
+    runConfigs.each { it.setIdeConfigGenerated(true) } // Uncomment this if run configs not generated
     addTaskBeforeRun(":${name}:classes")
 }
 
@@ -46,6 +45,10 @@ repositories {
             includeGroup 'org.parchmentmc.data'
         }
     }
+    maven {
+        url 'https://maven.izzel.io/releases/'
+    }
+    mavenCentral()
     flatDir {
         dir "${rootProject.projectDir}/libs"
     }
@@ -63,27 +66,50 @@ dependencies {
     modCompileOnly "mezz.jei:jei-${minecraft_version}:${jei_version}:api"
     modRuntimeOnly "mezz.jei:jei-${minecraft_version}:${jei_version}"
 
-    implementation(forgeDependencies(project(':ModernUI-Core')))
-    shadow(project(':ModernUI-Core')) {
-        transitive = false
+    if (rootProject.file('../ModernUI').exists()) {
+        implementation(forgeDependencies("icyllis.modernui:ModernUI-Core"))
+        shadow("icyllis.modernui:ModernUI-Core") {
+            transitive = false
+        }
+        implementation(forgeDependencies("icyllis.modernui:ModernUI-ViewPager"))
+        shadow("icyllis.modernui:ModernUI-ViewPager") {
+            transitive = false
+        }
+        implementation(forgeDependencies("icyllis.modernui:ModernUI-Markdown"))
+        shadow("icyllis.modernui:ModernUI-Markdown") {
+            transitive = false
+        }
+    } else {
+        implementation(forgeDependencies("icyllis.modernui:ModernUI-Core:${core_version}"))
+        shadow("icyllis.modernui:ModernUI-Core:${core_version}") {
+            transitive = false
+        }
+        implementation(forgeDependencies("icyllis.modernui:ModernUI-ViewPager:${core_version}"))
+        shadow("icyllis.modernui:ModernUI-ViewPager:${core_version}") {
+            transitive = false
+        }
+        implementation(forgeDependencies("icyllis.modernui:ModernUI-Markdown:${core_version}"))
+        shadow("icyllis.modernui:ModernUI-Markdown:${core_version}") {
+            transitive = false
+        }
     }
 
-    implementation "org.openjdk.jmh:jmh-core:1.34"
-    annotationProcessor "org.openjdk.jmh:jmh-generator-annprocess:1.34"
+    implementation 'org.openjdk.jmh:jmh-core:1.35'
+    annotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.35'
 
     implementation "io.github.stephankoelle:jamm:0.4.1"
 
     implementation(forgeDependencies("com.github.ben-manes.caffeine:caffeine:${caffeine_version}"))
     implementation(forgeDependencies("com.vladsch.flexmark:flexmark:${flexmark_version}"))
 
-    implementation(forgeDependencies("io.reactivex.rxjava3:rxjava:${rxjava_version}"))
+    //implementation(forgeDependencies("io.reactivex.rxjava3:rxjava:${rxjava_version}"))
 
     shadow "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
     shadow "com.vladsch.flexmark:flexmark:${flexmark_version}"
 
-    shadow "io.reactivex.rxjava3:rxjava:${rxjava_version}"
+    //shadow "io.reactivex.rxjava3:rxjava:${rxjava_version}"
 
-    shadow ':ModernUI-Fonts-1.0'
+    shadow ':ModernUI-Fonts-2.0'
 
     /*implementation('org.apache.maven:maven-artifact') {
         version {
@@ -140,24 +166,25 @@ task remapMavenJar(type: RemapJarTask) {
     archiveClassifier.set("maven")
 }
 
-if (project.hasProperty("jks")) {
+if (project.hasProperty("keystore")) {
     remapJar.doLast {
         ant.signjar(
-                keypass: project.getProperty("jks_keypass"),
-                storepass: project.getProperty("jks_pass"),
                 jar: remapJar.archiveFile.get(),
-                storetype: 'jks',
-                keystore: project.getProperty("jks"),
-                alias: project.getProperty("jks_alias")
+                alias: project.getProperty("keystore_alias"),
+                storepass: project.getProperty("keystore_pass"),
+                keystore: project.getProperty("keystore"),
+                storetype: 'pkcs12',
+                keypass: project.getProperty("keystore_keypass"),
+                tsaurl: 'http://sha256timestamp.ws.symantec.com/sha256/timestamp'
         )
     }
 }
 
 processResources {
-    inputs.property 'version', core_version
+    inputs.property 'version', mod_version
 
     filesMatching("META-INF/mods.toml") {
-        expand 'version': core_version
+        expand 'version': mod_version
     }
 }
 
