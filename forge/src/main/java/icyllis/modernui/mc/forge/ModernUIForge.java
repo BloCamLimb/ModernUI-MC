@@ -121,7 +121,7 @@ public final class ModernUIForge {
         LocalStorage.init();
 
         // the 'new' method is in another class, so it's class-loading-safe
-        DistExecutor.safeCallWhenOn(Dist.CLIENT, () -> Client::new);
+        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> Loader::init);
 
         /*if ((getBootstrapLevel() & BOOTSTRAP_ENABLE_DEBUG_INJECTORS) != 0) {
             MinecraftForge.EVENT_BUS.register(EventHandler.ClientDebug.class);
