@@ -28,11 +28,13 @@ import java.util.Set;
 
 public class MixinConfigPlugin implements IMixinConfigPlugin {
 
-    private int mLevel;
+    private boolean mDisableSmoothScrolling;
 
     @Override
     public void onLoad(String mixinPackage) {
-        mLevel = ModernUIForge.getBootstrapLevel();
+        mDisableSmoothScrolling = Boolean.parseBoolean(
+                ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
+        );
     }
 
     @Override
@@ -46,13 +48,13 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
                 mixinClassName.equals("icyllis.modernui.mc.forge.mixin.AccessVideoSettings")) {
             return false;
         }*/
-        if ((mLevel & ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING) != 0) {
+        if (mDisableSmoothScrolling) {
             return !mixinClassName.equals("icyllis.modernui.mc.forge.mixin.MixinScrollPanel") &&
                     !mixinClassName.equals("icyllis.modernui.mc.forge.mixin.MixinSelectionList");
         }
-        if ((mLevel & ModernUIForge.BOOTSTRAP_ENABLE_DEBUG_INJECTORS) == 0) {
+        /*if ((mLevel & ModernUIForge.BOOTSTRAP_ENABLE_DEBUG_INJECTORS) == 0) {
             return !mixinClassName.endsWith("DBG");
-        }
+        }*/
         return true;
     }
 

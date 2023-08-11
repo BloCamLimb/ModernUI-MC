@@ -18,7 +18,8 @@
 
 package icyllis.modernui.mc.text;
 
-import icyllis.modernui.graphics.MathUtil;
+import icyllis.arc3d.core.MathUtil;
+import icyllis.modernui.graphics.text.CharSequenceBuilder;
 import icyllis.modernui.util.Pools;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -192,7 +193,7 @@ public class FormattedLayoutKey {
                 if (mStyle == null) {
                     allocate();
                     mStyle = style;
-                } else if (CharacterStyle.isAppearanceAffecting(mStyle, style)) {
+                } else if (!CharacterStyle.equalsForTextLayout(mStyle, style)) {
                     // append last component
                     if (!mBuilder.isEmpty()) {
                         mTexts.add(mBuilder);

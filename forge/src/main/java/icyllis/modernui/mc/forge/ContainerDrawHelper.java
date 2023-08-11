@@ -22,9 +22,11 @@ import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
+import icyllis.arc3d.core.*;
 import icyllis.arc3d.engine.DirectContext;
 import icyllis.arc3d.engine.DrawableInfo;
 import icyllis.arc3d.opengl.GLCore;
+import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.util.Pools;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
@@ -111,7 +113,7 @@ public final class ContainerDrawHelper {
         @Override
         public DrawHandler snapDrawHandler(int backendApi,
                                            Matrix4 viewMatrix,
-                                           Rect clipBounds,
+                                           Rect2i clipBounds,
                                            ImageInfo targetInfo) {
             viewMatrix.preTranslate(x, y, z + 3000);
             viewMatrix.preScale(size, -size, size);

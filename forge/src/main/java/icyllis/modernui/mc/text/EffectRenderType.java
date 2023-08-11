@@ -68,7 +68,7 @@ public class EffectRenderType extends RenderType {
                 DEFAULT_LINE
         );
         SEE_THROUGH_STATES = ImmutableList.of(
-                TextRenderType.RENDERTYPE_MODERN_TEXT_SEE_THROUGH,
+                RENDERTYPE_TEXT_SEE_THROUGH_SHADER,
                 TRANSLUCENT_TRANSPARENCY,
                 NO_DEPTH_TEST,
                 CULL,

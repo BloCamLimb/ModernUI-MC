@@ -20,7 +20,7 @@ package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import icyllis.modernui.graphics.font.GLBakedGlyph;
+import icyllis.modernui.graphics.font.BakedGlyph;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
@@ -94,7 +94,7 @@ public abstract class GlyphRender {
         mFlags |= decoration;
     }
 
-    /**
+    /*
      * Draw the glyph of this info.
      *
      * @param builder vertex builder
@@ -107,10 +107,10 @@ public abstract class GlyphRender {
      * @param a       final alpha
      * @param res     resolution level
      */
-    public abstract void drawGlyph(@Nonnull BufferBuilder builder, @Nonnull String input, float x, float y, int r,
-                                   int g, int b, int a, float res);
+    /*public abstract void drawGlyph(@Nonnull BufferBuilder builder, @Nonnull String input, float x, float y, int r,
+                                   int g, int b, int a, float res);*/
 
-    /**
+    /*
      * Draw the glyph of this info.
      *
      * @param matrix     matrix
@@ -126,9 +126,9 @@ public abstract class GlyphRender {
      * @param light      packed light
      * @param res        resolution level
      */
-    public abstract void drawGlyph(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
+    /*public abstract void drawGlyph(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
                                    @Nullable CharSequence input, float x, float y, int r, int g, int b, int a,
-                                   boolean seeThrough, int light, float res);
+                                   boolean seeThrough, int light, float res);*/
 
     /**
      * Draw the effect of this info
@@ -202,19 +202,19 @@ public abstract class GlyphRender {
     static
     class StandardGlyphRender extends GlyphRender {
 
-        /**
+        /*
          * The immutable glyph to render
          */
         @Nullable
-        private final GLBakedGlyph mGlyph;
+        private final BakedGlyph mGlyph;
 
         public StandardGlyphRender(int stripIndex, float offsetX, float advance, int decoration,
-                                   @Nullable GLBakedGlyph glyph) {
+                                   @Nullable BakedGlyph glyph) {
             super(stripIndex, offsetX, advance, decoration);
             mGlyph = glyph;
         }
 
-        @Override
+        /*@Override
         public void drawGlyph(@Nonnull BufferBuilder builder, @Nonnull String input, float x, float y, int r, int g,
                               int b, int a, float res) {
             GLBakedGlyph glyph = mGlyph;
@@ -226,12 +226,12 @@ public abstract class GlyphRender {
             x += mOffsetX;
             final float w;
             final float h;
-            /*if (TextLayoutProcessor.sAlignPixels) {
+            *//*if (TextLayoutProcessor.sAlignPixels) {
                 x += Math.round(glyph.x * res) / res;
                 y += Math.round(glyph.y * res) / res;
                 w = Math.round(glyph.width * res) / res;
                 h = Math.round(glyph.height * res) / res;
-            } else */
+            } else *//*
             {
                 x += glyph.x / res;
                 y += glyph.y / res;
@@ -263,7 +263,7 @@ public abstract class GlyphRender {
             builder.vertex(matrix, x, y + h, 0).color(r, g, b, a).uv(glyph.u1, glyph.v2).uv2(light).endVertex();
             builder.vertex(matrix, x + w, y + h, 0).color(r, g, b, a).uv(glyph.u2, glyph.v2).uv2(light).endVertex();
             builder.vertex(matrix, x + w, y, 0).color(r, g, b, a).uv(glyph.u2, glyph.v1).uv2(light).endVertex();
-        }
+        }*/
 
         /*@Override
         public float getAdvance() {
@@ -311,19 +311,19 @@ public abstract class GlyphRender {
     static
     class DigitGlyphRender extends GlyphRender {
 
-        /**
+        /*
          * A reference of cached array in GlyphManager, 0-9 textured glyphs (in that order)
          */
         @Nonnull
-        private final Map.Entry<GLBakedGlyph[], float[]> mDigits;
+        private final Map.Entry<BakedGlyph[], float[]> mDigits;
 
         public DigitGlyphRender(int stripIndex, float offsetX, float advance, int decoration,
-                                @Nonnull Map.Entry<GLBakedGlyph[], float[]> digits) {
+                                @Nonnull Map.Entry<BakedGlyph[], float[]> digits) {
             super(stripIndex, offsetX, advance, decoration);
             mDigits = digits;
         }
 
-        @Override
+        /*@Override
         public void drawGlyph(@Nonnull BufferBuilder builder, @Nonnull String input, float x, float y, int r, int g,
                               int b, int a, float res) {
             int idx = input.charAt(mStringIndex) - '0';
@@ -339,12 +339,12 @@ public abstract class GlyphRender {
             }
             final float w;
             final float h;
-            /*if (TextLayoutProcessor.sAlignPixels) {
+            *//*if (TextLayoutProcessor.sAlignPixels) {
                 x += Math.round(glyph.x * res) / res;
                 y += Math.round(glyph.y * res) / res;
                 w = Math.round(glyph.width * res) / res;
                 h = Math.round(glyph.height * res) / res;
-            } else*/
+            } else*//*
             {
                 x += glyph.x / res;
                 y += glyph.y / res;
@@ -380,7 +380,7 @@ public abstract class GlyphRender {
             builder.vertex(matrix, x, y + h, 0).color(r, g, b, a).uv(glyph.u1, glyph.v2).uv2(light).endVertex();
             builder.vertex(matrix, x + w, y + h, 0).color(r, g, b, a).uv(glyph.u2, glyph.v2).uv2(light).endVertex();
             builder.vertex(matrix, x + w, y, 0).color(r, g, b, a).uv(glyph.u2, glyph.v1).uv2(light).endVertex();
-        }
+        }*/
 
         /*@Override
         public void drawGlyph(@Nonnull BufferBuilder builder, @Nonnull String input, float x, float y, int r, int g,
@@ -429,19 +429,19 @@ public abstract class GlyphRender {
 
         private static final Random RANDOM = new Random();
 
-        /**
+        /*
          * Array of glyphs with same advance
          */
         @Nonnull
-        private final Map.Entry<GLBakedGlyph[], float[]> mGlyphs;
+        private final Map.Entry<BakedGlyph[], float[]> mGlyphs;
 
         public RandomGlyphRender(int stripIndex, float offsetX, float advance, int decoration,
-                                 @Nonnull Map.Entry<GLBakedGlyph[], float[]> glyphs) {
+                                 @Nonnull Map.Entry<BakedGlyph[], float[]> glyphs) {
             super(stripIndex, advance, offsetX, decoration);
             mGlyphs = glyphs;
         }
 
-        @Override
+        /*@Override
         public void drawGlyph(@Nonnull BufferBuilder builder, @Nonnull String input, float x, float y, int r, int g,
                               int b, int a, float res) {
             int idx = RANDOM.nextInt(mGlyphs.getKey().length);
@@ -455,12 +455,12 @@ public abstract class GlyphRender {
             }
             final float w;
             final float h;
-            /*if (TextLayoutProcessor.sAlignPixels) {
+            *//*if (TextLayoutProcessor.sAlignPixels) {
                 x += Math.round(glyph.x * res) / res;
                 y += Math.round(glyph.y * res) / res;
                 w = Math.round(glyph.width * res) / res;
                 h = Math.round(glyph.height * res) / res;
-            } else */
+            } else *//*
             {
                 x += glyph.x / res;
                 y += glyph.y / res;
@@ -495,7 +495,7 @@ public abstract class GlyphRender {
             builder.vertex(matrix, x, y + h, 0).color(r, g, b, a).uv(glyph.u1, glyph.v2).uv2(light).endVertex();
             builder.vertex(matrix, x + w, y + h, 0).color(r, g, b, a).uv(glyph.u2, glyph.v2).uv2(light).endVertex();
             builder.vertex(matrix, x + w, y, 0).color(r, g, b, a).uv(glyph.u2, glyph.v1).uv2(light).endVertex();
-        }
+        }*/
 
         /*@Override
         public void drawGlyph(@Nonnull BufferBuilder builder, @Nonnull String input, float x, float y, int r, int g, int

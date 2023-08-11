@@ -330,7 +330,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 option.<SwitchButton>requireViewById(R.id.button1).setChecked(true);
                 category.addView(option);
             }
-            {
+            /*{
                 var option = createInputOption("modernui.center.text.cacheLifespan");
                 var input = option.<EditText>requireViewById(R.id.input);
                 input.setText(ModernUIText.CONFIG.mCacheLifespan.get().toString());
@@ -367,7 +367,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                     }
                 });
                 category.addView(option);
-            }
+            }*/
             panel.addView(category);
         }
 

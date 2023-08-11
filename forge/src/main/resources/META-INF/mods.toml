@@ -9,6 +9,7 @@ license="All rights reserved"
     version="${version}"
     displayName="Modern UI"
     displayURL="https://curseforge.com/minecraft/mc-mods/modern-ui"
+    displayTest="IGNORE_ALL_VERSION"
     authors="BloCamLimb"
     description='''
     Modern desktop framework from low-level 3D graphics API to high-level view model, for development of 2D/3D rendering software or game engine, with internationalization support and many new technologies.

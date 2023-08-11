@@ -119,12 +119,11 @@ public class CenterFragment2 extends Fragment {
                                 .commit();
                     }
                     case 1003 -> {
-                        var fragment = fm.findFragmentById(id_tab_container);
-                        if (fragment != null) {
-                            fm.beginTransaction()
-                                    .remove(fragment)
-                                    .commit();
-                        }
+                        fm.beginTransaction()
+                                .replace(id_tab_container, AdvancedOptionsFragment.class, null, "developerOptions")
+                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                                .setReorderingAllowed(true)
+                                .commit();
                     }
                 }
             });
