@@ -567,6 +567,11 @@ public class TextLayoutEngine implements PreparableReloadListener {
         if (behavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL) {
             return;
         }
+        if (mDefaultFontCollection == null) {
+            // reload() when force=false and fonts not loaded yet
+            // we force to do this again in reloadAll()
+            return;
+        }
         for (FontFamily family : mDefaultFontCollection.getFamilies()) {
             switch (family.getFamilyName()) {
                 case "minecraft:font/nonlatin_european.png",
@@ -657,6 +662,11 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 fontSet.reload(fontCollection, mResLevel);
                 fontSets.put(fontName, fontSet);
             });
+            {
+                var fontSet = new StandardFontSet(textureManager, Minecraft.UNIFORM_FONT);
+                fontSet.reload(ModernUI.getSelectedTypeface(), mResLevel);
+                fontSets.put(Minecraft.UNIFORM_FONT, fontSet);
+            }
         } else {
             LOGGER.warn(MARKER, "Where is font manager?");
         }

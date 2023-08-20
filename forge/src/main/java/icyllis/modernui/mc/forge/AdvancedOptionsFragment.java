@@ -26,6 +26,7 @@ import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.mc.forge.ui.ThemeControl;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.InputFilter;
 import icyllis.modernui.text.TextUtils;
 import icyllis.modernui.text.method.DigitsInputFilter;
@@ -157,6 +158,31 @@ public class AdvancedOptionsFragment extends Fragment {
                 button.setOnClickListener((__) ->
                         Core.executeOnMainThread(() -> GlyphManager.getInstance().debug()));
                 category.addView(button);
+            }
+            if (!Boolean.parseBoolean(
+                    ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
+            )) {
+                {
+                    var button = createDebugButton(context, "Dump BitmapFonts and EmojiAtlas (V)");
+                    button.setOnClickListener((__) ->
+                            Core.executeOnMainThread(() -> {
+                                TextLayoutEngine.getInstance().dumpEmojiAtlas();
+                                TextLayoutEngine.getInstance().dumpBitmapFonts();
+                            }));
+                    category.addView(button);
+                }
+                {
+                    var button = createDebugButton(context, "Reload TextLayoutEngine");
+                    button.setOnClickListener((__) ->
+                            Core.executeOnMainThread(() -> TextLayoutEngine.getInstance().reload()));
+                    category.addView(button);
+                }
+                {
+                    var button = createDebugButton(context, "Reload TextLayoutEngine (Fully)");
+                    button.setOnClickListener((__) ->
+                            Core.executeOnMainThread(() -> TextLayoutEngine.getInstance().reloadAll()));
+                    category.addView(button);
+                }
             }
             {
                 var button = createDebugButton(context, "GC (F)");

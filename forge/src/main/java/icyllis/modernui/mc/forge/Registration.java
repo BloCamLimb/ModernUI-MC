@@ -46,16 +46,17 @@ import net.minecraftforge.client.event.*;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
+import org.apache.commons.io.output.StringBuilderWriter;
 
 import javax.annotation.Nonnull;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
@@ -211,6 +212,17 @@ final class Registration {
                             new TestPauseFragment()));
                 }
             });
+
+            CrashReportCallables.registerCrashCallable("Fragments", () -> {
+                var fragments = UIManager.getInstance().mFragmentController;
+                var builder = new StringBuilder();
+                if (fragments != null) {
+                    try (var pw = new PrintWriter(new StringBuilderWriter(builder))) {
+                        fragments.getFragmentManager().dump("", null, pw);
+                    }
+                }
+                return builder.toString();
+            }, () -> UIManager.getInstance().mFragmentController != null);
 
             // Always replace static variable as an insurance policy
             /*AccessOption.setGuiScale(new CycleOption("options.guiScale",
