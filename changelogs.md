@@ -1,11 +1,15 @@
 Changelogs
 ===
 ### Modern UI 3.8.1.4
+#### Forge Extension 1.20.1-47.0.14
 * Update default config
 * Fix crash on setting opacity to 0
+* Fix possible crash in parsing color string
 * Add Fragments into crash report
 * Add more advanced options
 #### Modern Text Engine 1.20.1
+* Add smart SDF text control
+* Fix polygon offset issues
 * Fix possible crash on populateDefaultFonts
 * Add line break style config
 * Add line break word style config

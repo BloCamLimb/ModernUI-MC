@@ -706,11 +706,14 @@ public class PreferencesFragment extends Fragment {
             Runnable saveFn) {
         Supplier<Double> getter = () -> {
             List<? extends String> colors = config.get();
-            if (colors == null || colors.isEmpty()) {
-                return 1.0;
-            } else {
-                return (double) ((Color.parseColor(colors.get(0)) >>> 24) / 255.0f);
+            if (colors != null && !colors.isEmpty()) {
+                try {
+                    return (double) ((Color.parseColor(colors.get(0)) >>> 24) / 255.0f);
+                } catch (IllegalArgumentException e) {
+                    e.printStackTrace();
+                }
             }
+            return 1.0;
         };
         Consumer<Double> setter = (d) -> {
             int v = (int) (d * 255.0 + 0.5);

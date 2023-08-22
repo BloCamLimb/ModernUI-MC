@@ -1251,9 +1251,9 @@ public class TextLayoutEngine implements PreparableReloadListener {
     }
 
     @Nullable
-    public BakedGlyph lookupGlyph(Font font, int fontSize, int glyphId) {
+    public BakedGlyph lookupGlyph(Font font, int deviceFontSize, int glyphId) {
         if (font instanceof StandardFont standardFont) {
-            java.awt.Font awtFont = standardFont.chooseFont(fontSize);
+            java.awt.Font awtFont = standardFont.chooseFont(deviceFontSize);
             return mGlyphManager.lookupGlyph(awtFont, glyphId);
         } else if (font == mEmojiFont) {
             if (glyphId == 0) {
@@ -1492,8 +1492,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
         java.awt.Font awtFont = null;
         BitmapFont bitmapFont = null;
         if (desc.font instanceof StandardFont) {
-            int fontSize = TextLayoutProcessor.computeFontSize(desc.resLevel);
-            awtFont = ((StandardFont) desc.font).chooseFont(fontSize);
+            int deviceFontSize = TextLayoutProcessor.computeFontSize(desc.resLevel);
+            awtFont = ((StandardFont) desc.font).chooseFont(deviceFontSize);
         } else if (desc.font instanceof BitmapFont) {
             bitmapFont = (BitmapFont) desc.font;
         } else {

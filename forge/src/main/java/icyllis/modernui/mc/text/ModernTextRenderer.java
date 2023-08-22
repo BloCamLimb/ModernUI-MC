@@ -44,7 +44,7 @@ public final class ModernTextRenderer {
     }
 
     public static final Vector3f SHADOW_OFFSET = new Vector3f(0.0F, 0.0F, 0.03F);
-    public static final Vector3f OUTLINE_OFFSET = new Vector3f(0.0F, 0.0F, 0.01F);
+    //public static final Vector3f OUTLINE_OFFSET = new Vector3f(0.0F, 0.0F, 0.01F);
 
     /*
      * Render thread instance
@@ -203,15 +203,15 @@ public final class ModernTextRenderer {
         return x;
     }
 
-    public static int chooseMode(Matrix4f transform, Font.DisplayMode mode) {
-        if (mode == Font.DisplayMode.SEE_THROUGH) {
+    public static int chooseMode(Matrix4f matrix, Font.DisplayMode displayMode) {
+        if (displayMode == Font.DisplayMode.SEE_THROUGH) {
             return TextRenderType.MODE_SEE_THROUGH;
         } else if (TextLayoutEngine.sCurrentInWorldRendering) {
             return TextRenderType.MODE_SDF_FILL;
         } else {
-            if ((transform.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {
+            if ((matrix.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {
                 // JOML can report fake values, compute again
-                if ((transform.determineProperties().properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {
+                if ((matrix.determineProperties().properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {
                     return TextRenderType.MODE_SDF_FILL;
                 }
             }
@@ -267,24 +267,22 @@ public final class ModernTextRenderer {
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
 
-        int oa = outlineColor >>> 24;
-        if (oa <= 1) oa = 255;
-        int or = outlineColor >> 16 & 0xff;
-        int og = outlineColor >> 8 & 0xff;
-        int ob = outlineColor & 0xff;
-
         TextLayout layout = mEngine.lookupFormattedLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
 
-        matrix = new Matrix4f(matrix);
         layout.drawText(matrix, source, x, y, r, g, b, a, false,
                 TextRenderType.MODE_SDF_FILL, 0, packedLight);
-        matrix.translate(OUTLINE_OFFSET);
 
-        layout.drawTextOutline(matrix, source, x, y, or, og, ob, oa, packedLight);
+        a = outlineColor >>> 24;
+        if (a <= 1) a = 255;
+        r = outlineColor >> 16 & 0xff;
+        g = outlineColor >> 8 & 0xff;
+        b = outlineColor & 0xff;
+
+        layout.drawTextOutline(matrix, source, x, y, r, g, b, a, packedLight);
     }
 
     /*public static void change(boolean global, boolean shadow) {

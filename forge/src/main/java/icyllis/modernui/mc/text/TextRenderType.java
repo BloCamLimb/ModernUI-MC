@@ -110,7 +110,7 @@ public class TextRenderType extends RenderType {
                 CULL,
                 LIGHTMAP,
                 NO_OVERLAY,
-                NO_LAYERING,
+                POLYGON_OFFSET_LAYERING,
                 MAIN_TARGET,
                 DEFAULT_TEXTURING,
                 COLOR_DEPTH_WRITE,
@@ -123,7 +123,7 @@ public class TextRenderType extends RenderType {
                 CULL,
                 LIGHTMAP,
                 NO_OVERLAY,
-                NO_LAYERING,
+                POLYGON_OFFSET_LAYERING,
                 MAIN_TARGET,
                 DEFAULT_TEXTURING,
                 COLOR_DEPTH_WRITE,
@@ -333,11 +333,17 @@ public class TextRenderType extends RenderType {
             sShaderNormal = new ShaderInstance(provider,
                     ModernUIForge.location("rendertype_modern_text_normal"),
                     DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+            boolean GLSL400 = Core.requireDirectContext()
+                    .getCaps().shaderCaps().mGLSLVersion >= 400;
             sShaderSDFFill = new ShaderInstance(provider,
-                    ModernUIForge.location("rendertype_modern_text_sdf_fill"),
+                    ModernUIForge.location(GLSL400
+                            ? "rendertype_modern_text_sdf_fill_400"
+                            : "rendertype_modern_text_sdf_fill"),
                     DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
             sShaderSDFStroke = new ShaderInstance(provider,
-                    ModernUIForge.location("rendertype_modern_text_sdf_stroke"),
+                    ModernUIForge.location(GLSL400
+                            ? "rendertype_modern_text_sdf_stroke_400"
+                            : "rendertype_modern_text_sdf_stroke"),
                     DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
         } catch (IOException e) {
             throw new IllegalStateException("Bad text shaders", e);
