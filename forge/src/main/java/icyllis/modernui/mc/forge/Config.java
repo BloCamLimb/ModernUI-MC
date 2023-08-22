@@ -257,7 +257,8 @@ final class Config {
                             "The tooltip FILL color in #RRGGBB or #AARRGGBB format. Default: #E0000000",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
-                            "Multiple values produce a gradient effect, whereas one value produces a solid color.")
+                            "Multiple values produce a gradient effect, whereas one value produces a solid color.",
+                            "If less than 4 are provided, repeat the last value.")
                     .defineList("colorFill", () -> {
                         List<String> list = new ArrayList<>();
                         list.add("#E0000000");
@@ -268,13 +269,14 @@ final class Config {
                                     "#F0FFC3F7 and #F0DAD0F4",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
-                            "Multiple values produce a gradient effect, whereas one value produces a solid color.")
+                            "Multiple values produce a gradient effect, whereas one value produces a solid color.",
+                            "If less than 4 are provided, repeat the last value.")
                     .defineList("colorStroke", () -> {
                         List<String> list = new ArrayList<>();
                         list.add("#F0AADCF0");
-                        list.add("#F0DAD0F4");
                         list.add("#F0FFC3F7");
-                        list.add("#F0DAD0F4");
+                        list.add("#F0BFF2B2");
+                        list.add("#F0D27F3D");
                         return list;
                     }, $ -> true);
             mTooltipCycle = builder.comment(
@@ -317,7 +319,7 @@ final class Config {
 
             builder.pop();
 
-            builder.comment("View system config, only applied to Modern UI Core.")
+            builder.comment("View system config, currently not working.")
                     .push("view");
 
             mForceRtl = builder.comment("Force layout direction to RTL, otherwise, the current Locale setting.")

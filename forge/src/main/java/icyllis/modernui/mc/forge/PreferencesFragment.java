@@ -362,10 +362,12 @@ public class PreferencesFragment extends Fragment {
             content.addView(list);
         }
 
-        saveFn = ModernUIText.CONFIG::saveAndReloadAsync;
-
-        {
+        if (!Boolean.parseBoolean(
+                ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
+        )) {
             var category = createCategoryList(context, "modernui.center.category.text");
+
+            saveFn = ModernUIText.CONFIG::saveAndReloadAsync;
 
             {
                 var option = createBooleanOption(context, "modernui.center.text.textShadersInWorld",
@@ -408,6 +410,19 @@ public class PreferencesFragment extends Fragment {
             category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
                     ModernUIText.Config.SHADOW_OFFSET_MIN, ModernUIText.Config.SHADOW_OFFSET_MAX,
                     5, ModernUIText.CONFIG.mShadowOffset, saveFn));
+
+            {
+                var option = createSpinnerOption(context, "modernui.center.text.lineBreakStyle",
+                        ModernUIText.Config.LineBreakStyle.values(),
+                        ModernUIText.CONFIG.mLineBreakStyle, saveFn);
+                option.getChildAt(0)
+                        .setTooltipText(I18n.get("modernui.center.text.lineBreakStyle_desc"));
+                category.addView(option);
+            }
+
+            category.addView(createSpinnerOption(context, "modernui.center.text.lineBreakWordStyle",
+                    ModernUIText.Config.LineBreakWordStyle.values(),
+                    ModernUIText.CONFIG.mLineBreakWordStyle, saveFn));
 
             {
                 var option = createBooleanOption(context, "modernui.center.text.useComponentCache",
@@ -708,15 +723,22 @@ public class PreferencesFragment extends Fragment {
             ) {
                 int color = Color.parseColor(it.next());
                 color = color & 0xFFFFFF | (v << 24);
-                it.set(
-                        '#' + Integer.toHexString(color)
-                                .toUpperCase(Locale.ROOT)
-                );
+                if (v != 0) {
+                    it.set(
+                            '#' + Integer.toHexString(color)
+                                    .toUpperCase(Locale.ROOT)
+                    );
+                } else {
+                    it.set(
+                            '#' + Integer.toHexString(0x1000000 | color).substring(1)
+                                    .toUpperCase(Locale.ROOT)
+                    );
+                }
             }
             config.set(newList);
         };
         return createFloatOption(context, name, 0, 1, 4,
-                getter, setter, saveFn);
+                getter, setter, 100, saveFn);
     }
 
     public static LinearLayout createFloatOption(Context context, String name,
@@ -724,12 +746,13 @@ public class PreferencesFragment extends Fragment {
                                                  ForgeConfigSpec.DoubleValue config,
                                                  Runnable saveFn) {
         return createFloatOption(context, name, minValue, maxValue, maxLength,
-                config, config::set, saveFn);
+                config, config::set, 10, saveFn);
     }
 
     public static LinearLayout createFloatOption(Context context, String name,
                                                  float minValue, float maxValue, int maxLength,
                                                  Supplier<Double> getter, Consumer<Double> setter,
+                                                 float denominator, // 10 means step=0.1, 100 means step=0.01
                                                  Runnable saveFn) {
         var layout = createInputBoxWithSlider(context, name);
         var slider = layout.<SeekBar>requireViewById(R.id.button2);
@@ -746,27 +769,27 @@ public class PreferencesFragment extends Fragment {
                 v.setText(Float.toString(newValue));
                 if (newValue != getter.get()) {
                     setter.accept((double) newValue);
-                    int curProgress = (int) Math.round((newValue - minValue) * 10.0);
+                    int curProgress = (int) Math.round((newValue - minValue) * denominator);
                     slider.setProgress(curProgress, true);
                     saveFn.run();
                 }
             }
         });
         input.setMinWidth(slider.dp(50));
-        int steps = (int) Math.round((maxValue - minValue) * 10.0);
+        int steps = (int) Math.round((maxValue - minValue) * denominator);
         slider.setMax(steps);
-        int curProgress = (int) Math.round((curValue - minValue) * 10.0);
+        int curProgress = (int) Math.round((curValue - minValue) * denominator);
         slider.setProgress(curProgress);
         slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                double newValue = seekBar.getProgress() / 10.0 + minValue;
+                double newValue = seekBar.getProgress() / denominator + minValue;
                 input.setText(Float.toString((float) newValue));
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                double newValue = seekBar.getProgress() / 10.0 + minValue;
+                double newValue = seekBar.getProgress() / denominator + minValue;
                 if (newValue != getter.get()) {
                     setter.accept((double) (float) newValue);
                     input.setText(Float.toString((float) newValue));

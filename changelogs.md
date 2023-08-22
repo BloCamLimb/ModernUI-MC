@@ -1,5 +1,17 @@
 Changelogs
 ===
+### Modern UI 3.8.1.4
+* Update default config
+* Fix crash on setting opacity to 0
+* Add Fragments into crash report
+* Add more advanced options
+#### Modern Text Engine 1.20.1
+* Fix possible crash on populateDefaultFonts
+* Add line break style config
+* Add line break word style config
+* Fix shadow offset for bitmap fonts
+* Add redirect of UniformFont
+
 ### Modern UI 3.8.0.4
 #### Forge Extension 1.20.1-47.0.14
 * Add tooltips for some options

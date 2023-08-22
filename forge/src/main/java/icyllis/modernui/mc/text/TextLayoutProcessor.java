@@ -80,6 +80,8 @@ public class TextLayoutProcessor {
      */
     public static volatile float sBaseFontSize = DEFAULT_BASE_FONT_SIZE;
     //public static volatile boolean sAlignPixels = false;
+    public static volatile int sLbStyle = LineBreakConfig.LINE_BREAK_STYLE_NONE;
+    public static volatile int sLbWordStyle = LineBreakConfig.LINE_BREAK_WORD_STYLE_NONE;
 
     private final TextLayoutEngine mEngine;
 
@@ -917,7 +919,9 @@ public class TextLayoutProcessor {
 
         if (mComputeLineBoundaries) {
             // Compute line break boundaries, will be sorted into logical order.
-            BreakIterator breaker = BreakIterator.getLineInstance(mFontPaint.getLocale());
+            BreakIterator breaker = BreakIterator.getLineInstance(
+                    LineBreaker.getLocaleWithLineBreakOption(mFontPaint.getLocale(), sLbStyle, sLbWordStyle)
+            );
             final CharArrayIterator charIterator = new CharArrayIterator(text, start, limit);
             breaker.setText(charIterator);
             int prevPos = start, currPos;

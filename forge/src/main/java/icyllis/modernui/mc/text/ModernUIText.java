@@ -21,6 +21,7 @@ package icyllis.modernui.mc.text;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.font.GlyphManager;
+import icyllis.modernui.graphics.text.LineBreakConfig;
 import icyllis.modernui.mc.forge.MuiForgeApi;
 import icyllis.modernui.text.TextUtils;
 import icyllis.modernui.view.View;
@@ -199,6 +200,8 @@ public final class ModernUIText {
         public final ForgeConfigSpec.BooleanValue mUseTextShadersInWorld;
         public final ForgeConfigSpec.EnumValue<DefaultFontBehavior> mDefaultFontBehavior;
         public final ForgeConfigSpec.BooleanValue mUseComponentCache;
+        public final ForgeConfigSpec.EnumValue<LineBreakStyle> mLineBreakStyle;
+        public final ForgeConfigSpec.EnumValue<LineBreakWordStyle> mLineBreakWordStyle;
 
         //private final ForgeConfigSpec.BooleanValue antiAliasing;
         //private final ForgeConfigSpec.BooleanValue highPrecision;
@@ -293,6 +296,11 @@ public final class ModernUIText {
                             "If you find that Modern UI text rendering is not compatible with some mods,",
                             "you can disable this option for compatibility, but this will decrease performance a bit.")
                     .define("useComponentCache", true);
+            mLineBreakStyle = builder.comment(
+                            "See CSS line-break property, https://developer.mozilla.org/en-US/docs/Web/CSS/line-break")
+                    .defineEnum("lineBreakStyle", LineBreakStyle.AUTO);
+            mLineBreakWordStyle = builder
+                    .defineEnum("lineBreakWordStyle", LineBreakWordStyle.AUTO);
             /*antiAliasing = builder.comment(
                     "Enable font anti-aliasing.")
                     .define("antiAliasing", true);
@@ -373,6 +381,14 @@ public final class ModernUIText {
                 TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
                 reloadAll = true;
             }
+            if (TextLayoutProcessor.sLbStyle != mLineBreakStyle.get().key) {
+                TextLayoutProcessor.sLbStyle = mLineBreakStyle.get().key;
+                reload = true;
+            }
+            if (TextLayoutProcessor.sLbWordStyle != mLineBreakWordStyle.get().key) {
+                TextLayoutProcessor.sLbWordStyle = mLineBreakWordStyle.get().key;
+                reload = true;
+            }
             if (reloadAll) {
                 Minecraft.getInstance().submit(() -> TextLayoutEngine.getInstance().reloadAll());
             } else if (reload) {
@@ -426,6 +442,44 @@ public final class ModernUIText {
             @Override
             public String toString() {
                 return I18n.get("modernui.defaultFontBehavior." + name().toLowerCase(Locale.ROOT));
+            }
+        }
+
+        public enum LineBreakStyle {
+            AUTO(LineBreakConfig.LINE_BREAK_STYLE_NONE, "Auto"),
+            LOOSE(LineBreakConfig.LINE_BREAK_STYLE_LOOSE, "Loose"),
+            NORMAL(LineBreakConfig.LINE_BREAK_STYLE_NORMAL, "Normal"),
+            STRICT(LineBreakConfig.LINE_BREAK_STYLE_STRICT, "Strict");
+
+            private final int key;
+            private final String text;
+
+            LineBreakStyle(int key, String text) {
+                this.key = key;
+                this.text = text;
+            }
+
+            @Override
+            public String toString() {
+                return text;
+            }
+        }
+
+        public enum LineBreakWordStyle {
+            AUTO(LineBreakConfig.LINE_BREAK_WORD_STYLE_NONE, "Auto"),
+            PHRASE(LineBreakConfig.LINE_BREAK_WORD_STYLE_PHRASE, "Phrase-based");
+
+            private final int key;
+            private final String text;
+
+            LineBreakWordStyle(int key, String text) {
+                this.key = key;
+                this.text = text;
+            }
+
+            @Override
+            public String toString() {
+                return text;
             }
         }
     }

@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.text;
 
+import icyllis.modernui.graphics.text.LineBreaker;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.ChatFormatting;
@@ -392,7 +393,7 @@ public final class ModernStringSplitter {
         }
 
         // ignore styles generated from formatting codes
-        final LineBreaker lineBreaker = new LineBreaker(width);
+        final LineProcessor lineBreaker = new LineProcessor(width);
         final int end = layout.getCharCount();
 
         int nextBoundaryIndex = 0;
@@ -484,7 +485,7 @@ public final class ModernStringSplitter {
         }
 
         // ignore styles generated from formatting codes
-        final LineBreaker lineBreaker = new LineBreaker(width);
+        final LineProcessor lineBreaker = new LineProcessor(width);
         final int end = layout.getCharCount();
 
         int nextBoundaryIndex = 0;
@@ -509,7 +510,7 @@ public final class ModernStringSplitter {
 
         final IntList result = lineBreaker.mBreakPoints;
 
-        text.visit(new FormattedText.StyledContentConsumer<Unit>() {
+        class LineBreakVisitor implements FormattedText.StyledContentConsumer<Unit> {
             private ComponentCollector mCollector = new ComponentCollector();
             private int mStripIndex = 0;
 
@@ -558,10 +559,11 @@ public final class ModernStringSplitter {
                 }
                 return Optional.empty(); // continue
             }
-        }, base);
+        }
+        text.visit(new LineBreakVisitor(), base);
     }
 
-    public static class LineBreaker {
+    public static class LineProcessor {
 
         private float mLineWidth;
         private float mCharsAdvance;
@@ -572,7 +574,7 @@ public final class ModernStringSplitter {
 
         private final IntList mBreakPoints = new IntArrayList();
 
-        public LineBreaker(float lineWidthLimit) {
+        public LineProcessor(float lineWidthLimit) {
             mLineWidthLimit = lineWidthLimit;
         }
 
@@ -583,19 +585,21 @@ public final class ModernStringSplitter {
             mPrevBoundaryOffset = NOWHERE;
             mCharsAdvanceAtPrevBoundary = 0;
 
-            int nextBoundary = layout.getLineBoundaries()[nextBoundaryIndex++];
+            final float[] advances = layout.getAdvances();
+            final int[] lineBoundaries = layout.getLineBoundaries();
+            int nextLineBoundary = lineBoundaries[nextBoundaryIndex++];
 
             for (int i = start; i < end; i++) {
-                updateLineWidth(buf[i], layout.getAdvances()[i]);
+                updateLineWidth(buf[i], advances[i]);
 
-                if (i + 1 == nextBoundary) {
-                    processLineBreak(layout, i + 1);
+                if (i + 1 == nextLineBoundary) {
+                    processLineBreak(advances, i + 1);
 
-                    if (nextBoundary < end) {
-                        nextBoundary = layout.getLineBoundaries()[nextBoundaryIndex++];
+                    if (nextLineBoundary < end) {
+                        nextLineBoundary = lineBoundaries[nextBoundaryIndex++];
                     }
-                    if (nextBoundary > end) {
-                        nextBoundary = end;
+                    if (nextLineBoundary > end) {
+                        nextLineBoundary = end;
                     }
                 }
             }
@@ -608,12 +612,12 @@ public final class ModernStringSplitter {
             return nextBoundaryIndex;
         }
 
-        private void processLineBreak(@Nonnull TextLayout layout, int offset) {
+        private void processLineBreak(float[] advances, int offset) {
             while (mLineWidth > mLineWidthLimit) {
                 int start = getPrevLineBreakOffset();
                 // The word in the new line may still be too long for the line limit.
                 // Try general line break first, otherwise try grapheme boundary or out of the line width
-                if (!tryLineBreak() && doLineBreakWithGraphemeBounds(layout, start, offset)) {
+                if (!tryLineBreak() && doLineBreakWithGraphemeBounds(advances, start, offset)) {
                     return;
                 }
             }
@@ -634,12 +638,12 @@ public final class ModernStringSplitter {
             return true;
         }
 
-        private boolean doLineBreakWithGraphemeBounds(@Nonnull TextLayout layout, int start, int end) {
-            float width = layout.getAdvances()[start];
+        private boolean doLineBreakWithGraphemeBounds(float[] advances, int start, int end) {
+            float width = advances[start];
 
             // Starting from + 1 since at least one character needs to be assigned to a line.
             for (int i = start + 1; i < end; i++) {
-                final float w = layout.getAdvances()[i];
+                final float w = advances[i];
                 if (w == 0) {
                     // w == 0 means here is not a grapheme bounds. Don't break here.
                     continue;
@@ -673,7 +677,7 @@ public final class ModernStringSplitter {
 
         private void updateLineWidth(char c, float adv) {
             mCharsAdvance += adv;
-            if (!icyllis.modernui.graphics.text.LineBreaker.isLineEndSpace(c)) {
+            if (!LineBreaker.isLineEndSpace(c)) {
                 mLineWidth = mCharsAdvance;
             }
         }

@@ -349,6 +349,9 @@ public class TextLayout {
                 }
                 rx = x + positions[i << 1] + (float) glyph.x * scaleFactor;
                 ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
+                if (isShadow) {
+                    rx += 1.0f - ModernTextRenderer.sShadowOffset;
+                }
 
                 w = (float) glyph.width * scaleFactor;
                 h = (float) glyph.height * scaleFactor;
@@ -371,6 +374,9 @@ public class TextLayout {
                     float scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
                     rx += x + positions[i << 1] + (float) glyph.x * scaleFactor;
                     ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
+                    if (isShadow) {
+                        rx += 1.0f - ModernTextRenderer.sShadowOffset;
+                    }
                     w = (float) glyph.width * scaleFactor;
                     h = (float) glyph.height * scaleFactor;
                     texture = bitmapFont.getCurrentTexture();
