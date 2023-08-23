@@ -21,3 +21,5 @@ if (file('../ModernUI').exists()) {
 
 include 'forge'
 project(':forge').name = "ModernUI-Forge"
+include 'fabric'
+project(':fabric').name = "ModernUI-Fabric"

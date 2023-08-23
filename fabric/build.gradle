@@ -1,0 +1,37 @@
+plugins {
+    id 'dev.architectury.loom' version '1.1-SNAPSHOT'
+    //id 'com.matthewprenger.cursegradle' version '1.4.0'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
+}
+
+version = "${minecraft_version}-${mod_version}" as String
+
+loom {
+    silentMojangMappingsLicense()
+    runConfigs.each { it.setIdeConfigGenerated(true) } // Uncomment this if run configs not generated
+    addTaskBeforeRun(":${name}:classes")
+}
+
+repositories {
+    maven {
+        url 'https://maven.parchmentmc.org/'
+        content {
+            includeGroup 'org.parchmentmc.data'
+        }
+    }
+    maven {
+        url 'https://maven.izzel.io/releases/'
+    }
+    mavenCentral()
+    flatDir {
+        dir "${rootProject.projectDir}/libs"
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    mappings loom.officialMojangMappings()
+
+    modImplementation "net.fabricmc:fabric-loader:0.14.22"
+    modApi "net.fabricmc.fabric-api:fabric-api:0.87.0+1.20.1"
+}

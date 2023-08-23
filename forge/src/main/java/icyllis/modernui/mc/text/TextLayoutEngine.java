@@ -901,6 +901,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
             }
             var sequence = new String(cps, 0, n);
             if (!map.containsKey(sequence)) {
+                // 1-based as glyph ID, see also cacheEmoji()
                 map.put(sequence, map.size() + 1);
                 files.add(fileName);
             }
@@ -1263,13 +1264,15 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 mEmojiAtlas = new GLFontAtlas(Engine.MASK_FORMAT_ARGB);
                 int size = (EMOJI_SIZE + GlyphManager.GLYPH_BORDER * 2);
                 // RGBA, 4 bytes per pixel
-                mEmojiBuffer = MemoryUtil.memCalloc(1, size * size * 4);
+                if (mEmojiBuffer == null) {
+                    mEmojiBuffer = MemoryUtil.memCalloc(1, size * size * 4);
+                }
             }
             BakedGlyph glyph = mEmojiAtlas.getGlyph(glyphId);
             if (glyph != null && glyph.x == Short.MIN_VALUE) {
                 return cacheEmoji(
                         glyphId,
-                        mEmojiFiles.get(glyphId - 1),
+                        mEmojiFiles.get(glyphId - 1), // 1-based to 0-based, see also loadEmojis()
                         mEmojiAtlas,
                         glyph
                 );
