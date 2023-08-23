@@ -22,6 +22,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.font.BakedGlyph;
 import icyllis.modernui.graphics.text.Font;
+import icyllis.modernui.util.SparseArray;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
 
@@ -56,7 +57,7 @@ public class TextLayout {
         }
 
         @Override
-        boolean tick() {
+        boolean tick(int lifespan) {
             throw new UnsupportedOperationException();
         }
 
@@ -97,6 +98,7 @@ public class TextLayout {
     private final int[] mGlyphs;
     private transient BakedGlyph[] mBakedGlyphs;
     private transient BakedGlyph[] mBakedGlyphsForSDF;
+    private transient SparseArray<BakedGlyph[]> mBakedGlyphsArray;
 
     /**
      * Position x1 y1 x2 y2... relative to the same point, for rendering glyphs.
@@ -241,13 +243,13 @@ public class TextLayout {
      *
      * @return true to recycle
      */
-    boolean tick() {
-        // Evict if not used in 3 seconds
-        return ++mTimer > 3;
+    boolean tick(int lifespan) {
+        // Evict if not used in 'lifespan' seconds
+        return ++mTimer > lifespan;
     }
 
     @Nonnull
-    private BakedGlyph[] prepareGlyphs(int resLevel) {
+    private BakedGlyph[] prepareGlyphs(int resLevel, int fontSize) {
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
         BakedGlyph[] glyphs = new BakedGlyph[mGlyphs.length];
         for (int i = 0; i < glyphs.length; i++) {
@@ -257,7 +259,6 @@ public class TextLayout {
                         resLevel
                 );
             } else {
-                int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
                 glyphs[i] = engine.lookupGlyph(
                         getFont(i),
                         fontSize,
@@ -272,12 +273,14 @@ public class TextLayout {
     private BakedGlyph[] getGlyphs(int resLevel) {
         if (resLevel == mCreatedResLevel) {
             if (mBakedGlyphs == null) {
-                mBakedGlyphs = prepareGlyphs(resLevel);
+                int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
+                mBakedGlyphs = prepareGlyphs(resLevel, fontSize);
             }
             return mBakedGlyphs;
         } else {
             if (mBakedGlyphsForSDF == null) {
-                mBakedGlyphsForSDF = prepareGlyphs(resLevel);
+                int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
+                mBakedGlyphsForSDF = prepareGlyphs(resLevel, fontSize);
             }
             return mBakedGlyphsForSDF;
         }
@@ -309,12 +312,32 @@ public class TextLayout {
         final int startR = r;
         final int startG = g;
         final int startB = b;
-        final float resLevel = preferredMode == TextRenderType.MODE_SDF_FILL
-                ? TextLayoutEngine.getResLevelForSDF(mCreatedResLevel)
-                : mCreatedResLevel;
-        final float invResLevel = 1.0f / resLevel;
+        final float density;
+        BakedGlyph[] glyphs;
+        if (preferredMode == TextRenderType.MODE_SDF_FILL) {
+            int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
+            glyphs = getGlyphs(resLevel);
+            density = resLevel;
+        } else if (preferredMode != TextRenderType.MODE_DYNAMIC_SCALE) {
+            glyphs = getGlyphs(mCreatedResLevel);
+            density = mCreatedResLevel;
+        } else {
+            density = matrix.m00() * mCreatedResLevel;
+            if (mBakedGlyphsArray == null) {
+                mBakedGlyphsArray = new SparseArray<>();
+            }
+            // floor
+            int fontSize = (int) (TextLayoutProcessor.sBaseFontSize * density);
+            assert fontSize <= 96;
+            glyphs = mBakedGlyphsArray.get(fontSize);
+            if (glyphs == null) {
+                glyphs = prepareGlyphs(mCreatedResLevel, fontSize);
+                mBakedGlyphsArray.put(fontSize, glyphs);
+            }
+            preferredMode = TextRenderType.MODE_NORMAL;
+        }
+        final float invDensity = 1.0f / density;
 
-        final var glyphs = getGlyphs((int) resLevel);
         final var positions = mPositions;
         final var flags = mGlyphFlags;
         //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
@@ -382,11 +405,11 @@ public class TextLayout {
                     texture = bitmapFont.getCurrentTexture();
                 } else {
                     effMode = preferredMode;
-                    rx += x + positions[i << 1] + glyph.x * invResLevel;
-                    ry = baseline + positions[i << 1 | 1] + glyph.y * invResLevel;
+                    rx += x + positions[i << 1] + glyph.x * invDensity;
+                    ry = baseline + positions[i << 1 | 1] + glyph.y * invDensity;
 
-                    w = glyph.width * invResLevel;
-                    h = glyph.height * invResLevel;
+                    w = glyph.width * invDensity;
+                    h = glyph.height * invDensity;
                     if (standardTexture == -1) {
                         standardTexture = TextLayoutEngine.getInstance().getStandardTexture();
                     }
@@ -396,8 +419,8 @@ public class TextLayout {
             if (effMode == TextRenderType.MODE_NORMAL &&
                     !TextLayoutEngine.sCurrentInWorldRendering) {
                 // align to screen pixel center in 2D
-                rx = (int) (rx * resLevel + 0.5f) * invResLevel;
-                ry = (int) (ry * resLevel + 0.5f) * invResLevel;
+                rx = (int) (rx * density + 0.5f) * invDensity;
+                ry = (int) (ry * density + 0.5f) * invDensity;
             }
             if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
                 r = startR;
@@ -518,7 +541,7 @@ public class TextLayout {
                                 final float x, final float top,
                                 int r, int g, int b, int a,
                                 int packedLight) {
-        final float resLevel = TextLayoutEngine.getResLevelForSDF(mCreatedResLevel);
+        final float resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
 
         final var glyphs = getGlyphs((int) resLevel);
         final var positions = mPositions;
@@ -748,12 +771,17 @@ public class TextLayout {
         if (mBakedGlyphsForSDF != null) {
             m += 16 + MathUtil.align8(mBakedGlyphsForSDF.length << 2);
         }
-        return m + 24;
+        if (mBakedGlyphsArray != null) {
+            m += (16 + MathUtil.align8(
+                    mBakedGlyphsArray.valueAt(0).length << 2
+            )) * mBakedGlyphsArray.size();
+        }
+        return m + 64;
     }
 
     @Override
     public String toString() {
-        return "TextLayoutNode{" +
+        return "TextLayout{" +
                 "text=" + toEscapeChars(mTextBuf) +
                 ",glyphs=" + mGlyphs.length +
                 ",length=" + mTextBuf.length +

@@ -8,6 +8,10 @@ Changelogs
 * Add Fragments into crash report
 * Add more advanced options
 #### Modern Text Engine 1.20.1
+* Add device font size computation in 2D
+* Add SDF text control in 2D
+* Add back cache lifespan config
+* Optimize cache performance
 * Add config for async text layout
 * Fix text engine not fully disabled
 * Fix memory leakage when reloading resources

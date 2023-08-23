@@ -63,8 +63,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -96,10 +95,10 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public static volatile boolean sFixedResolution = false;
     //public static volatile boolean sSuperSampling = false;
     public static volatile int sTextDirection = View.TEXT_DIRECTION_FIRST_STRONG;
-    /*
+    /**
      * Time in seconds to recycle a render node in the cache.
      */
-    //public static volatile int sCacheLifespan = 12;
+    public static volatile int sCacheLifespan = 6;
     //public static volatile int sRehashThreshold = 100;
     /*
      * Config value to use distance field text in 3D world.
@@ -979,7 +978,11 @@ public class TextLayoutEngine implements PreparableReloadListener {
     ////// END Resource Reloading
 
 
-    public static int getResLevelForSDF(int resLevel) {
+    /**
+     * Vanilla font size is 8, but SDF text requires at least 32px to be clear enough,
+     * then resolution level is adjusted to 4.
+     */
+    public static int adjustPixelDensityForSDF(int resLevel) {
         return Math.max(resLevel, 4);
     }
 
@@ -1038,7 +1041,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                         .join();
             }
         }
-        TextLayout layout = mVanillaCache.get(mVanillaLookupKey.update(text, style, mResLevel));
+        TextLayout layout = mVanillaCache.get(mVanillaLookupKey.update(text, style));
         int nowFlags = 0;
         if (layout == null ||
                 ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
@@ -1122,7 +1125,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
             }
         } else {
             // the more complex case (multi-component)
-            layout = mFormattedCache.get(mFormattedLayoutKey.update(text, style, mResLevel));
+            layout = mFormattedCache.get(mFormattedLayoutKey.update(text, style));
             if (layout == null ||
                     ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
                 layout = mProcessor.createTextLayout(text, style, mResLevel,
@@ -1203,7 +1206,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 }
             } else {
                 // the more complex case (multi-component)
-                layout = mFormattedCache.get(mFormattedLayoutKey.update(text, Style.EMPTY, mResLevel));
+                layout = mFormattedCache.get(mFormattedLayoutKey.update(text, Style.EMPTY));
                 if (layout == null ||
                         ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
                     layout = mProcessor.createTextLayout(text, Style.EMPTY, mResLevel,
@@ -1215,7 +1218,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
             return layout.get();
         } else {
             // the most complex case (multi-component)
-            TextLayout layout = mFormattedCache.get(mFormattedLayoutKey.update(sequence, mResLevel));
+            TextLayout layout = mFormattedCache.get(mFormattedLayoutKey.update(sequence));
             if (layout == null ||
                     ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
                 layout = mProcessor.createSequenceLayout(sequence, mResLevel,
@@ -1424,9 +1427,11 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public void onEndClientTick() {
         if (mTimer == 0) {
             //int oldCount = getCacheCount();
-            mVanillaCache.values().removeIf(TextLayout::tick);
-            mComponentCache.values().removeIf(TextLayout::tick);
-            mFormattedCache.values().removeIf(TextLayout::tick);
+            final int lifespan = sCacheLifespan;
+            final Predicate<TextLayout> ticker = layout -> layout.tick(lifespan);
+            mVanillaCache.values().removeIf(ticker);
+            mComponentCache.values().removeIf(ticker);
+            mFormattedCache.values().removeIf(ticker);
             /*if (oldCount >= sRehashThreshold) {
                 int newCount = getCacheCount();
                 if (newCount < sRehashThreshold) {

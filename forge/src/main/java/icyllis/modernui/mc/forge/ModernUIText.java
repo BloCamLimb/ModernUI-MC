@@ -184,9 +184,9 @@ public final class ModernUIText {
         public static final float SHADOW_OFFSET_MAX = 2;
         public static final float OUTLINE_OFFSET_MIN = 0.2f;
         public static final float OUTLINE_OFFSET_MAX = 2;
-        /*public static final int LIFESPAN_MIN = 2;
-        public static final int LIFESPAN_MAX = 60;
-        public static final int REHASH_MIN = 0;
+        public static final int LIFESPAN_MIN = 2;
+        public static final int LIFESPAN_MAX = 15;
+        /*public static final int REHASH_MIN = 0;
         public static final int REHASH_MAX = 2000;*/
 
         //final ForgeConfigSpec.BooleanValue globalRenderer;
@@ -198,8 +198,8 @@ public final class ModernUIText {
         public final ForgeConfigSpec.DoubleValue mOutlineOffset;
         //public final ForgeConfigSpec.BooleanValue mSuperSampling;
         //public final ForgeConfigSpec.BooleanValue mAlignPixels;
-        /*public final ForgeConfigSpec.IntValue mCacheLifespan;
-        public final ForgeConfigSpec.IntValue mRehashThreshold;*/
+        public final ForgeConfigSpec.IntValue mCacheLifespan;
+        //public final ForgeConfigSpec.IntValue mRehashThreshold;
         public final ForgeConfigSpec.EnumValue<TextDirection> mTextDirection;
         public final ForgeConfigSpec.BooleanValue mUseColorEmoji;
         //public final ForgeConfigSpec.BooleanValue mBitmapReplacement;
@@ -212,6 +212,9 @@ public final class ModernUIText {
         public final ForgeConfigSpec.BooleanValue mAllowAsyncLayout;
         public final ForgeConfigSpec.EnumValue<LineBreakStyle> mLineBreakStyle;
         public final ForgeConfigSpec.EnumValue<LineBreakWordStyle> mLineBreakWordStyle;
+        public final ForgeConfigSpec.BooleanValue mSmartSDFShaders;
+        public final ForgeConfigSpec.BooleanValue mComputeDeviceFontSize;
+        public final ForgeConfigSpec.BooleanValue mAllowSDFTextIn2D;
 
         //private final ForgeConfigSpec.BooleanValue antiAliasing;
         //private final ForgeConfigSpec.BooleanValue highPrecision;
@@ -238,7 +241,8 @@ public final class ModernUIText {
                     .define("fixedResolution", false);
             mBaseFontSize = builder.comment(
                             "Control base font size, in GUI scaled pixels. The default and vanilla value is 8.",
-                            "For bitmap fonts, 8 represents a glyph size of 8x or 16x if fixed resolution.")
+                            "For bitmap fonts, 8 represents a glyph size of 8x or 16x if fixed resolution.",
+                            "This option only applies to TrueType fonts.")
                     .defineInRange("baseFontSize", TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE,
                             BASE_FONT_SIZE_MIN, BASE_FONT_SIZE_MAX);
             mBaselineShift = builder.comment(
@@ -260,10 +264,10 @@ public final class ModernUIText {
                             "Enable to make each glyph pixel-aligned in text layout in screen-space.",
                             "Text rendering may be better with bitmap fonts / fixed resolution / linear sampling.")
                     .define("alignPixels", false);*/
-            /*mCacheLifespan = builder.comment(
+            mCacheLifespan = builder.comment(
                             "Set the recycle time of layout cache in seconds, using least recently used algorithm.")
-                    .defineInRange("cacheLifespan", 12, LIFESPAN_MIN, LIFESPAN_MAX);
-            mRehashThreshold = builder.comment("Set the rehash threshold of layout cache")
+                    .defineInRange("cacheLifespan", 5, LIFESPAN_MIN, LIFESPAN_MAX);
+            /*mRehashThreshold = builder.comment("Set the rehash threshold of layout cache")
                     .defineInRange("rehashThreshold", 100, REHASH_MIN, REHASH_MAX);*/
             mTextDirection = builder.comment(
                             "The bidirectional text heuristic algorithm.",
@@ -286,7 +290,8 @@ public final class ModernUIText {
                             "Whether to use Modern UI text rendering pipeline in 3D world.",
                             "Disabling this means that SDF text and rendering optimization are no longer effective.",
                             "But text rendering can be compatible with OptiFine Shaders and Iris Shaders.",
-                            "This does not affect text rendering in GUI.")
+                            "This does not affect text rendering in GUI.",
+                            "This option only applies to TrueType fonts.")
                     .define("useTextShadersInWorld", true);
             /*mUseDistanceField = builder.comment(
                             "Enable to use distance field for text rendering in 3D world.",
@@ -316,6 +321,26 @@ public final class ModernUIText {
                     .defineEnum("lineBreakStyle", LineBreakStyle.AUTO);
             mLineBreakWordStyle = builder
                     .defineEnum("lineBreakWordStyle", LineBreakWordStyle.AUTO);
+            mSmartSDFShaders = builder.comment(
+                            "When enabled, Modern UI will compute texel density in device-space to determine whether " +
+                                    "to use SDF text or bilinear sampling.",
+                            "This feature requires GLSL 400 or has no effect.",
+                            "This generally decreases performance but provides better rendering quality.",
+                            "This option only applies to TrueType fonts.")
+                    .define("smartSDFShaders", true);
+            mComputeDeviceFontSize = builder.comment(
+                            "When rendering in 2D, this option allows Modern UI to exactly compute font size in " +
+                                    "device-space from the current coordinate transform matrix.",
+                            "This provides perfect text rendering for scaling-down texts in vanilla, but may increase" +
+                                    " GPU memory usage.",
+                            "When disabled, Modern UI will use SDF text rendering if appropriate.",
+                            "This option only applies to TrueType fonts.")
+                    .define("computeDeviceFontSize", true);
+            mAllowSDFTextIn2D = builder.comment(
+                            "When enabled, Modern UI will use SDF text rendering if appropriate.",
+                            "Otherwise, it uses nearest-neighbor or bilinear sampling based on texel density.",
+                            "This option only applies to TrueType fonts.")
+                    .define("allowSDFTextIn2D", true);
             /*antiAliasing = builder.comment(
                     "Enable font anti-aliasing.")
                     .define("antiAliasing", true);
@@ -378,8 +403,8 @@ public final class ModernUIText {
                 TextLayoutProcessor.sAlignPixels = mAlignPixels.get();
                 reload = true;
             }*/
-            /*TextLayoutEngine.sCacheLifespan = mCacheLifespan.get();
-            TextLayoutEngine.sRehashThreshold = mRehashThreshold.get();*/
+            TextLayoutEngine.sCacheLifespan = mCacheLifespan.get();
+            /*TextLayoutEngine.sRehashThreshold = mRehashThreshold.get();*/
             if (TextLayoutEngine.sTextDirection != mTextDirection.get().key) {
                 TextLayoutEngine.sTextDirection = mTextDirection.get().key;
                 reload = true;
@@ -406,6 +431,13 @@ public final class ModernUIText {
                 TextLayoutProcessor.sLbWordStyle = mLineBreakWordStyle.get().key;
                 reload = true;
             }
+
+            final boolean smartShaders = mSmartSDFShaders.get();
+            Minecraft.getInstance().submit(() -> TextRenderType.toggleSDFShaders(smartShaders));
+
+            ModernTextRenderer.sComputeDeviceFontSize = mComputeDeviceFontSize.get();
+            ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();
+
             if (reloadAll) {
                 Minecraft.getInstance().submit(() -> TextLayoutEngine.getInstance().reloadAll());
             } else if (reload) {

@@ -50,14 +50,32 @@ import static icyllis.modernui.ModernUI.*;
  */
 public class TextRenderType extends RenderType {
 
-    public static final int MODE_NORMAL = 0;
+    public static final int MODE_NORMAL = 0; // <- must be zero
     public static final int MODE_SDF_FILL = 1;
     public static final int MODE_SDF_STROKE = 2;
     public static final int MODE_SEE_THROUGH = 3;
+    /**
+     * Used in 2D rendering, render as {@link #MODE_NORMAL},
+     * but we compute font size in device space from CTM.
+     *
+     * @since 3.8.1
+     */
+    public static final int MODE_DYNAMIC_SCALE = 4; // <- must be power of 2
 
     private static volatile ShaderInstance sShaderNormal;
+
+    private static volatile ShaderInstance sCurrentShaderSDFFill;
+    private static volatile ShaderInstance sCurrentShaderSDFStroke;
+
     private static volatile ShaderInstance sShaderSDFFill;
     private static volatile ShaderInstance sShaderSDFStroke;
+
+    @Nullable
+    private static volatile ShaderInstance sShaderSDFFillSmart;
+    @Nullable
+    private static volatile ShaderInstance sShaderSDFStrokeSmart;
+
+    private static boolean sSmartShadersLoaded = false;
 
     static final ShaderStateShard
             RENDERTYPE_MODERN_TEXT_NORMAL = new ShaderStateShard(TextRenderType::getShaderNormal),
@@ -300,14 +318,47 @@ public class TextRenderType extends RenderType {
         if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
             return GameRenderer.getRendertypeTextShader();
         }
-        return sShaderSDFFill;
+        return sCurrentShaderSDFFill;
     }
 
     public static ShaderInstance getShaderSDFStroke() {
         if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
             return GameRenderer.getRendertypeTextShader();
         }
-        return sShaderSDFStroke;
+        return sCurrentShaderSDFStroke;
+    }
+
+    // RT only
+    public static synchronized void toggleSDFShaders(boolean smart) {
+        if (smart) {
+            if (!sSmartShadersLoaded) {
+                sSmartShadersLoaded = true;
+                if (Core.requireDirectContext()
+                        .getCaps().shaderCaps().mGLSLVersion >= 400) {
+                    var provider = obtainResourceProvider();
+                    try {
+                        sShaderSDFFillSmart = new ShaderInstance(provider,
+                                ModernUIForge.location("rendertype_modern_text_sdf_fill_400"),
+                                DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+                        sShaderSDFStrokeSmart = new ShaderInstance(provider,
+                                ModernUIForge.location("rendertype_modern_text_sdf_stroke_400"),
+                                DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+                        LOGGER.info(MARKER, "Loaded smart SDF text shaders");
+                    } catch (IOException e) {
+                        LOGGER.error(MARKER, "Failed to load smart SDF text shaders", e);
+                    }
+                } else {
+                    LOGGER.info(MARKER, "No GLSL 400, smart SDF text shaders disabled");
+                }
+            }
+            if (sShaderSDFStrokeSmart != null) {
+                sCurrentShaderSDFFill = sShaderSDFFillSmart;
+                sCurrentShaderSDFStroke = sShaderSDFStrokeSmart;
+                return;
+            }
+        }
+        sCurrentShaderSDFFill = sShaderSDFFill;
+        sCurrentShaderSDFStroke = sShaderSDFStroke;
     }
 
     /**
@@ -318,9 +369,29 @@ public class TextRenderType extends RenderType {
         if (sShaderNormal != null) {
             return;
         }
+        var provider = obtainResourceProvider();
+        try {
+            sShaderNormal = new ShaderInstance(provider,
+                    ModernUIForge.location("rendertype_modern_text_normal"),
+                    DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+            sShaderSDFFill = new ShaderInstance(provider,
+                    ModernUIForge.location("rendertype_modern_text_sdf_fill"),
+                    DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+            sShaderSDFStroke = new ShaderInstance(provider,
+                    ModernUIForge.location("rendertype_modern_text_sdf_stroke"),
+                    DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+        } catch (IOException e) {
+            throw new IllegalStateException("Bad text shaders", e);
+        }
+        toggleSDFShaders(false);
+        LOGGER.info(MARKER, "Preloaded modern text shaders");
+    }
+
+    @Nonnull
+    private static ResourceProvider obtainResourceProvider() {
         final var source = Minecraft.getInstance().getVanillaPackResources();
         final var fallback = source.asProvider();
-        final var provider = (ResourceProvider) location -> {
+        return location -> {
             // don't worry, ShaderInstance ctor will close it
             @SuppressWarnings("resource") final var stream = ModernUIText.class
                     .getResourceAsStream("/assets/" + location.getNamespace() + "/" + location.getPath());
@@ -330,25 +401,5 @@ public class TextRenderType extends RenderType {
             }
             return Optional.of(new Resource(source, () -> stream));
         };
-        try {
-            sShaderNormal = new ShaderInstance(provider,
-                    ModernUIForge.location("rendertype_modern_text_normal"),
-                    DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
-            boolean GLSL400 = Core.requireDirectContext()
-                    .getCaps().shaderCaps().mGLSLVersion >= 400;
-            sShaderSDFFill = new ShaderInstance(provider,
-                    ModernUIForge.location(GLSL400
-                            ? "rendertype_modern_text_sdf_fill_400"
-                            : "rendertype_modern_text_sdf_fill"),
-                    DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
-            sShaderSDFStroke = new ShaderInstance(provider,
-                    ModernUIForge.location(GLSL400
-                            ? "rendertype_modern_text_sdf_stroke_400"
-                            : "rendertype_modern_text_sdf_stroke"),
-                    DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
-        } catch (IOException e) {
-            throw new IllegalStateException("Bad text shaders", e);
-        }
-        LOGGER.info(MARKER, "Preloaded modern text shaders");
     }
 }

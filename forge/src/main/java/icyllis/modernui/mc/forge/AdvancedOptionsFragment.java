@@ -97,7 +97,7 @@ public class AdvancedOptionsFragment extends Fragment {
         {
             var category = createCategoryList(context, "Developer");
             {
-                var option = createSwitchLayout(context, "Text Engine for Minecraft");
+                var option = createSwitchLayout(context, "modernui.center.text.textEngine");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
                 button.setChecked(ModernUIForge.enablesTextEngine());
                 button.setOnCheckedChangeListener((__, checked) -> {

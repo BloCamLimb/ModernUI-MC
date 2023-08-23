@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.text;
 
+import icyllis.modernui.graphics.MathUtil;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.Sheets;
@@ -50,6 +51,8 @@ public final class ModernTextRenderer {
     public static volatile boolean sAllowShadow = true;
     public static volatile float sShadowOffset = 1.0f;
     public static volatile float sOutlineOffset = 0.5f;
+    public static volatile boolean sComputeDeviceFontSize = true;
+    public static volatile boolean sAllowSDFTextIn2D = true;
     //private boolean mGlobalRenderer = false;
 
     //private final TextLayoutEngine mFontEngine = TextLayoutEngine.getInstance();
@@ -196,18 +199,41 @@ public final class ModernTextRenderer {
         return x;
     }
 
-    public static int chooseMode(Matrix4f matrix, Font.DisplayMode displayMode) {
+    public static int chooseMode(Matrix4f ctm, Font.DisplayMode displayMode) {
         if (displayMode == Font.DisplayMode.SEE_THROUGH) {
             return TextRenderType.MODE_SEE_THROUGH;
         } else if (TextLayoutEngine.sCurrentInWorldRendering) {
             return TextRenderType.MODE_SDF_FILL;
         } else {
-            if ((matrix.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {
+            if ((ctm.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0 &&
+                    (sComputeDeviceFontSize || sAllowSDFTextIn2D)) {
                 // JOML can report fake values, compute again
-                if ((matrix.determineProperties().properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {
+                if (MathUtil.isApproxZero(ctm.m01()) &&
+                        MathUtil.isApproxZero(ctm.m02()) &&
+                        MathUtil.isApproxZero(ctm.m03()) &&
+                        MathUtil.isApproxZero(ctm.m10()) &&
+                        MathUtil.isApproxZero(ctm.m12()) &&
+                        MathUtil.isApproxZero(ctm.m13()) &&
+                        MathUtil.isApproxZero(ctm.m20()) &&
+                        MathUtil.isApproxZero(ctm.m21()) &&
+                        MathUtil.isApproxZero(ctm.m23()) &&
+                        MathUtil.isApproxEqual(ctm.m33(), 1)) {
+                    if (MathUtil.isApproxEqual(ctm.m00(), 1) &&
+                            MathUtil.isApproxEqual(ctm.m11(), 1)) {
+                        // pure translation
+                        return TextRenderType.MODE_NORMAL;
+                    } else if (sComputeDeviceFontSize &&
+                            ctm.m00() < 1 &&
+                            MathUtil.isApproxEqual(ctm.m00(), ctm.m11())) {
+                        // uniform scale smaller
+                        return TextRenderType.MODE_DYNAMIC_SCALE;
+                    }
+                }
+                if (sAllowSDFTextIn2D) {
                     return TextRenderType.MODE_SDF_FILL;
                 }
             }
+            // pure translation
             return TextRenderType.MODE_NORMAL;
         }
     }

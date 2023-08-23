@@ -49,12 +49,14 @@ public class FormattedLayoutKey {
     /**
      * Texts use String as their backing store, none of them contains {@link ChatFormatting} codes.
      */
-    private CharSequence[] mTexts;
+    private String[] mTexts;
 
     /**
      * References to the font set which layers are decorated.
+     *
+     * @see Style#getFont()
      */
-    private ResourceLocation[] mFonts;
+    private Object[] mFonts;
 
     /**
      * Packed fields that contain RGB color and appearance-affecting bit flags
@@ -69,20 +71,16 @@ public class FormattedLayoutKey {
      */
     int mHash;
 
-    int mResLevel;
-
     private FormattedLayoutKey() {
     }
 
-    private FormattedLayoutKey(CharSequence[] texts,
-                               ResourceLocation[] fonts,
-                               int[] codes, int hash,
-                               int resLevel) {
+    private FormattedLayoutKey(String[] texts,
+                               Object[] fonts,
+                               int[] codes, int hash) {
         mTexts = texts;
         mFonts = fonts;
         mCodes = codes;
         mHash = hash;
-        mResLevel = resLevel;
     }
 
     @Override
@@ -91,13 +89,13 @@ public class FormattedLayoutKey {
 
         if (h == 0) {
             h = 1;
-            var codes = mCodes;
+            int[] codes = mCodes;
             for (int i = 0, e = codes.length; i < e; i++) {
                 h = 31 * h + mTexts[i].hashCode();
                 h = 31 * h + mFonts[i].hashCode();
                 h = 31 * h + codes[i];
             }
-            mHash = 31 * h + mResLevel;
+            mHash = h;
         }
 
         return h;
@@ -109,8 +107,7 @@ public class FormattedLayoutKey {
             return false;
         }
         FormattedLayoutKey key = (FormattedLayoutKey) o;
-        return mResLevel == key.mResLevel &&
-                Arrays.equals(mCodes, key.mCodes) &&
+        return Arrays.equals(mCodes, key.mCodes) &&
                 Arrays.equals(mFonts, key.mFonts) &&
                 Arrays.equals(mTexts, key.mTexts);
     }
@@ -122,7 +119,6 @@ public class FormattedLayoutKey {
                 ", mFonts=" + Arrays.toString(mFonts) +
                 ", mCodes=" + Arrays.toString(mCodes) +
                 ", mHash=" + mHash +
-                ", mResLevel=" + mResLevel +
                 '}';
     }
 
@@ -131,9 +127,11 @@ public class FormattedLayoutKey {
      */
     public int getMemorySize() {
         int size = 0;
+        // take copied buffers into account
         for (CharSequence s : mTexts) {
             size += MathUtil.align4(s.length()) << 1;
         }
+        // shared pointers are memoryless, see JDK memory layout
         size += (16 + (MathUtil.align2(mTexts.length) << 2)) * 3;
         return size + 32;
     }
@@ -194,7 +192,7 @@ public class FormattedLayoutKey {
                     allocate();
                     mStyle = style;
                 } else if (!CharacterStyle.equalsForTextLayout(mStyle, style)) {
-                    // append last component
+                    // there's a style transition, break here and append last component
                     if (!mBuilder.isEmpty()) {
                         mTexts.add(mBuilder);
                         mFonts.add(mStyle.getFont());
@@ -225,7 +223,8 @@ public class FormattedLayoutKey {
         }
 
         private void reset() {
-            assert mTexts.size() == mFonts.size() && mTexts.size() == mCodes.size();
+            assert mTexts.size() == mFonts.size() &&
+                    mTexts.size() == mCodes.size();
             mTexts.clear();
             mFonts.clear();
             mCodes.clear();
@@ -236,9 +235,8 @@ public class FormattedLayoutKey {
          * Update this key.
          */
         @Nonnull
-        public FormattedLayoutKey update(@Nonnull FormattedText text, @Nonnull Style style, int resLevel) {
+        public FormattedLayoutKey update(@Nonnull FormattedText text, @Nonnull Style style) {
             reset();
-            mResLevel = resLevel;
             text.visit(mContentBuilder, style);
             return this;
         }
@@ -247,30 +245,28 @@ public class FormattedLayoutKey {
          * Update this key.
          */
         @Nonnull
-        public FormattedLayoutKey update(@Nonnull FormattedCharSequence sequence, int resLevel) {
+        public FormattedLayoutKey update(@Nonnull FormattedCharSequence sequence) {
             reset();
-            mResLevel = resLevel;
             sequence.accept(mSequenceBuilder);
             mSequenceBuilder.end();
             return this;
         }
 
-        @SuppressWarnings("UnnecessaryLocalVariable")
         @Override
         public int hashCode() {
             int h = mHash;
 
             if (h == 0) {
                 h = 1;
-                var texts = mTexts;
-                var fonts = mFonts;
-                var codes = mCodes;
-                for (int i = 0, e = codes.size(); i < e; i++) {
-                    h = 31 * h + texts.get(i).hashCode();
-                    h = 31 * h + fonts.get(i).hashCode();
-                    h = 31 * h + codes.getInt(i);
+                var texts = mTexts.elements();
+                var fonts = mFonts.elements();
+                var codes = mCodes.elements();
+                for (int i = 0, e = mCodes.size(); i < e; i++) {
+                    h = 31 * h + texts[i].hashCode();
+                    h = 31 * h + fonts[i].hashCode();
+                    h = 31 * h + codes[i];
                 }
-                mHash = 31 * h + mResLevel;
+                mHash = h;
             }
 
             return h;
@@ -284,7 +280,6 @@ public class FormattedLayoutKey {
             FormattedLayoutKey key = (FormattedLayoutKey) o;
             final int length = mTexts.size();
             return length == key.mTexts.length &&
-                    mResLevel == key.mResLevel &&
                     Arrays.equals(mCodes.elements(), 0, length, key.mCodes, 0, length) &&
                     Arrays.equals(mFonts.elements(), 0, length, key.mFonts, 0, length) &&
                     Arrays.equals(mTexts.elements(), 0, length, key.mTexts, 0, length);
@@ -296,8 +291,6 @@ public class FormattedLayoutKey {
                     "mTexts=" + mTexts +
                     ", mFonts=" + mFonts +
                     ", mCodes=" + mCodes +
-                    ", mHash=" + mHash +
-                    ", mResLevel=" + mResLevel +
                     '}';
         }
 
@@ -309,13 +302,14 @@ public class FormattedLayoutKey {
         @Nonnull
         public FormattedLayoutKey copy() {
             final int length = mTexts.size();
-            CharSequence[] texts = new CharSequence[length];
+            String[] texts = new String[length];
             for (int i = 0; i < length; i++) {
                 // String returns self, CharSequenceBuilder returns a new String
                 texts[i] = mTexts.get(i).toString();
             }
-            return new FormattedLayoutKey(texts, mFonts.toArray(new ResourceLocation[0]),
-                    mCodes.toIntArray(), mHash, mResLevel);
+            return new FormattedLayoutKey(texts,
+                    mFonts.toArray(),
+                    mCodes.toIntArray(), mHash);
         }
     }
 }

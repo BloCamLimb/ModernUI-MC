@@ -374,6 +374,27 @@ public class PreferencesFragment extends Fragment {
             }
 
             {
+                var option = createBooleanOption(context, "modernui.center.text.allowSDFTextIn2D",
+                        ModernUIText.CONFIG.mAllowSDFTextIn2D, saveFn);
+                option.setTooltipText(I18n.get("modernui.center.text.allowSDFTextIn2D_desc"));
+                category.addView(option);
+            }
+
+            {
+                var option = createBooleanOption(context, "modernui.center.text.smartSDFShaders",
+                        ModernUIText.CONFIG.mSmartSDFShaders, saveFn);
+                option.setTooltipText(I18n.get("modernui.center.text.smartSDFShaders_desc"));
+                category.addView(option);
+            }
+
+            {
+                var option = createBooleanOption(context, "modernui.center.text.computeDeviceFontSize",
+                        ModernUIText.CONFIG.mComputeDeviceFontSize, saveFn);
+                option.setTooltipText(I18n.get("modernui.center.text.computeDeviceFontSize_desc"));
+                category.addView(option);
+            }
+
+            {
                 var option = createSpinnerOption(context, "modernui.center.text.defaultFontBehavior",
                         ModernUIText.Config.DefaultFontBehavior.values(),
                         ModernUIText.CONFIG.mDefaultFontBehavior, saveFn);
@@ -445,6 +466,22 @@ public class PreferencesFragment extends Fragment {
             category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
                     ModernUIText.Config.OUTLINE_OFFSET_MIN, ModernUIText.Config.OUTLINE_OFFSET_MAX,
                     5, ModernUIText.CONFIG.mOutlineOffset, saveFn));
+
+            category.addView(createIntegerOption(context, "modernui.center.text.cacheLifespan",
+                    ModernUIText.Config.LIFESPAN_MIN, ModernUIText.Config.LIFESPAN_MAX,
+                    2, 1,
+                    ModernUIText.CONFIG.mCacheLifespan, saveFn));
+
+            {
+                var option = createSwitchLayout(context, "modernui.center.text.lineBreakingAlgo");
+                option.<SwitchButton>requireViewById(R.id.button1).setChecked(true);
+                category.addView(option);
+            }
+            {
+                var option = createSwitchLayout(context, "modernui.center.text.textShaping");
+                option.<SwitchButton>requireViewById(R.id.button1).setChecked(true);
+                category.addView(option);
+            }
 
             content.addView(category);
         }
