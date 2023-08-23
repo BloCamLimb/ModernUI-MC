@@ -24,7 +24,6 @@ import net.minecraft.client.renderer.Sheets;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -36,12 +35,6 @@ import javax.annotation.Nonnull;
  * @author BloCamLimb
  */
 public final class ModernTextRenderer {
-
-    static {
-        if (FMLEnvironment.dist.isDedicatedServer()) {
-            throw new RuntimeException();
-        }
-    }
 
     public static final Vector3f SHADOW_OFFSET = new Vector3f(0.0F, 0.0F, 0.03F);
     //public static final Vector3f OUTLINE_OFFSET = new Vector3f(0.0F, 0.0F, 0.01F);

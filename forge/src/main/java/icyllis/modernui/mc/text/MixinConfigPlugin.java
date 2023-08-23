@@ -32,9 +32,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage) {
-        mEnable = !Boolean.parseBoolean(
-                ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
-        );
+        mEnable = ModernUIForge.enablesTextEngine();
     }
 
     @Override

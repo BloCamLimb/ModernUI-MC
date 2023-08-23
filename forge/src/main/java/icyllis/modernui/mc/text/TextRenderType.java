@@ -27,6 +27,7 @@ import icyllis.arc3d.opengl.*;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.RefCnt;
 import icyllis.modernui.mc.forge.ModernUIForge;
+import icyllis.modernui.mc.forge.ModernUIText;
 import icyllis.modernui.mc.text.mixin.AccessRenderBuffers;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;

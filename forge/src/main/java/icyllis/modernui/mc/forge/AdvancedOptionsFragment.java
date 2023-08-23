@@ -25,6 +25,7 @@ import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.font.GlyphManager;
+import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.mc.forge.ui.ThemeControl;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.InputFilter;
@@ -51,6 +52,12 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 public class AdvancedOptionsFragment extends Fragment {
 
     private static final Field OPTION_VALUE = ObfuscationReflectionHelper.findField(OptionInstance.class, "f_231481_");
+
+    ViewGroup mContent;
+    TextView mUIManagerDump;
+    TextView mResourceCacheDump;
+    TextView mPSOStatsDump;
+    TextView mGPUStatsDump;
 
     public static Button createDebugButton(Context context, String text) {
         var button = new Button(context);
@@ -81,9 +88,10 @@ public class AdvancedOptionsFragment extends Fragment {
         return sv;
     }
 
-    static LinearLayout createPage(Context context) {
+    LinearLayout createPage(Context context) {
         var content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
+        mContent = content;
 
         var dp6 = content.dp(6);
         {
@@ -91,9 +99,7 @@ public class AdvancedOptionsFragment extends Fragment {
             {
                 var option = createSwitchLayout(context, "Text Engine for Minecraft");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(!Boolean.parseBoolean(
-                        ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
-                ));
+                button.setChecked(ModernUIForge.enablesTextEngine());
                 button.setOnCheckedChangeListener((__, checked) -> {
                     ModernUIForge.setBootstrapProperty(
                             ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE,
@@ -159,9 +165,7 @@ public class AdvancedOptionsFragment extends Fragment {
                         Core.executeOnMainThread(() -> GlyphManager.getInstance().debug()));
                 category.addView(button);
             }
-            if (!Boolean.parseBoolean(
-                    ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
-            )) {
+            if (ModernUIForge.enablesTextEngine()) {
                 {
                     var button = createDebugButton(context, "Dump BitmapFonts and EmojiAtlas (V)");
                     button.setOnClickListener((__) ->
@@ -183,6 +187,18 @@ public class AdvancedOptionsFragment extends Fragment {
                             Core.executeOnMainThread(() -> TextLayoutEngine.getInstance().reloadAll()));
                     category.addView(button);
                 }
+            }
+            {
+                var button = createDebugButton(context, "Reload GlyphManager");
+                button.setOnClickListener((__) ->
+                        Core.executeOnMainThread(() -> GlyphManager.getInstance().reload()));
+                category.addView(button);
+            }
+            {
+                var button = createDebugButton(context, "Reset LayoutCache");
+                button.setOnClickListener((__) ->
+                        Core.executeOnMainThread(LayoutCache::clear));
+                category.addView(button);
             }
             {
                 var button = createDebugButton(context, "GC (F)");
@@ -214,14 +230,7 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            Core.executeOnRenderThread(() -> {
-                StringBuilder builder = new StringBuilder();
-                try (var w = new PrintWriter(new StringBuilderWriter(builder))) {
-                    UIManager.getInstance().dump(w, false);
-                }
-                String s = builder.toString();
-                tv.post(() -> tv.setText(s));
-            });
+            mUIManagerDump = tv;
             content.addView(tv);
         }
 
@@ -237,31 +246,7 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            Core.executeOnRenderThread(() -> {
-                var rc = Core.requireDirectContext().getResourceCache();
-                var s = String.format("Resource Bytes: %s (%s bytes)",
-                        TextUtils.binaryCompact(rc.getResourceBytes()),
-                        rc.getResourceBytes()) +
-                        ", " +
-                        String.format("Budgeted Resource Bytes: %s (%s bytes)",
-                                TextUtils.binaryCompact(rc.getBudgetedResourceBytes()),
-                                rc.getBudgetedResourceBytes()) +
-                        ", " +
-                        String.format("Resource Count: %s",
-                                rc.getResourceCount()) +
-                        ", " +
-                        String.format("Budgeted Resource Count: %s",
-                                rc.getBudgetedResourceCount()) +
-                        ", " +
-                        String.format("Cleanable Resource Bytes: %s (%s bytes)",
-                                TextUtils.binaryCompact(rc.getCleanableResourceBytes()),
-                                rc.getCleanableResourceBytes()) +
-                        ", " +
-                        String.format("Max Resource Bytes: %s (%s bytes)",
-                                TextUtils.binaryCompact(rc.getMaxResourceBytes()),
-                                rc.getMaxResourceBytes());
-                tv.post(() -> tv.setText(s));
-            });
+            mResourceCacheDump = tv;
             content.addView(tv);
         }
 
@@ -269,12 +254,7 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            tv.setText(
-                    Core.requireUiRecordingContext()
-                            .getPipelineStateCache()
-                            .getStats()
-                            .toString()
-            );
+            mPSOStatsDump = tv;
             content.addView(tv);
         }
 
@@ -282,10 +262,7 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            Core.executeOnRenderThread(() -> {
-                var s = Core.requireDirectContext().getServer().getStats().toString();
-                tv.post(() -> tv.setText(s));
-            });
+            mGPUStatsDump = tv;
             content.addView(tv);
         }
 
@@ -309,6 +286,65 @@ public class AdvancedOptionsFragment extends Fragment {
             content.addView(tv);
         }
 
+        refreshPage();
+
         return content;
+    }
+
+    void refreshPage() {
+        if (mUIManagerDump != null) {
+            Core.executeOnRenderThread(() -> {
+                StringBuilder builder = new StringBuilder();
+                try (var w = new PrintWriter(new StringBuilderWriter(builder))) {
+                    UIManager.getInstance().dump(w, false);
+                }
+                String s = builder.toString();
+                mUIManagerDump.post(() -> mUIManagerDump.setText(s));
+            });
+        }
+        if (mResourceCacheDump != null) {
+            Core.executeOnRenderThread(() -> {
+                var rc = Core.requireDirectContext().getResourceCache();
+                var s = String.format("Resource Bytes: %s (%s bytes)",
+                        TextUtils.binaryCompact(rc.getResourceBytes()),
+                        rc.getResourceBytes()) +
+                        ", " +
+                        String.format("Budgeted Resource Bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(rc.getBudgetedResourceBytes()),
+                                rc.getBudgetedResourceBytes()) +
+                        ", " +
+                        String.format("Resource Count: %s",
+                                rc.getResourceCount()) +
+                        ", " +
+                        String.format("Budgeted Resource Count: %s",
+                                rc.getBudgetedResourceCount()) +
+                        ", " +
+                        String.format("Cleanable Resource Bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(rc.getCleanableResourceBytes()),
+                                rc.getCleanableResourceBytes()) +
+                        ", " +
+                        String.format("Max Resource Bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(rc.getMaxResourceBytes()),
+                                rc.getMaxResourceBytes());
+                mResourceCacheDump.post(() -> mResourceCacheDump.setText(s));
+            });
+        }
+        if (mPSOStatsDump != null) {
+            mPSOStatsDump.setText(
+                    Core.requireUiRecordingContext()
+                            .getPipelineStateCache()
+                            .getStats()
+                            .toString()
+            );
+        }
+        if (mGPUStatsDump != null) {
+            Core.executeOnRenderThread(() -> {
+                var s = Core.requireDirectContext().getServer().getStats().toString();
+                mGPUStatsDump.post(() -> mGPUStatsDump.setText(s));
+            });
+        }
+        if (mContent != null) {
+            mContent.postDelayed(this::refreshPage, 10_000);
+        }
     }
 }

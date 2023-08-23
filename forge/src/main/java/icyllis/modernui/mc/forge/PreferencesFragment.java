@@ -27,7 +27,6 @@ import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.mc.forge.ui.*;
-import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.text.InputFilter;
 import icyllis.modernui.text.method.DigitsInputFilter;
 import icyllis.modernui.util.DataSet;
@@ -362,9 +361,7 @@ public class PreferencesFragment extends Fragment {
             content.addView(list);
         }
 
-        if (!Boolean.parseBoolean(
-                ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
-        )) {
+        if (ModernUIForge.enablesTextEngine()) {
             var category = createCategoryList(context, "modernui.center.category.text");
 
             saveFn = ModernUIText.CONFIG::saveAndReloadAsync;
@@ -410,6 +407,9 @@ public class PreferencesFragment extends Fragment {
             category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
                     ModernUIText.Config.SHADOW_OFFSET_MIN, ModernUIText.Config.SHADOW_OFFSET_MAX,
                     5, ModernUIText.CONFIG.mShadowOffset, saveFn));
+
+            category.addView(createBooleanOption(context, "modernui.center.text.allowAsyncLayout",
+                    ModernUIText.CONFIG.mAllowAsyncLayout, saveFn));
 
             {
                 var option = createSpinnerOption(context, "modernui.center.text.lineBreakStyle",

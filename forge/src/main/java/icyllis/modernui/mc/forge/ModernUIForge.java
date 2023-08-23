@@ -21,7 +21,6 @@ package icyllis.modernui.mc.forge;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.text.*;
-import icyllis.modernui.mc.text.ModernUIText;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
@@ -177,6 +176,12 @@ public final class ModernUIForge {
         for (var l : MuiForgeApi.sOnDebugDumpListeners) {
             l.onDebugDump(writer);
         }
+    }
+
+    public static boolean enablesTextEngine() {
+        return !Boolean.parseBoolean(
+                getBootstrapProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
+        );
     }
 
     // INTERNAL

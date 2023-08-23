@@ -24,6 +24,7 @@ import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.font.GlyphManager;
+import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.resources.Resources;
 import icyllis.modernui.util.DisplayMetrics;
@@ -280,8 +281,9 @@ final class Config {
                         return list;
                     }, $ -> true);
             mTooltipCycle = builder.comment(
-                    "The cycle time of tooltip border color in milliseconds. (0 = OFF)")
-                    .defineInRange("borderCycleTime", 1000, TOOLTIP_BORDER_COLOR_ANIM_MIN, TOOLTIP_BORDER_COLOR_ANIM_MAX);
+                            "The cycle time of tooltip border color in milliseconds. (0 = OFF)")
+                    .defineInRange("borderCycleTime", 1000, TOOLTIP_BORDER_COLOR_ANIM_MIN,
+                            TOOLTIP_BORDER_COLOR_ANIM_MAX);
             /*mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
                     .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);*/
@@ -487,22 +489,32 @@ final class Config {
                 });
             }
 
-            boolean reload = false;
+            boolean reloadStrike = false;
             if (GlyphManager.sAntiAliasing != mAntiAliasing.get()) {
                 GlyphManager.sAntiAliasing = mAntiAliasing.get();
-                reload = true;
+                reloadStrike = true;
             }
             if (GlyphManager.sFractionalMetrics == mAutoHinting.get()) {
                 GlyphManager.sFractionalMetrics = !mAutoHinting.get();
-                reload = true;
+                reloadStrike = true;
             }
             /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
                 GLFontAtlas.sLinearSampling = mLinearSampling.get();
                 reload = true;
             }*/
-            if (reload) {
-                Minecraft.getInstance().submit(
-                        () -> TextLayoutEngine.getInstance().reloadAll());
+            if (reloadStrike) {
+                if (ModernUIForge.enablesTextEngine()) {
+                    Minecraft.getInstance().submit(
+                            () -> TextLayoutEngine.getInstance().reloadAll());
+                } else {
+                    Minecraft.getInstance().submit(
+                            () -> {
+                                GlyphManager.getInstance().reload();
+                                LOGGER.info(MARKER, "Reloaded glyph manager");
+                                LayoutCache.clear();
+                            }
+                    );
+                }
             }
 
             ModernUI.getSelectedTypeface();

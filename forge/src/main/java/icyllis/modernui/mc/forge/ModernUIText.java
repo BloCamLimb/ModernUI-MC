@@ -16,19 +16,21 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.text;
+package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.LineBreakConfig;
-import icyllis.modernui.mc.forge.MuiForgeApi;
+import icyllis.modernui.mc.text.*;
 import icyllis.modernui.text.TextUtils;
 import icyllis.modernui.view.View;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -103,7 +105,7 @@ public final class ModernUIText {
             pw.println(", EmojiAtlasSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
             GlyphManager.getInstance().dumpInfo(pw);
         });
-        //MinecraftForge.EVENT_BUS.register(EventHandler.class);
+        MinecraftForge.EVENT_BUS.register(EventHandler.class);
         LOGGER.info(MARKER, "Loaded modern text engine");
     }
 
@@ -128,9 +130,9 @@ public final class ModernUIText {
         }
     }*/
 
-    /*static class EventHandler {
+    static class EventHandler {
 
-        @SubscribeEvent
+        /*@SubscribeEvent
         static void onClientChat(@Nonnull ClientChatEvent event) {
             final String msg = event.getMessage();
             if (CONFIG.mEmojiShortcodes.get() && !msg.startsWith("/")) {
@@ -162,8 +164,15 @@ public final class ModernUIText {
                     //event.setMessage(builder.toString());
                 }
             }
+        }*/
+
+        @SubscribeEvent
+        static void onClientTick(@Nonnull TickEvent.ClientTickEvent event) {
+            if (event.phase == TickEvent.Phase.END) {
+                TextLayoutEngine.getInstance().onEndClientTick();
+            }
         }
-    }*/
+    }
 
     public static class Config {
 
@@ -200,6 +209,7 @@ public final class ModernUIText {
         public final ForgeConfigSpec.BooleanValue mUseTextShadersInWorld;
         public final ForgeConfigSpec.EnumValue<DefaultFontBehavior> mDefaultFontBehavior;
         public final ForgeConfigSpec.BooleanValue mUseComponentCache;
+        public final ForgeConfigSpec.BooleanValue mAllowAsyncLayout;
         public final ForgeConfigSpec.EnumValue<LineBreakStyle> mLineBreakStyle;
         public final ForgeConfigSpec.EnumValue<LineBreakWordStyle> mLineBreakWordStyle;
 
@@ -294,8 +304,13 @@ public final class ModernUIText {
             mUseComponentCache = builder.comment(
                             "Whether to use text component object as hash key to lookup in layout cache.",
                             "If you find that Modern UI text rendering is not compatible with some mods,",
-                            "you can disable this option for compatibility, but this will decrease performance a bit.")
+                            "you can disable this option for compatibility, but this will decrease performance a bit.",
+                            "Modern UI will use another cache strategy if this is disabled.")
                     .define("useComponentCache", true);
+            mAllowAsyncLayout = builder.comment(
+                            "Allow text layout to be computed from non-main threads.",
+                            "Otherwise, block on current thread.")
+                    .define("allowAsyncLayout", true);
             mLineBreakStyle = builder.comment(
                             "See CSS line-break property, https://developer.mozilla.org/en-US/docs/Web/CSS/line-break")
                     .defineEnum("lineBreakStyle", LineBreakStyle.AUTO);
@@ -373,6 +388,7 @@ public final class ModernUIText {
                 TextLayoutEngine.sUseColorEmoji = mUseColorEmoji.get();
                 reload = true;
             }
+            TextLayoutEngine.sUseEmojiShortcodes = mEmojiShortcodes.get();
             if (TextLayoutEngine.sUseTextShadersInWorld != mUseTextShadersInWorld.get()) {
                 TextLayoutEngine.sUseTextShadersInWorld = mUseTextShadersInWorld.get();
                 reload = true;
@@ -381,6 +397,7 @@ public final class ModernUIText {
                 TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
                 reloadAll = true;
             }
+            TextLayoutEngine.sAllowAsyncLayout = mAllowAsyncLayout.get();
             if (TextLayoutProcessor.sLbStyle != mLineBreakStyle.get().key) {
                 TextLayoutProcessor.sLbStyle = mLineBreakStyle.get().key;
                 reload = true;

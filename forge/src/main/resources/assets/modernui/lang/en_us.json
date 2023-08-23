@@ -74,6 +74,7 @@
   "modernui.center.text.emojiShortcodes_desc": "When enabled, shortcodes in Chat Screen will be replaced with their Emoji sequences. For example:\n:jellyfish:",
   "modernui.center.text.distanceField": "Use Distance Field",
   "modernui.center.text.allowShadow": "Allow Shadow",
+  "modernui.center.text.allowAsyncLayout": "Allow Asynchronous Text Layout",
   "modernui.center.text.useComponentCache": "Use Text Component Cache",
   "modernui.center.text.useComponentCache_desc": "When enabled, text component object will be used as hash key to lookup in layout cache.\nYou can disable this if there are mods that do not agree with it, but it will lower the performance.",
   "modernui.center.text.lineBreakStyle": "Line Break Style",

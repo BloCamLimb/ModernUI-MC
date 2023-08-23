@@ -52,10 +52,6 @@ import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.*;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
@@ -93,10 +89,6 @@ public class TextLayoutEngine implements PreparableReloadListener {
      */
     private static volatile TextLayoutEngine sInstance;
 
-    static {
-        assert FMLEnvironment.dist.isClient();
-    }
-
     /**
      * Config values
      */
@@ -130,6 +122,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public static volatile boolean sUseTextShadersInWorld = true;
 
     public static volatile boolean sUseColorEmoji = true;
+    public static volatile boolean sUseEmojiShortcodes = true;
 
     /**
      * Matches Slack emoji shortcode.
@@ -225,7 +218,17 @@ public class TextLayoutEngine implements PreparableReloadListener {
             DEFAULT_FONT_BEHAVIOR_KEEP_OTHER; // <- bit mask
 
 
+    /**
+     * Whether to use text component object as hash key to lookup in layout cache.
+     *
+     * @see MutableComponent#hashCode()
+     */
     public static volatile boolean sUseComponentCache = true;
+
+    /**
+     * Allow text layout to be computed from non-main threads.
+     */
+    public static volatile boolean sAllowAsyncLayout = true;
 
 
     private final GlyphManager mGlyphManager;
@@ -257,7 +260,9 @@ public class TextLayoutEngine implements PreparableReloadListener {
     private final TextLayoutProcessor mProcessor = new TextLayoutProcessor(this);
 
     /**
-     * Backgroud thread layout proc.
+     * Background thread layout procs.
+     *
+     * @see #sAllowAsyncLayout
      */
     private final Pools.Pool<TextLayoutProcessor> mProcessorPool = Pools.newSynchronizedPool(3);
 
@@ -347,8 +352,6 @@ public class TextLayoutEngine implements PreparableReloadListener {
         mGlyphManager.addAtlasInvalidationCallback(TextRenderType::clear);
         // init
         reload();
-        // events
-        MinecraftForge.EVENT_BUS.register(this);
 
         mTextRenderer = new ModernTextRenderer(this);
         mStringSplitter = new ModernStringSplitter(this);
@@ -817,17 +820,25 @@ public class TextLayoutEngine implements PreparableReloadListener {
                 );
             }
             case TTF -> {
+                var ttf = (TrueTypeGlyphProviderDefinition) definition;
+                if (metadata.has("size")) {
+                    LOGGER.info(MARKER, "Ignore 'size={}' of providers[{}] in font '{}' in pack: '{}'",
+                            ttf.size(), index, name, sourcePackId);
+                }
+                if (metadata.has("oversample")) {
+                    LOGGER.info(MARKER, "Ignore 'oversample={}' of providers[{}] in font '{}' in pack: '{}'",
+                            ttf.oversample(), index, name, sourcePackId);
+                }
                 if (metadata.has("shift")) {
-                    LOGGER.info(MARKER, "Ignore 'shift' of providers[{}] in font '{}' in pack: '{}'",
-                            index, name, sourcePackId);
+                    LOGGER.info(MARKER, "Ignore 'shift={}' of providers[{}] in font '{}' in pack: '{}'",
+                            ttf.shift(), index, name, sourcePackId);
                 }
                 if (metadata.has("skip")) {
-                    LOGGER.info(MARKER, "Ignore 'skip' of providers[{}] in font '{}' in pack: '{}'",
-                            index, name, sourcePackId);
+                    LOGGER.info(MARKER, "Ignore 'skip={}' of providers[{}] in font '{}' in pack: '{}'",
+                            ttf.skip(), index, name, sourcePackId);
                 }
                 bundle.families.add(
-                        createTTF(((TrueTypeGlyphProviderDefinition) definition).location(),
-                                resources)
+                        createTTF(ttf.location(), resources)
                 );
             }
             case SPACE -> {
@@ -1012,13 +1023,20 @@ public class TextLayoutEngine implements PreparableReloadListener {
             return TextLayout.EMPTY;
         }
         if (!RenderSystem.isOnRenderThread()) {
-            TextLayoutProcessor proc = mProcessorPool.acquire();
-            if (proc == null) {
-                proc = new TextLayoutProcessor(this);
+            if (sAllowAsyncLayout) {
+                TextLayoutProcessor proc = mProcessorPool.acquire();
+                if (proc == null) {
+                    proc = new TextLayoutProcessor(this);
+                }
+                TextLayout layout = proc.createVanillaLayout(text, style, mResLevel, computeFlags);
+                mProcessorPool.release(proc);
+                return layout;
+            } else {
+                return Minecraft.getInstance().submit(
+                                () -> lookupVanillaLayout(text, style, computeFlags)
+                        )
+                        .join();
             }
-            TextLayout layout = proc.createVanillaLayout(text, style, mResLevel, computeFlags);
-            mProcessorPool.release(proc);
-            return layout;
         }
         TextLayout layout = mVanillaCache.get(mVanillaLookupKey.update(text, style, mResLevel));
         int nowFlags = 0;
@@ -1075,13 +1093,20 @@ public class TextLayoutEngine implements PreparableReloadListener {
             return TextLayout.EMPTY;
         }
         if (!RenderSystem.isOnRenderThread()) {
-            TextLayoutProcessor proc = mProcessorPool.acquire();
-            if (proc == null) {
-                proc = new TextLayoutProcessor(this);
+            if (sAllowAsyncLayout) {
+                TextLayoutProcessor proc = mProcessorPool.acquire();
+                if (proc == null) {
+                    proc = new TextLayoutProcessor(this);
+                }
+                TextLayout layout = proc.createTextLayout(text, style, mResLevel, computeFlags);
+                mProcessorPool.release(proc);
+                return layout;
+            } else {
+                return Minecraft.getInstance().submit(
+                                () -> lookupFormattedLayout(text, style, computeFlags)
+                        )
+                        .join();
             }
-            TextLayout layout = proc.createTextLayout(text, style, mResLevel, computeFlags);
-            mProcessorPool.release(proc);
-            return layout;
         }
         TextLayout layout;
         int nowFlags = 0;
@@ -1143,13 +1168,20 @@ public class TextLayoutEngine implements PreparableReloadListener {
             return TextLayout.EMPTY;
         }
         if (!RenderSystem.isOnRenderThread()) {
-            TextLayoutProcessor proc = mProcessorPool.acquire();
-            if (proc == null) {
-                proc = new TextLayoutProcessor(this);
+            if (sAllowAsyncLayout) {
+                TextLayoutProcessor proc = mProcessorPool.acquire();
+                if (proc == null) {
+                    proc = new TextLayoutProcessor(this);
+                }
+                TextLayout layout = proc.createSequenceLayout(sequence, mResLevel, computeFlags);
+                mProcessorPool.release(proc);
+                return layout;
+            } else {
+                return Minecraft.getInstance().submit(
+                                () -> lookupFormattedLayout(sequence, computeFlags)
+                        )
+                        .join();
             }
-            TextLayout layout = proc.createSequenceLayout(sequence, mResLevel, computeFlags);
-            mProcessorPool.release(proc);
-            return layout;
         }
         int nowFlags = 0;
         // check if it's intercepted by Language.getVisualOrder()
@@ -1389,26 +1421,23 @@ public class TextLayoutEngine implements PreparableReloadListener {
     /**
      * Ticks the caches and clear unused entries.
      */
-    @SubscribeEvent
-    void onTick(@Nonnull TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            if (mTimer == 0) {
-                //int oldCount = getCacheCount();
-                mVanillaCache.values().removeIf(TextLayout::tick);
-                mComponentCache.values().removeIf(TextLayout::tick);
-                mFormattedCache.values().removeIf(TextLayout::tick);
-                /*if (oldCount >= sRehashThreshold) {
-                    int newCount = getCacheCount();
-                    if (newCount < sRehashThreshold) {
-                        mVanillaCache = new HashMap<>(mVanillaCache);
-                        mComponentCache = new HashMap<>(mComponentCache);
-                        mFormattedCache = new HashMap<>(mFormattedCache);
-                    }
-                }*/
-            }
-            // convert ticks to seconds
-            mTimer = (mTimer + 1) % 20;
+    public void onEndClientTick() {
+        if (mTimer == 0) {
+            //int oldCount = getCacheCount();
+            mVanillaCache.values().removeIf(TextLayout::tick);
+            mComponentCache.values().removeIf(TextLayout::tick);
+            mFormattedCache.values().removeIf(TextLayout::tick);
+            /*if (oldCount >= sRehashThreshold) {
+                int newCount = getCacheCount();
+                if (newCount < sRehashThreshold) {
+                    mVanillaCache = new HashMap<>(mVanillaCache);
+                    mComponentCache = new HashMap<>(mComponentCache);
+                    mFormattedCache = new HashMap<>(mFormattedCache);
+                }
+            }*/
         }
+        // convert ticks to seconds
+        mTimer = (mTimer + 1) % 20;
     }
 
     /**

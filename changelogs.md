@@ -8,6 +8,8 @@ Changelogs
 * Add Fragments into crash report
 * Add more advanced options
 #### Modern Text Engine 1.20.1
+* Add config for async text layout
+* Fix text engine not fully disabled
 * Fix memory leakage when reloading resources
 * Add smart SDF text control
 * Fix polygon offset issues

@@ -74,6 +74,7 @@
   "modernui.center.text.emojiShortcodes_desc": "启用时，聊天栏中的短码将被替换成它们的 Emoji 字符串，例如：\n:jellyfish:",
   "modernui.center.text.distanceField": "使用距离场",
   "modernui.center.text.allowShadow": "允许阴影",
+  "modernui.center.text.allowAsyncLayout": "允许异步文本布局",
   "modernui.center.text.useComponentCache": "使用文本组件缓存",
   "modernui.center.text.useComponentCache_desc": "启用时，文本组件对象将被用作哈希键在布局缓存中查询。\n如果有模组不适配该特性，你可以关闭该选项，但会降低性能。",
   "modernui.center.text.lineBreakStyle": "换行样式",
