@@ -99,7 +99,7 @@ public class AdvancedOptionsFragment extends Fragment {
             {
                 var option = createSwitchLayout(context, "modernui.center.text.textEngine");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(ModernUIForge.enablesTextEngine());
+                button.setChecked(ModernUIForge.isTextEngineEnabled());
                 button.setOnCheckedChangeListener((__, checked) -> {
                     ModernUIForge.setBootstrapProperty(
                             ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE,
@@ -165,7 +165,7 @@ public class AdvancedOptionsFragment extends Fragment {
                         Core.executeOnMainThread(() -> GlyphManager.getInstance().debug()));
                 category.addView(button);
             }
-            if (ModernUIForge.enablesTextEngine()) {
+            if (ModernUIForge.isTextEngineEnabled()) {
                 {
                     var button = createDebugButton(context, "Dump BitmapFonts and EmojiAtlas (V)");
                     button.setOnClickListener((__) ->

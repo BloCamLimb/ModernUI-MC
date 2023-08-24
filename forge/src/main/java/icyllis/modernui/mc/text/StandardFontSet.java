@@ -149,19 +149,22 @@ public class StandardFontSet extends FontSet {
                 // auto bake
                 var glyph = bitmapFont.getGlyph(codePoint);
                 if (glyph != null) {
-                    // convert to Minecraft, bearing Y is 3
-                    float y = 3F + bitmapFont.getAscent() +
+                    // convert to Minecraft, bearing Y is 3, see SheetGlyphInfo
+                    float up = 3F + bitmapFont.getAscent() +
                             (float) glyph.y / TextLayoutEngine.BITMAP_SCALE;
+                    float left = (float) glyph.x / TextLayoutEngine.BITMAP_SCALE;
+                    float right = (float) (glyph.x + glyph.width) / TextLayoutEngine.BITMAP_SCALE;
+                    float down = up + (float) glyph.height / TextLayoutEngine.BITMAP_SCALE;
                     return new StandardBakedGlyph(
                             bitmapFont::getCurrentTexture,
                             glyph.u1,
                             glyph.u2,
                             glyph.v1,
                             glyph.v2,
-                            (float) glyph.x / TextLayoutEngine.BITMAP_SCALE,
-                            (float) (glyph.x + glyph.width) / TextLayoutEngine.BITMAP_SCALE,
-                            y,
-                            y + (float) glyph.height / TextLayoutEngine.BITMAP_SCALE
+                            left,
+                            right,
+                            up,
+                            down
                     );
                 }
             } else if (font instanceof SpaceFont) {
@@ -184,18 +187,21 @@ public class StandardFontSet extends FontSet {
                             glyphs.getInt(0)
                     );
                     if (glyph != null) {
-                        // convert to Minecraft, bearing Y is 3
-                        float y = 3F + TextLayout.STANDARD_BASELINE_OFFSET + glyph.y / mResLevel;
+                        // convert to Minecraft, bearing Y is 3, see SheetGlyphInfo
+                        float up = 3F + TextLayout.STANDARD_BASELINE_OFFSET + glyph.y / mResLevel;
+                        float left = glyph.x / mResLevel;
+                        float right = (glyph.x + glyph.width) / mResLevel;
+                        float down = up + glyph.height / mResLevel;
                         return new StandardBakedGlyph(
                                 () -> TextLayoutEngine.getInstance().getStandardTexture(), // <- singleton
                                 glyph.u1,
                                 glyph.u2,
                                 glyph.v1,
                                 glyph.v2,
-                                glyph.x / mResLevel,
-                                (glyph.x + glyph.width) / mResLevel,
-                                y,
-                                y + glyph.height / mResLevel
+                                left,
+                                right,
+                                up,
+                                down
                         );
                     }
                 }

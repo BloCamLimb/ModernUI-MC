@@ -8,9 +8,10 @@ Changelogs
 * Add Fragments into crash report
 * Add more advanced options
 #### Modern Text Engine 1.20.1
+* Add fake italic support for bitmap fonts
 * Add device font size computation in 2D
 * Add SDF text control in 2D
-* Add back cache lifespan config
+* Add cache lifespan config back
 * Optimize cache performance
 * Add config for async text layout
 * Fix text engine not fully disabled

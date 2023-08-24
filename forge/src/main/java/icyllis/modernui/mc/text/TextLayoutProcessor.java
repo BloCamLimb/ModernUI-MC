@@ -51,8 +51,8 @@ import java.util.function.Function;
  * @see MixinBidiReorder
  * @see MixinClientLanguage
  * @see MixinLanguage
- * @see VanillaLayoutKey#update(String, Style, int)
- * @see FormattedLayoutKey.Lookup#update(FormattedCharSequence, int)
+ * @see VanillaLayoutKey#update(String, Style)
+ * @see FormattedLayoutKey.Lookup#update(FormattedCharSequence)
  * @see FormattedText
  * @see FormattedCharSequence
  * @see FormattedTextWrapper
@@ -333,7 +333,7 @@ public class TextLayoutProcessor {
         mEngine = engine;
     }
 
-    public static int computeFontSize(int resLevel) {
+    public static int computeFontSize(float resLevel) {
         // Note max font size is 96, see FontPaint, font size will be (8 * res) in Minecraft by default
         return Math.min((int) (sBaseFontSize * resLevel + 0.5), 96);
     }

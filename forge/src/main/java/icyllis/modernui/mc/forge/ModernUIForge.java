@@ -178,7 +178,7 @@ public final class ModernUIForge {
         }
     }
 
-    public static boolean enablesTextEngine() {
+    public static boolean isTextEngineEnabled() {
         return !Boolean.parseBoolean(
                 getBootstrapProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
         );

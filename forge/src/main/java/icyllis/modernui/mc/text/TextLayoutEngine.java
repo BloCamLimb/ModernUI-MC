@@ -1320,14 +1320,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
         return null;
     }
 
-    public int getCurrentTexture(Font font) {
-        if (font == mEmojiFont) {
-            return mEmojiAtlas.mTexture.get();
-        }
-        if (font instanceof BitmapFont bitmapFont) {
-            return bitmapFont.getCurrentTexture();
-        }
-        return getStandardTexture();
+    public int getEmojiTexture() {
+        return mEmojiAtlas.mTexture.get();
     }
 
     public int getStandardTexture() {

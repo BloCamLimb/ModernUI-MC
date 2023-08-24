@@ -89,6 +89,7 @@ public class TextRenderType extends RenderType {
     private static final ImmutableList<RenderStateShard> SDF_FILL_STATES;
     private static final ImmutableList<RenderStateShard> SDF_STROKE_STATES;
     private static final ImmutableList<RenderStateShard> SEE_THROUGH_STATES;
+    private static final ImmutableList<RenderStateShard> POLYGON_OFFSET_STATES;
 
     /**
      * Texture id to render type map
@@ -97,6 +98,7 @@ public class TextRenderType extends RenderType {
     private static final Int2ObjectMap<TextRenderType> sSDFFillTypes = new Int2ObjectOpenHashMap<>();
     private static final Int2ObjectMap<TextRenderType> sSDFStrokeTypes = new Int2ObjectOpenHashMap<>();
     private static final Int2ObjectMap<TextRenderType> sSeeThroughTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectMap<TextRenderType> sPolygonOffsetTypes = new Int2ObjectOpenHashMap<>();
 
     private static TextRenderType sFirstSDFFillType;
     private static final BufferBuilder sFirstSDFFillBuffer = new BufferBuilder(131072);
@@ -161,6 +163,19 @@ public class TextRenderType extends RenderType {
                 COLOR_WRITE,
                 DEFAULT_LINE
         );
+        POLYGON_OFFSET_STATES = ImmutableList.of(
+                RENDERTYPE_TEXT_SHADER,
+                TRANSLUCENT_TRANSPARENCY,
+                LEQUAL_DEPTH_TEST,
+                CULL,
+                LIGHTMAP,
+                NO_OVERLAY,
+                POLYGON_OFFSET_LAYERING,
+                MAIN_TARGET,
+                DEFAULT_TEXTURING,
+                COLOR_DEPTH_WRITE,
+                DEFAULT_LINE
+        );
     }
 
     private TextRenderType(String name, int bufferSize, Runnable setupState, Runnable clearState) {
@@ -181,10 +196,11 @@ public class TextRenderType extends RenderType {
     // compatibility
     @Nonnull
     public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode) {
-        if (mode == Font.DisplayMode.SEE_THROUGH) {
-            return sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
-        }
-        return sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
+        return switch (mode) {
+            default -> sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
+            case SEE_THROUGH -> sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
+            case POLYGON_OFFSET -> sPolygonOffsetTypes.computeIfAbsent(texture, TextRenderType::makePolygonOffsetType);
+        };
     }
 
     @Nonnull
@@ -263,6 +279,14 @@ public class TextRenderType extends RenderType {
             SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
         }, () -> SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
+    }
+
+    @Nonnull
+    private static TextRenderType makePolygonOffsetType(int texture) {
+        return new TextRenderType("modern_text_polygon_offset", 256, () -> {
+            POLYGON_OFFSET_STATES.forEach(RenderStateShard::setupRenderState);
+            RenderSystem.setShaderTexture(0, texture);
+        }, () -> POLYGON_OFFSET_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
     /**

@@ -89,7 +89,7 @@ public class FormattedLayoutKey {
 
         if (h == 0) {
             h = 1;
-            int[] codes = mCodes;
+            var codes = mCodes;
             for (int i = 0, e = codes.length; i < e; i++) {
                 h = 31 * h + mTexts[i].hashCode();
                 h = 31 * h + mFonts[i].hashCode();
@@ -258,8 +258,8 @@ public class FormattedLayoutKey {
 
             if (h == 0) {
                 h = 1;
-                var texts = mTexts.elements();
-                var fonts = mFonts.elements();
+                final Object[] texts = mTexts.elements();
+                final Object[] fonts = mFonts.elements();
                 var codes = mCodes.elements();
                 for (int i = 0, e = mCodes.size(); i < e; i++) {
                     h = 31 * h + texts[i].hashCode();

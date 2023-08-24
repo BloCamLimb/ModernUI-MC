@@ -361,7 +361,7 @@ public class PreferencesFragment extends Fragment {
             content.addView(list);
         }
 
-        if (ModernUIForge.enablesTextEngine()) {
+        if (ModernUIForge.isTextEngineEnabled()) {
             var category = createCategoryList(context, "modernui.center.category.text");
 
             saveFn = ModernUIText.CONFIG::saveAndReloadAsync;

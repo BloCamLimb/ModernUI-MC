@@ -103,6 +103,7 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         int mode = chooseMode(matrix, displayMode);
+        boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
         TextLayout layout = mEngine.lookupVanillaLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
@@ -111,13 +112,13 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, colorBackground, packedLight);
+                    mode, polygonOffset, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, colorBackground, packedLight);
+                mode, polygonOffset, colorBackground, packedLight);
         return x;
     }
 
@@ -142,6 +143,7 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         int mode = chooseMode(matrix, displayMode);
+        boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
         TextLayout layout = mEngine.lookupFormattedLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
@@ -150,13 +152,13 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, colorBackground, packedLight);
+                    mode, polygonOffset, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, colorBackground, packedLight);
+                mode, polygonOffset, colorBackground, packedLight);
         return x;
     }
 
@@ -181,6 +183,7 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         int mode = chooseMode(matrix, displayMode);
+        boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
         TextLayout layout = mEngine.lookupFormattedLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
@@ -189,13 +192,13 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, colorBackground, packedLight);
+                    mode, polygonOffset, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, colorBackground, packedLight);
+                mode, polygonOffset, colorBackground, packedLight);
         return x;
     }
 
@@ -293,7 +296,7 @@ public final class ModernTextRenderer {
         }
 
         layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                TextRenderType.MODE_SDF_FILL, 0, packedLight);
+                TextRenderType.MODE_SDF_FILL, false, 0, packedLight);
 
         a = outlineColor >>> 24;
         if (a <= 1) a = 255;

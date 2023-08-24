@@ -266,7 +266,7 @@ public final class ModernUIText {
                     .define("alignPixels", false);*/
             mCacheLifespan = builder.comment(
                             "Set the recycle time of layout cache in seconds, using least recently used algorithm.")
-                    .defineInRange("cacheLifespan", 5, LIFESPAN_MIN, LIFESPAN_MAX);
+                    .defineInRange("cacheLifespan", 6, LIFESPAN_MIN, LIFESPAN_MAX);
             /*mRehashThreshold = builder.comment("Set the rehash threshold of layout cache")
                     .defineInRange("rehashThreshold", 100, REHASH_MIN, REHASH_MAX);*/
             mTextDirection = builder.comment(
@@ -326,8 +326,9 @@ public final class ModernUIText {
                                     "to use SDF text or bilinear sampling.",
                             "This feature requires GLSL 400 or has no effect.",
                             "This generally decreases performance but provides better rendering quality.",
-                            "This option only applies to TrueType fonts.")
-                    .define("smartSDFShaders", true);
+                            "This option only applies to TrueType fonts. May not be compatible with OptiFine.")
+                    .define("smartSDFShaders", !ModernUIForge.isOptiFineLoaded());
+            // OK, this doesn't work well with OptiFine
             mComputeDeviceFontSize = builder.comment(
                             "When rendering in 2D, this option allows Modern UI to exactly compute font size in " +
                                     "device-space from the current coordinate transform matrix.",

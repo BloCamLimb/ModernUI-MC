@@ -384,7 +384,7 @@ public final class UIManager implements LifecycleOwner {
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f));
             }
             if (ModernUIForge.isOptiFineLoaded() &&
-                    ModernUIForge.enablesTextEngine()) {
+                    ModernUIForge.isTextEngineEnabled()) {
                 OptiFineIntegration.setFastRender(false);
                 LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
             }

@@ -503,7 +503,7 @@ final class Config {
                 reload = true;
             }*/
             if (reloadStrike) {
-                if (ModernUIForge.enablesTextEngine()) {
+                if (ModernUIForge.isTextEngineEnabled()) {
                     Minecraft.getInstance().submit(
                             () -> TextLayoutEngine.getInstance().reloadAll());
                 } else {
