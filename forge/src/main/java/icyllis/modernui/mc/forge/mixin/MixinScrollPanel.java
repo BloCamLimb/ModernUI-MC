@@ -59,7 +59,8 @@ public abstract class MixinScrollPanel implements ScrollController.IListener {
     @Final
     private Minecraft client;
 
-    private final ScrollController mScrollController = new ScrollController(this);
+    @Unique
+    private final ScrollController modernUI_MC$mScrollController = new ScrollController(this);
 
     /**
      * @author BloCamLimb
@@ -68,8 +69,8 @@ public abstract class MixinScrollPanel implements ScrollController.IListener {
     @Overwrite
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         if (scrollY != 0) {
-            mScrollController.setMaxScroll(getMaxScroll());
-            mScrollController.scrollBy(Math.round(-scrollY * getScrollAmount()));
+            modernUI_MC$mScrollController.setMaxScroll(getMaxScroll());
+            modernUI_MC$mScrollController.scrollBy(Math.round(-scrollY * getScrollAmount()));
             return true;
         }
         return false;
@@ -77,7 +78,7 @@ public abstract class MixinScrollPanel implements ScrollController.IListener {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void preRender(GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        mScrollController.update(MuiForgeApi.getElapsedTime());
+        modernUI_MC$mScrollController.update(MuiForgeApi.getElapsedTime());
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraftforge" +
@@ -111,9 +112,9 @@ public abstract class MixinScrollPanel implements ScrollController.IListener {
         if (scrolling) {
             int maxScroll = height - getBarHeight();
             float moved = (float) (deltaY / maxScroll);
-            mScrollController.setMaxScroll(getMaxScroll());
-            mScrollController.scrollBy(getMaxScroll() * moved);
-            mScrollController.abortAnimation();
+            modernUI_MC$mScrollController.setMaxScroll(getMaxScroll());
+            modernUI_MC$mScrollController.scrollBy(getMaxScroll() * moved);
+            modernUI_MC$mScrollController.abortAnimation();
             return true;
         }
         return false;

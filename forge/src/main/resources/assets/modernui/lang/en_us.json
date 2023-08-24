@@ -116,7 +116,7 @@
   "modernui.windowMode.fullscreen": "Fullscreen",
   "modernui.windowMode.fullscreen_borderless": "Fullscreen Borderless",
   "modernui.windowMode.maximized": "Maximized",
-  "modernui.windowMode.minimized": "Minimized",
+  "modernui.windowMode.maximized_borderless": "Maximized Borderless",
   "modernui.windowMode.windowed": "Windowed",
   "modernui.windowMode.windowed_borderless": "Windowed Borderless",
   "modernui.defaultFontBehavior.ignore_all": "Ignore All",

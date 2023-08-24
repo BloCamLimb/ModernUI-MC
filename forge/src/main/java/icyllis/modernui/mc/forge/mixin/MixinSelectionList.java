@@ -50,10 +50,11 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
 
     @Shadow
     @Final
-    public Minecraft minecraft;
+    protected Minecraft minecraft;
 
+    @Unique
     @Nullable
-    private ScrollController mScrollController;
+    private ScrollController modernUI_MC$mScrollController;
 
     /**
      * @author BloCamLimb
@@ -62,9 +63,9 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
     @Overwrite
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         if (scrollY != 0) {
-            if (mScrollController != null) {
-                mScrollController.setMaxScroll(getMaxScroll());
-                mScrollController.scrollBy(Math.round(-scrollY * 40));
+            if (modernUI_MC$mScrollController != null) {
+                modernUI_MC$mScrollController.setMaxScroll(getMaxScroll());
+                modernUI_MC$mScrollController.scrollBy(Math.round(-scrollY * 40));
             } else {
                 setScrollAmount(getScrollAmount() - scrollY * itemHeight / 2.0D);
             }
@@ -75,11 +76,11 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
 
     @Inject(method = "render", at = @At("HEAD"))
     private void preRender(GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        if (mScrollController == null) {
-            mScrollController = new ScrollController(this);
-            skipAnimationTo(scrollAmount);
+        if (modernUI_MC$mScrollController == null) {
+            modernUI_MC$mScrollController = new ScrollController(this);
+            modernUI_MC$skipAnimationTo(scrollAmount);
         }
-        mScrollController.update(MuiForgeApi.getElapsedTime());
+        modernUI_MC$mScrollController.update(MuiForgeApi.getElapsedTime());
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client" +
@@ -117,8 +118,8 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
      */
     @Overwrite
     public void setScrollAmount(double target) {
-        if (mScrollController != null) {
-            skipAnimationTo(target);
+        if (modernUI_MC$mScrollController != null) {
+            modernUI_MC$skipAnimationTo(target);
         } else
             scrollAmount = Mth.clamp(target, 0.0D, getMaxScroll());
     }
@@ -128,10 +129,11 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
         scrollAmount = Mth.clamp(amount, 0.0D, getMaxScroll());
     }
 
-    public void skipAnimationTo(double target) {
-        assert mScrollController != null;
-        mScrollController.setMaxScroll(getMaxScroll());
-        mScrollController.scrollTo((float) target);
-        mScrollController.abortAnimation();
+    @Unique
+    public void modernUI_MC$skipAnimationTo(double target) {
+        assert modernUI_MC$mScrollController != null;
+        modernUI_MC$mScrollController.setMaxScroll(getMaxScroll());
+        modernUI_MC$mScrollController.scrollTo((float) target);
+        modernUI_MC$mScrollController.abortAnimation();
     }
 }

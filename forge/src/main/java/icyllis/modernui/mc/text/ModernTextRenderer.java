@@ -226,7 +226,7 @@ public final class ModernTextRenderer {
                         // pure translation
                         return TextRenderType.MODE_NORMAL;
                     } else if (sComputeDeviceFontSize &&
-                            ctm.m00() < 1 &&
+                            ctm.m00() < .999 &&
                             MathUtil.isApproxEqual(ctm.m00(), ctm.m11())) {
                         // uniform scale smaller
                         return TextRenderType.MODE_DYNAMIC_SCALE;

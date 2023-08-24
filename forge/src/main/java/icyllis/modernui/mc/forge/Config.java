@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc.forge;
 
-import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.platform.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
@@ -44,6 +44,7 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.jetbrains.annotations.ApiStatus;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -525,7 +526,7 @@ final class Config {
             FULLSCREEN,
             FULLSCREEN_BORDERLESS,
             MAXIMIZED,
-            MINIMIZED,
+            MAXIMIZED_BORDERLESS,
             WINDOWED,
             WINDOWED_BORDERLESS;
 
@@ -544,23 +545,36 @@ final class Config {
                         GLFW.glfwRestoreWindow(window.getWindow());
                         GLFW.glfwSetWindowAttrib(window.getWindow(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
-                        GLFW.glfwMaximizeWindow(window.getWindow());
+                        Monitor monitor = window.findBestMonitor();
+                        if (monitor != null) {
+                            VideoMode videoMode = monitor.getCurrentMode();
+                            int x = monitor.getX();
+                            int y = monitor.getY();
+                            int width = videoMode.getWidth();
+                            int height = videoMode.getHeight();
+                            GLFW.glfwSetWindowMonitor(window.getWindow(), MemoryUtil.NULL,
+                                    x, y, width, height, GLFW.GLFW_DONT_CARE);
+                        } else {
+                            GLFW.glfwMaximizeWindow(window.getWindow());
+                        }
                     }
                     case MAXIMIZED -> {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        GLFW.glfwRestoreWindow(window.getWindow());
                         GLFW.glfwSetWindowAttrib(window.getWindow(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
                         GLFW.glfwMaximizeWindow(window.getWindow());
                     }
-                    case MINIMIZED -> {
+                    case MAXIMIZED_BORDERLESS -> {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        GLFW.glfwRestoreWindow(window.getWindow());
                         GLFW.glfwSetWindowAttrib(window.getWindow(),
-                                GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
-                        GLFW.glfwIconifyWindow(window.getWindow());
+                                GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
+                        GLFW.glfwMaximizeWindow(window.getWindow());
                     }
                     case WINDOWED -> {
                         if (window.isFullscreen()) {
