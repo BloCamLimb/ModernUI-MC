@@ -45,12 +45,15 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class PreferencesFragment extends Fragment {
 
+    LinearLayout tooltipCategory;
+    LinearLayout textEngineCategory;
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable DataSet savedInstanceState) {
         var pager = new ViewPager(getContext());
 
-        pager.setAdapter(new TheAdapter());
+        pager.setAdapter(this.new TheAdapter());
         pager.setFocusableInTouchMode(true);
         pager.setKeyboardNavigationCluster(true);
 
@@ -75,7 +78,7 @@ public class PreferencesFragment extends Fragment {
         return pager;
     }
 
-    private static class TheAdapter extends PagerAdapter {
+    private class TheAdapter extends PagerAdapter {
 
         @Override
         public int getCount() {
@@ -249,7 +252,7 @@ public class PreferencesFragment extends Fragment {
         return content;
     }
 
-    public static LinearLayout createFirstPage(Context context) {
+    public LinearLayout createFirstPage(Context context) {
         var content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
         var transition = new LayoutTransition();
@@ -322,168 +325,69 @@ public class PreferencesFragment extends Fragment {
                 list.addView(option);
             }
 
-            list.addView(createBooleanOption(context, "modernui.center.extension.tooltip",
-                    Config.CLIENT.mTooltip, saveFn));
+            {
+                var option = createSwitchLayout(context, "modernui.center.extension.tooltip");
+                var button = option.<SwitchButton>requireViewById(R.id.button1);
+                button.setChecked(Config.CLIENT.mTooltip.get());
+                button.setOnCheckedChangeListener((view, checked) -> {
+                    Config.CLIENT.mTooltip.set(checked);
+                    saveFn.run();
+                    if (checked) {
+                        if (tooltipCategory == null) {
+                            tooltipCategory = createTooltipCategory(view.getContext());
+                            content.addView(tooltipCategory, 2);
+                        } else {
+                            tooltipCategory.setVisibility(View.VISIBLE);
+                        }
+                    } else if (tooltipCategory != null) {
+                        tooltipCategory.setVisibility(View.GONE);
+                    }
+                });
+                list.addView(option);
+            }
+
+            {
+                var option = createSwitchLayout(context, "modernui.center.text.textEngine");
+                var button = option.<SwitchButton>requireViewById(R.id.button1);
+                button.setChecked(ModernUIForge.isTextEngineEnabled());
+                button.setOnCheckedChangeListener((view, checked) -> {
+                    ModernUIForge.setBootstrapProperty(
+                            ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE,
+                            Boolean.toString(!checked)
+                    );
+                    Toast.makeText(view.getContext(),
+                                    I18n.get("gui.modernui.restart_to_work"),
+                                    Toast.LENGTH_SHORT)
+                            .show();
+                    if (checked) {
+                        if (textEngineCategory == null) {
+                            textEngineCategory = createTextEngineCategory(view.getContext());
+                            content.addView(textEngineCategory);
+                        } else {
+                            textEngineCategory.setVisibility(View.VISIBLE);
+                        }
+                    } else if (textEngineCategory != null) {
+                        textEngineCategory.setVisibility(View.GONE);
+                    }
+                });
+                list.addView(option);
+            }
 
             /*list.addView(createIntegerOption(context, "modernui.center.extension.tooltipDuration",
                     Config.Client.ANIM_DURATION_MIN, Config.Client.ANIM_DURATION_MAX,
                     3, 50, Config.CLIENT.mTooltipDuration, saveFn));*/
 
-            list.addView(createColorOpacityOption(context, "modernui.center.extension.tooltipBgOpacity",
-                    Config.CLIENT.mTooltipFill, saveFn));
-
-            {
-                var layout = new LinearLayout(context);
-                layout.setOrientation(LinearLayout.VERTICAL);
-
-                final int dp6 = layout.dp(6);
-                final Button title;
-                {
-                    title = new Button(context);
-                    title.setText(I18n.get("modernui.center.extension.tooltipBorderColor"));
-                    title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-                    title.setTextSize(14);
-
-                    var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-                    layout.addView(title, params);
-                }
-
-                title.setOnClickListener(new TooltipBorderCollapsed(layout, saveFn));
-
-                ThemeControl.addBackground(title);
-
-                var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-                params.gravity = Gravity.CENTER;
-                params.setMargins(dp6, layout.dp(3), dp6, 0);
-                list.addView(layout, params);
-            }
-
             content.addView(list);
         }
 
+        if (Config.CLIENT.mTooltip.get()) {
+            tooltipCategory = createTooltipCategory(context);
+            content.addView(tooltipCategory);
+        }
+
         if (ModernUIForge.isTextEngineEnabled()) {
-            var category = createCategoryList(context, "modernui.center.category.text");
-
-            saveFn = ModernUIText.CONFIG::saveAndReloadAsync;
-
-            {
-                var option = createBooleanOption(context, "modernui.center.text.textShadersInWorld",
-                        ModernUIText.CONFIG.mUseTextShadersInWorld, saveFn);
-                option.setTooltipText(I18n.get("modernui.center.text.textShadersInWorld_desc"));
-                category.addView(option);
-            }
-
-            {
-                var option = createBooleanOption(context, "modernui.center.text.allowSDFTextIn2D",
-                        ModernUIText.CONFIG.mAllowSDFTextIn2D, saveFn);
-                option.setTooltipText(I18n.get("modernui.center.text.allowSDFTextIn2D_desc"));
-                category.addView(option);
-            }
-
-            {
-                var option = createBooleanOption(context, "modernui.center.text.smartSDFShaders",
-                        ModernUIText.CONFIG.mSmartSDFShaders, saveFn);
-                option.setTooltipText(I18n.get("modernui.center.text.smartSDFShaders_desc"));
-                category.addView(option);
-            }
-
-            {
-                var option = createBooleanOption(context, "modernui.center.text.computeDeviceFontSize",
-                        ModernUIText.CONFIG.mComputeDeviceFontSize, saveFn);
-                option.setTooltipText(I18n.get("modernui.center.text.computeDeviceFontSize_desc"));
-                category.addView(option);
-            }
-
-            {
-                var option = createSpinnerOption(context, "modernui.center.text.defaultFontBehavior",
-                        ModernUIText.Config.DefaultFontBehavior.values(),
-                        ModernUIText.CONFIG.mDefaultFontBehavior, saveFn);
-                option.getChildAt(0)
-                        .setTooltipText(I18n.get("modernui.center.text.defaultFontBehavior_desc"));
-                category.addView(option);
-            }
-
-            {
-                var option = createBooleanOption(context, "modernui.center.text.colorEmoji",
-                        ModernUIText.CONFIG.mUseColorEmoji, saveFn);
-                option.setTooltipText(I18n.get("modernui.center.text.colorEmoji_desc"));
-                category.addView(option);
-            }
-
-            {
-                var option = createBooleanOption(context, "modernui.center.text.emojiShortcodes",
-                        ModernUIText.CONFIG.mEmojiShortcodes, saveFn);
-                option.setTooltipText(I18n.get("modernui.center.text.emojiShortcodes_desc"));
-                category.addView(option);
-            }
-
-            category.addView(createSpinnerOption(context, "modernui.center.text.bidiHeuristicAlgo",
-                    ModernUIText.Config.TextDirection.values(),
-                    ModernUIText.CONFIG.mTextDirection,
-                    saveFn));
-
-            category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
-                    ModernUIText.CONFIG.mAllowShadow, saveFn));
-
-            category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
-                    ModernUIText.Config.SHADOW_OFFSET_MIN, ModernUIText.Config.SHADOW_OFFSET_MAX,
-                    5, ModernUIText.CONFIG.mShadowOffset, saveFn));
-
-            category.addView(createBooleanOption(context, "modernui.center.text.allowAsyncLayout",
-                    ModernUIText.CONFIG.mAllowAsyncLayout, saveFn));
-
-            {
-                var option = createSpinnerOption(context, "modernui.center.text.lineBreakStyle",
-                        ModernUIText.Config.LineBreakStyle.values(),
-                        ModernUIText.CONFIG.mLineBreakStyle, saveFn);
-                option.getChildAt(0)
-                        .setTooltipText(I18n.get("modernui.center.text.lineBreakStyle_desc"));
-                category.addView(option);
-            }
-
-            category.addView(createSpinnerOption(context, "modernui.center.text.lineBreakWordStyle",
-                    ModernUIText.Config.LineBreakWordStyle.values(),
-                    ModernUIText.CONFIG.mLineBreakWordStyle, saveFn));
-
-            {
-                var option = createBooleanOption(context, "modernui.center.text.useComponentCache",
-                        ModernUIText.CONFIG.mUseComponentCache, saveFn);
-                option.setTooltipText(I18n.get("modernui.center.text.useComponentCache_desc"));
-                category.addView(option);
-            }
-
-            category.addView(createBooleanOption(context, "modernui.center.text.fixedResolution",
-                    ModernUIText.CONFIG.mFixedResolution, saveFn));
-
-            category.addView(createFloatOption(context, "modernui.center.text.baseFontSize",
-                    ModernUIText.Config.BASE_FONT_SIZE_MIN, ModernUIText.Config.BASE_FONT_SIZE_MAX,
-                    5, ModernUIText.CONFIG.mBaseFontSize, saveFn));
-
-            category.addView(createFloatOption(context, "modernui.center.text.baselineShift",
-                    ModernUIText.Config.BASELINE_MIN, ModernUIText.Config.BASELINE_MAX,
-                    5, ModernUIText.CONFIG.mBaselineShift, saveFn));
-
-            category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
-                    ModernUIText.Config.OUTLINE_OFFSET_MIN, ModernUIText.Config.OUTLINE_OFFSET_MAX,
-                    5, ModernUIText.CONFIG.mOutlineOffset, saveFn));
-
-            category.addView(createIntegerOption(context, "modernui.center.text.cacheLifespan",
-                    ModernUIText.Config.LIFESPAN_MIN, ModernUIText.Config.LIFESPAN_MAX,
-                    2, 1,
-                    ModernUIText.CONFIG.mCacheLifespan, saveFn));
-
-            {
-                var option = createSwitchLayout(context, "modernui.center.text.lineBreakingAlgo");
-                option.<SwitchButton>requireViewById(R.id.button1).setChecked(true);
-                category.addView(option);
-            }
-            {
-                var option = createSwitchLayout(context, "modernui.center.text.textShaping");
-                option.<SwitchButton>requireViewById(R.id.button1).setChecked(true);
-                category.addView(option);
-            }
-
-            content.addView(category);
+            textEngineCategory = createTextEngineCategory(context);
+            content.addView(textEngineCategory);
         }
 
         content.setDividerDrawable(new DividerDrawable(content));
@@ -491,6 +395,180 @@ public class PreferencesFragment extends Fragment {
         content.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
 
         return content;
+    }
+
+    public static LinearLayout createTooltipCategory(Context context) {
+        var category = createCategoryList(context, "modernui.center.category.tooltip");
+
+        Runnable saveFn = Config.CLIENT::saveAndReloadAsync;
+
+        category.addView(createBooleanOption(context, "modernui.center.tooltip.roundedShapes",
+                Config.CLIENT.mRoundedTooltip, saveFn));
+
+        category.addView(createBooleanOption(context, "modernui.center.tooltip.centerTitle",
+                Config.CLIENT.mCenterTooltipTitle, saveFn));
+
+        category.addView(createBooleanOption(context, "modernui.center.tooltip.titleBreak",
+                Config.CLIENT.mTooltipTitleBreak, saveFn));
+
+        category.addView(createBooleanOption(context, "modernui.center.tooltip.exactPositioning",
+                Config.CLIENT.mExactTooltipPositioning, saveFn));
+
+        category.addView(createColorOpacityOption(context, "modernui.center.tooltip.backgroundOpacity",
+                Config.CLIENT.mTooltipFill, saveFn));
+
+        {
+            var layout = new LinearLayout(context);
+            layout.setOrientation(LinearLayout.VERTICAL);
+
+            final int dp6 = layout.dp(6);
+            final Button title;
+            {
+                title = new Button(context);
+                title.setText(I18n.get("modernui.center.tooltip.borderColor"));
+                title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+                title.setTextSize(14);
+
+                var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+                layout.addView(title, params);
+            }
+
+            title.setOnClickListener(new TooltipBorderCollapsed(layout, saveFn));
+
+            ThemeControl.addBackground(title);
+
+            var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+            params.gravity = Gravity.CENTER;
+            params.setMargins(dp6, layout.dp(3), dp6, 0);
+            category.addView(layout, params);
+        }
+
+        return category;
+    }
+
+    public static LinearLayout createTextEngineCategory(Context context) {
+        var category = createCategoryList(context, "modernui.center.category.text");
+
+        Runnable saveFn = ModernUIText.CONFIG::saveAndReloadAsync;
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.textShadersInWorld",
+                    ModernUIText.CONFIG.mUseTextShadersInWorld, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.textShadersInWorld_desc"));
+            category.addView(option);
+        }
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.allowSDFTextIn2D",
+                    ModernUIText.CONFIG.mAllowSDFTextIn2D, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.allowSDFTextIn2D_desc"));
+            category.addView(option);
+        }
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.smartSDFShaders",
+                    ModernUIText.CONFIG.mSmartSDFShaders, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.smartSDFShaders_desc"));
+            category.addView(option);
+        }
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.computeDeviceFontSize",
+                    ModernUIText.CONFIG.mComputeDeviceFontSize, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.computeDeviceFontSize_desc"));
+            category.addView(option);
+        }
+
+        {
+            var option = createSpinnerOption(context, "modernui.center.text.defaultFontBehavior",
+                    ModernUIText.Config.DefaultFontBehavior.values(),
+                    ModernUIText.CONFIG.mDefaultFontBehavior, saveFn);
+            option.getChildAt(0)
+                    .setTooltipText(I18n.get("modernui.center.text.defaultFontBehavior_desc"));
+            category.addView(option);
+        }
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.colorEmoji",
+                    ModernUIText.CONFIG.mUseColorEmoji, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.colorEmoji_desc"));
+            category.addView(option);
+        }
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.emojiShortcodes",
+                    ModernUIText.CONFIG.mEmojiShortcodes, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.emojiShortcodes_desc"));
+            category.addView(option);
+        }
+
+        category.addView(createSpinnerOption(context, "modernui.center.text.bidiHeuristicAlgo",
+                ModernUIText.Config.TextDirection.values(),
+                ModernUIText.CONFIG.mTextDirection,
+                saveFn));
+
+        category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
+                ModernUIText.CONFIG.mAllowShadow, saveFn));
+
+        category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
+                ModernUIText.Config.SHADOW_OFFSET_MIN, ModernUIText.Config.SHADOW_OFFSET_MAX,
+                5, ModernUIText.CONFIG.mShadowOffset, saveFn));
+
+        category.addView(createBooleanOption(context, "modernui.center.text.allowAsyncLayout",
+                ModernUIText.CONFIG.mAllowAsyncLayout, saveFn));
+
+        {
+            var option = createSpinnerOption(context, "modernui.center.text.lineBreakStyle",
+                    ModernUIText.Config.LineBreakStyle.values(),
+                    ModernUIText.CONFIG.mLineBreakStyle, saveFn);
+            option.getChildAt(0)
+                    .setTooltipText(I18n.get("modernui.center.text.lineBreakStyle_desc"));
+            category.addView(option);
+        }
+
+        category.addView(createSpinnerOption(context, "modernui.center.text.lineBreakWordStyle",
+                ModernUIText.Config.LineBreakWordStyle.values(),
+                ModernUIText.CONFIG.mLineBreakWordStyle, saveFn));
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.useComponentCache",
+                    ModernUIText.CONFIG.mUseComponentCache, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.useComponentCache_desc"));
+            category.addView(option);
+        }
+
+        category.addView(createBooleanOption(context, "modernui.center.text.fixedResolution",
+                ModernUIText.CONFIG.mFixedResolution, saveFn));
+
+        category.addView(createFloatOption(context, "modernui.center.text.baseFontSize",
+                ModernUIText.Config.BASE_FONT_SIZE_MIN, ModernUIText.Config.BASE_FONT_SIZE_MAX,
+                5, ModernUIText.CONFIG.mBaseFontSize, saveFn));
+
+        category.addView(createFloatOption(context, "modernui.center.text.baselineShift",
+                ModernUIText.Config.BASELINE_MIN, ModernUIText.Config.BASELINE_MAX,
+                5, ModernUIText.CONFIG.mBaselineShift, saveFn));
+
+        category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
+                ModernUIText.Config.OUTLINE_OFFSET_MIN, ModernUIText.Config.OUTLINE_OFFSET_MAX,
+                5, ModernUIText.CONFIG.mOutlineOffset, saveFn));
+
+        category.addView(createIntegerOption(context, "modernui.center.text.cacheLifespan",
+                ModernUIText.Config.LIFESPAN_MIN, ModernUIText.Config.LIFESPAN_MAX,
+                2, 1,
+                ModernUIText.CONFIG.mCacheLifespan, saveFn));
+
+        {
+            var option = createSwitchLayout(context, "modernui.center.text.lineBreakingAlgo");
+            option.<SwitchButton>requireViewById(R.id.button1).setChecked(true);
+            category.addView(option);
+        }
+        {
+            var option = createSwitchLayout(context, "modernui.center.text.textShaping");
+            option.<SwitchButton>requireViewById(R.id.button1).setChecked(true);
+            category.addView(option);
+        }
+
+        return category;
     }
 
     @NonNull
@@ -809,16 +887,16 @@ public class PreferencesFragment extends Fragment {
                 v.setText(Float.toString(newValue));
                 if (newValue != getter.get()) {
                     setter.accept((double) newValue);
-                    int curProgress = (int) Math.round((newValue - minValue) * denominator);
+                    int curProgress = Math.round((newValue - minValue) * denominator);
                     slider.setProgress(curProgress, true);
                     saveFn.run();
                 }
             }
         });
         input.setMinWidth(slider.dp(50));
-        int steps = (int) Math.round((maxValue - minValue) * denominator);
+        int steps = Math.round((maxValue - minValue) * denominator);
         slider.setMax(steps);
-        int curProgress = (int) Math.round((curValue - minValue) * denominator);
+        int curProgress = Math.round((curValue - minValue) * denominator);
         slider.setProgress(curProgress);
         slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -875,10 +953,10 @@ public class PreferencesFragment extends Fragment {
             mContent = new LinearLayout(mParent.getContext());
             mContent.setOrientation(LinearLayout.VERTICAL);
             {
-                var option = createIntegerOption(mParent.getContext(), "modernui.center.extension.tooltipBorderCycle",
+                var option = createIntegerOption(mParent.getContext(), "modernui.center.tooltip.borderCycle",
                         Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MIN, Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MAX,
                         4, 100, Config.CLIENT.mTooltipCycle, mSaveFn);
-                option.setTooltipText(I18n.get("modernui.center.extension.tooltipBorderCycle_desc"));
+                option.setTooltipText(I18n.get("modernui.center.tooltip.borderCycle_desc"));
                 mContent.addView(option);
             }
             var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);

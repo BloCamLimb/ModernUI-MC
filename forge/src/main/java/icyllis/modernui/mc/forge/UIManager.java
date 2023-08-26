@@ -986,10 +986,13 @@ public final class UIManager implements LifecycleOwner {
             final int mouseY = (int) cursorY;
             final float partialX;
             final float partialY;
-            final ClientTooltipPositioner positioner =
-                    event.getTooltipPositioner() instanceof DefaultTooltipPositioner
-                            ? null
-                            : event.getTooltipPositioner();
+            final ClientTooltipPositioner positioner;
+            if (TooltipRenderer.sExactPositioning &&
+                    event.getTooltipPositioner() instanceof DefaultTooltipPositioner) {
+                positioner = null;
+            } else {
+                positioner = event.getTooltipPositioner();
+            }
             if (event.getX() == mouseX && event.getY() == mouseY && positioner == null) {
                 // use our exact pixel positioning
                 partialX = (float) (cursorX - mouseX);
@@ -1215,9 +1218,12 @@ public final class UIManager implements LifecycleOwner {
             }
             synchronized (mRenderLock) {
                 if (!mRedrawn) {
-                    mTooltipRenderer.drawTooltip(mCanvas, mWindow, event.getGraphics(), event.getComponents(),
-                            event.getX(), event.getY(), event.getFont(), event.getScreenWidth(),
-                            event.getScreenHeight(), partialX, partialY, positioner);
+                    mTooltipRenderer.drawTooltip(mCanvas, mWindow,
+                            event.getItemStack(), event.getGraphics(),
+                            event.getComponents(),
+                            event.getX(), event.getY(), event.getFont(),
+                            event.getScreenWidth(), event.getScreenHeight(),
+                            partialX, partialY, positioner);
                 }
             }
         }

@@ -36,7 +36,6 @@ import icyllis.modernui.view.*;
 import icyllis.modernui.widget.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
-import net.minecraft.client.resources.language.I18n;
 import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 import org.apache.commons.io.output.StringBuilderWriter;
 
@@ -96,22 +95,6 @@ public class AdvancedOptionsFragment extends Fragment {
         var dp6 = content.dp(6);
         {
             var category = createCategoryList(context, "Developer");
-            {
-                var option = createSwitchLayout(context, "modernui.center.text.textEngine");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(ModernUIForge.isTextEngineEnabled());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    ModernUIForge.setBootstrapProperty(
-                            ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE,
-                            Boolean.toString(!checked)
-                    );
-                    Toast.makeText(__.getContext(),
-                                    I18n.get("gui.modernui.restart_to_work"),
-                                    Toast.LENGTH_SHORT)
-                            .show();
-                });
-                category.addView(option);
-            }
 
             if (ModernUIForge.isDeveloperMode()) {
                 {

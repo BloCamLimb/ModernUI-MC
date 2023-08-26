@@ -171,6 +171,10 @@ final class Config {
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mBackgroundColor;
         public final ForgeConfigSpec.BooleanValue mInventoryPause;
         public final ForgeConfigSpec.BooleanValue mTooltip;
+        public final ForgeConfigSpec.BooleanValue mRoundedTooltip;
+        public final ForgeConfigSpec.BooleanValue mCenterTooltipTitle;
+        public final ForgeConfigSpec.BooleanValue mTooltipTitleBreak;
+        public final ForgeConfigSpec.BooleanValue mExactTooltipPositioning;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipFill;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
         public final ForgeConfigSpec.IntValue mTooltipCycle;
@@ -253,10 +257,24 @@ final class Config {
                     .push("tooltip");
 
             mTooltip = builder.comment(
-                            "Whether to enable Modern UI rounded tooltip style, or back to vanilla style.")
+                            "Whether to enable Modern UI enhanced tooltip, or back to vanilla default.")
                     .define("enable", true);
+            mRoundedTooltip = builder.comment(
+                            "Whether to use rounded tooltip shapes, or to use rectangular shapes.")
+                    .define("roundedShape", true);
+            mCenterTooltipTitle = builder.comment(
+                            "True to center the tooltip title if rendering an item's tooltip.",
+                            "Following lines are not affected by this option.")
+                    .define("centerTitle", true);
+            mTooltipTitleBreak = builder.comment(
+                            "True to add a title break below the tooltip title line.",
+                            "TitleBreak and CenterTitle will work/appear at the same time.")
+                    .define("titleBreak", true);
+            mExactTooltipPositioning = builder.comment(
+                    "True to exactly position tooltip to pixel grid, smoother movement.")
+                    .define("exactPositioning", true);
             mTooltipFill = builder.comment(
-                            "The tooltip FILL color in #RRGGBB or #AARRGGBB format. Default: #E0000000",
+                            "The tooltip background color in #RRGGBB or #AARRGGBB format. Default: #E0000000",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
                             "Multiple values produce a gradient effect, whereas one value produces a solid color.",
@@ -267,7 +285,7 @@ final class Config {
                         return list;
                     }, $ -> true);
             mTooltipStroke = builder.comment(
-                            "The tooltip STROKE color in #RRGGBB or #AARRGGBB format. Default: #F0AADCF0, #F0DAD0F4, " +
+                            "The tooltip border color in #RRGGBB or #AARRGGBB format. Default: #F0AADCF0, #F0DAD0F4, " +
                                     "#F0FFC3F7 and #F0DAD0F4",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
@@ -462,6 +480,10 @@ final class Config {
             }
             //TooltipRenderer.sAnimationDuration = mTooltipDuration.get();
             TooltipRenderer.sBorderColorCycle = mTooltipCycle.get();
+            TooltipRenderer.sExactPositioning = mExactTooltipPositioning.get();
+            TooltipRenderer.sRoundedShapes = mRoundedTooltip.get();
+            TooltipRenderer.sCenterTitle = mCenterTooltipTitle.get();
+            TooltipRenderer.sTitleBreak = mTooltipTitleBreak.get();
 
             UIManager.sPlaySoundOnLoaded = mDing.get();
 
