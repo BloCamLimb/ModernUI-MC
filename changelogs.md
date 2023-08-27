@@ -2,6 +2,14 @@ Changelogs
 ===
 ### Modern UI 3.8.1.4
 #### Forge Extension 1.20.1-47.0.14
+* Add font selection list and open file dialog
+* Separate old font family config into preferred one and fallbacks
+* Fix ASCII digits in Arabic
+* Add tooltip center alignment
+* Add tooltip title break
+* Improve extra spacing below tooltip title
+* Add config to switch between rounded rect or normal rect for tooltip border
+* Add config for exact tooltip positioning
 * Add maximized borderless mode
 * Improve fullscreen borderless on Windows
 * Update default config

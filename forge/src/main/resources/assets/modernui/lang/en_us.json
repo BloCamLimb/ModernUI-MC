@@ -108,8 +108,11 @@
   "modernui.center.text.substringAlgo": "Substring Conservative Algorithm",
   "modernui.center.text.cacheLifespan": "Layout Cache Lifespan",
   "modernui.center.text.rehashThreshold": "Cache Rehash Threshold",
-  "modernui.center.font.fontFamily": "Font Family",
-  "modernui.center.font.fontFamily_desc": "A set of font families with fallbacks to determine the typeface to use.\nTrueType & OpenType are supported. Each line can be one of the following three cases:\n1) Font family name in English for those installed on your PC, for instance: Segoe UI\n2) Absolute path for font files on your PC, for instance: D:/Fonts/Andy Bold.ttf\n3) Resource location for those loaded with resource packs, for instance: modernui:font/biliw.otf\nThis option only applies to text without a specified font.",
+  "modernui.center.font.firstFont": "Preferred Font Family",
+  "modernui.center.font.chooseFont": "Choose a Font…",
+  "modernui.center.font.openFontFile": "Open a Font File",
+  "modernui.center.font.fallbackFonts": "Fallback Font Family List",
+  "modernui.center.font.fallbackFonts_desc": "A set of fallback font families for the default typeface list.\nTrueType & OpenType fonts are supported, each line can be one of the following two cases:\n1) Font family name in English for registered fonts, for instance: Segoe UI\n2) Absolute path for font files on your PC, for instance: D:/Fonts/Andy Bold.ttf",
   "modernui.center.font.vanillaFont": "Use Vanilla Default Font",
   "modernui.center.font.antiAliasing": "Anti-Aliasing",
   "modernui.center.font.autoHinting": "Auto Font Hinting",
@@ -141,5 +144,6 @@
   "gui.modernui.ok": "OK",
   "gui.modernui.dont_show_again": "Don't show again",
   "gui.modernui.preset_s": "Preset %s",
+  "gui.modernui.configValue": "Config Value",
   "gui.modernui.restart_to_work": "Restart the game for settings to take effect"
 }

@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.forge;
 
+import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.*;
 import icyllis.modernui.annotation.NonNull;
@@ -26,6 +27,7 @@ import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.MathUtil;
+import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.mc.forge.ui.*;
 import icyllis.modernui.text.InputFilter;
 import icyllis.modernui.text.method.DigitsInputFilter;
@@ -35,11 +37,15 @@ import icyllis.modernui.viewpager.widget.*;
 import icyllis.modernui.widget.*;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraftforge.common.ForgeConfigSpec;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
-import javax.annotation.Nonnull;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
@@ -146,7 +152,7 @@ public class PreferencesFragment extends Fragment {
                 var option = createInputBox(context, "modernui.center.system.globalAnimationScale");
                 var input = option.<EditText>requireViewById(R.id.input);
                 input.setText(Float.toString(ValueAnimator.sDurationScale));
-                input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
+                input.setFilters(DigitsInputFilter.getInstance(null, false, true),
                         new InputFilter.LengthFilter(4));
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
@@ -168,6 +174,49 @@ public class PreferencesFragment extends Fragment {
             var list = createCategoryList(context, "modernui.center.category.font");
 
             {
+                var layout = new LinearLayout(context);
+                layout.setOrientation(LinearLayout.VERTICAL);
+
+                final int dp6 = layout.dp(6);
+                final LinearLayout firstLine = new LinearLayout(context);
+                firstLine.setOrientation(LinearLayout.HORIZONTAL);
+                {
+                    TextView title = new TextView(context);
+                    title.setText(I18n.get("modernui.center.font.firstFont"));
+                    title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+                    title.setTextSize(14);
+
+                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
+                    firstLine.addView(title, params);
+                }
+                {
+                    TextView value = new TextView(context);
+                    FontFamily first = ModernUIForge.Client.getInstance().getFirstFontFamily();
+                    if (first != null) {
+                        value.setText(first.getFamilyName(value.getTextLocale()));
+                    } else {
+                        value.setText("NONE");
+                    }
+                    value.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+                    value.setTextSize(14);
+
+                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+                    firstLine.addView(value, params);
+                }
+
+                firstLine.setOnClickListener(new PreferredFontCollapsed(layout));
+                ThemeControl.addBackground(firstLine);
+
+                layout.addView(firstLine);
+
+                var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+                params.gravity = Gravity.CENTER;
+                params.setMargins(dp6, layout.dp(3), dp6, layout.dp(3));
+
+                list.addView(layout, params);
+            }
+
+            {
                 var option = new LinearLayout(context);
                 option.setOrientation(LinearLayout.HORIZONTAL);
                 option.setHorizontalGravity(Gravity.START);
@@ -175,8 +224,8 @@ public class PreferencesFragment extends Fragment {
                 final int dp3 = content.dp(3);
                 {
                     var title = new TextView(context);
-                    title.setText(I18n.get("modernui.center.font.fontFamily"));
-                    title.setTooltipText(I18n.get("modernui.center.font.fontFamily_desc"));
+                    title.setText(I18n.get("modernui.center.font.fallbackFonts"));
+                    title.setTooltipText(I18n.get("modernui.center.font.fallbackFonts_desc"));
                     title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                     title.setTextSize(14);
                     title.setMinWidth(content.dp(60));
@@ -192,7 +241,7 @@ public class PreferencesFragment extends Fragment {
                     input.setTextSize(14);
                     input.setPadding(dp3, 0, dp3, 0);
 
-                    input.setText(String.join("\n", Config.CLIENT.mFontFamily.get()));
+                    input.setText(String.join("\n", Config.CLIENT.mFallbackFontFamilyList.get()));
                     input.setOnFocusChangeListener((view, hasFocus) -> {
                         if (!hasFocus) {
                             EditText v = (EditText) view;
@@ -206,8 +255,8 @@ public class PreferencesFragment extends Fragment {
                                 }
                             }
                             v.setText(String.join("\n", result));
-                            if (!Config.CLIENT.mFontFamily.get().equals(result)) {
-                                Config.CLIENT.mFontFamily.set(result);
+                            if (!Config.CLIENT.mFallbackFontFamilyList.get().equals(result)) {
+                                Config.CLIENT.mFallbackFontFamilyList.set(result);
                                 Config.CLIENT.saveAsync();
                                 Toast.makeText(v.getContext(),
                                                 I18n.get("gui.modernui.restart_to_work"),
@@ -226,7 +275,7 @@ public class PreferencesFragment extends Fragment {
 
                 var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
                 params.gravity = Gravity.CENTER;
-                params.setMargins(content.dp(6), 0, content.dp(6), 0);
+                params.setMargins(content.dp(6), dp3, content.dp(6), dp3);
                 option.setLayoutParams(params);
 
                 list.addView(option);
@@ -706,7 +755,7 @@ public class PreferencesFragment extends Fragment {
         return option;
     }
 
-    @Nonnull
+    @NonNull
     public static LinearLayout createInputBox(Context context, String name) {
         var layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.HORIZONTAL);
@@ -773,7 +822,7 @@ public class PreferencesFragment extends Fragment {
         var layout = createInputBoxWithSlider(context, name);
         var slider = layout.<SeekBar>requireViewById(R.id.button2);
         var input = layout.<EditText>requireViewById(R.id.input);
-        input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale()),
+        input.setFilters(DigitsInputFilter.getInstance((Locale) null),
                 new InputFilter.LengthFilter(maxLength));
         int curValue = getter.get();
         input.setText(Integer.toString(curValue));
@@ -875,7 +924,7 @@ public class PreferencesFragment extends Fragment {
         var layout = createInputBoxWithSlider(context, name);
         var slider = layout.<SeekBar>requireViewById(R.id.button2);
         var input = layout.<EditText>requireViewById(R.id.input);
-        input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), minValue < 0, true),
+        input.setFilters(DigitsInputFilter.getInstance(null, minValue < 0, true),
                 new InputFilter.LengthFilter(maxLength));
         float curValue = getter.get().floatValue();
         input.setText(Float.toString(curValue));
@@ -980,6 +1029,179 @@ public class PreferencesFragment extends Fragment {
                     Config.CLIENT.mTooltipStroke,
                     mSaveFn), new LinearLayout.LayoutParams(params));
             mParent.addView(mContent, params);
+        }
+    }
+
+    public static class PreferredFontCollapsed implements View.OnClickListener {
+
+        final ViewGroup mParent;
+
+        // lazy-init
+        LinearLayout mContent;
+        EditText mInput;
+        Spinner mSpinner;
+
+        public PreferredFontCollapsed(ViewGroup parent) {
+            mParent = parent;
+        }
+
+        @Override
+        public void onClick(View v) {
+            if (mContent != null) {
+                // toggle
+                mContent.setVisibility(mContent.getVisibility() == View.GONE
+                        ? View.VISIBLE
+                        : View.GONE);
+                return;
+            }
+            mContent = new LinearLayout(mParent.getContext());
+            mContent.setOrientation(LinearLayout.VERTICAL);
+            var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+            params.setMargins(0, mContent.dp(6), 0, 0);
+            {
+                var layout = createInputBox(mParent.getContext(), "gui.modernui.configValue");
+                var input = mInput = layout.requireViewById(R.id.input);
+                input.setText(Config.CLIENT.mFirstFontFamily.get());
+                input.setOnFocusChangeListener((view, hasFocus) -> {
+                    if (!hasFocus) {
+                        EditText v1 = (EditText) view;
+                        String newValue = v1.getText().toString().strip();
+                        applyNewValue(v1.getContext(), newValue);
+                    }
+                });
+                mContent.addView(layout);
+            }
+            {
+                var values = FontFamily.getSystemFontMap()
+                        .values()
+                        .stream()
+                        .map(family -> new FontFamilyItem(family.getFamilyName(),
+                                family.getFamilyName(ModernUI.getSelectedLocale())))
+                        .sorted()
+                        .collect(Collectors.toList());
+                String chooseFont = I18n.get("modernui.center.font.chooseFont");
+                values.add(0, new FontFamilyItem(chooseFont, chooseFont));
+                var spinner = mSpinner = new Spinner(mParent.getContext());
+                spinner.setAdapter(new Adapter(mParent.getContext(), values));
+                spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        if (position == 0) {
+                            return;
+                        }
+                        String newValue = values.get(position).rootName;
+                        boolean changed = applyNewValue(view.getContext(), newValue);
+                        if (changed) {
+                            mInput.setText(newValue);
+                        }
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {
+                    }
+                });
+
+                mContent.addView(spinner, new LinearLayout.LayoutParams(params));
+            }
+            {
+                Button openFile = new Button(mParent.getContext());
+                openFile.setText(I18n.get("modernui.center.font.openFontFile"));
+                openFile.setTextSize(14);
+                openFile.setOnClickListener(v1 -> CompletableFuture.runAsync(() -> {
+                    String path;
+                    try (MemoryStack stack = MemoryStack.stackPush()) {
+                        PointerBuffer filters = stack.mallocPointer(4);
+                        stack.nUTF8("*.ttf", true);
+                        filters.put(stack.getPointerAddress());
+                        stack.nUTF8("*.otf", true);
+                        filters.put(stack.getPointerAddress());
+                        stack.nUTF8("*.ttc", true);
+                        filters.put(stack.getPointerAddress());
+                        stack.nUTF8("*.otc", true);
+                        filters.put(stack.getPointerAddress());
+                        filters.rewind();
+                        path = TinyFileDialogs.tinyfd_openFileDialog(null, null,
+                                filters, "TrueType/OpenType Fonts (*.ttf;*.otf;*.ttc;*.otc)", false);
+                    }
+                    if (path != null) {
+                        v1.post(() -> {
+                            boolean changed = applyNewValue(v1.getContext(), path);
+                            if (changed) {
+                                mInput.setText(path);
+                            }
+                        });
+                    }
+                }));
+                mContent.addView(openFile, new LinearLayout.LayoutParams(params));
+            }
+            mParent.addView(mContent, params);
+        }
+
+        public record FontFamilyItem(String rootName, String localeName)
+                implements Comparable<FontFamilyItem> {
+
+            @Override
+            public String toString() {
+                return localeName;
+            }
+
+            @Override
+            public int compareTo(@NonNull FontFamilyItem o) {
+                return localeName.compareTo(o.localeName);
+            }
+        }
+
+        private static class Adapter extends ArrayAdapter<FontFamilyItem> {
+
+            private final Context mContext;
+
+            public Adapter(Context context, @NonNull List<FontFamilyItem> objects) {
+                super(context, objects);
+                mContext = context;
+            }
+
+            @NonNull
+            @Override
+            public View getView(int position, @Nullable View convertView,
+                                @NonNull ViewGroup parent) {
+                final TextView tv;
+
+                if (convertView == null) {
+                    tv = new TextView(mContext);
+                } else {
+                    tv = (TextView) convertView;
+                }
+
+                final FontFamilyItem item = getItem(position);
+                tv.setText(item.localeName);
+
+                tv.setTextSize(14);
+                tv.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+                final int dp4 = tv.dp(4);
+                tv.setPadding(dp4, dp4, dp4, dp4);
+
+                return tv;
+            }
+
+            @NonNull
+            @Override
+            public View getDropDownView(int position, @Nullable View convertView,
+                                        @NonNull ViewGroup parent) {
+                return getView(position, convertView, parent);
+            }
+        }
+
+        private boolean applyNewValue(Context context, @NonNull String newValue) {
+            if (!newValue.equals(Config.CLIENT.mFirstFontFamily.get())) {
+                Config.CLIENT.mFirstFontFamily.set(newValue);
+                Config.CLIENT.saveAsync();
+                Toast.makeText(context,
+                                I18n.get("gui.modernui.restart_to_work"),
+                                Toast.LENGTH_SHORT)
+                        .show();
+                return true;
+            }
+            return false;
         }
     }
 }

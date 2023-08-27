@@ -108,8 +108,11 @@
   "modernui.center.text.substringAlgo": "子串保守算法",
   "modernui.center.text.cacheLifespan": "布局缓存生命期限",
   "modernui.center.text.rehashThreshold": "缓存重哈希阈值",
-  "modernui.center.font.fontFamily": "字体族",
-  "modernui.center.font.fontFamily_desc": "指定一组带有落选的字体族，用来决定要使用的字体。\n支持 TrueType 和 OpenType 字体，每一行可以是以下三种情况之一：\n1) 安装在电脑上的字体族的英文名，例如：Segoe UI\n2) 电脑上字体文件的绝对路径，例如：D:/Fonts/Andy Bold.ttf\n3) 随资源包加载的字体的资源定位，例如：modernui:font/biliw.otf\n该选项只适用于未指定字体的文字。",
+  "modernui.center.font.firstFont": "首选字体家族",
+  "modernui.center.font.chooseFont": "选择一个字体…",
+  "modernui.center.font.openFontFile": "打开字体文件",
+  "modernui.center.font.fallbackFonts": "回退字体家族列表",
+  "modernui.center.font.fallbackFonts_desc": "默认字体列表的一组回退字体家族。\n支持 TrueType 和 OpenType 字体，每一行可以是以下两种情况之一：\n1) 已注册字体的字体家族英文名，例如：Segoe UI\n2) 字体文件的绝对路径，例如：D:/Fonts/Andy Bold.ttf",
   "modernui.center.font.vanillaFont": "使用原版默认字体",
   "modernui.center.font.antiAliasing": "抗锯齿",
   "modernui.center.font.autoHinting": "自动字体微调",
@@ -141,5 +144,6 @@
   "gui.modernui.ok": "OK",
   "gui.modernui.dont_show_again": "不再显示",
   "gui.modernui.preset_s": "预设 %s",
+  "gui.modernui.configValue": "配置值",
   "gui.modernui.restart_to_work": "重启游戏以使设置生效"
 }

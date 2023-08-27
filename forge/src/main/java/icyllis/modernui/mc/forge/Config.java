@@ -204,7 +204,8 @@ final class Config {
         public final ForgeConfigSpec.BooleanValue mAntiAliasing;
         public final ForgeConfigSpec.BooleanValue mAutoHinting;
         //public final ForgeConfigSpec.BooleanValue mLinearSampling;
-        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFontFamily;
+        public final ForgeConfigSpec.ConfigValue<String> mFirstFontFamily;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFallbackFontFamilyList;
 
         /*public final ForgeConfigSpec.BooleanValue mSkipGLCapsError;
         public final ForgeConfigSpec.BooleanValue mShowGLCapsError;*/
@@ -271,7 +272,7 @@ final class Config {
                             "TitleBreak and CenterTitle will work/appear at the same time.")
                     .define("titleBreak", true);
             mExactTooltipPositioning = builder.comment(
-                    "True to exactly position tooltip to pixel grid, smoother movement.")
+                            "True to exactly position tooltip to pixel grid, smoother movement.")
                     .define("exactPositioning", true);
             mTooltipFill = builder.comment(
                             "The tooltip background color in #RRGGBB or #AARRGGBB format. Default: #E0000000",
@@ -387,18 +388,19 @@ final class Config {
                     .define("linearSampling", true);*/
             // Segoe UI, Source Han Sans CN Medium, Noto Sans, Open Sans, San Francisco, Calibri,
             // Microsoft YaHei UI, STHeiti, SimHei, SansSerif
-            mFontFamily = builder.comment(
-                            "A set of font families with fallbacks to determine the typeface to use.",
-                            "TrueType & OpenType are supported. Each element can be one of the following three cases.",
-                            "1) Font family root name for those installed on your PC, for instance: Segoe UI",
+            mFirstFontFamily = builder.comment(
+                            "The first font family to use. See fallbackFontFamilyList")
+                    .define("firstFontFamily", "Source Han Sans CN Medium");
+            mFallbackFontFamilyList = builder.comment(
+                            "A set of fallback font families to determine the typeface to use.",
+                            "TrueType & OpenType are supported. Each element can be one of the following two cases.",
+                            "1) Font family English name that registered to Modern UI, for instance: Segoe UI",
                             "2) File path for external fonts on your PC, for instance: /usr/shared/fonts/x.otf",
-                            "3) Resource location for those loaded with resource packs, for instance: " +
-                                    "modernui:font/biliw.otf",
+                            "Fonts under 'modernui:font' in resource packs and OS builtin fonts will be registered.",
                             "Using bitmap fonts should consider other text settings, default glyph size should be 16x.",
                             "This list is only read once when the game is loaded. A game restart is required to reload")
-                    .defineList("fontFamily", () -> {
+                    .defineList("fallbackFontFamilyList", () -> {
                         List<String> list = new ArrayList<>();
-                        list.add("modernui:font/biliw.otf");
                         list.add("Noto Sans");
                         list.add("Segoe UI");
                         list.add("San Francisco");
@@ -406,7 +408,7 @@ final class Config {
                         list.add("SimHei");
                         list.add("STHeiti");
                         list.add("Segoe UI Variable");
-                        list.add("modernui:font/muii18ncompat/muii18ncompat.ttf");
+                        list.add("mui-i18n-compat");
                         return list;
                     }, s -> true);
 
