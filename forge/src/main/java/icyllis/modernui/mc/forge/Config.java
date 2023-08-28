@@ -24,8 +24,6 @@ import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.font.GlyphManager;
-import icyllis.modernui.graphics.text.LayoutCache;
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.resources.Resources;
 import icyllis.modernui.util.DisplayMetrics;
 import icyllis.modernui.view.ViewConfiguration;
@@ -528,18 +526,7 @@ final class Config {
                 reload = true;
             }*/
             if (reloadStrike) {
-                if (ModernUIForge.isTextEngineEnabled()) {
-                    Minecraft.getInstance().submit(
-                            () -> TextLayoutEngine.getInstance().reloadAll());
-                } else {
-                    Minecraft.getInstance().submit(
-                            () -> {
-                                GlyphManager.getInstance().reload();
-                                LOGGER.info(MARKER, "Reloaded glyph manager");
-                                LayoutCache.clear();
-                            }
-                    );
-                }
+                ModernUIForge.Client.getInstance().reloadFontStrike();
             }
 
             ModernUI.getSelectedTypeface();

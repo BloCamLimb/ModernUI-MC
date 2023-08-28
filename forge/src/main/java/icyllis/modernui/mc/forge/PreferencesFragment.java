@@ -24,17 +24,20 @@ import icyllis.modernui.animation.*;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
+import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.mc.forge.ui.*;
 import icyllis.modernui.text.InputFilter;
+import icyllis.modernui.text.Typeface;
 import icyllis.modernui.text.method.DigitsInputFilter;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
 import icyllis.modernui.viewpager.widget.*;
 import icyllis.modernui.widget.*;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraftforge.common.ForgeConfigSpec;
 import org.lwjgl.PointerBuffer;
@@ -137,6 +140,9 @@ public class PreferencesFragment extends Fragment {
     public static LinearLayout createSecondPage(Context context) {
         var content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
+        var transition = new LayoutTransition();
+        transition.enableTransitionType(LayoutTransition.CHANGING);
+        content.setLayoutTransition(transition);
 
         {
             var list = createCategoryList(context, "modernui.center.category.system");
@@ -171,7 +177,7 @@ public class PreferencesFragment extends Fragment {
         }
 
         {
-            var list = createCategoryList(context, "modernui.center.category.font");
+            var category = createCategoryList(context, "modernui.center.category.font");
 
             {
                 var layout = new LinearLayout(context);
@@ -189,14 +195,18 @@ public class PreferencesFragment extends Fragment {
                     var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
                     firstLine.addView(title, params);
                 }
+                Runnable onFontChanged;
                 {
                     TextView value = new TextView(context);
-                    FontFamily first = ModernUIForge.Client.getInstance().getFirstFontFamily();
-                    if (first != null) {
-                        value.setText(first.getFamilyName(value.getTextLocale()));
-                    } else {
-                        value.setText("NONE");
-                    }
+                    onFontChanged = () -> {
+                        FontFamily first = ModernUIForge.Client.getInstance().getFirstFontFamily();
+                        if (first != null) {
+                            value.setText(first.getFamilyName(value.getTextLocale()));
+                        } else {
+                            value.setText("NONE");
+                        }
+                    };
+                    onFontChanged.run();
                     value.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
                     value.setTextSize(14);
 
@@ -204,7 +214,12 @@ public class PreferencesFragment extends Fragment {
                     firstLine.addView(value, params);
                 }
 
-                firstLine.setOnClickListener(new PreferredFontCollapsed(layout));
+                firstLine.setOnClickListener(
+                        new PreferredFontCollapsed(
+                                layout,
+                                onFontChanged
+                        )
+                );
                 ThemeControl.addBackground(firstLine);
 
                 layout.addView(firstLine);
@@ -213,7 +228,7 @@ public class PreferencesFragment extends Fragment {
                 params.gravity = Gravity.CENTER;
                 params.setMargins(dp6, layout.dp(3), dp6, layout.dp(3));
 
-                list.addView(layout, params);
+                category.addView(layout, params);
             }
 
             {
@@ -258,10 +273,18 @@ public class PreferencesFragment extends Fragment {
                             if (!Config.CLIENT.mFallbackFontFamilyList.get().equals(result)) {
                                 Config.CLIENT.mFallbackFontFamilyList.set(result);
                                 Config.CLIENT.saveAsync();
-                                Toast.makeText(v.getContext(),
-                                                I18n.get("gui.modernui.restart_to_work"),
-                                                Toast.LENGTH_SHORT)
-                                        .show();
+                                reloadMainTypeface()
+                                        .whenCompleteAsync((oldTypeface, throwable) -> {
+                                            if (throwable == null) {
+                                                refreshTextViewsTypeface(
+                                                        UIManager.getInstance().getDecorView(),
+                                                        oldTypeface
+                                                );
+                                                Toast.makeText(context,
+                                                        I18n.get("gui.modernui.font_reloaded"),
+                                                        Toast.LENGTH_SHORT).show();
+                                            }
+                                        }, Core.getUiThreadExecutor());
                             }
                         }
                     });
@@ -278,20 +301,20 @@ public class PreferencesFragment extends Fragment {
                 params.setMargins(content.dp(6), dp3, content.dp(6), dp3);
                 option.setLayoutParams(params);
 
-                list.addView(option);
+                category.addView(option);
             }
 
             /*list.addView(createBooleanOption(context, "modernui.center.font.vanillaFont",
                     ModernUIText.CONFIG.mUseVanillaFont,
                     ModernUIText.CONFIG::saveAndReloadAsync));*/
 
-            list.addView(createBooleanOption(context, "modernui.center.font.antiAliasing",
+            category.addView(createBooleanOption(context, "modernui.center.font.antiAliasing",
                     Config.CLIENT.mAntiAliasing, Config.CLIENT::saveAndReloadAsync));
 
-            list.addView(createBooleanOption(context, "modernui.center.font.autoHinting",
+            category.addView(createBooleanOption(context, "modernui.center.font.autoHinting",
                     Config.CLIENT.mAutoHinting, Config.CLIENT::saveAndReloadAsync));
 
-            content.addView(list);
+            content.addView(category);
         }
 
         content.setDividerDrawable(new DividerDrawable(content));
@@ -395,7 +418,7 @@ public class PreferencesFragment extends Fragment {
                 list.addView(option);
             }
 
-            {
+            if (ModernUIForge.isDeveloperMode()) {
                 var option = createSwitchLayout(context, "modernui.center.text.textEngine");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
                 button.setChecked(ModernUIForge.isTextEngineEnabled());
@@ -605,17 +628,6 @@ public class PreferencesFragment extends Fragment {
                 ModernUIText.Config.LIFESPAN_MIN, ModernUIText.Config.LIFESPAN_MAX,
                 2, 1,
                 ModernUIText.CONFIG.mCacheLifespan, saveFn));
-
-        {
-            var option = createSwitchLayout(context, "modernui.center.text.lineBreakingAlgo");
-            option.<SwitchButton>requireViewById(R.id.button1).setChecked(true);
-            category.addView(option);
-        }
-        {
-            var option = createSwitchLayout(context, "modernui.center.text.textShaping");
-            option.<SwitchButton>requireViewById(R.id.button1).setChecked(true);
-            category.addView(option);
-        }
 
         return category;
     }
@@ -1035,14 +1047,16 @@ public class PreferencesFragment extends Fragment {
     public static class PreferredFontCollapsed implements View.OnClickListener {
 
         final ViewGroup mParent;
+        final Runnable mOnFontChanged;
 
         // lazy-init
         LinearLayout mContent;
         EditText mInput;
         Spinner mSpinner;
 
-        public PreferredFontCollapsed(ViewGroup parent) {
+        public PreferredFontCollapsed(ViewGroup parent, Runnable onFontChanged) {
             mParent = parent;
+            mOnFontChanged = onFontChanged;
         }
 
         @Override
@@ -1100,6 +1114,19 @@ public class PreferencesFragment extends Fragment {
                     public void onNothingSelected(AdapterView<?> parent) {
                     }
                 });
+                FontFamily first = ModernUIForge.Client.getInstance().getFirstFontFamily();
+                if (first != null) {
+                    for (int i = 1; i < values.size(); i++) {
+                        var candidate = values.get(i);
+                        if (candidate.rootName
+                                .equalsIgnoreCase(
+                                        first.getFamilyName()
+                                )) {
+                            spinner.setSelection(i);
+                            break;
+                        }
+                    }
+                }
 
                 mContent.addView(spinner, new LinearLayout.LayoutParams(params));
             }
@@ -1129,6 +1156,7 @@ public class PreferencesFragment extends Fragment {
                             if (changed) {
                                 mInput.setText(path);
                             }
+                            mSpinner.setSelection(0);
                         });
                     }
                 }));
@@ -1195,13 +1223,47 @@ public class PreferencesFragment extends Fragment {
             if (!newValue.equals(Config.CLIENT.mFirstFontFamily.get())) {
                 Config.CLIENT.mFirstFontFamily.set(newValue);
                 Config.CLIENT.saveAsync();
-                Toast.makeText(context,
-                                I18n.get("gui.modernui.restart_to_work"),
-                                Toast.LENGTH_SHORT)
-                        .show();
+                reloadMainTypeface()
+                        .whenCompleteAsync((oldTypeface, throwable) -> {
+                            if (throwable == null) {
+                                mOnFontChanged.run();
+                                refreshTextViewsTypeface(
+                                        UIManager.getInstance().getDecorView(),
+                                        oldTypeface
+                                );
+                                Toast.makeText(context,
+                                        I18n.get("gui.modernui.font_reloaded"),
+                                        Toast.LENGTH_SHORT).show();
+                            }
+                        }, Core.getUiThreadExecutor());
                 return true;
             }
             return false;
+        }
+    }
+
+    private static CompletableFuture<Typeface> reloadMainTypeface() {
+        return Minecraft.getInstance().submit(() -> {
+            var oldTypeface = ModernUI.getSelectedTypeface();
+            var client = ModernUIForge.Client.getInstance();
+            client.reloadTypeface();
+            client.reloadFontStrike();
+            return oldTypeface;
+        });
+    }
+
+    private static void refreshTextViewsTypeface(@NonNull ViewGroup vg,
+                                                 Typeface oldTypeface) {
+        int cc = vg.getChildCount();
+        for (int i = 0; i < cc; i++) {
+            View v = vg.getChildAt(i);
+            if (v instanceof ViewGroup) {
+                refreshTextViewsTypeface((ViewGroup) v, oldTypeface);
+            } else if (v instanceof TextView tv) {
+                if (tv.getTypeface() == oldTypeface) {
+                    tv.setTypeface(ModernUI.getSelectedTypeface());
+                }
+            }
         }
     }
 }

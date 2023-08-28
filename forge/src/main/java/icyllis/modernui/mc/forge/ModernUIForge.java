@@ -20,7 +20,9 @@ package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
@@ -223,27 +225,30 @@ public final class ModernUIForge {
     private static void loadFonts(String first,
                                   @Nonnull Collection<String> fallbacks,
                                   @Nonnull Set<FontFamily> selected,
-                                  @Nonnull Consumer<FontFamily> firstSetter) {
-        var resources = Minecraft.getInstance().getResourceManager();
-        for (var entry : resources.listResourceStacks("font",
-                res -> {
-                    if (res.getNamespace().equals(ModernUI.ID)) {
-                        String p = res.getPath();
-                        return p.endsWith(".ttf") ||
-                                p.endsWith(".otf") ||
-                                p.endsWith(".ttc") ||
-                                p.endsWith(".otc");
+                                  @Nonnull Consumer<FontFamily> firstSetter,
+                                  boolean firstLoad) {
+        if (firstLoad) {
+            var resources = Minecraft.getInstance().getResourceManager();
+            for (var entry : resources.listResourceStacks("font",
+                    res -> {
+                        if (res.getNamespace().equals(ModernUI.ID)) {
+                            String p = res.getPath();
+                            return p.endsWith(".ttf") ||
+                                    p.endsWith(".otf") ||
+                                    p.endsWith(".ttc") ||
+                                    p.endsWith(".otc");
+                        }
+                        return false;
+                    }).entrySet()) {
+                for (var resource : entry.getValue()) {
+                    try (var inputStream = resource.open()) {
+                        FontFamily f = FontFamily.createFamily(inputStream, /*register*/true);
+                        LOGGER.debug(MARKER, "Registered font '{}', location '{}' in pack: '{}'",
+                                f.getFamilyName(), entry.getKey(), resource.sourcePackId());
+                    } catch (Exception e) {
+                        LOGGER.error(MARKER, "Failed to load font '{}' in pack: '{}'",
+                                entry.getKey(), resource.sourcePackId());
                     }
-                    return false;
-                }).entrySet()) {
-            for (var resource : entry.getValue()) {
-                try (var inputStream = resource.open()) {
-                    FontFamily f = FontFamily.createFamily(inputStream, /*register*/true);
-                    LOGGER.debug(MARKER, "Registered font '{}', location '{}' in pack: '{}'",
-                            f.getFamilyName(), entry.getKey(), resource.sourcePackId());
-                } catch (Exception e) {
-                    LOGGER.error(MARKER, "Failed to load font '{}' in pack: '{}'",
-                            entry.getKey(), resource.sourcePackId());
                 }
             }
         }
@@ -388,6 +393,10 @@ public final class ModernUIForge {
             return mFirstFontFamily;
         }
 
+        private void setFirstFontFamily(FontFamily firstFontFamily) {
+            mFirstFontFamily = firstFontFamily;
+        }
+
         @SuppressWarnings("ConstantValue")
         @Nonnull
         @Override
@@ -419,21 +428,7 @@ public final class ModernUIForge {
                                 new Exception("Loading typeface at the wrong mod loading stage")
                                         .fillInStackTrace());
                     }
-                    Set<FontFamily> families = new LinkedHashSet<>();
-                    String first = Config.CLIENT.mFirstFontFamily.get();
-                    List<? extends String> configs = Config.CLIENT.mFallbackFontFamilyList.get();
-                    if (first != null || configs != null) {
-                        var fallbacks = new LinkedHashSet<String>();
-                        if (configs != null) {
-                            fallbacks.addAll(configs);
-                        }
-                        if (first != null) {
-                            fallbacks.remove(first);
-                        }
-                        loadFonts(first, fallbacks, families,
-                                firstFamily -> mFirstFontFamily = firstFamily);
-                    }
-                    mTypeface = Typeface.createTypeface(families.toArray(new FontFamily[0]));
+                    mTypeface = loadTypefaceInternal(this::setFirstFontFamily, true);
                     // do some warm-up, but do not block ourselves
                     var paint = new FontPaint();
                     paint.setFont(mTypeface);
@@ -445,6 +440,54 @@ public final class ModernUIForge {
                 }
             }
             return mTypeface;
+        }
+
+        // reload just Typeface on main thread, called after loaded
+        public void reloadTypeface() {
+            synchronized (this) {
+                if (mTypeface == null) {
+                    return;
+                }
+                mFirstFontFamily = null;
+                mTypeface = loadTypefaceInternal(this::setFirstFontFamily, false);
+                LOGGER.info(MARKER, "Reloaded typeface: {}", mTypeface);
+            }
+        }
+
+        public void reloadFontStrike() {
+            if (isTextEngineEnabled()) {
+                Minecraft.getInstance().submit(
+                        () -> TextLayoutEngine.getInstance().reloadAll());
+            } else {
+                Minecraft.getInstance().submit(
+                        () -> {
+                            GlyphManager.getInstance().reload();
+                            LOGGER.info(MARKER, "Reloaded glyph manager");
+                            LayoutCache.clear();
+                        }
+                );
+            }
+        }
+
+        @Nonnull
+        private static Typeface loadTypefaceInternal(
+                @Nonnull Consumer<FontFamily> firstSetter,
+                boolean firstLoad) {
+            Set<FontFamily> families = new LinkedHashSet<>();
+            String first = Config.CLIENT.mFirstFontFamily.get();
+            List<? extends String> configs = Config.CLIENT.mFallbackFontFamilyList.get();
+            if (first != null || configs != null) {
+                var fallbacks = new LinkedHashSet<String>();
+                if (configs != null) {
+                    fallbacks.addAll(configs);
+                }
+                if (first != null) {
+                    fallbacks.remove(first);
+                }
+                loadFonts(first, fallbacks, families,
+                        firstSetter, firstLoad);
+            }
+            return Typeface.createTypeface(families.toArray(new FontFamily[0]));
         }
 
         @Nonnull

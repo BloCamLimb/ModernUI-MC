@@ -145,5 +145,6 @@
   "gui.modernui.dont_show_again": "Don't show again",
   "gui.modernui.preset_s": "Preset %s",
   "gui.modernui.configValue": "Config Value",
-  "gui.modernui.restart_to_work": "Restart the game for settings to take effect"
+  "gui.modernui.restart_to_work": "Restart the game for settings to take effect",
+  "gui.modernui.font_reloaded": "Reloaded default typeface list"
 }
