@@ -455,7 +455,9 @@ public final class ModernUIForge {
         }
 
         public void reloadFontStrike() {
-            if (isTextEngineEnabled()) {
+            if (!Boolean.parseBoolean(
+                    Loader.getBootstrapProperties().getProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
+            )) {
                 Minecraft.getInstance().submit(
                         () -> TextLayoutEngine.getInstance().reloadAll());
             } else {

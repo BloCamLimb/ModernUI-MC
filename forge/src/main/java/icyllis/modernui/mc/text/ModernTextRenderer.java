@@ -38,7 +38,7 @@ import javax.annotation.Nonnull;
 public final class ModernTextRenderer {
 
     public static final Vector3f SHADOW_OFFSET = new Vector3f(0.0F, 0.0F, 0.03F);
-    //public static final Vector3f OUTLINE_OFFSET = new Vector3f(0.0F, 0.0F, 0.01F);
+    public static final Vector3f OUTLINE_OFFSET = new Vector3f(0.0F, 0.0F, 0.01F);
 
     /*
      * Render thread instance
@@ -295,6 +295,7 @@ public final class ModernTextRenderer {
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
 
+        matrix = new Matrix4f(matrix);
         layout.drawText(matrix, source, x, y, r, g, b, a, false,
                 TextRenderType.MODE_SDF_FILL, false, 0, packedLight);
 
@@ -304,6 +305,7 @@ public final class ModernTextRenderer {
         g = outlineColor >> 8 & 0xff;
         b = outlineColor & 0xff;
 
+        matrix.translate(OUTLINE_OFFSET);
         layout.drawTextOutline(matrix, source, x, y, r, g, b, a, packedLight);
     }
 
