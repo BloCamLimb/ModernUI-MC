@@ -212,7 +212,7 @@ final class Config {
         /*public final ForgeConfigSpec.BooleanValue mSkipGLCapsError;
         public final ForgeConfigSpec.BooleanValue mShowGLCapsError;*/
 
-        private WindowMode mLastWindowMode;
+        public WindowMode mLastWindowMode = WindowMode.NORMAL;
 
         private Client(@Nonnull ForgeConfigSpec.Builder builder) {
             builder.comment("Screen Config")
@@ -254,8 +254,7 @@ final class Config {
                             "(Beta) Pause the game when inventory (also includes creative mode) opened.")
                     .define("inventoryPause", false);
             mFramerateInactive = builder.comment(
-                            "Framerate limit on game paused or window inactive (out of focus or minimized), 0 = no " +
-                                    "change.")
+                            "Framerate limit on window inactive (out of focus or minimized), 0 = no change.")
                     .defineInRange("framerateInactive", 60, 0, 255);
             mFramerateMinimized = builder.comment(
                             "Framerate limit on window minimized, 0 = same as framerate inactive.",

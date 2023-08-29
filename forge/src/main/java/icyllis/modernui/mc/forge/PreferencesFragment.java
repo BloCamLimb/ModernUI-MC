@@ -434,7 +434,7 @@ public class PreferencesFragment extends Fragment {
                 list.addView(option);
             }
 
-            if (ModernUIForge.isDeveloperMode()) {
+            {
                 var option = createSwitchLayout(context, "modernui.center.text.textEngine");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
                 button.setChecked(ModernUIForge.isTextEngineEnabled());

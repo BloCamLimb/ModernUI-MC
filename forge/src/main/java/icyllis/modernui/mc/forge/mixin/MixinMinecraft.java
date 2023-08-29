@@ -45,9 +45,6 @@ public abstract class MixinMinecraft {
     private Window window;
 
     @Shadow
-    private volatile boolean pause;
-
-    @Shadow
     public abstract boolean isWindowActive();
 
     /**
@@ -72,7 +69,7 @@ public abstract class MixinMinecraft {
     private void onGetFramerateLimit(CallbackInfoReturnable<Integer> info) {
         if ((BlurHandler.sFramerateInactive != 0 ||
                 BlurHandler.sFramerateMinimized != 0) &&
-                (pause || !isWindowActive())) {
+                !isWindowActive()) {
             if (BlurHandler.sFramerateMinimized != 0 &&
                     BlurHandler.sFramerateMinimized < BlurHandler.sFramerateInactive &&
                     GLFW.glfwGetWindowAttrib(window.getWindow(), GLFW.GLFW_ICONIFIED) != 0) {
