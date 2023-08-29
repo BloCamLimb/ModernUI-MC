@@ -186,6 +186,10 @@ final class Config {
         //public final ForgeConfigSpec.BooleanValue mRemoveSignature;
         public final ForgeConfigSpec.BooleanValue mRemoveTelemetry;
         //public final ForgeConfigSpec.BooleanValue mSecurePublicKey;
+        public final ForgeConfigSpec.IntValue mFramerateInactive;
+        public final ForgeConfigSpec.IntValue mFramerateMinimized;
+        public final ForgeConfigSpec.DoubleValue mMasterVolumeInactive;
+        public final ForgeConfigSpec.DoubleValue mMasterVolumeMinimized;
 
         public final ForgeConfigSpec.IntValue mScrollbarSize;
         public final ForgeConfigSpec.IntValue mTouchSlop;
@@ -249,6 +253,21 @@ final class Config {
             mInventoryPause = builder.comment(
                             "(Beta) Pause the game when inventory (also includes creative mode) opened.")
                     .define("inventoryPause", false);
+            mFramerateInactive = builder.comment(
+                            "Framerate limit on game paused or window inactive (out of focus or minimized), 0 = no " +
+                                    "change.")
+                    .defineInRange("framerateInactive", 60, 0, 255);
+            mFramerateMinimized = builder.comment(
+                            "Framerate limit on window minimized, 0 = same as framerate inactive.",
+                            "This value will be no greater than framerate inactive.")
+                    .defineInRange("framerateMinimized", 0, 0, 255);
+            mMasterVolumeInactive = builder.comment(
+                            "Master volume multiplier on window inactive (out of focus or minimized), 1 = no change.")
+                    .defineInRange("masterVolumeInactive", 0.25, 0, 1);
+            mMasterVolumeMinimized = builder.comment(
+                            "Master volume multiplier on window minimized, 1 = same as master volume inactive.",
+                            "This value will be no greater than master volume inactive.")
+                    .defineInRange("masterVolumeMinimized", 1.0, 0, 1);
 
             builder.pop();
 
@@ -426,22 +445,35 @@ final class Config {
 
         private void reload() {
             BlurHandler.sBlurEffect = mBlurEffect.get();
-            BlurHandler.sAnimationDuration = mBackgroundDuration.get();
+            BlurHandler.sBackgroundDuration = mBackgroundDuration.get();
             BlurHandler.sBlurRadius = mBlurRadius.get();
 
-            List<? extends String> colors = mBackgroundColor.get();
+            BlurHandler.sFramerateInactive = mFramerateInactive.get();
+            BlurHandler.sFramerateMinimized = Math.min(
+                    mFramerateMinimized.get(),
+                    BlurHandler.sFramerateInactive
+            );
+            BlurHandler.sMasterVolumeInactive = mMasterVolumeInactive.get().floatValue();
+            BlurHandler.sMasterVolumeMinimized = Math.min(
+                    mMasterVolumeMinimized.get().floatValue(),
+                    BlurHandler.sMasterVolumeInactive
+            );
+
+            List<? extends String> inColors = mBackgroundColor.get();
+            int[] resultColors = new int[4];
             int color = 0x99000000;
             for (int i = 0; i < 4; i++) {
-                if (colors != null && i < colors.size()) {
-                    String s = colors.get(i);
+                if (inColors != null && i < inColors.size()) {
+                    String s = inColors.get(i);
                     try {
                         color = Color.parseColor(s);
                     } catch (Exception e) {
                         LOGGER.error(MARKER, "Wrong color format for screen background, index: {}", i, e);
                     }
                 }
-                BlurHandler.sBackgroundColor[i] = color;
+                resultColors[i] = color;
             }
+            BlurHandler.sBackgroundColor = resultColors;
 
             BlurHandler.INSTANCE.loadBlacklist(mBlurBlacklist.get());
 
@@ -452,11 +484,11 @@ final class Config {
 
             TooltipRenderer.sTooltip = mTooltip.get();
 
-            colors = mTooltipFill.get();
+            inColors = mTooltipFill.get();
             color = 0xFFFFFFFF;
             for (int i = 0; i < 4; i++) {
-                if (colors != null && i < colors.size()) {
-                    String s = colors.get(i);
+                if (inColors != null && i < inColors.size()) {
+                    String s = inColors.get(i);
                     try {
                         color = Color.parseColor(s);
                     } catch (Exception e) {
@@ -465,11 +497,11 @@ final class Config {
                 }
                 TooltipRenderer.sFillColor[i] = color;
             }
-            colors = mTooltipStroke.get();
+            inColors = mTooltipStroke.get();
             color = 0xFFFFFFFF;
             for (int i = 0; i < 4; i++) {
-                if (colors != null && i < colors.size()) {
-                    String s = colors.get(i);
+                if (inColors != null && i < inColors.size()) {
+                    String s = inColors.get(i);
                     try {
                         color = Color.parseColor(s);
                     } catch (Exception e) {

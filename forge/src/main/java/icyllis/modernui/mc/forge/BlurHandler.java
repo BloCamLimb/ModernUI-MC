@@ -18,8 +18,7 @@
 
 package icyllis.modernui.mc.forge;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.animation.ColorEvaluator;
 import icyllis.modernui.mc.forge.mixin.AccessPostChain;
@@ -28,9 +27,10 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.*;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.minecraft.sounds.SoundSource;
 import org.apache.commons.lang3.StringUtils;
 import org.joml.Matrix4f;
+import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -42,20 +42,21 @@ import java.util.*;
 public enum BlurHandler {
     INSTANCE;
 
-    static {
-        assert (FMLEnvironment.dist.isClient());
-    }
-
     // minecraft namespace
     private static final ResourceLocation BLUR_POST_EFFECT = new ResourceLocation("shaders/post/blur_fast.json");
 
     /**
      * Config values
      */
-    static volatile boolean sBlurEffect;
-    static volatile float sAnimationDuration; // milliseconds
-    static volatile int sBlurRadius;
-    static final int[] sBackgroundColor = new int[4];
+    public static volatile boolean sBlurEffect;
+    public static volatile int sBlurRadius;
+    public static volatile int sBackgroundDuration; // milliseconds
+    public static volatile int[] sBackgroundColor = new int[4];
+
+    public static volatile int sFramerateInactive;
+    public static volatile int sFramerateMinimized;
+    public static volatile float sMasterVolumeInactive = 1;
+    public static volatile float sMasterVolumeMinimized = 1;
 
     private final Minecraft minecraft = Minecraft.getInstance();
 
@@ -79,10 +80,12 @@ public enum BlurHandler {
      */
     private boolean mHasScreen;
 
+    private float mVolumeMultiplier = 1;
+
     /**
      * Use blur shader in game renderer post-processing.
      */
-    void blur(@Nullable Screen nextScreen) {
+    public void blur(@Nullable Screen nextScreen) {
         if (minecraft.level == null) {
             return;
         }
@@ -117,13 +120,13 @@ public enum BlurHandler {
             if (!blocked && sBlurEffect && !mBlurring && gr.currentEffect() == null && sBlurRadius >= 1) {
                 gr.loadEffect(BLUR_POST_EFFECT);
                 mBlurring = true;
-                if (sAnimationDuration > 0) {
+                if (sBackgroundDuration > 0) {
                     updateRadius(1);
                 } else {
                     updateRadius(sBlurRadius);
                 }
             }
-            if (sAnimationDuration > 0) {
+            if (sBackgroundDuration > 0) {
                 mFadingIn = true;
                 Arrays.fill(mBackgroundColor, 0);
             } else {
@@ -143,7 +146,7 @@ public enum BlurHandler {
     /**
      * Internal method, to re-blur after resources (including shaders) reloaded in the pause menu.
      */
-    void forceBlur() {
+    public void forceBlur() {
         // no need to check if is excluded, this method is only called by opened ModernUI Screen
         if (!sBlurEffect) {
             return;
@@ -159,7 +162,7 @@ public enum BlurHandler {
     }
 
     @SuppressWarnings("unchecked")
-    void loadBlacklist(@Nullable List<? extends String> names) {
+    public void loadBlacklist(@Nullable List<? extends String> names) {
         mBlacklist.clear();
         if (names == null) {
             return;
@@ -184,9 +187,9 @@ public enum BlurHandler {
     /**
      * Render tick, should called before rendering things
      */
-    void update(long timeMillis) {
+    public void onRenderTick(long elapsedTimeMillis) {
         if (mFadingIn) {
-            float p = Math.min(timeMillis / sAnimationDuration, 1.0f);
+            float p = Math.min((float) elapsedTimeMillis / sBackgroundDuration, 1.0f);
             if (mBlurring) {
                 updateRadius(Math.max(p * sBlurRadius, 1.0f));
             }
@@ -206,6 +209,34 @@ public enum BlurHandler {
         List<PostPass> passes = ((AccessPostChain) effect).getPasses();
         for (PostPass s : passes) {
             s.getEffect().safeGetUniform("Progress").set(radius);
+        }
+    }
+
+    public void onClientTick() {
+        float targetVolumeMultiplier;
+        if (minecraft.isWindowActive()) {
+            targetVolumeMultiplier = 1;
+        } else if (sMasterVolumeMinimized < sMasterVolumeInactive &&
+                GLFW.glfwGetWindowAttrib(minecraft.getWindow().getWindow(), GLFW.GLFW_ICONIFIED) != 0) {
+            targetVolumeMultiplier = sMasterVolumeMinimized;
+        } else {
+            targetVolumeMultiplier = sMasterVolumeInactive;
+        }
+        if (mVolumeMultiplier != targetVolumeMultiplier) {
+            // fade down is slower, 1 second = 20 ticks
+            if (mVolumeMultiplier < targetVolumeMultiplier) {
+                mVolumeMultiplier = Math.min(
+                        mVolumeMultiplier + 0.5f,
+                        targetVolumeMultiplier
+                );
+            } else {
+                mVolumeMultiplier = Math.max(
+                        mVolumeMultiplier - 0.05f,
+                        targetVolumeMultiplier
+                );
+            }
+            float volume = minecraft.options.getSoundSourceVolume(SoundSource.MASTER);
+            minecraft.getSoundManager().updateSourceVolume(SoundSource.MASTER, volume * mVolumeMultiplier);
         }
     }
 

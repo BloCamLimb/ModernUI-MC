@@ -54,15 +54,15 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class PreferencesFragment extends Fragment {
 
-    LinearLayout tooltipCategory;
-    LinearLayout textEngineCategory;
+    LinearLayout mTooltipCategory;
+    LinearLayout mTextEngineCategory;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable DataSet savedInstanceState) {
         var pager = new ViewPager(getContext());
 
-        pager.setAdapter(this.new TheAdapter());
+        pager.setAdapter(this.new ThePagerAdapter());
         pager.setFocusableInTouchMode(true);
         pager.setKeyboardNavigationCluster(true);
 
@@ -87,7 +87,7 @@ public class PreferencesFragment extends Fragment {
         return pager;
     }
 
-    private class TheAdapter extends PagerAdapter {
+    private class ThePagerAdapter extends PagerAdapter {
 
         @Override
         public int getCount() {
@@ -140,9 +140,6 @@ public class PreferencesFragment extends Fragment {
     public static LinearLayout createSecondPage(Context context) {
         var content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
-        var transition = new LayoutTransition();
-        transition.enableTransitionType(LayoutTransition.CHANGING);
-        content.setLayoutTransition(transition);
 
         {
             var list = createCategoryList(context, "modernui.center.category.system");
@@ -178,6 +175,9 @@ public class PreferencesFragment extends Fragment {
 
         {
             var category = createCategoryList(context, "modernui.center.category.font");
+            var transition = new LayoutTransition();
+            transition.enableTransitionType(LayoutTransition.CHANGING);
+            category.setLayoutTransition(transition);
 
             {
                 var layout = new LinearLayout(context);
@@ -357,6 +357,22 @@ public class PreferencesFragment extends Fragment {
             list.addView(createSpinnerOption(context, "modernui.center.screen.windowMode",
                     Config.Client.WindowMode.values(), Config.CLIENT.mWindowMode, saveFn));
 
+            list.addView(createIntegerOption(context, "modernui.center.screen.framerateInactive",
+                    0, 255, 3, 5,
+                    Config.CLIENT.mFramerateInactive, saveFn));
+
+            list.addView(createIntegerOption(context, "modernui.center.screen.framerateMinimized",
+                    0, 255, 3, 5,
+                    Config.CLIENT.mFramerateMinimized, saveFn));
+
+            list.addView(createFloatOption(context, "modernui.center.screen.masterVolumeInactive",
+                    0, 1, 4,
+                    Config.CLIENT.mMasterVolumeInactive, saveFn));
+
+            list.addView(createFloatOption(context, "modernui.center.screen.masterVolumeMinimized",
+                    0, 1, 4,
+                    Config.CLIENT.mMasterVolumeMinimized, saveFn));
+
             {
                 var option = createBooleanOption(context, "modernui.center.screen.inventoryPause",
                         Config.CLIENT.mInventoryPause, saveFn);
@@ -405,14 +421,14 @@ public class PreferencesFragment extends Fragment {
                     Config.CLIENT.mTooltip.set(checked);
                     saveFn.run();
                     if (checked) {
-                        if (tooltipCategory == null) {
-                            tooltipCategory = createTooltipCategory(view.getContext());
-                            content.addView(tooltipCategory, 2);
+                        if (mTooltipCategory == null) {
+                            mTooltipCategory = createTooltipCategory(view.getContext());
+                            content.addView(mTooltipCategory, 2);
                         } else {
-                            tooltipCategory.setVisibility(View.VISIBLE);
+                            mTooltipCategory.setVisibility(View.VISIBLE);
                         }
-                    } else if (tooltipCategory != null) {
-                        tooltipCategory.setVisibility(View.GONE);
+                    } else if (mTooltipCategory != null) {
+                        mTooltipCategory.setVisibility(View.GONE);
                     }
                 });
                 list.addView(option);
@@ -432,14 +448,14 @@ public class PreferencesFragment extends Fragment {
                                     Toast.LENGTH_SHORT)
                             .show();
                     if (checked) {
-                        if (textEngineCategory == null) {
-                            textEngineCategory = createTextEngineCategory(view.getContext());
-                            content.addView(textEngineCategory);
+                        if (mTextEngineCategory == null) {
+                            mTextEngineCategory = createTextEngineCategory(view.getContext());
+                            content.addView(mTextEngineCategory);
                         } else {
-                            textEngineCategory.setVisibility(View.VISIBLE);
+                            mTextEngineCategory.setVisibility(View.VISIBLE);
                         }
-                    } else if (textEngineCategory != null) {
-                        textEngineCategory.setVisibility(View.GONE);
+                    } else if (mTextEngineCategory != null) {
+                        mTextEngineCategory.setVisibility(View.GONE);
                     }
                 });
                 list.addView(option);
@@ -453,13 +469,13 @@ public class PreferencesFragment extends Fragment {
         }
 
         if (Config.CLIENT.mTooltip.get()) {
-            tooltipCategory = createTooltipCategory(context);
-            content.addView(tooltipCategory);
+            mTooltipCategory = createTooltipCategory(context);
+            content.addView(mTooltipCategory);
         }
 
         if (ModernUIForge.isTextEngineEnabled()) {
-            textEngineCategory = createTextEngineCategory(context);
-            content.addView(textEngineCategory);
+            mTextEngineCategory = createTextEngineCategory(context);
+            content.addView(mTextEngineCategory);
         }
 
         content.setDividerDrawable(new DividerDrawable(content));
@@ -1096,7 +1112,7 @@ public class PreferencesFragment extends Fragment {
                 String chooseFont = I18n.get("modernui.center.font.chooseFont");
                 values.add(0, new FontFamilyItem(chooseFont, chooseFont));
                 var spinner = mSpinner = new Spinner(mParent.getContext());
-                spinner.setAdapter(new Adapter(mParent.getContext(), values));
+                spinner.setAdapter(new FontFamilyAdapter(mParent.getContext(), values));
                 spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -1179,11 +1195,11 @@ public class PreferencesFragment extends Fragment {
             }
         }
 
-        private static class Adapter extends ArrayAdapter<FontFamilyItem> {
+        private static class FontFamilyAdapter extends ArrayAdapter<FontFamilyItem> {
 
             private final Context mContext;
 
-            public Adapter(Context context, @NonNull List<FontFamilyItem> objects) {
+            public FontFamilyAdapter(Context context, @NonNull List<FontFamilyItem> objects) {
                 super(context, objects);
                 mContext = context;
             }

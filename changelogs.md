@@ -2,10 +2,12 @@ Changelogs
 ===
 ### Modern UI 3.8.1.4
 #### Forge Extension 1.20.1-47.0.14
+* Add master volume multiplier on window blur or minimized
+* Add framerate limit on window blur or minimized
 * Add hot reload of the default typeface list
 * Add font selection list and open file dialog
 * Separate old font family config into preferred one and fallbacks
-* Fix ASCII digits in Arabic
+* Fix ASCII digit input in Arabic
 * Add tooltip center alignment
 * Add tooltip title break
 * Improve extra spacing below tooltip title

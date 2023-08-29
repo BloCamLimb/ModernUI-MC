@@ -648,8 +648,10 @@ public final class UIManager implements LifecycleOwner {
                         .getJavaLocale()).isRightToLeft()));*/
                         GlyphManager.getInstance().debug();
                 case GLFW_KEY_V -> {
-                    TextLayoutEngine.getInstance().dumpEmojiAtlas();
-                    TextLayoutEngine.getInstance().dumpBitmapFonts();
+                    if (ModernUIForge.isTextEngineEnabled()) {
+                        TextLayoutEngine.getInstance().dumpEmojiAtlas();
+                        TextLayoutEngine.getInstance().dumpBitmapFonts();
+                    }
                 }
                 case GLFW_KEY_O -> mNoRender = !mNoRender;
                 case GLFW_KEY_F -> System.gc();
@@ -1067,7 +1069,7 @@ public final class UIManager implements LifecycleOwner {
             if (mRunning) {
                 mRoot.mChoreographer.scheduleFrameAsync(mFrameTimeNanos);
                 // update extension animations
-                BlurHandler.INSTANCE.update(mElapsedTimeMillis);
+                BlurHandler.INSTANCE.onRenderTick(mElapsedTimeMillis);
                 if (TooltipRenderer.sTooltip) {
                     mTooltipRenderer.update(deltaMillis, mFrameTimeNanos / 1000000);
                 }
@@ -1111,6 +1113,13 @@ public final class UIManager implements LifecycleOwner {
                 }
             }
         }*/
+    }
+
+    @SubscribeEvent
+    void onClientTick(@Nonnull TickEvent.ClientTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            BlurHandler.INSTANCE.onClientTick();
+        }
     }
 
     @UiThread
