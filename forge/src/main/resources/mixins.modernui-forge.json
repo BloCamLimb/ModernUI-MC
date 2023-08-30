@@ -17,6 +17,7 @@
     "MixinClientTextTooltip",
     "MixinInventoryScreen",
     "MixinLevelRendererDBG",
+    "MixinMinecraft",
     "MixinMouseHandler",
     "MixinRenderSystem",
     "MixinScreen",

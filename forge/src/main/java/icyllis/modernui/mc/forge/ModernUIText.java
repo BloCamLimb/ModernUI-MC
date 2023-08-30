@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,12 +16,13 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.text;
+package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.font.GlyphManager;
-import icyllis.modernui.mc.forge.MuiForgeApi;
+import icyllis.modernui.graphics.text.LineBreakConfig;
+import icyllis.modernui.mc.text.*;
 import icyllis.modernui.text.TextUtils;
 import icyllis.modernui.view.View;
 import net.minecraft.Util;
@@ -32,6 +33,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.ClientChatEvent;
 import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -169,6 +171,13 @@ public final class ModernUIText {
                 }
             }
         }
+
+        @SubscribeEvent
+        static void onClientTick(@Nonnull TickEvent.ClientTickEvent event) {
+            if (event.phase == TickEvent.Phase.END) {
+                TextLayoutEngine.getInstance().onEndClientTick();
+            }
+        }
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -182,9 +191,9 @@ public final class ModernUIText {
         public static final float SHADOW_OFFSET_MAX = 2;
         public static final float OUTLINE_OFFSET_MIN = 0.2f;
         public static final float OUTLINE_OFFSET_MAX = 2;
-        /*public static final int LIFESPAN_MIN = 2;
-        public static final int LIFESPAN_MAX = 60;
-        public static final int REHASH_MIN = 0;
+        public static final int LIFESPAN_MIN = 2;
+        public static final int LIFESPAN_MAX = 15;
+        /*public static final int REHASH_MIN = 0;
         public static final int REHASH_MAX = 2000;*/
 
         //final ForgeConfigSpec.BooleanValue globalRenderer;
@@ -196,8 +205,8 @@ public final class ModernUIText {
         public final ForgeConfigSpec.DoubleValue mOutlineOffset;
         //public final ForgeConfigSpec.BooleanValue mSuperSampling;
         //public final ForgeConfigSpec.BooleanValue mAlignPixels;
-        /*public final ForgeConfigSpec.IntValue mCacheLifespan;
-        public final ForgeConfigSpec.IntValue mRehashThreshold;*/
+        public final ForgeConfigSpec.IntValue mCacheLifespan;
+        //public final ForgeConfigSpec.IntValue mRehashThreshold;
         public final ForgeConfigSpec.EnumValue<TextDirection> mTextDirection;
         public final ForgeConfigSpec.BooleanValue mUseColorEmoji;
         //public final ForgeConfigSpec.BooleanValue mBitmapReplacement;
@@ -207,6 +216,12 @@ public final class ModernUIText {
         public final ForgeConfigSpec.BooleanValue mUseTextShadersInWorld;
         public final ForgeConfigSpec.EnumValue<DefaultFontBehavior> mDefaultFontBehavior;
         public final ForgeConfigSpec.BooleanValue mUseComponentCache;
+        public final ForgeConfigSpec.BooleanValue mAllowAsyncLayout;
+        public final ForgeConfigSpec.EnumValue<LineBreakStyle> mLineBreakStyle;
+        public final ForgeConfigSpec.EnumValue<LineBreakWordStyle> mLineBreakWordStyle;
+        public final ForgeConfigSpec.BooleanValue mSmartSDFShaders;
+        public final ForgeConfigSpec.BooleanValue mComputeDeviceFontSize;
+        public final ForgeConfigSpec.BooleanValue mAllowSDFTextIn2D;
 
         //private final ForgeConfigSpec.BooleanValue antiAliasing;
         //private final ForgeConfigSpec.BooleanValue highPrecision;
@@ -233,7 +248,8 @@ public final class ModernUIText {
                     .define("fixedResolution", false);
             mBaseFontSize = builder.comment(
                             "Control base font size, in GUI scaled pixels. The default and vanilla value is 8.",
-                            "For bitmap fonts, 8 represents a glyph size of 8x or 16x if fixed resolution.")
+                            "For bitmap fonts, 8 represents a glyph size of 8x or 16x if fixed resolution.",
+                            "This option only applies to TrueType fonts.")
                     .defineInRange("baseFontSize", TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE,
                             BASE_FONT_SIZE_MIN, BASE_FONT_SIZE_MAX);
             mBaselineShift = builder.comment(
@@ -255,10 +271,10 @@ public final class ModernUIText {
                             "Enable to make each glyph pixel-aligned in text layout in screen-space.",
                             "Text rendering may be better with bitmap fonts / fixed resolution / linear sampling.")
                     .define("alignPixels", false);*/
-            /*mCacheLifespan = builder.comment(
+            mCacheLifespan = builder.comment(
                             "Set the recycle time of layout cache in seconds, using least recently used algorithm.")
-                    .defineInRange("cacheLifespan", 12, LIFESPAN_MIN, LIFESPAN_MAX);
-            mRehashThreshold = builder.comment("Set the rehash threshold of layout cache")
+                    .defineInRange("cacheLifespan", 6, LIFESPAN_MIN, LIFESPAN_MAX);
+            /*mRehashThreshold = builder.comment("Set the rehash threshold of layout cache")
                     .defineInRange("rehashThreshold", 100, REHASH_MIN, REHASH_MAX);*/
             mTextDirection = builder.comment(
                             "The bidirectional text heuristic algorithm.",
@@ -281,7 +297,8 @@ public final class ModernUIText {
                             "Whether to use Modern UI text rendering pipeline in 3D world.",
                             "Disabling this means that SDF text and rendering optimization are no longer effective.",
                             "But text rendering can be compatible with OptiFine Shaders and Iris Shaders.",
-                            "This does not affect text rendering in GUI.")
+                            "This does not affect text rendering in GUI.",
+                            "This option only applies to TrueType fonts.")
                     .define("useTextShadersInWorld", true);
             /*mUseDistanceField = builder.comment(
                             "Enable to use distance field for text rendering in 3D world.",
@@ -301,6 +318,36 @@ public final class ModernUIText {
                             "If you find that Modern UI text rendering is not compatible with some mods,",
                             "you can disable this option for compatibility, but this will decrease performance a bit.")
                     .define("useComponentCache", true);
+            mAllowAsyncLayout = builder.comment(
+                            "Allow text layout to be computed from non-main threads.",
+                            "Otherwise, block on current thread.")
+                    .define("allowAsyncLayout", true);
+            mLineBreakStyle = builder.comment(
+                            "See CSS line-break property, https://developer.mozilla.org/en-US/docs/Web/CSS/line-break")
+                    .defineEnum("lineBreakStyle", LineBreakStyle.AUTO);
+            mLineBreakWordStyle = builder
+                    .defineEnum("lineBreakWordStyle", LineBreakWordStyle.AUTO);
+            mSmartSDFShaders = builder.comment(
+                            "When enabled, Modern UI will compute texel density in device-space to determine whether " +
+                                    "to use SDF text or bilinear sampling.",
+                            "This feature requires GLSL 400 or has no effect.",
+                            "This generally decreases performance but provides better rendering quality.",
+                            "This option only applies to TrueType fonts. May not be compatible with OptiFine.")
+                    .define("smartSDFShaders", !ModernUIForge.isOptiFineLoaded());
+            // OK, this doesn't work well with OptiFine
+            mComputeDeviceFontSize = builder.comment(
+                            "When rendering in 2D, this option allows Modern UI to exactly compute font size in " +
+                                    "device-space from the current coordinate transform matrix.",
+                            "This provides perfect text rendering for scaling-down texts in vanilla, but may increase" +
+                                    " GPU memory usage.",
+                            "When disabled, Modern UI will use SDF text rendering if appropriate.",
+                            "This option only applies to TrueType fonts.")
+                    .define("computeDeviceFontSize", true);
+            mAllowSDFTextIn2D = builder.comment(
+                            "When enabled, Modern UI will use SDF text rendering if appropriate.",
+                            "Otherwise, it uses nearest-neighbor or bilinear sampling based on texel density.",
+                            "This option only applies to TrueType fonts.")
+                    .define("allowSDFTextIn2D", true);
             /*antiAliasing = builder.comment(
                     "Enable font anti-aliasing.")
                     .define("antiAliasing", true);
@@ -363,8 +410,8 @@ public final class ModernUIText {
                 TextLayoutProcessor.sAlignPixels = mAlignPixels.get();
                 reload = true;
             }*/
-            /*TextLayoutEngine.sCacheLifespan = mCacheLifespan.get();
-            TextLayoutEngine.sRehashThreshold = mRehashThreshold.get();*/
+            TextLayoutEngine.sCacheLifespan = mCacheLifespan.get();
+            /*TextLayoutEngine.sRehashThreshold = mRehashThreshold.get();*/
             if (TextLayoutEngine.sTextDirection != mTextDirection.get().key) {
                 TextLayoutEngine.sTextDirection = mTextDirection.get().key;
                 reload = true;
@@ -381,6 +428,22 @@ public final class ModernUIText {
                 TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
                 reloadAll = true;
             }
+            TextLayoutEngine.sAllowAsyncLayout = mAllowAsyncLayout.get();
+            if (TextLayoutProcessor.sLbStyle != mLineBreakStyle.get().key) {
+                TextLayoutProcessor.sLbStyle = mLineBreakStyle.get().key;
+                reload = true;
+            }
+            if (TextLayoutProcessor.sLbWordStyle != mLineBreakWordStyle.get().key) {
+                TextLayoutProcessor.sLbWordStyle = mLineBreakWordStyle.get().key;
+                reload = true;
+            }
+
+            final boolean smartShaders = mSmartSDFShaders.get();
+            Minecraft.getInstance().submit(() -> TextRenderType.toggleSDFShaders(smartShaders));
+
+            ModernTextRenderer.sComputeDeviceFontSize = mComputeDeviceFontSize.get();
+            ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();
+
             if (reloadAll) {
                 Minecraft.getInstance().submit(() -> TextLayoutEngine.getInstance().reloadAll());
             } else if (reload) {
@@ -434,6 +497,44 @@ public final class ModernUIText {
             @Override
             public String toString() {
                 return I18n.get("modernui.defaultFontBehavior." + name().toLowerCase(Locale.ROOT));
+            }
+        }
+
+        public enum LineBreakStyle {
+            AUTO(LineBreakConfig.LINE_BREAK_STYLE_NONE, "Auto"),
+            LOOSE(LineBreakConfig.LINE_BREAK_STYLE_LOOSE, "Loose"),
+            NORMAL(LineBreakConfig.LINE_BREAK_STYLE_NORMAL, "Normal"),
+            STRICT(LineBreakConfig.LINE_BREAK_STYLE_STRICT, "Strict");
+
+            private final int key;
+            private final String text;
+
+            LineBreakStyle(int key, String text) {
+                this.key = key;
+                this.text = text;
+            }
+
+            @Override
+            public String toString() {
+                return text;
+            }
+        }
+
+        public enum LineBreakWordStyle {
+            AUTO(LineBreakConfig.LINE_BREAK_WORD_STYLE_NONE, "Auto"),
+            PHRASE(LineBreakConfig.LINE_BREAK_WORD_STYLE_PHRASE, "Phrase-based");
+
+            private final int key;
+            private final String text;
+
+            LineBreakWordStyle(int key, String text) {
+                this.key = key;
+                this.text = text;
+            }
+
+            @Override
+            public String toString() {
+                return text;
             }
         }
     }

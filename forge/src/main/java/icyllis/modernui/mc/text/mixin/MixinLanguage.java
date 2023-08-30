@@ -22,8 +22,6 @@ import icyllis.modernui.mc.text.FormattedTextWrapper;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -38,7 +36,6 @@ public class MixinLanguage {
      * @author BloCamLimb
      * @reason Modern Text Engine
      */
-    @OnlyIn(Dist.CLIENT)
     @Overwrite
     public List<FormattedCharSequence> getVisualOrder(@Nonnull List<FormattedText> texts) {
         List<FormattedCharSequence> list = new ArrayList<>(texts.size());

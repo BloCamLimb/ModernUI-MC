@@ -45,12 +45,15 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.CrashReportCallables;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import org.apache.commons.io.output.StringBuilderWriter;
 
 import javax.annotation.Nonnull;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -191,6 +194,22 @@ final class Registration {
         Minecraft.getInstance().execute(() -> {
             ModernUI.getSelectedTypeface();
             UIManager.initializeRenderer();
+            var windowMode = Config.CLIENT.mLastWindowMode;
+            if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
+                // ensure it's applied and positioned
+                windowMode.apply();
+            }
+        });
+
+        CrashReportCallables.registerCrashCallable("Fragments", () -> {
+            var fragments = UIManager.getInstance().mFragmentController;
+            var builder = new StringBuilder();
+            if (fragments != null) {
+                try (var pw = new PrintWriter(new StringBuilderWriter(builder))) {
+                    fragments.getFragmentManager().dump("", null, pw);
+                }
+            }
+            return builder.toString();
         });
 
         // Always replace static variable as an insurance policy
@@ -205,6 +224,7 @@ final class Registration {
                         .guiScale))))
         );*/
         ClientRegistry.registerKeyBinding(UIManager.OPEN_CENTER_KEY);
+        ClientRegistry.registerKeyBinding(UIManager.ZOOM_KEY);
 
         Option[] settings = null;
         boolean captured = false;

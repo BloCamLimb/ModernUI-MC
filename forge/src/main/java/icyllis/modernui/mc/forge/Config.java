@@ -19,13 +19,12 @@
 package icyllis.modernui.mc.forge;
 
 import com.electronwill.nightconfig.core.file.CommentedFileConfig;
-import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.platform.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.font.GlyphManager;
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.resources.Resources;
 import icyllis.modernui.util.DisplayMetrics;
 import icyllis.modernui.view.ViewConfiguration;
@@ -45,6 +44,7 @@ import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 import org.jetbrains.annotations.ApiStatus;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
 import java.nio.file.Path;
@@ -176,15 +176,24 @@ final class Config {
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mBackgroundColor;
         public final ForgeConfigSpec.BooleanValue mInventoryPause;
         public final ForgeConfigSpec.BooleanValue mTooltip;
+        public final ForgeConfigSpec.BooleanValue mRoundedTooltip;
+        public final ForgeConfigSpec.BooleanValue mCenterTooltipTitle;
+        public final ForgeConfigSpec.BooleanValue mTooltipTitleBreak;
+        public final ForgeConfigSpec.BooleanValue mExactTooltipPositioning;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipFill;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
         public final ForgeConfigSpec.IntValue mTooltipCycle;
         public final ForgeConfigSpec.IntValue mTooltipDuration;
         public final ForgeConfigSpec.BooleanValue mDing;
+        public final ForgeConfigSpec.BooleanValue mZoom;
         //private final ForgeConfigSpec.BooleanValue hudBars;
         public final ForgeConfigSpec.BooleanValue mForceRtl;
         public final ForgeConfigSpec.DoubleValue mFontScale;
         public final ForgeConfigSpec.EnumValue<WindowMode> mWindowMode;
+        public final ForgeConfigSpec.IntValue mFramerateInactive;
+        public final ForgeConfigSpec.IntValue mFramerateMinimized;
+        public final ForgeConfigSpec.DoubleValue mMasterVolumeInactive;
+        public final ForgeConfigSpec.DoubleValue mMasterVolumeMinimized;
 
         final ForgeConfigSpec.IntValue scrollbarSize;
         final ForgeConfigSpec.IntValue touchSlop;
@@ -200,12 +209,13 @@ final class Config {
 
         final ForgeConfigSpec.BooleanValue mAntiAliasing;
         public final ForgeConfigSpec.BooleanValue mAutoHinting;
-        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFontFamily;
+        public final ForgeConfigSpec.ConfigValue<String> mFirstFontFamily;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFallbackFontFamilyList;
 
         /*final ForgeConfigSpec.BooleanValue skipGLCapsError;
         final ForgeConfigSpec.BooleanValue showGLCapsError;*/
 
-        private WindowMode mLastWindowMode;
+        public WindowMode mLastWindowMode;
 
         private Client(@Nonnull ForgeConfigSpec.Builder builder) {
             builder.comment("Screen Config")
@@ -246,6 +256,20 @@ final class Config {
             mInventoryPause = builder.comment(
                             "(Beta) Pause the game when inventory (also includes creative mode) opened.")
                     .define("inventoryPause", false);
+            mFramerateInactive = builder.comment(
+                            "Framerate limit on window inactive (out of focus or minimized), 0 = no change.")
+                    .defineInRange("framerateInactive", 60, 0, 255);
+            mFramerateMinimized = builder.comment(
+                            "Framerate limit on window minimized, 0 = same as framerate inactive.",
+                            "This value will be no greater than framerate inactive.")
+                    .defineInRange("framerateMinimized", 0, 0, 255);
+            mMasterVolumeInactive = builder.comment(
+                            "Master volume multiplier on window inactive (out of focus or minimized), 1 = no change.")
+                    .defineInRange("masterVolumeInactive", 0.25, 0, 1);
+            mMasterVolumeMinimized = builder.comment(
+                            "Master volume multiplier on window minimized, 1 = same as master volume inactive.",
+                            "This value will be no greater than master volume inactive.")
+                    .defineInRange("masterVolumeMinimized", 1.0, 0, 1);
 
             builder.pop();
 
@@ -255,6 +279,20 @@ final class Config {
             mTooltip = builder.comment(
                             "Whether to enable Modern UI rounded tooltip style, or back to vanilla style.")
                     .define("enable", true);
+            mRoundedTooltip = builder.comment(
+                            "Whether to use rounded tooltip shapes, or to use rectangular shapes.")
+                    .define("roundedShape", true);
+            mCenterTooltipTitle = builder.comment(
+                            "True to center the tooltip title if rendering an item's tooltip.",
+                            "Following lines are not affected by this option.")
+                    .define("centerTitle", true);
+            mTooltipTitleBreak = builder.comment(
+                            "True to add a title break below the tooltip title line.",
+                            "TitleBreak and CenterTitle will work/appear at the same time.")
+                    .define("titleBreak", true);
+            mExactTooltipPositioning = builder.comment(
+                            "True to exactly position tooltip to pixel grid, smoother movement.")
+                    .define("exactPositioning", true);
             mTooltipFill = builder.comment(
                             "The tooltip FILL color in #RRGGBB or #AARRGGBB format. Default: #D4000000",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
@@ -270,13 +308,14 @@ final class Config {
                                     "#F0FFC3F7 and #F0DAD0F4",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
-                            "Multiple values produce a gradient effect, whereas one value produces a solid color.")
+                            "Multiple values produce a gradient effect, whereas one value produces a solid color.",
+                            "If less than 4 are provided, repeat the last value.")
                     .defineList("colorStroke", () -> {
                         List<String> list = new ArrayList<>();
                         list.add("#F0AADCF0");
-                        list.add("#F0DAD0F4");
                         list.add("#F0FFC3F7");
-                        list.add("#F0DAD0F4");
+                        list.add("#F0BFF2B2");
+                        list.add("#F0D27F3D");
                         return list;
                     }, $ -> true);
             mTooltipCycle = builder.comment(
@@ -294,6 +333,10 @@ final class Config {
 
             mDing = builder.comment("Play a sound effect when the game is loaded.")
                     .define("ding", true);
+            mZoom = builder.comment(
+                            "Press 'C' key (by default) to zoom 4x, the same as OptiFine's.",
+                            "This is auto disabled when OptiFine is installed.")
+                    .define("zoom", true);
 
             /*hudBars = builder.comment(
                     "Show additional HUD bars added by ModernUI on the bottom-left of the screen.")
@@ -311,7 +354,7 @@ final class Config {
 
             builder.pop();
 
-            builder.comment("View system config, only applied to Modern UI Core.")
+            builder.comment("View system config, currently not working.")
                     .push("view");
 
             mForceRtl = builder.comment("Force layout direction to RTL, otherwise, the current Locale setting.")
@@ -358,27 +401,27 @@ final class Config {
                     .define("linearSampling", true);*/
             // Segoe UI, Source Han Sans CN Medium, Noto Sans, Open Sans, San Francisco, Calibri,
             // Microsoft YaHei UI, STHeiti, SimHei, SansSerif
-            mFontFamily = builder.comment(
-                            "A set of font families with fallbacks to determine the typeface to use.",
-                            "TrueType & OpenTrue are supported. Each element can be one of the following three cases.",
-                            "1) Font family root name for those installed on your PC, for instance: Segoe UI",
+            mFirstFontFamily = builder.comment(
+                            "The first font family to use. See fallbackFontFamilyList")
+                    .define("firstFontFamily", "Source Han Sans CN Medium");
+            mFallbackFontFamilyList = builder.comment(
+                            "A set of fallback font families to determine the typeface to use.",
+                            "TrueType & OpenType are supported. Each element can be one of the following two cases.",
+                            "1) Font family English name that registered to Modern UI, for instance: Segoe UI",
                             "2) File path for external fonts on your PC, for instance: /usr/shared/fonts/x.otf",
-                            "3) Resource location for those loaded with resource packs, for instance: " +
-                                    "modernui:font/biliw.otf",
+                            "Fonts under 'modernui:font' in resource packs and OS builtin fonts will be registered.",
                             "Using bitmap fonts should consider other text settings, default glyph size should be 16x.",
                             "This list is only read once when the game is loaded. A game restart is required to reload")
-                    .defineList("fontFamily", () -> {
+                    .defineList("fallbackFontFamilyList", () -> {
                         List<String> list = new ArrayList<>();
-                        list.add("modernui:font/biliw.otf");
-                        list.add("Microsoft YaHei UI");
-                        list.add("Segoe UI");
                         list.add("Noto Sans");
+                        list.add("Segoe UI");
                         list.add("San Francisco");
-                        list.add("Calibri");
+                        list.add("Open Sans");
                         list.add("SimHei");
                         list.add("STHeiti");
-                        list.add("SansSerif");
-                        list.add("modernui:font/muii18ncompat/muii18ncompat.ttf");
+                        list.add("Segoe UI Variable");
+                        list.add("mui-i18n-compat");
                         return list;
                     }, s -> true);
 
@@ -398,22 +441,35 @@ final class Config {
 
         private void reload() {
             BlurHandler.sBlurEffect = mBlurEffect.get();
-            BlurHandler.sAnimationDuration = mBackgroundDuration.get();
+            BlurHandler.sBackgroundDuration = mBackgroundDuration.get();
             BlurHandler.sBlurRadius = mBlurRadius.get();
 
-            List<? extends String> colors = mBackgroundColor.get();
+            BlurHandler.sFramerateInactive = mFramerateInactive.get();
+            BlurHandler.sFramerateMinimized = Math.min(
+                    mFramerateMinimized.get(),
+                    BlurHandler.sFramerateInactive
+            );
+            BlurHandler.sMasterVolumeInactive = mMasterVolumeInactive.get().floatValue();
+            BlurHandler.sMasterVolumeMinimized = Math.min(
+                    mMasterVolumeMinimized.get().floatValue(),
+                    BlurHandler.sMasterVolumeInactive
+            );
+
+            List<? extends String> inColors = mBackgroundColor.get();
+            int[] resultColors = new int[4];
             int color = 0x99000000;
             for (int i = 0; i < 4; i++) {
-                if (colors != null && i < colors.size()) {
-                    String s = colors.get(i);
+                if (inColors != null && i < inColors.size()) {
+                    String s = inColors.get(i);
                     try {
                         color = Color.parseColor(s);
                     } catch (Exception e) {
                         LOGGER.error(MARKER, "Wrong color format for screen background, index: {}", i, e);
                     }
                 }
-                BlurHandler.sBackgroundColor[i] = color;
+                resultColors[i] = color;
             }
+            BlurHandler.sBackgroundColor = resultColors;
 
             BlurHandler.INSTANCE.loadBlacklist(mBlurBlacklist.get());
 
@@ -421,11 +477,11 @@ final class Config {
 
             TooltipRenderer.sTooltip = mTooltip.get();
 
-            colors = mTooltipFill.get();
+            inColors = mTooltipFill.get();
             color = 0xFFFFFFFF;
             for (int i = 0; i < 4; i++) {
-                if (colors != null && i < colors.size()) {
-                    String s = colors.get(i);
+                if (inColors != null && i < inColors.size()) {
+                    String s = inColors.get(i);
                     try {
                         color = Color.parseColor(s);
                     } catch (Exception e) {
@@ -434,11 +490,11 @@ final class Config {
                 }
                 TooltipRenderer.sFillColor[i] = color;
             }
-            colors = mTooltipStroke.get();
+            inColors = mTooltipStroke.get();
             color = 0xFFFFFFFF;
             for (int i = 0; i < 4; i++) {
-                if (colors != null && i < colors.size()) {
-                    String s = colors.get(i);
+                if (inColors != null && i < inColors.size()) {
+                    String s = inColors.get(i);
                     try {
                         color = Color.parseColor(s);
                     } catch (Exception e) {
@@ -449,8 +505,13 @@ final class Config {
             }
             TooltipRenderer.sAnimationDuration = mTooltipDuration.get();
             TooltipRenderer.sBorderColorCycle = mTooltipCycle.get();
+            TooltipRenderer.sExactPositioning = mExactTooltipPositioning.get();
+            TooltipRenderer.sRoundedShapes = mRoundedTooltip.get();
+            TooltipRenderer.sCenterTitle = mCenterTooltipTitle.get();
+            TooltipRenderer.sTitleBreak = mTooltipTitleBreak.get();
 
-            UIManager.sPlaySoundOnLoaded = mDing.get();
+            UIManager.sDingEnabled = mDing.get();
+            UIManager.sZoomEnabled = mZoom.get() && !ModernUIForge.isOptiFineLoaded();
 
             WindowMode windowMode = mWindowMode.get();
             if (mLastWindowMode != windowMode) {
@@ -477,22 +538,21 @@ final class Config {
                 });
             }
 
-            boolean reload = false;
+            boolean reloadStrike = false;
             if (GlyphManager.sAntiAliasing != mAntiAliasing.get()) {
                 GlyphManager.sAntiAliasing = mAntiAliasing.get();
-                reload = true;
+                reloadStrike = true;
             }
             if (GlyphManager.sFractionalMetrics == mAutoHinting.get()) {
                 GlyphManager.sFractionalMetrics = !mAutoHinting.get();
-                reload = true;
+                reloadStrike = true;
             }
             /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
                 GLFontAtlas.sLinearSampling = mLinearSampling.get();
                 reload = true;
             }*/
-            if (reload) {
-                Minecraft.getInstance().submit(
-                        () -> TextLayoutEngine.getInstance().reloadAll());
+            if (reloadStrike) {
+                ModernUIForge.Client.getInstance().reloadFontStrike();
             }
 
             ModernUI.getSelectedTypeface();
@@ -503,7 +563,7 @@ final class Config {
             FULLSCREEN,
             FULLSCREEN_BORDERLESS,
             MAXIMIZED,
-            MINIMIZED,
+            MAXIMIZED_BORDERLESS,
             WINDOWED,
             WINDOWED_BORDERLESS;
 
@@ -522,23 +582,36 @@ final class Config {
                         GLFW.glfwRestoreWindow(window.getWindow());
                         GLFW.glfwSetWindowAttrib(window.getWindow(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
-                        GLFW.glfwMaximizeWindow(window.getWindow());
+                        Monitor monitor = window.findBestMonitor();
+                        if (monitor != null) {
+                            VideoMode videoMode = monitor.getCurrentMode();
+                            int x = monitor.getX();
+                            int y = monitor.getY();
+                            int width = videoMode.getWidth();
+                            int height = videoMode.getHeight();
+                            GLFW.glfwSetWindowMonitor(window.getWindow(), MemoryUtil.NULL,
+                                    x, y, width, height, GLFW.GLFW_DONT_CARE);
+                        } else {
+                            GLFW.glfwMaximizeWindow(window.getWindow());
+                        }
                     }
                     case MAXIMIZED -> {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        GLFW.glfwRestoreWindow(window.getWindow());
                         GLFW.glfwSetWindowAttrib(window.getWindow(),
                                 GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
                         GLFW.glfwMaximizeWindow(window.getWindow());
                     }
-                    case MINIMIZED -> {
+                    case MAXIMIZED_BORDERLESS -> {
                         if (window.isFullscreen()) {
                             window.toggleFullScreen();
                         }
+                        GLFW.glfwRestoreWindow(window.getWindow());
                         GLFW.glfwSetWindowAttrib(window.getWindow(),
-                                GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
-                        GLFW.glfwIconifyWindow(window.getWindow());
+                                GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
+                        GLFW.glfwMaximizeWindow(window.getWindow());
                     }
                     case WINDOWED -> {
                         if (window.isFullscreen()) {
