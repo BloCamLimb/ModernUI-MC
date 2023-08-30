@@ -66,7 +66,6 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.commons.io.output.StringBuilderWriter;
@@ -98,14 +97,9 @@ public final class UIManager implements LifecycleOwner {
     // the logger marker
     static final Marker MARKER = MarkerManager.getMarker("UIManager");
 
-    static {
-        if (FMLEnvironment.dist.isDedicatedServer()) {
-            throw new RuntimeException();
-        }
-    }
-
     // configs
-    static volatile boolean sPlaySoundOnLoaded;
+    static volatile boolean sDingEnabled;
+    static volatile boolean sZoomEnabled;
 
     // the global instance, lazily init
     private static volatile UIManager sInstance;
@@ -116,6 +110,10 @@ public final class UIManager implements LifecycleOwner {
     public static final KeyMapping OPEN_CENTER_KEY = new KeyMapping(
             "key.modernui.openCenter", KeyConflictContext.UNIVERSAL, KeyModifier.CONTROL,
             InputConstants.Type.KEYSYM, GLFW_KEY_K, "Modern UI");
+    @SuppressWarnings("NoTranslation")
+    public static final KeyMapping ZOOM_KEY = new KeyMapping(
+            "key.modernui.zoom", KeyConflictContext.IN_GAME, KeyModifier.NONE,
+            InputConstants.Type.KEYSYM, GLFW_KEY_C, "Modern UI");
 
     /*public static final Method SEND_TO_CHAT =
             ObfuscationReflectionHelper.findMethod(ChatComponent.class, "m_93790_",
@@ -182,6 +180,8 @@ public final class UIManager implements LifecycleOwner {
     volatile MuiScreen mScreen;
 
     private boolean mFirstScreenOpened = false;
+    private boolean mZoomMode = false;
+    private boolean mZoomSmoothCamera;
 
 
     /// Lifecycle \\\
@@ -380,7 +380,7 @@ public final class UIManager implements LifecycleOwner {
         final Screen newScreen = event.getNewScreen();
 
         if (!mFirstScreenOpened && !(newScreen instanceof LoadingErrorScreen)) {
-            if (sPlaySoundOnLoaded) {
+            if (sDingEnabled) {
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f));
             }
             if (ModernUIForge.isOptiFineLoaded() &&
@@ -1119,6 +1119,29 @@ public final class UIManager implements LifecycleOwner {
     void onClientTick(@Nonnull TickEvent.ClientTickEvent event) {
         if (event.phase == TickEvent.Phase.END) {
             BlurHandler.INSTANCE.onClientTick();
+        }
+    }
+
+    @SubscribeEvent
+    void onChangeFov(@Nonnull ViewportEvent.ComputeFov event) {
+        boolean zoomActive = false;
+        if (sZoomEnabled && minecraft.screen == null) {
+            zoomActive = ZOOM_KEY.isDown();
+        }
+        if (zoomActive) {
+            if (!mZoomMode) {
+                mZoomMode = true;
+                mZoomSmoothCamera = minecraft.options.smoothCamera;
+                minecraft.options.smoothCamera = true;
+                minecraft.levelRenderer.needsUpdate();
+            }
+            event.setFOV(
+                    event.getFOV() * 0.25
+            );
+        } else if (mZoomMode) {
+            mZoomMode = false;
+            minecraft.options.smoothCamera = mZoomSmoothCamera;
+            minecraft.levelRenderer.needsUpdate();
         }
     }
 

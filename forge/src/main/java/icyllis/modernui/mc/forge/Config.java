@@ -178,6 +178,7 @@ final class Config {
         public final ForgeConfigSpec.IntValue mTooltipCycle;
         //public final ForgeConfigSpec.IntValue mTooltipDuration;
         public final ForgeConfigSpec.BooleanValue mDing;
+        public final ForgeConfigSpec.BooleanValue mZoom;
         //private final ForgeConfigSpec.BooleanValue hudBars;
         public final ForgeConfigSpec.BooleanValue mForceRtl;
         public final ForgeConfigSpec.DoubleValue mFontScale;
@@ -331,6 +332,10 @@ final class Config {
 
             mDing = builder.comment("Play a sound effect when the game is loaded.")
                     .define("ding", true);
+            mZoom = builder.comment(
+                            "Press 'C' key (by default) to zoom 4x, the same as OptiFine's.",
+                            "This is auto disabled when OptiFine is installed.")
+                    .define("zoom", true);
 
             /*hudBars = builder.comment(
                     "Show additional HUD bars added by ModernUI on the bottom-left of the screen.")
@@ -516,7 +521,8 @@ final class Config {
             TooltipRenderer.sCenterTitle = mCenterTooltipTitle.get();
             TooltipRenderer.sTitleBreak = mTooltipTitleBreak.get();
 
-            UIManager.sPlaySoundOnLoaded = mDing.get();
+            UIManager.sDingEnabled = mDing.get();
+            UIManager.sZoomEnabled = mZoom.get() && !ModernUIForge.isOptiFineLoaded();
 
             WindowMode windowMode = mWindowMode.get();
             if (mLastWindowMode != windowMode) {

@@ -2,6 +2,7 @@ Changelogs
 ===
 ### Modern UI 3.8.1.4
 #### Forge Extension 1.20.1-47.0.14
+* Add OptiFine-like zoom
 * Add master volume multiplier on window blur or minimized
 * Add framerate limit on window blur or minimized
 * Add hot reload of the default typeface list

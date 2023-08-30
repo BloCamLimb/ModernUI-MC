@@ -139,6 +139,8 @@
   "gui.modernui.popup.lockDifficulty": "Are you sure you want to lock world difficulty?",
   "gui.modernui.tooltip.thanksOptifine": "This functionality is powered by OptiFine",
   "key.modernui.openCenter": "Open Action Center",
+  "key.modernui.zoom": "Zoom",
+  "key.modernui.zoom_desc": "Press C key (by default) to zoom 4x, this is the same as OptiFine's.",
   "message.modernui.server_shutdown_sec": "Server will shutdown in %s seconds",
   "message.modernui.server_shutdown_min": "Server will shutdown in %s minutes",
   "warning.modernui.old_java": "Modern UI: Java {2} or above is recommended, your version is Java {3}. Upgrade to newer Java and choose it to launch game, otherwise you cannot use external fonts or will not always get correct text layouts.",

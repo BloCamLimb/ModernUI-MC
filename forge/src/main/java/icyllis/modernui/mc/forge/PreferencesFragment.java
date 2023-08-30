@@ -394,6 +394,13 @@ public class PreferencesFragment extends Fragment {
             }
 
             {
+                var option = createBooleanOption(context, "key.modernui.zoom",
+                        Config.CLIENT.mZoom, saveFn);
+                option.setTooltipText(I18n.get("key.modernui.zoom_desc"));
+                list.addView(option);
+            }
+
+            {
                 var option = createSwitchLayout(context, "modernui.center.extension.smoothScrolling");
                 option.setTooltipText(I18n.get("modernui.center.extension.smoothScrolling_desc"));
                 var button = option.<SwitchButton>requireViewById(R.id.button1);

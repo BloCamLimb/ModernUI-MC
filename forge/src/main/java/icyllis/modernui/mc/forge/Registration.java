@@ -197,6 +197,7 @@ final class Registration {
         @SubscribeEvent
         static void registerKeyMapping(@Nonnull RegisterKeyMappingsEvent event) {
             event.register(UIManager.OPEN_CENTER_KEY);
+            event.register(UIManager.ZOOM_KEY);
         }
 
         @SubscribeEvent
