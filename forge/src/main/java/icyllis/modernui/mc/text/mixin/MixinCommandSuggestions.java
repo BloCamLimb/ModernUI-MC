@@ -18,38 +18,20 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import com.mojang.brigadier.ParseResults;
 import icyllis.modernui.mc.text.VanillaTextWrapper;
 import net.minecraft.client.gui.components.CommandSuggestions;
-import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
-import org.spongepowered.asm.mixin.*;
-import org.spongepowered.asm.mixin.gen.Invoker;
-
-import javax.annotation.Nullable;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(CommandSuggestions.class)
 public abstract class MixinCommandSuggestions {
 
-    @Shadow
-    @Nullable
-    private ParseResults<SharedSuggestionProvider> currentParse;
-
-    @Invoker
-    private static FormattedCharSequence callFormatText(ParseResults<SharedSuggestionProvider> parse,
-                                                        String viewText, int baseOffset) {
-        throw new IllegalStateException();
-    }
-
-    /**
-     * @author BloCamLimb
-     * @reason Optimization
-     */
-    @Overwrite
-    private FormattedCharSequence formatChat(String viewText, int baseOffset) {
-        if (currentParse != null) {
-            return callFormatText(currentParse, viewText, baseOffset);
-        }
+    @Redirect(method = "formatChat", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/FormattedCharSequence;" +
+            "forward(Ljava/lang/String;Lnet/minecraft/network/chat/Style;)Lnet/minecraft/util/FormattedCharSequence;"))
+    private FormattedCharSequence onFormatChat(String viewText, Style style) {
         // fast path
         return new VanillaTextWrapper(viewText);
     }

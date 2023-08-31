@@ -18,13 +18,13 @@
 
 package icyllis.modernui.mc.text;
 
+import icyllis.modernui.graphics.MathUtil;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.Sheets;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -36,12 +36,6 @@ import javax.annotation.Nonnull;
  * @author BloCamLimb
  */
 public final class ModernTextRenderer {
-
-    static {
-        if (FMLEnvironment.dist.isDedicatedServer()) {
-            throw new RuntimeException();
-        }
-    }
 
     public static final Vector3f SHADOW_OFFSET = new Vector3f(0.0F, 0.0F, 0.03F);
     public static final Vector3f OUTLINE_OFFSET = new Vector3f(0.0F, 0.0F, 0.01F);
@@ -57,6 +51,8 @@ public final class ModernTextRenderer {
     public static volatile boolean sAllowShadow = true;
     public static volatile float sShadowOffset = 1.0f;
     public static volatile float sOutlineOffset = 0.5f;
+    public static volatile boolean sComputeDeviceFontSize = true;
+    public static volatile boolean sAllowSDFTextIn2D = true;
     //private boolean mGlobalRenderer = false;
 
     //private final TextLayoutEngine mFontEngine = TextLayoutEngine.getInstance();
@@ -107,6 +103,7 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         int mode = chooseMode(matrix, displayMode);
+        boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
         TextLayout layout = mEngine.lookupVanillaLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
@@ -115,13 +112,13 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, colorBackground, packedLight);
+                    mode, polygonOffset, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, colorBackground, packedLight);
+                mode, polygonOffset, colorBackground, packedLight);
         return x;
     }
 
@@ -146,6 +143,7 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         int mode = chooseMode(matrix, displayMode);
+        boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
         TextLayout layout = mEngine.lookupFormattedLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
@@ -154,13 +152,13 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, colorBackground, packedLight);
+                    mode, polygonOffset, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, colorBackground, packedLight);
+                mode, polygonOffset, colorBackground, packedLight);
         return x;
     }
 
@@ -185,6 +183,7 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         int mode = chooseMode(matrix, displayMode);
+        boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
         TextLayout layout = mEngine.lookupFormattedLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
@@ -193,28 +192,51 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, colorBackground, packedLight);
+                    mode, polygonOffset, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, colorBackground, packedLight);
+                mode, polygonOffset, colorBackground, packedLight);
         return x;
     }
 
-    public static int chooseMode(Matrix4f transform, Font.DisplayMode mode) {
-        if (mode == Font.DisplayMode.SEE_THROUGH) {
+    public static int chooseMode(Matrix4f ctm, Font.DisplayMode displayMode) {
+        if (displayMode == Font.DisplayMode.SEE_THROUGH) {
             return TextRenderType.MODE_SEE_THROUGH;
         } else if (TextLayoutEngine.sCurrentInWorldRendering) {
             return TextRenderType.MODE_SDF_FILL;
         } else {
-            if ((transform.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {
+            if ((ctm.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0 &&
+                    (sComputeDeviceFontSize || sAllowSDFTextIn2D)) {
                 // JOML can report fake values, compute again
-                if ((transform.determineProperties().properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {
+                if (MathUtil.isApproxZero(ctm.m01()) &&
+                        MathUtil.isApproxZero(ctm.m02()) &&
+                        MathUtil.isApproxZero(ctm.m03()) &&
+                        MathUtil.isApproxZero(ctm.m10()) &&
+                        MathUtil.isApproxZero(ctm.m12()) &&
+                        MathUtil.isApproxZero(ctm.m13()) &&
+                        MathUtil.isApproxZero(ctm.m20()) &&
+                        MathUtil.isApproxZero(ctm.m21()) &&
+                        MathUtil.isApproxZero(ctm.m23()) &&
+                        MathUtil.isApproxEqual(ctm.m33(), 1)) {
+                    if (MathUtil.isApproxEqual(ctm.m00(), 1) &&
+                            MathUtil.isApproxEqual(ctm.m11(), 1)) {
+                        // pure translation
+                        return TextRenderType.MODE_NORMAL;
+                    } else if (sComputeDeviceFontSize &&
+                            ctm.m00() < .999 &&
+                            MathUtil.isApproxEqual(ctm.m00(), ctm.m11())) {
+                        // uniform scale smaller
+                        return TextRenderType.MODE_DYNAMIC_SCALE;
+                    }
+                }
+                if (sAllowSDFTextIn2D) {
                     return TextRenderType.MODE_SDF_FILL;
                 }
             }
+            // pure translation
             return TextRenderType.MODE_NORMAL;
         }
     }
@@ -267,12 +289,6 @@ public final class ModernTextRenderer {
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
 
-        int oa = outlineColor >>> 24;
-        if (oa <= 1) oa = 255;
-        int or = outlineColor >> 16 & 0xff;
-        int og = outlineColor >> 8 & 0xff;
-        int ob = outlineColor & 0xff;
-
         TextLayout layout = mEngine.lookupFormattedLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
@@ -281,10 +297,16 @@ public final class ModernTextRenderer {
 
         matrix = new Matrix4f(matrix);
         layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                TextRenderType.MODE_SDF_FILL, 0, packedLight);
-        matrix.translate(OUTLINE_OFFSET);
+                TextRenderType.MODE_SDF_FILL, false, 0, packedLight);
 
-        layout.drawTextOutline(matrix, source, x, y, or, og, ob, oa, packedLight);
+        a = outlineColor >>> 24;
+        if (a <= 1) a = 255;
+        r = outlineColor >> 16 & 0xff;
+        g = outlineColor >> 8 & 0xff;
+        b = outlineColor & 0xff;
+
+        matrix.translate(OUTLINE_OFFSET);
+        layout.drawTextOutline(matrix, source, x, y, r, g, b, a, packedLight);
     }
 
     /*public static void change(boolean global, boolean shadow) {

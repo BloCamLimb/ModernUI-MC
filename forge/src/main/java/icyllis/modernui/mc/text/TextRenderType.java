@@ -27,6 +27,7 @@ import icyllis.arc3d.opengl.*;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.RefCnt;
 import icyllis.modernui.mc.forge.ModernUIForge;
+import icyllis.modernui.mc.forge.ModernUIText;
 import icyllis.modernui.mc.text.mixin.AccessRenderBuffers;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -49,14 +50,32 @@ import static icyllis.modernui.ModernUI.*;
  */
 public class TextRenderType extends RenderType {
 
-    public static final int MODE_NORMAL = 0;
+    public static final int MODE_NORMAL = 0; // <- must be zero
     public static final int MODE_SDF_FILL = 1;
     public static final int MODE_SDF_STROKE = 2;
     public static final int MODE_SEE_THROUGH = 3;
+    /**
+     * Used in 2D rendering, render as {@link #MODE_NORMAL},
+     * but we compute font size in device space from CTM.
+     *
+     * @since 3.8.1
+     */
+    public static final int MODE_DYNAMIC_SCALE = 4; // <- must be power of 2
 
     private static volatile ShaderInstance sShaderNormal;
+
+    private static volatile ShaderInstance sCurrentShaderSDFFill;
+    private static volatile ShaderInstance sCurrentShaderSDFStroke;
+
     private static volatile ShaderInstance sShaderSDFFill;
     private static volatile ShaderInstance sShaderSDFStroke;
+
+    @Nullable
+    private static volatile ShaderInstance sShaderSDFFillSmart;
+    @Nullable
+    private static volatile ShaderInstance sShaderSDFStrokeSmart;
+
+    private static boolean sSmartShadersLoaded = false;
 
     static final ShaderStateShard
             RENDERTYPE_MODERN_TEXT_NORMAL = new ShaderStateShard(TextRenderType::getShaderNormal),
@@ -70,6 +89,7 @@ public class TextRenderType extends RenderType {
     private static final ImmutableList<RenderStateShard> SDF_FILL_STATES;
     private static final ImmutableList<RenderStateShard> SDF_STROKE_STATES;
     private static final ImmutableList<RenderStateShard> SEE_THROUGH_STATES;
+    private static final ImmutableList<RenderStateShard> POLYGON_OFFSET_STATES;
 
     /**
      * Texture id to render type map
@@ -78,6 +98,7 @@ public class TextRenderType extends RenderType {
     private static final Int2ObjectMap<TextRenderType> sSDFFillTypes = new Int2ObjectOpenHashMap<>();
     private static final Int2ObjectMap<TextRenderType> sSDFStrokeTypes = new Int2ObjectOpenHashMap<>();
     private static final Int2ObjectMap<TextRenderType> sSeeThroughTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectMap<TextRenderType> sPolygonOffsetTypes = new Int2ObjectOpenHashMap<>();
 
     private static TextRenderType sFirstSDFFillType;
     private static final BufferBuilder sFirstSDFFillBuffer = new BufferBuilder(131072);
@@ -110,7 +131,7 @@ public class TextRenderType extends RenderType {
                 CULL,
                 LIGHTMAP,
                 NO_OVERLAY,
-                NO_LAYERING,
+                POLYGON_OFFSET_LAYERING,
                 MAIN_TARGET,
                 DEFAULT_TEXTURING,
                 COLOR_DEPTH_WRITE,
@@ -123,7 +144,7 @@ public class TextRenderType extends RenderType {
                 CULL,
                 LIGHTMAP,
                 NO_OVERLAY,
-                NO_LAYERING,
+                POLYGON_OFFSET_LAYERING,
                 MAIN_TARGET,
                 DEFAULT_TEXTURING,
                 COLOR_DEPTH_WRITE,
@@ -140,6 +161,19 @@ public class TextRenderType extends RenderType {
                 MAIN_TARGET,
                 DEFAULT_TEXTURING,
                 COLOR_WRITE,
+                DEFAULT_LINE
+        );
+        POLYGON_OFFSET_STATES = ImmutableList.of(
+                RENDERTYPE_TEXT_SHADER,
+                TRANSLUCENT_TRANSPARENCY,
+                LEQUAL_DEPTH_TEST,
+                CULL,
+                LIGHTMAP,
+                NO_OVERLAY,
+                POLYGON_OFFSET_LAYERING,
+                MAIN_TARGET,
+                DEFAULT_TEXTURING,
+                COLOR_DEPTH_WRITE,
                 DEFAULT_LINE
         );
     }
@@ -162,10 +196,11 @@ public class TextRenderType extends RenderType {
     // compatibility
     @Nonnull
     public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode) {
-        if (mode == Font.DisplayMode.SEE_THROUGH) {
-            return sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
-        }
-        return sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
+        return switch (mode) {
+            default -> sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
+            case SEE_THROUGH -> sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
+            case POLYGON_OFFSET -> sPolygonOffsetTypes.computeIfAbsent(texture, TextRenderType::makePolygonOffsetType);
+        };
     }
 
     @Nonnull
@@ -246,6 +281,14 @@ public class TextRenderType extends RenderType {
         }, () -> SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
+    @Nonnull
+    private static TextRenderType makePolygonOffsetType(int texture) {
+        return new TextRenderType("modern_text_polygon_offset", 256, () -> {
+            POLYGON_OFFSET_STATES.forEach(RenderStateShard::setupRenderState);
+            RenderSystem.setShaderTexture(0, texture);
+        }, () -> POLYGON_OFFSET_STATES.forEach(RenderStateShard::clearRenderState));
+    }
+
     /**
      * Batch rendering and custom ordering.
      * <p>
@@ -299,14 +342,47 @@ public class TextRenderType extends RenderType {
         if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
             return GameRenderer.getRendertypeTextShader();
         }
-        return sShaderSDFFill;
+        return sCurrentShaderSDFFill;
     }
 
     public static ShaderInstance getShaderSDFStroke() {
         if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
             return GameRenderer.getRendertypeTextShader();
         }
-        return sShaderSDFStroke;
+        return sCurrentShaderSDFStroke;
+    }
+
+    // RT only
+    public static synchronized void toggleSDFShaders(boolean smart) {
+        if (smart) {
+            if (!sSmartShadersLoaded) {
+                sSmartShadersLoaded = true;
+                if (Core.requireDirectContext()
+                        .getCaps().shaderCaps().mGLSLVersion >= 400) {
+                    var provider = obtainResourceProvider();
+                    try {
+                        sShaderSDFFillSmart = new ShaderInstance(provider,
+                                ModernUIForge.location("rendertype_modern_text_sdf_fill_400"),
+                                DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+                        sShaderSDFStrokeSmart = new ShaderInstance(provider,
+                                ModernUIForge.location("rendertype_modern_text_sdf_stroke_400"),
+                                DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+                        LOGGER.info(MARKER, "Loaded smart SDF text shaders");
+                    } catch (IOException e) {
+                        LOGGER.error(MARKER, "Failed to load smart SDF text shaders", e);
+                    }
+                } else {
+                    LOGGER.info(MARKER, "No GLSL 400, smart SDF text shaders disabled");
+                }
+            }
+            if (sShaderSDFStrokeSmart != null) {
+                sCurrentShaderSDFFill = sShaderSDFFillSmart;
+                sCurrentShaderSDFStroke = sShaderSDFStrokeSmart;
+                return;
+            }
+        }
+        sCurrentShaderSDFFill = sShaderSDFFill;
+        sCurrentShaderSDFStroke = sShaderSDFStroke;
     }
 
     /**
@@ -317,18 +393,7 @@ public class TextRenderType extends RenderType {
         if (sShaderNormal != null) {
             return;
         }
-        final var source = Minecraft.getInstance().getVanillaPackResources();
-        final var fallback = source.asProvider();
-        final var provider = (ResourceProvider) location -> {
-            // don't worry, ShaderInstance ctor will close it
-            @SuppressWarnings("resource") final var stream = ModernUIText.class
-                    .getResourceAsStream("/assets/" + location.getNamespace() + "/" + location.getPath());
-            if (stream == null) {
-                // fallback to vanilla
-                return fallback.getResource(location);
-            }
-            return Optional.of(new Resource(source, () -> stream));
-        };
+        var provider = obtainResourceProvider();
         try {
             sShaderNormal = new ShaderInstance(provider,
                     ModernUIForge.location("rendertype_modern_text_normal"),
@@ -342,6 +407,23 @@ public class TextRenderType extends RenderType {
         } catch (IOException e) {
             throw new IllegalStateException("Bad text shaders", e);
         }
+        toggleSDFShaders(false);
         LOGGER.info(MARKER, "Preloaded modern text shaders");
+    }
+
+    @Nonnull
+    private static ResourceProvider obtainResourceProvider() {
+        final var source = Minecraft.getInstance().getVanillaPackResources();
+        final var fallback = source.asProvider();
+        return location -> {
+            // don't worry, ShaderInstance ctor will close it
+            @SuppressWarnings("resource") final var stream = ModernUIText.class
+                    .getResourceAsStream("/assets/" + location.getNamespace() + "/" + location.getPath());
+            if (stream == null) {
+                // fallback to vanilla
+                return fallback.getResource(location);
+            }
+            return Optional.of(new Resource(source, () -> stream));
+        };
     }
 }

@@ -22,6 +22,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.font.BakedGlyph;
 import icyllis.modernui.graphics.text.Font;
+import icyllis.modernui.util.SparseArray;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
 
@@ -56,14 +57,14 @@ public class TextLayout {
         }
 
         @Override
-        boolean tick() {
+        boolean tick(int lifespan) {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
                               float x, float top, int r, int g, int b, int a, boolean isShadow,
-                              int preferredMode, int bgColor, int packedLight) {
+                              int preferredMode, boolean polygonOffset, int bgColor, int packedLight) {
             return 0;
         }
 
@@ -97,6 +98,7 @@ public class TextLayout {
     private final int[] mGlyphs;
     private transient BakedGlyph[] mBakedGlyphs;
     private transient BakedGlyph[] mBakedGlyphsForSDF;
+    private transient SparseArray<BakedGlyph[]> mBakedGlyphsArray;
 
     /**
      * Position x1 y1 x2 y2... relative to the same point, for rendering glyphs.
@@ -241,13 +243,13 @@ public class TextLayout {
      *
      * @return true to recycle
      */
-    boolean tick() {
-        // Evict if not used in 3 seconds
-        return ++mTimer > 3;
+    boolean tick(int lifespan) {
+        // Evict if not used in 'lifespan' seconds
+        return ++mTimer > lifespan;
     }
 
     @Nonnull
-    private BakedGlyph[] prepareGlyphs(int resLevel) {
+    private BakedGlyph[] prepareGlyphs(int resLevel, int fontSize) {
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
         BakedGlyph[] glyphs = new BakedGlyph[mGlyphs.length];
         for (int i = 0; i < glyphs.length; i++) {
@@ -257,7 +259,6 @@ public class TextLayout {
                         resLevel
                 );
             } else {
-                int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
                 glyphs[i] = engine.lookupGlyph(
                         getFont(i),
                         fontSize,
@@ -272,12 +273,14 @@ public class TextLayout {
     private BakedGlyph[] getGlyphs(int resLevel) {
         if (resLevel == mCreatedResLevel) {
             if (mBakedGlyphs == null) {
-                mBakedGlyphs = prepareGlyphs(resLevel);
+                int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
+                mBakedGlyphs = prepareGlyphs(resLevel, fontSize);
             }
             return mBakedGlyphs;
         } else {
             if (mBakedGlyphsForSDF == null) {
-                mBakedGlyphsForSDF = prepareGlyphs(resLevel);
+                int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
+                mBakedGlyphsForSDF = prepareGlyphs(resLevel, fontSize);
             }
             return mBakedGlyphsForSDF;
         }
@@ -296,25 +299,49 @@ public class TextLayout {
      * @param a             the alpha value (0...255)
      * @param isShadow      whether to use a darker color to draw?
      * @param preferredMode a render mode, normal, see through or SDF
+     * @param polygonOffset polygon offset layering requested?
      * @param bgColor       the background color of the text in 0xAARRGGBB format
      * @param packedLight   see {@link net.minecraft.client.renderer.LightTexture}
      * @return the total advance, always positive
      */
-    public float drawText(@Nonnull Matrix4f matrix,
-                          @Nonnull MultiBufferSource source,
+    public float drawText(@Nonnull final Matrix4f matrix,
+                          @Nonnull final MultiBufferSource source,
                           final float x, final float top,
                           int r, int g, int b, int a,
-                          boolean isShadow, int preferredMode,
-                          int bgColor, int packedLight) {
+                          final boolean isShadow, int preferredMode,
+                          final boolean polygonOffset,
+                          final int bgColor, final int packedLight) {
         final int startR = r;
         final int startG = g;
         final int startB = b;
-        final float resLevel = preferredMode == TextRenderType.MODE_SDF_FILL
-                ? TextLayoutEngine.getResLevelForSDF(mCreatedResLevel)
-                : mCreatedResLevel;
-        final float invResLevel = 1.0f / resLevel;
+        final float density;
+        BakedGlyph[] glyphs;
+        if (preferredMode == TextRenderType.MODE_SDF_FILL) {
+            int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
+            glyphs = getGlyphs(resLevel);
+            density = resLevel;
+        } else if (preferredMode != TextRenderType.MODE_DYNAMIC_SCALE) {
+            glyphs = getGlyphs(mCreatedResLevel);
+            density = mCreatedResLevel;
+        } else {
+            float devS = matrix.m00();
+            if (devS == 0) {
+                return mTotalAdvance;
+            }
+            density = mCreatedResLevel * devS;
+            if (mBakedGlyphsArray == null) {
+                mBakedGlyphsArray = new SparseArray<>();
+            }
+            int fontSize = TextLayoutProcessor.computeFontSize(density);
+            glyphs = mBakedGlyphsArray.get(fontSize);
+            if (glyphs == null) {
+                glyphs = prepareGlyphs(mCreatedResLevel, fontSize);
+                mBakedGlyphsArray.put(fontSize, glyphs);
+            }
+            preferredMode = TextRenderType.MODE_NORMAL;
+        }
+        final float invDensity = 1.0f / density;
 
-        final var glyphs = getGlyphs((int) resLevel);
         final var positions = mPositions;
         final var flags = mGlyphFlags;
         //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
@@ -339,6 +366,9 @@ public class TextLayout {
             final float h;
             final int effMode;
             final int texture;
+            boolean fakeItalic = false;
+            int ascent = 0;
+            net.minecraft.client.gui.Font.DisplayMode compatDisplayMode = null;
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 float scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
                 if ((bits & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0) {
@@ -349,11 +379,24 @@ public class TextLayout {
                 }
                 rx = x + positions[i << 1] + (float) glyph.x * scaleFactor;
                 ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
+                if (isShadow) {
+                    rx += 1.0f - ModernTextRenderer.sShadowOffset;
+                }
 
                 w = (float) glyph.width * scaleFactor;
                 h = (float) glyph.height * scaleFactor;
                 effMode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL;
-                texture = TextLayoutEngine.getInstance().getCurrentTexture(getFont(i));
+                if (polygonOffset) {
+                    compatDisplayMode = net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET;
+                }
+                if (getFont(i) instanceof BitmapFont bitmapFont) {
+                    texture = bitmapFont.getCurrentTexture();
+                    ascent = bitmapFont.getAscent();
+                } else {
+                    texture = TextLayoutEngine.getInstance().getEmojiTexture();
+                    ascent = TextLayout.STANDARD_BASELINE_OFFSET;
+                }
+                fakeItalic = (bits & CharacterStyle.ITALIC_MASK) != 0;
             } else {
                 boolean obfuscated = false;
                 if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
@@ -368,19 +411,25 @@ public class TextLayout {
                 }
                 if (obfuscated && getFont(i) instanceof BitmapFont bitmapFont) {
                     effMode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL;
+                    if (polygonOffset) {
+                        compatDisplayMode = net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET;
+                    }
                     float scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
                     rx += x + positions[i << 1] + (float) glyph.x * scaleFactor;
                     ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
+                    if (isShadow) {
+                        rx += 1.0f - ModernTextRenderer.sShadowOffset;
+                    }
                     w = (float) glyph.width * scaleFactor;
                     h = (float) glyph.height * scaleFactor;
                     texture = bitmapFont.getCurrentTexture();
                 } else {
                     effMode = preferredMode;
-                    rx += x + positions[i << 1] + glyph.x * invResLevel;
-                    ry = baseline + positions[i << 1 | 1] + glyph.y * invResLevel;
+                    rx += x + positions[i << 1] + glyph.x * invDensity;
+                    ry = baseline + positions[i << 1 | 1] + glyph.y * invDensity;
 
-                    w = glyph.width * invResLevel;
-                    h = glyph.height * invResLevel;
+                    w = glyph.width * invDensity;
+                    h = glyph.height * invDensity;
                     if (standardTexture == -1) {
                         standardTexture = TextLayoutEngine.getInstance().getStandardTexture();
                     }
@@ -390,8 +439,8 @@ public class TextLayout {
             if (effMode == TextRenderType.MODE_NORMAL &&
                     !TextLayoutEngine.sCurrentInWorldRendering) {
                 // align to screen pixel center in 2D
-                rx = (int) (rx * resLevel + 0.5f) * invResLevel;
-                ry = (int) (ry * resLevel + 0.5f) * invResLevel;
+                rx = (int) (rx * density + 0.5f) * invDensity;
+                ry = (int) (ry * density + 0.5f) * invDensity;
             }
             if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
                 r = startR;
@@ -408,26 +457,34 @@ public class TextLayout {
                 }
             }
             if (builder == null || prevTexture != texture) {
-                // bitmap texture and grayscale texture are different
+                // bitmap/color texture and grayscale texture are different, don't check effMode
                 prevTexture = texture;
-                builder = source.getBuffer(TextRenderType.getOrCreate(prevTexture, effMode));
+                builder = source.getBuffer(compatDisplayMode != null
+                        ? TextRenderType.getOrCreate(prevTexture, compatDisplayMode)
+                        : TextRenderType.getOrCreate(prevTexture, effMode));
             }
-            builder.vertex(matrix, rx, ry, 0.0025f)
+            float upSkew = 0;
+            float downSkew = 0;
+            if (fakeItalic) {
+                upSkew = 0.25f * ascent;
+                downSkew = 0.25f * (ascent - h);
+            }
+            builder.vertex(matrix, rx + upSkew, ry, 0)
                     .color(r, g, b, a)
                     .uv(glyph.u1, glyph.v1)
                     .uv2(packedLight)
                     .endVertex();
-            builder.vertex(matrix, rx, ry + h, 0.0025f)
+            builder.vertex(matrix, rx + downSkew, ry + h, 0)
                     .color(r, g, b, a)
                     .uv(glyph.u1, glyph.v2)
                     .uv2(packedLight)
                     .endVertex();
-            builder.vertex(matrix, rx + w, ry + h, 0.0025f)
+            builder.vertex(matrix, rx + w + downSkew, ry + h, 0)
                     .color(r, g, b, a)
                     .uv(glyph.u2, glyph.v2)
                     .uv2(packedLight)
                     .endVertex();
-            builder.vertex(matrix, rx + w, ry, 0.0025f)
+            builder.vertex(matrix, rx + w + upSkew, ry, 0)
                     .color(r, g, b, a)
                     .uv(glyph.u2, glyph.v1)
                     .uv2(packedLight)
@@ -512,7 +569,7 @@ public class TextLayout {
                                 final float x, final float top,
                                 int r, int g, int b, int a,
                                 int packedLight) {
-        final float resLevel = TextLayoutEngine.getResLevelForSDF(mCreatedResLevel);
+        final float resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
 
         final var glyphs = getGlyphs((int) resLevel);
         final var positions = mPositions;
@@ -573,12 +630,12 @@ public class TextLayout {
             }
             float uBloat = (glyph.u2 - glyph.u1) / glyph.width;
             float vBloat = (glyph.v2 - glyph.v1) / glyph.height;
-            builder.vertex(matrix, rx - sBloat, ry - sBloat, 0.002f)
+            builder.vertex(matrix, rx - sBloat, ry - sBloat, 0.001f)
                     .color(r, g, b, a)
                     .uv(glyph.u1 - uBloat, glyph.v1 - vBloat)
                     .uv2(packedLight)
                     .endVertex();
-            builder.vertex(matrix, rx - sBloat, ry + h + sBloat, 0.002f)
+            builder.vertex(matrix, rx - sBloat, ry + h + sBloat, 0.001f)
                     .color(r, g, b, a)
                     .uv(glyph.u1 - uBloat, glyph.v2 + vBloat)
                     .uv2(packedLight)
@@ -742,12 +799,17 @@ public class TextLayout {
         if (mBakedGlyphsForSDF != null) {
             m += 16 + MathUtil.align8(mBakedGlyphsForSDF.length << 2);
         }
-        return m + 24;
+        if (mBakedGlyphsArray != null) {
+            m += (16 + MathUtil.align8(
+                    mBakedGlyphsArray.valueAt(0).length << 2
+            )) * mBakedGlyphsArray.size();
+        }
+        return m + 64;
     }
 
     @Override
     public String toString() {
-        return "TextLayoutNode{" +
+        return "TextLayout{" +
                 "text=" + toEscapeChars(mTextBuf) +
                 ",glyphs=" + mGlyphs.length +
                 ",length=" + mTextBuf.length +

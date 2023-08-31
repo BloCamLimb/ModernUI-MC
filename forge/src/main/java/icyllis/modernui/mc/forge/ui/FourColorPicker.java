@@ -59,28 +59,33 @@ public class FourColorPicker extends RelativeLayout {
             if (!hasFocus) {
                 try {
                     var string = input.getText().toString();
-                    int color = Color.parseColor(string);
+                    int color = 0xFFFFFFFF;
                     int idx = -1;
-                    if (input == mULColorField) {
-                        if (mULColor != color) {
-                            mULColor = color;
-                            idx = 0;
+                    try {
+                        color = Color.parseColor(string);
+                        if (input == mULColorField) {
+                            if (mULColor != color) {
+                                mULColor = color;
+                                idx = 0;
+                            }
+                        } else if (input == mURColorField) {
+                            if (mURColor != color) {
+                                mURColor = color;
+                                idx = 1;
+                            }
+                        } else if (input == mLRColorField) {
+                            if (mLRColor != color) {
+                                mLRColor = color;
+                                idx = 2;
+                            }
+                        } else if (input == mLLColorField) {
+                            if (mLLColor != color) {
+                                mLLColor = color;
+                                idx = 3;
+                            }
                         }
-                    } else if (input == mURColorField) {
-                        if (mURColor != color) {
-                            mURColor = color;
-                            idx = 1;
-                        }
-                    } else if (input == mLRColorField) {
-                        if (mLRColor != color) {
-                            mLRColor = color;
-                            idx = 2;
-                        }
-                    } else if (input == mLLColorField) {
-                        if (mLLColor != color) {
-                            mLLColor = color;
-                            idx = 3;
-                        }
+                    } catch (IllegalArgumentException e) {
+                        e.printStackTrace();
                     }
                     if (idx != -1) {
                         invalidate();

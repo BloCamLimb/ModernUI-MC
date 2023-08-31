@@ -18,12 +18,14 @@
 
 package icyllis.modernui.mc.forge.mixin;
 
+import com.mojang.blaze3d.platform.Window;
+import icyllis.modernui.mc.forge.BlurHandler;
 import icyllis.modernui.mc.forge.ModernUIForge;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import org.lwjgl.glfw.GLFW;
 import org.objectweb.asm.Opcodes;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -36,11 +38,18 @@ import javax.annotation.Nullable;
  * <a href="https://github.com/MinecraftForge/MinecraftForge/issues/8992">this issue</a>
  */
 @Mixin(Minecraft.class)
-public class MixinMinecraft {
+public abstract class MixinMinecraft {
 
     @Shadow
     @Nullable
     public Screen screen;
+
+    @Shadow
+    @Final
+    private Window window;
+
+    @Shadow
+    public abstract boolean isWindowActive();
 
     @Inject(method = "setScreen", at = @At(value = "FIELD",
             target = "Lnet/minecraft/client/Minecraft;screen:Lnet/minecraft/client/gui/screens/Screen;",
@@ -53,6 +62,27 @@ public class MixinMinecraft {
     private void onAllowsTelemetry(CallbackInfoReturnable<Boolean> info) {
         if (ModernUIForge.sRemoveTelemetrySession) {
             info.setReturnValue(false);
+        }
+    }
+
+    @Inject(method = "getFramerateLimit", at = @At("HEAD"), cancellable = true)
+    private void onGetFramerateLimit(CallbackInfoReturnable<Integer> info) {
+        if ((BlurHandler.sFramerateInactive != 0 ||
+                BlurHandler.sFramerateMinimized != 0) &&
+                !isWindowActive()) {
+            if (BlurHandler.sFramerateMinimized != 0 &&
+                    BlurHandler.sFramerateMinimized < BlurHandler.sFramerateInactive &&
+                    GLFW.glfwGetWindowAttrib(window.getWindow(), GLFW.GLFW_ICONIFIED) != 0) {
+                info.setReturnValue(Math.min(
+                        BlurHandler.sFramerateMinimized,
+                        window.getFramerateLimit()
+                ));
+            } else if (BlurHandler.sFramerateInactive != 0) {
+                info.setReturnValue(Math.min(
+                        BlurHandler.sFramerateInactive,
+                        window.getFramerateLimit()
+                ));
+            }
         }
     }
 }

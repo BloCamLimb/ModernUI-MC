@@ -25,9 +25,11 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import icyllis.arc3d.core.Matrix4;
 import icyllis.modernui.graphics.*;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTextTooltip;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.ItemRenderer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
@@ -72,6 +74,11 @@ public final class TooltipRenderer {
     private final int[] mActiveStrokeColor = new int[4];
     //static volatile float sAnimationDuration; // milliseconds
     static volatile int sBorderColorCycle = 1000; // milliseconds
+
+    static volatile boolean sExactPositioning = true;
+    static volatile boolean sRoundedShapes = true;
+    static volatile boolean sCenterTitle = true;
+    static volatile boolean sTitleBreak = true;
 
     volatile boolean mLayoutRTL;
 
@@ -304,17 +311,24 @@ public final class TooltipRenderer {
         }
     }
 
-    void drawTooltip(@Nonnull GLSurfaceCanvas canvas, @Nonnull Window window, @Nonnull PoseStack poseStack,
+    void drawTooltip(@Nonnull GLSurfaceCanvas canvas, @Nonnull Window window,
+                     @Nonnull ItemStack itemStack, @Nonnull PoseStack poseStack,
                      @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
                      @Nonnull Font font, float screenWidth, float screenHeight,
                      double cursorX, double cursorY, @Nonnull ItemRenderer itemRenderer) {
         mDraw = true;
 
-        float partialX = (float) (cursorX - (int) cursorX);
-        float partialY = (float) (cursorY - (int) cursorY);
+        float partialX = 0;
+        float partialY = 0;
+        if (sExactPositioning) {
+            partialX = (float) (cursorX - (int) cursorX);
+            partialY = (float) (cursorY - (int) cursorY);
+        }
 
         int tooltipWidth;
         int tooltipHeight;
+        boolean titleGap = false;
+        int titleBreakHeight = 0;
         if (list.size() == 1) {
             ClientTooltipComponent component = list.get(0);
             tooltipWidth = component.getWidth(font);
@@ -322,9 +336,19 @@ public final class TooltipRenderer {
         } else {
             tooltipWidth = 0;
             tooltipHeight = 0;
-            for (var c : list) {
-                tooltipWidth = Math.max(tooltipWidth, c.getWidth(font));
-                tooltipHeight += c.getHeight();
+            for (int i = 0; i < list.size(); i++) {
+                ClientTooltipComponent component = list.get(i);
+                tooltipWidth = Math.max(tooltipWidth, component.getWidth(font));
+                int componentHeight = component.getHeight();
+                tooltipHeight += componentHeight;
+                if (i == 0 && !itemStack.isEmpty() &&
+                        component instanceof ClientTextTooltip) {
+                    titleGap = true;
+                    titleBreakHeight = componentHeight;
+                }
+            }
+            if (!titleGap) {
+                tooltipHeight -= TITLE_GAP;
             }
         }
 
@@ -391,12 +415,29 @@ public final class TooltipRenderer {
             sActiveFillColor[i] = (color & 0xFFFFFF) | (alpha << 24);
         }*/
         paint.setStyle(Paint.FILL);
-        canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
-                tooltipX + tooltipWidth + H_BORDER,
-                tooltipY + tooltipHeight + V_BORDER,
-                sFillColor[0], sFillColor[1],
-                sFillColor[2], sFillColor[3],
-                3, paint);
+        if (sRoundedShapes) {
+            canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
+                    tooltipX + tooltipWidth + H_BORDER,
+                    tooltipY + tooltipHeight + V_BORDER,
+                    sFillColor[0], sFillColor[1],
+                    sFillColor[2], sFillColor[3],
+                    3, paint);
+        } else {
+            canvas.drawRectGradient(tooltipX - H_BORDER + 1, tooltipY - V_BORDER + 1,
+                    tooltipX + tooltipWidth + H_BORDER - 1,
+                    tooltipY + tooltipHeight + V_BORDER - 1,
+                    sFillColor[0], sFillColor[1],
+                    sFillColor[2], sFillColor[3],
+                    paint);
+        }
+
+        if (titleGap && sTitleBreak) {
+            paint.setColor(0xE0C8C8C8);
+            paint.setStrokeWidth(1f);
+            canvas.drawLine(tooltipX, tooltipY + titleBreakHeight,
+                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight,
+                    paint);
+        }
 
         /*for (int i = 0; i < 4; i++) {
             int color = sStrokeColor[i];
@@ -405,12 +446,21 @@ public final class TooltipRenderer {
         }*/
         paint.setStyle(Paint.STROKE);
         paint.setStrokeWidth(4 / 3f);
-        canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
-                tooltipX + tooltipWidth + H_BORDER,
-                tooltipY + tooltipHeight + V_BORDER,
-                chooseBorderColor(0), chooseBorderColor(1),
-                chooseBorderColor(2), chooseBorderColor(3),
-                3, paint);
+        if (sRoundedShapes) {
+            canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
+                    tooltipX + tooltipWidth + H_BORDER,
+                    tooltipY + tooltipHeight + V_BORDER,
+                    mActiveStrokeColor[0], mActiveStrokeColor[1],
+                    mActiveStrokeColor[2], mActiveStrokeColor[3],
+                    3, paint);
+        } else {
+            canvas.drawRectGradient(tooltipX - H_BORDER + 1, tooltipY - V_BORDER + 1,
+                    tooltipX + tooltipWidth + H_BORDER - 1,
+                    tooltipY + tooltipHeight + V_BORDER - 1,
+                    mActiveStrokeColor[0], mActiveStrokeColor[1],
+                    mActiveStrokeColor[2], mActiveStrokeColor[3],
+                    paint);
+        }
 
         paint.recycle();
 
@@ -432,12 +482,14 @@ public final class TooltipRenderer {
         poseStack.translate(partialX, partialY, 0);
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
-            if (mLayoutRTL) {
+            if (titleGap && i == 0 && sCenterTitle) {
+                component.renderText(font, drawX + (tooltipWidth - component.getWidth(font)) / 2, drawY, mat, source);
+            } else if (mLayoutRTL) {
                 component.renderText(font, drawX + tooltipWidth - component.getWidth(font), drawY, mat, source);
             } else {
                 component.renderText(font, drawX, drawY, mat, source);
             }
-            if (i == 0) {
+            if (titleGap && i == 0) {
                 drawY += TITLE_GAP;
             }
             drawY += component.getHeight();
@@ -454,7 +506,7 @@ public final class TooltipRenderer {
             } else {
                 component.renderImage(font, drawX, drawY, poseStack, itemRenderer);
             }
-            if (i == 0) {
+            if (titleGap && i == 0) {
                 drawY += TITLE_GAP;
             }
             drawY += component.getHeight();

@@ -20,8 +20,9 @@ package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
-import icyllis.modernui.mc.text.ModernUIText;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
@@ -49,6 +50,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.*;
 import java.util.*;
+import java.util.function.Consumer;
 
 import static icyllis.modernui.ModernUI.*;
 
@@ -179,6 +181,12 @@ public final class ModernUIForge {
         }
     }
 
+    public static boolean isTextEngineEnabled() {
+        return !Boolean.parseBoolean(
+                getBootstrapProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
+        );
+    }
+
     // INTERNAL
     public static String getBootstrapProperty(String key) {
         Properties props = DistExecutor.safeCallWhenOn(Dist.CLIENT,
@@ -214,54 +222,84 @@ public final class ModernUIForge {
         ModLoader.get().addWarning(new ModLoadingWarning(null, ModLoadingStage.SIDED_SETUP, key, args));
     }*/
 
-    private static void loadFonts(@Nonnull Collection<String> configs, @Nonnull Set<FontFamily> selected) {
-        boolean hasFail = false;
-        for (String cfg : configs) {
-            if (StringUtils.isEmpty(cfg)) {
-                continue;
-            }
-            try {
-                try (InputStream inputStream = Minecraft.getInstance().getResourceManager()
-                        .open(new ResourceLocation(cfg))) {
-                    FontFamily f = FontFamily.createFamily(inputStream, true);
-                    selected.add(f);
-                    LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as RESOURCE PACK",
-                            f.getFamilyName(), cfg);
-                    continue;
-                }
-            } catch (Exception ignored) {
-            }
-            try {
-                FontFamily f = FontFamily.createFamily(new File(
-                        cfg.replaceAll("\\\\", "/")), true);
-                selected.add(f);
-                LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as LOCAL FILE",
-                        f.getFamilyName(), cfg);
-                continue;
-            } catch (Exception ignored) {
-            }
-            FontFamily family = FontFamily.getSystemFontWithAlias(cfg);
-            if (family == null) {
-                Optional<FontFamily> optional = FontFamily.getSystemFontMap().values().stream()
-                        .filter(f -> f.getFamilyName().equalsIgnoreCase(cfg))
-                        .findFirst();
-                if (optional.isPresent()) {
-                    family = optional.get();
+    private static void loadFonts(String first,
+                                  @Nonnull Collection<String> fallbacks,
+                                  @Nonnull Set<FontFamily> selected,
+                                  @Nonnull Consumer<FontFamily> firstSetter,
+                                  boolean firstLoad) {
+        if (firstLoad) {
+            var resources = Minecraft.getInstance().getResourceManager();
+            for (var entry : resources.listResourceStacks("font",
+                    res -> {
+                        if (res.getNamespace().equals(ModernUI.ID)) {
+                            String p = res.getPath();
+                            return p.endsWith(".ttf") ||
+                                    p.endsWith(".otf") ||
+                                    p.endsWith(".ttc") ||
+                                    p.endsWith(".otc");
+                        }
+                        return false;
+                    }).entrySet()) {
+                for (var resource : entry.getValue()) {
+                    try (var inputStream = resource.open()) {
+                        FontFamily f = FontFamily.createFamily(inputStream, /*register*/true);
+                        LOGGER.debug(MARKER, "Registered font '{}', location '{}' in pack: '{}'",
+                                f.getFamilyName(), entry.getKey(), resource.sourcePackId());
+                    } catch (Exception e) {
+                        LOGGER.error(MARKER, "Failed to load font '{}' in pack: '{}'",
+                                entry.getKey(), resource.sourcePackId());
+                    }
                 }
             }
-            if (family != null) {
-                selected.add(family);
-                LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as SYSTEM FONT",
-                        family.getFamilyName(), cfg);
-                continue;
-            }
-            hasFail = true;
-            LOGGER.info(MARKER, "Font '{}' failed to load or invalid", cfg);
+        }
+        boolean hasFail = loadSingleFont(first, selected, firstSetter);
+        for (String fallback : fallbacks) {
+            hasFail |= loadSingleFont(fallback, selected, null);
         }
         if (hasFail && isDeveloperMode()) {
             LOGGER.debug(MARKER, "Available system font families: {}",
                     String.join(",", FontFamily.getSystemFontMap().keySet()));
         }
+    }
+
+    private static boolean loadSingleFont(String value,
+                                          @Nonnull Set<FontFamily> selected,
+                                          @Nullable Consumer<FontFamily> firstSetter) {
+        if (StringUtils.isEmpty(value)) {
+            return true;
+        }
+        if (firstSetter != null) {
+            try {
+                FontFamily f = FontFamily.createFamily(new File(
+                        value.replaceAll("\\\\", "/")), /*register*/false);
+                selected.add(f);
+                LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as LOCAL FILE",
+                        f.getFamilyName(), value);
+                firstSetter.accept(f);
+                return true;
+            } catch (Exception ignored) {
+            }
+        }
+        FontFamily family = FontFamily.getSystemFontWithAlias(value);
+        if (family == null) {
+            Optional<FontFamily> optional = FontFamily.getSystemFontMap().values().stream()
+                    .filter(f -> f.getFamilyName().equalsIgnoreCase(value))
+                    .findFirst();
+            if (optional.isPresent()) {
+                family = optional.get();
+            }
+        }
+        if (family != null) {
+            selected.add(family);
+            LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as SYSTEM FONT",
+                    family.getFamilyName(), value);
+            if (firstSetter != null) {
+                firstSetter.accept(family);
+            }
+            return true;
+        }
+        LOGGER.info(MARKER, "Font '{}' failed to load or invalid", value);
+        return false;
     }
 
     public static boolean isDeveloperMode() {
@@ -328,6 +366,7 @@ public final class ModernUIForge {
         }
 
         private volatile Typeface mTypeface;
+        private volatile FontFamily mFirstFontFamily;
 
         private Client() {
             super();
@@ -347,6 +386,15 @@ public final class ModernUIForge {
 
         public static Client getInstance() {
             return sInstance;
+        }
+
+        @Nullable
+        public FontFamily getFirstFontFamily() {
+            return mFirstFontFamily;
+        }
+
+        private void setFirstFontFamily(FontFamily firstFontFamily) {
+            mFirstFontFamily = firstFontFamily;
         }
 
         @SuppressWarnings("ConstantValue")
@@ -380,12 +428,7 @@ public final class ModernUIForge {
                                 new Exception("Loading typeface at the wrong mod loading stage")
                                         .fillInStackTrace());
                     }
-                    Set<FontFamily> set = new LinkedHashSet<>();
-                    List<? extends String> configs = Config.CLIENT.mFontFamily.get();
-                    if (configs != null) {
-                        loadFonts(new LinkedHashSet<>(configs), set);
-                    }
-                    mTypeface = Typeface.createTypeface(set.toArray(new FontFamily[0]));
+                    mTypeface = loadTypefaceInternal(this::setFirstFontFamily, true);
                     // do some warm-up, but do not block ourselves
                     var paint = new FontPaint();
                     paint.setFont(mTypeface);
@@ -397,6 +440,56 @@ public final class ModernUIForge {
                 }
             }
             return mTypeface;
+        }
+
+        // reload just Typeface on main thread, called after loaded
+        public void reloadTypeface() {
+            synchronized (this) {
+                if (mTypeface == null) {
+                    return;
+                }
+                mFirstFontFamily = null;
+                mTypeface = loadTypefaceInternal(this::setFirstFontFamily, false);
+                LOGGER.info(MARKER, "Reloaded typeface: {}", mTypeface);
+            }
+        }
+
+        public void reloadFontStrike() {
+            if (!Boolean.parseBoolean(
+                    Loader.getBootstrapProperties().getProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
+            )) {
+                Minecraft.getInstance().submit(
+                        () -> TextLayoutEngine.getInstance().reloadAll());
+            } else {
+                Minecraft.getInstance().submit(
+                        () -> {
+                            GlyphManager.getInstance().reload();
+                            LOGGER.info(MARKER, "Reloaded glyph manager");
+                            LayoutCache.clear();
+                        }
+                );
+            }
+        }
+
+        @Nonnull
+        private static Typeface loadTypefaceInternal(
+                @Nonnull Consumer<FontFamily> firstSetter,
+                boolean firstLoad) {
+            Set<FontFamily> families = new LinkedHashSet<>();
+            String first = Config.CLIENT.mFirstFontFamily.get();
+            List<? extends String> configs = Config.CLIENT.mFallbackFontFamilyList.get();
+            if (first != null || configs != null) {
+                var fallbacks = new LinkedHashSet<String>();
+                if (configs != null) {
+                    fallbacks.addAll(configs);
+                }
+                if (first != null) {
+                    fallbacks.remove(first);
+                }
+                loadFonts(first, fallbacks, families,
+                        firstSetter, firstLoad);
+            }
+            return Typeface.createTypeface(families.toArray(new FontFamily[0]));
         }
 
         @Nonnull
