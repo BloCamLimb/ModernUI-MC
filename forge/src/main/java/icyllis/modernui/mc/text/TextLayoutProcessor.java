@@ -51,8 +51,8 @@ import java.util.function.Function;
  * @see MixinBidiReorder
  * @see MixinClientLanguage
  * @see MixinLanguage
- * @see VanillaLayoutKey#update(String, Style, int)
- * @see FormattedLayoutKey.Lookup#update(FormattedCharSequence, int)
+ * @see VanillaLayoutKey#update(String, Style)
+ * @see FormattedLayoutKey.Lookup#update(FormattedCharSequence)
  * @see FormattedText
  * @see FormattedCharSequence
  * @see FormattedTextWrapper
@@ -80,6 +80,8 @@ public class TextLayoutProcessor {
      */
     public static volatile float sBaseFontSize = DEFAULT_BASE_FONT_SIZE;
     //public static volatile boolean sAlignPixels = false;
+    public static volatile int sLbStyle = LineBreakConfig.LINE_BREAK_STYLE_NONE;
+    public static volatile int sLbWordStyle = LineBreakConfig.LINE_BREAK_WORD_STYLE_NONE;
 
     private final TextLayoutEngine mEngine;
 
@@ -331,7 +333,7 @@ public class TextLayoutProcessor {
         mEngine = engine;
     }
 
-    public static int computeFontSize(int resLevel) {
+    public static int computeFontSize(float resLevel) {
         // Note max font size is 96, see FontPaint, font size will be (8 * res) in Minecraft by default
         return Math.min((int) (sBaseFontSize * resLevel + 0.5), 96);
     }
@@ -917,7 +919,9 @@ public class TextLayoutProcessor {
 
         if (mComputeLineBoundaries) {
             // Compute line break boundaries, will be sorted into logical order.
-            BreakIterator breaker = BreakIterator.getLineInstance(mFontPaint.getLocale());
+            BreakIterator breaker = BreakIterator.getLineInstance(
+                    LineBreaker.getLocaleWithLineBreakOption(mFontPaint.getLocale(), sLbStyle, sLbWordStyle)
+            );
             final CharArrayIterator charIterator = new CharArrayIterator(text, start, limit);
             breaker.setText(charIterator);
             int prevPos = start, currPos;

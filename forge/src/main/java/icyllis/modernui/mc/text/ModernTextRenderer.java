@@ -59,6 +59,8 @@ public final class ModernTextRenderer {
     public static volatile boolean sAllowShadow = true;
     public static volatile float sShadowOffset = 1.0f;
     public static volatile float sOutlineOffset = 0.5f;
+    public static volatile boolean sComputeDeviceFontSize = true;
+    public static volatile boolean sAllowSDFTextIn2D = true;
     //private boolean mGlobalRenderer = false;
 
     //private final TextLayoutEngine mFontEngine = TextLayoutEngine.getInstance();
@@ -109,6 +111,7 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         int mode = chooseMode(matrix, displayMode);
+        boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
         TextLayout layout = mEngine.lookupVanillaLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
@@ -117,13 +120,13 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, colorBackground, packedLight);
+                    mode, polygonOffset, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, colorBackground, packedLight);
+                mode, polygonOffset, colorBackground, packedLight);
         return x;
     }
 
@@ -148,6 +151,7 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         int mode = chooseMode(matrix, displayMode);
+        boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
         TextLayout layout = mEngine.lookupFormattedLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
@@ -156,13 +160,13 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, colorBackground, packedLight);
+                    mode, polygonOffset, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, colorBackground, packedLight);
+                mode, polygonOffset, colorBackground, packedLight);
         return x;
     }
 
@@ -187,6 +191,7 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         int mode = chooseMode(matrix, displayMode);
+        boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
         TextLayout layout = mEngine.lookupFormattedLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
@@ -195,42 +200,54 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             float offset = sShadowOffset;
             layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, colorBackground, packedLight);
+                    mode, polygonOffset, colorBackground, packedLight);
             matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
             matrix.translate(SHADOW_OFFSET);
         }
 
         x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, colorBackground, packedLight);
+                mode, polygonOffset, colorBackground, packedLight);
         return x;
     }
 
     private final float[] mMatrixArray = new float[16];
     private final FloatBuffer mMatrixBuffer = FloatBuffer.wrap(mMatrixArray);
 
-    public int chooseMode(Matrix4f transform, Font.DisplayMode mode) {
-        if (mode == Font.DisplayMode.SEE_THROUGH) {
+    public int chooseMode(Matrix4f ctm, Font.DisplayMode displayMode) {
+        if (displayMode == Font.DisplayMode.SEE_THROUGH) {
             return TextRenderType.MODE_SEE_THROUGH;
         } else if (TextLayoutEngine.sCurrentInWorldRendering) {
             return TextRenderType.MODE_SDF_FILL;
         } else {
-            transform.store(mMatrixBuffer.rewind());
-            float[] m = mMatrixArray;
-            if (!MathUtil.isApproxEqual(m[0], 1) ||
-                    !MathUtil.isApproxZero(m[1]) ||
-                    !MathUtil.isApproxZero(m[2]) ||
-                    !MathUtil.isApproxZero(m[3]) ||
-                    !MathUtil.isApproxZero(m[4]) ||
-                    !MathUtil.isApproxEqual(m[5], 1) ||
-                    !MathUtil.isApproxZero(m[6]) ||
-                    !MathUtil.isApproxZero(m[7]) ||
-                    !MathUtil.isApproxZero(m[8]) ||
-                    !MathUtil.isApproxZero(m[9]) ||
-                    !MathUtil.isApproxEqual(m[10], 1) ||
-                    !MathUtil.isApproxZero(m[11]) ||
-                    !MathUtil.isApproxEqual(m[15], 1)) {
-                return TextRenderType.MODE_SDF_FILL;
+            if (sComputeDeviceFontSize || sAllowSDFTextIn2D) {
+                ctm.store(mMatrixBuffer.rewind());
+                float[] m = mMatrixArray;
+                if (MathUtil.isApproxZero(m[1]) &&
+                        MathUtil.isApproxZero(m[2]) &&
+                        MathUtil.isApproxZero(m[3]) &&
+                        MathUtil.isApproxZero(m[4]) &&
+                        MathUtil.isApproxZero(m[6]) &&
+                        MathUtil.isApproxZero(m[7]) &&
+                        MathUtil.isApproxZero(m[8]) &&
+                        MathUtil.isApproxZero(m[9]) &&
+                        MathUtil.isApproxZero(m[11]) &&
+                        MathUtil.isApproxEqual(m[15], 1)) {
+                    if (MathUtil.isApproxEqual(m[0], 1) &&
+                            MathUtil.isApproxEqual(m[5], 1)) {
+                        // pure translation
+                        return TextRenderType.MODE_NORMAL;
+                    } else if (sComputeDeviceFontSize &&
+                            m[0] < .999 &&
+                            MathUtil.isApproxEqual(m[0], m[5])) {
+                        // uniform scale smaller
+                        return TextRenderType.MODE_DYNAMIC_SCALE;
+                    }
+                }
+                if (sAllowSDFTextIn2D) {
+                    return TextRenderType.MODE_SDF_FILL;
+                }
             }
+            // pure translation
             return TextRenderType.MODE_NORMAL;
         }
     }
@@ -283,12 +300,6 @@ public final class ModernTextRenderer {
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
 
-        int oa = outlineColor >>> 24;
-        if (oa <= 1) oa = 255;
-        int or = outlineColor >> 16 & 0xff;
-        int og = outlineColor >> 8 & 0xff;
-        int ob = outlineColor & 0xff;
-
         TextLayout layout = mEngine.lookupFormattedLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
@@ -297,10 +308,16 @@ public final class ModernTextRenderer {
 
         matrix = new Matrix4f(matrix);
         layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                TextRenderType.MODE_SDF_FILL, 0, packedLight);
-        matrix.translate(OUTLINE_OFFSET);
+                TextRenderType.MODE_SDF_FILL, false, 0, packedLight);
 
-        layout.drawTextOutline(matrix, source, x, y, or, og, ob, oa, packedLight);
+        a = outlineColor >>> 24;
+        if (a <= 1) a = 255;
+        r = outlineColor >> 16 & 0xff;
+        g = outlineColor >> 8 & 0xff;
+        b = outlineColor & 0xff;
+
+        matrix.translate(OUTLINE_OFFSET);
+        layout.drawTextOutline(matrix, source, x, y, r, g, b, a, packedLight);
     }
 
     /*public static void change(boolean global, boolean shadow) {

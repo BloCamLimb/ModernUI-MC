@@ -103,7 +103,8 @@ public final class UIManager implements LifecycleOwner {
     }
 
     // configs
-    static volatile boolean sPlaySoundOnLoaded;
+    static volatile boolean sDingEnabled;
+    static volatile boolean sZoomEnabled;
 
     // the global instance, lazily init
     private static volatile UIManager sInstance;
@@ -114,6 +115,10 @@ public final class UIManager implements LifecycleOwner {
     public static final KeyMapping OPEN_CENTER_KEY = new KeyMapping(
             "key.modernui.openCenter", KeyConflictContext.UNIVERSAL, KeyModifier.CONTROL,
             InputConstants.Type.KEYSYM, GLFW_KEY_K, "Modern UI");
+    @SuppressWarnings("NoTranslation")
+    public static final KeyMapping ZOOM_KEY = new KeyMapping(
+            "key.modernui.zoom", KeyConflictContext.IN_GAME, KeyModifier.NONE,
+            InputConstants.Type.KEYSYM, GLFW_KEY_C, "Modern UI");
 
     /*public static final Method SEND_TO_CHAT =
             ObfuscationReflectionHelper.findMethod(ChatComponent.class, "m_93790_",
@@ -180,6 +185,8 @@ public final class UIManager implements LifecycleOwner {
     volatile MuiScreen mScreen;
 
     private boolean mFirstScreenOpened = false;
+    private boolean mZoomMode = false;
+    private boolean mZoomSmoothCamera;
 
 
     /// Lifecycle \\\
@@ -382,13 +389,11 @@ public final class UIManager implements LifecycleOwner {
         final Screen newScreen = event.getNewScreen();
 
         if (!mFirstScreenOpened && !(newScreen instanceof LoadingErrorScreen)) {
-            if (sPlaySoundOnLoaded) {
+            if (sDingEnabled) {
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f));
             }
             if (ModernUIForge.isOptiFineLoaded() &&
-                    !Boolean.parseBoolean(
-                            ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE)
-                    )) {
+                    ModernUIForge.isTextEngineEnabled()) {
                 OptiFineIntegration.setFastRender(false);
                 LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
             }
@@ -652,8 +657,10 @@ public final class UIManager implements LifecycleOwner {
                         .getJavaLocale()).isRightToLeft()));*/
                         GlyphManager.getInstance().debug();
                 case GLFW_KEY_V -> {
-                    TextLayoutEngine.getInstance().dumpEmojiAtlas();
-                    TextLayoutEngine.getInstance().dumpBitmapFonts();
+                    if (ModernUIForge.isTextEngineEnabled()) {
+                        TextLayoutEngine.getInstance().dumpEmojiAtlas();
+                        TextLayoutEngine.getInstance().dumpBitmapFonts();
+                    }
                 }
                 case GLFW_KEY_O -> mNoRender = !mNoRender;
                 case GLFW_KEY_F -> System.gc();
@@ -1056,7 +1063,7 @@ public final class UIManager implements LifecycleOwner {
             if (mRunning) {
                 mRoot.mChoreographer.scheduleFrameAsync(mFrameTimeNanos);
                 // update extension animations
-                BlurHandler.INSTANCE.update(mElapsedTimeMillis);
+                BlurHandler.INSTANCE.onRenderTick(mElapsedTimeMillis);
                 if (TooltipRenderer.sTooltip) {
                     mTooltipRenderer.update(deltaMillis, mFrameTimeNanos / 1000000);
                 }
@@ -1100,6 +1107,36 @@ public final class UIManager implements LifecycleOwner {
                 }
             }
         }*/
+    }
+
+    @SubscribeEvent
+    void onClientTick(@Nonnull TickEvent.ClientTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            BlurHandler.INSTANCE.onClientTick();
+        }
+    }
+
+    @SubscribeEvent
+    void onChangeFov(@Nonnull ViewportEvent.ComputeFov event) {
+        boolean zoomActive = false;
+        if (sZoomEnabled && minecraft.screen == null) {
+            zoomActive = ZOOM_KEY.isDown();
+        }
+        if (zoomActive) {
+            if (!mZoomMode) {
+                mZoomMode = true;
+                mZoomSmoothCamera = minecraft.options.smoothCamera;
+                minecraft.options.smoothCamera = true;
+                minecraft.levelRenderer.needsUpdate();
+            }
+            event.setFOV(
+                    event.getFOV() * 0.25
+            );
+        } else if (mZoomMode) {
+            mZoomMode = false;
+            minecraft.options.smoothCamera = mZoomSmoothCamera;
+            minecraft.levelRenderer.needsUpdate();
+        }
     }
 
     @UiThread
@@ -1206,9 +1243,12 @@ public final class UIManager implements LifecycleOwner {
             }
             synchronized (mRenderLock) {
                 if (!mRedrawn) {
-                    mTooltipRenderer.drawTooltip(mCanvas, mWindow, event.getPoseStack(), event.getComponents(),
-                            event.getX(), event.getY(), event.getFont(), event.getScreenWidth(),
-                            event.getScreenHeight(), cursorX, cursorY, minecraft.getItemRenderer());
+                    mTooltipRenderer.drawTooltip(mCanvas, mWindow,
+                            event.getItemStack(), event.getPoseStack(),
+                            event.getComponents(),
+                            event.getX(), event.getY(), event.getFont(),
+                            event.getScreenWidth(), event.getScreenHeight(),
+                            cursorX, cursorY, minecraft.getItemRenderer());
                 }
             }
         }
