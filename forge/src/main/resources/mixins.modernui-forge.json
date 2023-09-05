@@ -3,9 +3,10 @@
   "required": true,
   "mixinPriority": 1,
   "compatibilityLevel": "JAVA_17",
-  "plugin": "icyllis.modernui.mc.forge.MixinConfigPlugin",
-  "package": "icyllis.modernui.mc.forge.mixin",
+  "plugin": "icyllis.modernui.mc.MixinConfigPlugin",
+  "package": "icyllis.modernui.mc.mixin",
   "client": [
+    "AccessNativeImage",
     "AccessOptions",
     "AccessPostChain",
     "MixinClientTelemetryManager",

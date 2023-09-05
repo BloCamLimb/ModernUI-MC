@@ -27,7 +27,7 @@ import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
-import icyllis.modernui.mc.forge.ContainerDrawHelper;
+import icyllis.modernui.mc.ContainerDrawHelper;
 import icyllis.modernui.text.*;
 import icyllis.modernui.text.style.ForegroundColorSpan;
 import icyllis.modernui.util.*;

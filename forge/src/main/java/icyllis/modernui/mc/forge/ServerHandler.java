@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.mc.Config;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
@@ -33,9 +34,9 @@ import javax.annotation.Nonnull;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-final class ServerHandler {
+public final class ServerHandler {
 
-    static final ServerHandler INSTANCE = new ServerHandler();
+    public static final ServerHandler INSTANCE = new ServerHandler();
 
     boolean mStarted = false;
 
@@ -57,7 +58,7 @@ final class ServerHandler {
         mStarted = false;
     }
 
-    void determineShutdownTime() {
+    public void determineShutdownTime() {
         if (!mStarted) {
             return;
         }

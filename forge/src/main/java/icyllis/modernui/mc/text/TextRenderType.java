@@ -26,8 +26,7 @@ import icyllis.arc3d.engine.SamplerState;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.RefCnt;
-import icyllis.modernui.mc.forge.ModernUIForge;
-import icyllis.modernui.mc.forge.ModernUIText;
+import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.text.mixin.AccessRenderBuffers;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -362,10 +361,10 @@ public class TextRenderType extends RenderType {
                     var provider = obtainResourceProvider();
                     try {
                         sShaderSDFFillSmart = new ShaderInstance(provider,
-                                ModernUIForge.location("rendertype_modern_text_sdf_fill_400"),
+                                ModernUIMod.location("rendertype_modern_text_sdf_fill_400"),
                                 DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
                         sShaderSDFStrokeSmart = new ShaderInstance(provider,
-                                ModernUIForge.location("rendertype_modern_text_sdf_stroke_400"),
+                                ModernUIMod.location("rendertype_modern_text_sdf_stroke_400"),
                                 DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
                         LOGGER.info(MARKER, "Loaded smart SDF text shaders");
                     } catch (IOException e) {
@@ -396,13 +395,13 @@ public class TextRenderType extends RenderType {
         var provider = obtainResourceProvider();
         try {
             sShaderNormal = new ShaderInstance(provider,
-                    ModernUIForge.location("rendertype_modern_text_normal"),
+                    ModernUIMod.location("rendertype_modern_text_normal"),
                     DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
             sShaderSDFFill = new ShaderInstance(provider,
-                    ModernUIForge.location("rendertype_modern_text_sdf_fill"),
+                    ModernUIMod.location("rendertype_modern_text_sdf_fill"),
                     DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
             sShaderSDFStroke = new ShaderInstance(provider,
-                    ModernUIForge.location("rendertype_modern_text_sdf_stroke"),
+                    ModernUIMod.location("rendertype_modern_text_sdf_stroke"),
                     DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
         } catch (IOException e) {
             throw new IllegalStateException("Bad text shaders", e);
@@ -417,7 +416,7 @@ public class TextRenderType extends RenderType {
         final var fallback = source.asProvider();
         return location -> {
             // don't worry, ShaderInstance ctor will close it
-            @SuppressWarnings("resource") final var stream = ModernUIText.class
+            @SuppressWarnings("resource") final var stream = TextRenderType.class
                     .getResourceAsStream("/assets/" + location.getNamespace() + "/" + location.getPath());
             if (stream == null) {
                 // fallback to vanilla

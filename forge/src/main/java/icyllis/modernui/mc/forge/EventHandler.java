@@ -20,6 +20,8 @@ package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
+import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.StillAlive;
 import icyllis.modernui.mc.testforge.TestContainerMenu;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -47,7 +49,7 @@ final class EventHandler {
 
     @SubscribeEvent
     static void onRightClickItem(@Nonnull PlayerInteractEvent.RightClickItem event) {
-        if (ModernUIForge.sDevelopment) {
+        if (ModernUIMod.sDevelopment) {
             final boolean diamond;
             if (event.getSide().isServer() && ((diamond = event.getItemStack().is(Items.DIAMOND))
                     || event.getItemStack().is(Items.EMERALD))) {
@@ -67,7 +69,7 @@ final class EventHandler {
                         }
                     }, buf -> buf.writeBoolean(diamond));
                 } else {
-                    MuiForgeApi.openMenu(event.getEntity(), TestContainerMenu::new, buf -> buf.writeBoolean(diamond));
+                    MuiForgeApi.openMenu0(event.getEntity(), TestContainerMenu::new, buf -> buf.writeBoolean(diamond));
                 }
             }
         }
@@ -149,6 +151,7 @@ final class EventHandler {
         static void onRenderTick(@Nonnull TickEvent.RenderTickEvent event) {
             Core.flushMainCalls();
             Core.flushRenderCalls();
+            StillAlive.tick();
         }
 
         /*@SubscribeEvent(receiveCanceled = true)

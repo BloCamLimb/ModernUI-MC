@@ -1,3 +1,5 @@
+import net.fabricmc.loom.task.RemapJarTask
+
 plugins {
     id 'dev.architectury.loom' version '1.1-SNAPSHOT'
     //id 'com.matthewprenger.cursegradle' version '1.4.0'
@@ -5,6 +7,10 @@ plugins {
 }
 
 version = "${minecraft_version}-${mod_version}" as String
+
+configurations {
+    shadow
+}
 
 loom {
     silentMojangMappingsLicense()
@@ -17,6 +23,12 @@ repositories {
         url 'https://maven.parchmentmc.org/'
         content {
             includeGroup 'org.parchmentmc.data'
+        }
+    }
+    maven {
+        url 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/'
+        content {
+            includeGroup 'fuzs.forgeconfigapiport'
         }
     }
     maven {
@@ -34,4 +46,169 @@ dependencies {
 
     modImplementation "net.fabricmc:fabric-loader:0.14.22"
     modApi "net.fabricmc.fabric-api:fabric-api:0.87.0+1.20.1"
+
+    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:8.0.0"
+
+    if (rootProject.file('../ModernUI').exists()) {
+        implementation("icyllis.modernui:ModernUI-Core")
+        shadow("icyllis.modernui:ModernUI-Core") {
+            transitive = false
+        }
+        implementation("icyllis.modernui:ModernUI-ViewPager")
+        shadow("icyllis.modernui:ModernUI-ViewPager") {
+            transitive = false
+        }
+        implementation("icyllis.modernui:ModernUI-Markdown")
+        shadow("icyllis.modernui:ModernUI-Markdown") {
+            transitive = false
+        }
+    } else {
+        implementation("icyllis.modernui:ModernUI-Core:${core_version}")
+        shadow("icyllis.modernui:ModernUI-Core:${core_version}") {
+            transitive = false
+        }
+        implementation("icyllis.modernui:ModernUI-ViewPager:${core_version}")
+        shadow("icyllis.modernui:ModernUI-ViewPager:${core_version}") {
+            transitive = false
+        }
+        implementation("icyllis.modernui:ModernUI-Markdown:${core_version}")
+        shadow("icyllis.modernui:ModernUI-Markdown:${core_version}") {
+            transitive = false
+        }
+    }
+
+    implementation("com.github.ben-manes.caffeine:caffeine:${caffeine_version}")
+    implementation("com.vladsch.flexmark:flexmark:${flexmark_version}")
+
+    shadow "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
+    shadow "com.vladsch.flexmark:flexmark:${flexmark_version}"
+
+    shadow ':ModernUI-Fonts-2.0'
+}
+
+shadowJar {
+    archiveClassifier.set("shadow")
+    configurations = [project.configurations.shadow]
+
+    dependencies {
+        exclude 'icu4j-59.1.jar'
+        exclude 'commons-logging-1.2.jar'
+    }
+
+    relocate 'com.google.errorprone.annotations', 'icyllis.annotations'
+    relocate 'org.checkerframe', 'icyllis.checkerframe'
+    relocate 'com.github.benmanes.caffeine', 'icyllis.caffeine'
+    relocate 'com.vladsch.flexmark', 'icyllis.flexmark'
+    relocate 'org.intellij.lang.annotations', 'icyllis.annotations'
+    relocate 'org.jetbrains.annotations', 'icyllis.annotations'
+    relocate 'io.reactivex.rxjava3', 'icyllis.rxjava3'
+    relocate 'org.reactivestreams', 'icyllis.reactivestreams'
+
+    exclude 'META-INF/CHANGES'
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'META-INF/LICENSE**'
+    exclude 'META-INF/NOTICE**'
+    exclude 'META-INF/README**'
+    exclude 'META-INF/maven/**'
+}
+
+remapJar {
+    dependsOn(shadowJar)
+    inputFile.set(shadowJar.archiveFile)
+    archiveClassifier.set("universal")
+}
+
+tasks.register('remapMavenJar', RemapJarTask) {
+    dependsOn(jar)
+    inputFile.set(jar.archiveFile)
+    /*targetNamespace.set("srg") // to srg names
+    addNestedDependencies.set(true)
+    remapAccessWidener.set(true)*/
+    archiveClassifier.set("maven")
+}
+
+if (project.hasProperty("keystore")) {
+    remapJar.doLast {
+        ant.signjar(
+                jar: remapJar.archiveFile.get(),
+                alias: project.getProperty("keystore_alias"),
+                storepass: project.getProperty("keystore_pass"),
+                keystore: project.getProperty("keystore"),
+                storetype: 'pkcs12',
+                keypass: project.getProperty("keystore_keypass"),
+                tsaurl: 'http://sha256timestamp.ws.symantec.com/sha256/timestamp'
+        )
+    }
+}
+
+processResources {
+    inputs.property 'version', mod_version
+
+    filesMatching("META-INF/mods.toml") {
+        expand 'version': mod_version
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+                "Specification-Title"     : "ModernUI-Forge",
+                "Specification-Vendor"    : "BloCamLimb",
+                "Specification-Version"   : "2",
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.version,
+                "Implementation-Vendor"   : "BloCamLimb",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        )
+    }
+}
+
+publishing {
+    publications {
+        mavenForge(MavenPublication) {
+            artifact(remapMavenJar.archiveFile) {
+                builtBy build
+            }
+            artifact(sourcesJar.archiveFile) {
+                builtBy build
+                classifier 'sources'
+            }
+            artifactId = project.name
+            groupId = project.group
+            version = project.version
+
+            pom {
+                artifactId = project.name
+                groupId = project.group
+                version = project.version
+                name = rootProject.name
+                packaging = 'pom'
+                scm {
+                    url = 'https://github.com/BloCamLimb/ModernUI-MC.git'
+                }
+                issueManagement {
+                    system = 'github'
+                    url = 'https://github.com/BloCamLimb/ModernUI/issues'
+                }
+                licenses {
+                    license {
+                        name = 'LGPL-3.0-or-later'
+                        url = 'https://www.gnu.org/licenses/lgpl-3.0.en.html'
+                        distribution = 'repo'
+                    }
+                }
+                // do not provide any dependencies here, since this is a minecraft development
+                /*withXml {
+                    def dependenciesNode = asNode().appendNode('dependencies')
+                    configurations.library.allDependencies.each {
+                        def dependencyNode = dependenciesNode.appendNode('dependency')
+                        dependencyNode.appendNode('groupId', it.group)
+                        dependencyNode.appendNode('artifactId', it.name)
+                        dependencyNode.appendNode('version', it.version)
+                        dependencyNode.appendNode('scope', 'compile')
+                    }
+                }*/
+            }
+        }
+    }
 }

@@ -223,7 +223,7 @@ publishing {
                 name = rootProject.name
                 packaging = 'pom'
                 scm {
-                    url = 'https://github.com/BloCamLimb/ModernUI.git'
+                    url = 'https://github.com/BloCamLimb/ModernUI-MC.git'
                 }
                 issueManagement {
                     system = 'github'

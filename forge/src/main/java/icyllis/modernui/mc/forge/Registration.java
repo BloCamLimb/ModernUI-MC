@@ -24,7 +24,9 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.ImageStore;
-import icyllis.modernui.mc.forge.mixin.AccessOptions;
+import icyllis.modernui.mc.ScreenCallback;
+import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.mixin.AccessOptions;
 import icyllis.modernui.mc.testforge.TestContainerMenu;
 import icyllis.modernui.mc.testforge.TestPauseFragment;
 import net.minecraft.ChatFormatting;
@@ -44,6 +46,7 @@ import net.minecraft.world.item.Item;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.*;
@@ -75,7 +78,7 @@ final class Registration {
 
     @SubscribeEvent
     static void register(@Nonnull RegisterEvent event) {
-        if (ModernUIForge.sDevelopment) {
+        if (ModernUIMod.sDevelopment) {
             event.register(ForgeRegistries.MENU_TYPES.getRegistryKey(), Registration::registerMenus);
             event.register(ForgeRegistries.ITEMS.getRegistryKey(), Registration::registerItems);
         }
@@ -116,7 +119,7 @@ final class Registration {
         if (bytes == null) {
             throw new IllegalStateException();
         }*/
-        if (ModernUIForge.sDevelopment) {
+        if (ModernUIMod.sDevelopment) {
             NetworkMessages.sNetwork = DistExecutor.safeRunForDist(() -> NetworkMessages::client,
                     () -> NetworkMessages::new);
         }
@@ -174,7 +177,7 @@ final class Registration {
         static void loadingClient(RegisterParticleProvidersEvent event) {
             // this event fired after LOAD_REGISTRIES and before COMMON_SETUP on client main thread (render thread)
             // this event fired before RegisterClientReloadListenersEvent
-            UIManager.initialize();
+            UIManagerForge.initialize();
         }
 
         @SubscribeEvent
@@ -196,8 +199,13 @@ final class Registration {
 
         @SubscribeEvent
         static void registerKeyMapping(@Nonnull RegisterKeyMappingsEvent event) {
-            event.register(UIManager.OPEN_CENTER_KEY);
-            event.register(UIManager.ZOOM_KEY);
+            event.register(UIManagerForge.OPEN_CENTER_KEY);
+            event.register(UIManagerForge.ZOOM_KEY);
+        }
+
+        @SubscribeEvent
+        static void registerCapabilities(@Nonnull RegisterCapabilitiesEvent event) {
+            event.register(ScreenCallback.class);
         }
 
         @SubscribeEvent
@@ -207,20 +215,20 @@ final class Registration {
 
             event.enqueueWork(() -> {
                 ModernUI.getSelectedTypeface();
-                UIManager.initializeRenderer();
+                UIManagerForge.initializeRenderer();
                 var windowMode = Config.CLIENT.mLastWindowMode;
                 if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
                     // ensure it's applied and positioned
                     windowMode.apply();
                 }
-                if (ModernUIForge.sDevelopment) {
+                if (ModernUIMod.sDevelopment) {
                     MenuScreens.register(MuiRegistries.TEST_MENU.get(), MenuScreenFactory.create(menu ->
                             new TestPauseFragment()));
                 }
             });
 
             CrashReportCallables.registerCrashCallable("Fragments", () -> {
-                var fragments = UIManager.getInstance().mFragmentController;
+                var fragments = UIManager.getInstance().getFragmentController();
                 var builder = new StringBuilder();
                 if (fragments != null) {
                     try (var pw = new PrintWriter(new StringBuilderWriter(builder))) {
@@ -228,7 +236,7 @@ final class Registration {
                     }
                 }
                 return builder.toString();
-            }, () -> UIManager.getInstance().mFragmentController != null);
+            }, () -> UIManager.getInstance().getFragmentController() != null);
 
             // Always replace static variable as an insurance policy
             /*AccessOption.setGuiScale(new CycleOption("options.guiScale",
@@ -249,7 +257,7 @@ final class Registration {
                         /*caption*/ "options.guiScale",
                         /*tooltip*/ OptionInstance.noTooltip(),
                         /*toString*/ (caption, value) -> {
-                    int r = MuiForgeApi.calcGuiScales();
+                    int r = MuiModApi.calcGuiScales();
                     if (value == 0) { // auto
                         int auto = r >> 4 & 0xf;
                         return Options.genericValueLabel(caption,
@@ -285,7 +293,7 @@ final class Registration {
                 Options options = Minecraft.getInstance().options;
                 newGuiScale.set(options.guiScale().get());
                 ((AccessOptions) options).setGuiScale(newGuiScale);
-                if (ModernUIForge.isOptiFineLoaded()) {
+                if (ModernUIMod.isOptiFineLoaded()) {
                     OptiFineIntegration.setGuiScale(newGuiScale);
                     LOGGER.debug(MARKER, "Override OptiFine Gui Scale");
                 }
@@ -346,7 +354,7 @@ final class Registration {
 
             @Override
             public int maxInclusive() {
-                return MuiForgeApi.MAX_GUI_SCALE;
+                return MuiModApi.MAX_GUI_SCALE;
             }
 
             @Nonnull
@@ -388,7 +396,7 @@ final class Registration {
 
         @SubscribeEvent
         static void onMenuOpen(@Nonnull OpenMenuEvent event) {
-            if (ModernUIForge.sDevelopment) {
+            if (ModernUIMod.sDevelopment) {
                 if (event.getMenu() instanceof TestContainerMenu c) {
                     event.set(new TestPauseFragment());
                 }
@@ -407,8 +415,8 @@ final class Registration {
 
         @SubscribeEvent
         static void onRegistryModel(@Nonnull ModelEvent.RegisterAdditional event) {
-            event.register(ModernUIForge.location("item/project_builder_main"));
-            event.register(ModernUIForge.location("item/project_builder_cube"));
+            event.register(ModernUIMod.location("item/project_builder_main"));
+            event.register(ModernUIMod.location("item/project_builder_cube"));
         }
 
         @SubscribeEvent

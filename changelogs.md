@@ -1,5 +1,13 @@
 Changelogs
 ===
+### Modern UI 3.8.1.5
+#### Forge Extension 1.20.1-47.0.14 / NeoForge Extension 1.20.1-47.1.4
+* Re-architect
+#### Fabric Extension 1.20.1-0.87.0
+* Re-architect
+#### Modern Text Engine 1.20.1
+* No change
+
 ### Modern UI 3.8.1.4
 #### Forge Extension 1.20.1-47.0.14
 * Add OptiFine-like zoom

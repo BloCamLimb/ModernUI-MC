@@ -18,31 +18,29 @@
 
 package icyllis.modernui.mc.forge;
 
-import com.mojang.blaze3d.platform.Window;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.MathUtil;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
+import icyllis.modernui.mc.ScreenCallback;
+import icyllis.modernui.mc.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuConstructor;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.event.entity.player.PlayerContainerEvent;
+import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.PrintWriter;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -50,22 +48,7 @@ import java.util.function.Consumer;
  *
  * @since 3.3
  */
-public final class MuiForgeApi {
-
-    static final CopyOnWriteArrayList<OnScrollListener> sOnScrollListeners =
-            new CopyOnWriteArrayList<>();
-    static final CopyOnWriteArrayList<OnScreenChangeListener> sOnScreenChangeListeners =
-            new CopyOnWriteArrayList<>();
-    static final CopyOnWriteArrayList<OnWindowResizeListener> sOnWindowResizeListeners =
-            new CopyOnWriteArrayList<>();
-    static final CopyOnWriteArrayList<OnDebugDumpListener> sOnDebugDumpListeners =
-            new CopyOnWriteArrayList<>();
-
-    /**
-     * Minecraft GUI scale is limited to 8, so that density is limited to 4.0.
-     * This prevents rasterization of large vector graphics.
-     */
-    public static final int MAX_GUI_SCALE = 8;
+public final class MuiForgeApi extends MuiModApi {
 
     private MuiForgeApi() {
     }
@@ -86,7 +69,7 @@ public final class MuiForgeApi {
      */
     @MainThread
     public static void openScreen(@Nonnull Fragment fragment) {
-        UIManager.getInstance().open(fragment);
+        MuiModApi.openScreen(fragment);
     }
 
     /**
@@ -97,7 +80,7 @@ public final class MuiForgeApi {
      */
     @RenderThread
     public static long getElapsedTime() {
-        return UIManager.getElapsedTime();
+        return MuiModApi.getElapsedTime();
     }
 
     /**
@@ -117,7 +100,7 @@ public final class MuiForgeApi {
      */
     @RenderThread
     public static long getFrameTimeNanos() {
-        return UIManager.getFrameTimeNanos();
+        return MuiModApi.getFrameTimeNanos();
     }
 
     /**
@@ -128,7 +111,7 @@ public final class MuiForgeApi {
      * @param r the Runnable that will be executed
      */
     public static void postToUiThread(@Nonnull Runnable r) {
-        Core.getUiHandlerAsync().post(r);
+        MuiModApi.postToUiThread(r);
     }
 
     /**
@@ -145,67 +128,87 @@ public final class MuiForgeApi {
     }
 
     /**
-     * Open a container menu on server, generating a container id represents the next screen
-     * (due to network latency). Then send a packet to the player to request the application
-     * user interface on client. This method must be called from server thread, this client
-     * will trigger a {@link OpenMenuEvent} later.
+     * Create a container menu on server-side with the given {@link MenuProvider}, generate a
+     * container id represents the next screen. Then send a packet to the player to request to
+     * open a GUI on the client. This method must be called from server thread,
+     * {@link net.minecraftforge.network.IContainerFactory#create(int, Inventory, FriendlyByteBuf)}
+     * and {@link MenuScreenFactory#createFragment(AbstractContainerMenu)} will be called on client.
      * <p>
      * This is served as a client/server interaction model, there must be a running server.
+     * <p>
+     * Do not use this, use {@link NetworkHooks#openScreen(ServerPlayer, MenuProvider, Consumer)}
+     * because Modern UI is client-only.
      *
      * @param player   the server player to open the screen for
      * @param provider a provider to create a menu on server side
-     * @see #openMenu(Player, MenuConstructor, Consumer)
+     * @see #openMenu(Player, MenuProvider, Consumer)
      * @see net.minecraftforge.common.extensions.IForgeMenuType#create(net.minecraftforge.network.IContainerFactory)
-     * @see OpenMenuEvent
-     * @deprecated use {@link MenuScreenFactory} instead
      */
-    @Deprecated
-    public static void openMenu(@Nonnull Player player, @Nonnull MenuConstructor provider) {
+    @ApiStatus.Internal
+    public static void openMenu(@Nonnull Player player, @Nonnull MenuProvider provider) {
         openMenu(player, provider, (Consumer<FriendlyByteBuf>) null);
     }
 
     /**
-     * Open a container menu on server, generating a container id represents the next screen
-     * (due to network latency). Then send a packet to the player to request the application
-     * user interface on client. This method must be called from server thread, this client
-     * will trigger a {@link OpenMenuEvent} later.
+     * Create a container menu on server-side with the given {@link MenuProvider}, generate a
+     * container id represents the next screen. Then send a packet to the player to request to
+     * open a GUI on the client. This method must be called from server thread,
+     * {@link net.minecraftforge.network.IContainerFactory#create(int, Inventory, FriendlyByteBuf)}
+     * and {@link MenuScreenFactory#createFragment(AbstractContainerMenu)} will be called on client.
      * <p>
      * This is served as a client/server interaction model, there must be a running server.
+     * <p>
+     * Do not use this, use {@link NetworkHooks#openScreen(ServerPlayer, MenuProvider, Consumer)}
+     * because Modern UI is client-only.
      *
      * @param player   the server player to open the screen for
      * @param provider a provider to create a menu on server side
      * @param pos      a block pos to send to client, this will be passed to
      *                 the menu supplier that registered on client
-     * @see #openMenu(Player, MenuConstructor, Consumer)
+     * @see #openMenu(Player, MenuProvider, Consumer)
      * @see net.minecraftforge.common.extensions.IForgeMenuType#create(net.minecraftforge.network.IContainerFactory)
-     * @see OpenMenuEvent
-     * @deprecated use {@link MenuScreenFactory} instead
      */
-    @Deprecated
-    public static void openMenu(@Nonnull Player player, @Nonnull MenuConstructor provider, @Nonnull BlockPos pos) {
+    @ApiStatus.Internal
+    public static void openMenu(@Nonnull Player player, @Nonnull MenuProvider provider, @Nonnull BlockPos pos) {
         openMenu(player, provider, buf -> buf.writeBlockPos(pos));
     }
 
     /**
-     * <b>Debug only.</b>
-     * <p>
-     * Open a container menu on server, generating a container id represents the next screen
-     * (due to network latency). Then send a packet to the player to request the application
-     * user interface on client. This method must be called from server thread, this client
-     * will trigger a {@link OpenMenuEvent} later.
+     * Create a container menu on server-side with the given {@link MenuProvider}, generate a
+     * container id represents the next screen. Then send a packet to the player to request to
+     * open a GUI on the client. This method must be called from server thread,
+     * {@link net.minecraftforge.network.IContainerFactory#create(int, Inventory, FriendlyByteBuf)}
+     * and {@link MenuScreenFactory#createFragment(AbstractContainerMenu)} will be called on client.
      * <p>
      * This is served as a client/server interaction model, there must be a running server.
+     * <p>
+     * Do not use this, use {@link NetworkHooks#openScreen(ServerPlayer, MenuProvider, Consumer)}
+     * because Modern UI is client-only.
      *
      * @param player   the server player to open the screen for
      * @param provider a provider to create a menu on server side
      * @param writer   a data writer to send additional data to client, this will be passed
      *                 to the menu supplier (IContainerFactory) that registered on client
      * @see net.minecraftforge.common.extensions.IForgeMenuType#create(net.minecraftforge.network.IContainerFactory)
-     * @see OpenMenuEvent
      */
     @ApiStatus.Internal
-    public static void openMenu(@Nonnull Player player, @Nonnull MenuConstructor provider,
+    public static void openMenu(@Nonnull Player player, @Nonnull MenuProvider provider,
                                 @Nullable Consumer<FriendlyByteBuf> writer) {
+        if (ModernUIMod.isDeveloperMode()) {
+            openMenu0(player, provider, writer);
+        } else {
+            if (!(player instanceof ServerPlayer p)) {
+                ModernUI.LOGGER.warn(ModernUI.MARKER, "openMenu() is not called from logical server",
+                        new Exception().fillInStackTrace());
+                return;
+            }
+            NetworkHooks.openScreen(p, provider, writer);
+        }
+    }
+
+    @ApiStatus.Internal
+    static void openMenu0(@Nonnull Player player, @Nonnull MenuConstructor provider,
+                          @Nullable Consumer<FriendlyByteBuf> writer) {
         if (!(player instanceof ServerPlayer p)) {
             ModernUI.LOGGER.warn(ModernUI.MARKER, "openMenu() is not called from logical server",
                     new Exception().fillInStackTrace());
@@ -224,174 +227,6 @@ public final class MuiForgeApi {
         p.initMenu(menu);
         p.containerMenu = menu;
         MinecraftForge.EVENT_BUS.post(new PlayerContainerEvent.Open(p, menu));
-    }
-
-    public static int calcGuiScales() {
-        return calcGuiScales(Minecraft.getInstance().getWindow());
-    }
-
-    public static int calcGuiScales(@Nonnull Window window) {
-        return calcGuiScales(window.getWidth(), window.getHeight());
-    }
-
-    // V4, this matches vanilla, screen size is 640x480 dp at least
-    public static int calcGuiScales(int framebufferWidth, int framebufferHeight) {
-        double w = framebufferWidth / 16.;
-        double h = framebufferHeight / 9.;
-        double base = Math.min(w, h);
-
-        int min;
-        int det = (int) (Math.min(framebufferWidth, h * 12) / 320);
-        if (det >= 2) {
-            min = MathUtil.clamp((int) (base / 64), 2, MAX_GUI_SCALE);
-        } else {
-            min = 2;
-        }
-        int max = MathUtil.clamp(det, 2, MAX_GUI_SCALE);
-
-        int auto;
-        if (min >= 2) {
-            double step = base > 216 ? 42. : base > 120 ? 36. : 30.;
-            int i = (int) (base / step);
-            int j = (int) (Math.max(w, h) / step);
-            double v1 = base / (i * 30.);
-            if (v1 > 42 / 30. || j > i) {
-                auto = MathUtil.clamp(i + 1, min, max);
-            } else {
-                auto = MathUtil.clamp(i, min, max);
-            }
-        } else {
-            auto = 2;
-        }
-        assert min <= auto && auto <= max;
-        return min << 8 | auto << 4 | max;
-    }
-
-    /**
-     * Registers a callback to be called when {@link org.lwjgl.glfw.GLFWScrollCallback} is called.
-     *
-     * @param listener the listener to register
-     * @see OnScrollListener
-     */
-    public static void addOnScrollListener(@Nonnull OnScrollListener listener) {
-        sOnScrollListeners.addIfAbsent(listener);
-    }
-
-    /**
-     * Remove a registered listener.
-     *
-     * @param listener the listener to unregister
-     */
-    public static void removeOnScrollListener(@Nonnull OnScrollListener listener) {
-        sOnScrollListeners.remove(listener);
-    }
-
-    /**
-     * Registers a callback to be called when {@link Minecraft#setScreen(Screen)} is called.
-     *
-     * @param listener the listener to register
-     * @see OnScreenChangeListener
-     */
-    public static void addOnScreenChangeListener(@Nonnull OnScreenChangeListener listener) {
-        sOnScreenChangeListeners.addIfAbsent(listener);
-    }
-
-    /**
-     * Remove a registered listener.
-     *
-     * @param listener the listener to unregister
-     */
-    public static void removeOnScreenChangeListener(@Nonnull OnScreenChangeListener listener) {
-        sOnScreenChangeListeners.remove(listener);
-    }
-
-    /**
-     * Registers a callback to be invoked at the beginning of {@link Minecraft#resizeDisplay()}.
-     *
-     * @param listener the listener to register
-     * @see OnWindowResizeListener
-     */
-    public static void addOnWindowResizeListener(@Nonnull OnWindowResizeListener listener) {
-        sOnWindowResizeListeners.addIfAbsent(listener);
-    }
-
-    /**
-     * Remove a registered listener.
-     *
-     * @param listener the listener to unregister
-     */
-    public static void removeOnWindowResizeListener(@Nonnull OnWindowResizeListener listener) {
-        sOnWindowResizeListeners.remove(listener);
-    }
-
-    /**
-     * Registers a callback to be called when Modern UI dumps its debug info to chat or console.
-     *
-     * @param listener the listener to register
-     * @see OnDebugDumpListener
-     */
-    public static void addOnDebugDumpListener(@Nonnull OnDebugDumpListener listener) {
-        sOnDebugDumpListeners.addIfAbsent(listener);
-    }
-
-    /**
-     * Remove a registered OnDebugDumpListener.
-     *
-     * @param listener the listener to unregister
-     */
-    public static void removeOnDebugDumpListener(@Nonnull OnDebugDumpListener listener) {
-        sOnDebugDumpListeners.remove(listener);
-    }
-
-    @FunctionalInterface
-    public interface OnScrollListener {
-
-        /**
-         * Called when a scroll event polling from the main handler and responding to the main window.
-         *
-         * @param scrollX raw relative movement of the horizontal scroll wheel or touchpad gesture
-         * @param scrollY raw relative movement of the vertical scroll wheel or touchpad gesture
-         */
-        void onScroll(double scrollX, double scrollY);
-    }
-
-    @FunctionalInterface
-    public interface OnScreenChangeListener {
-
-        /**
-         * Called when {@link Minecraft#setScreen(Screen)} is called, and after Forge's
-         * event is fired.
-         *
-         * @param oldScreen the old screen
-         * @param newScreen the new screen
-         */
-        void onScreenChange(@Nullable Screen oldScreen, @Nullable Screen newScreen);
-    }
-
-    @FunctionalInterface
-    public interface OnWindowResizeListener {
-
-        /**
-         * Invoked at the beginning of {@link Minecraft#resizeDisplay()}.
-         * Gui scale algorithm is replaced by Modern UI, see {@link #calcGuiScales(Window)}.
-         *
-         * @param width       framebuffer width of the window in pixels
-         * @param height      framebuffer height of the window in pixels
-         * @param guiScale    the new gui scale will be applied to (not apply yet)
-         * @param oldGuiScale the old gui scale, may be equal to the new gui scale
-         */
-        void onWindowResize(int width, int height, int guiScale, int oldGuiScale);
-    }
-
-    @FunctionalInterface
-    public interface OnDebugDumpListener {
-
-        /**
-         * Called when Modern UI dumps its debug info to chat or console.
-         *
-         * @param writer the writer to add new lines
-         */
-        void onDebugDump(@Nonnull PrintWriter writer);
     }
 
     /* Screen */

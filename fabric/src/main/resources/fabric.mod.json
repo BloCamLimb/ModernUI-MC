@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "modernui",
+  "version": "${version}",
+  "name": "Modern UI",
+  "description": "    Modern desktop framework from low-level 3D graphics API to high-level view model, for development of 2D/3D rendering software or game engine, with internationalization support and many new technologies.\n    Modern UI is a desktop application framework designed for standalone 2D and 3D rendering software development. It makes use of modern 3D graphical APIs and technologies to provide high real-time rendering performance. For good measure, Modern UI improves and optimizes a set of features used by Android and its own set of internationalization supporting text layout engine meeting Unicode specification.\n    This version is an official version that extends to Minecraft and Forge, which combines Modern UI with Minecraft and provides a large number of additional features and modding APIs.",
+  "authors": [
+    "BloCamLimb"
+  ],
+  "contact": {
+    "homepage": "https://curseforge.com/minecraft/mc-mods/modern-ui",
+    "issues": "https://github.com/BloCamLimb/ModernUI/issues",
+    "sources": "https://github.com/BloCamLimb/ModernUI-MC"
+  },
+  "license": "All rights reserved",
+  "icon": "modernui_logo.png",
+  "environment": "client",
+  "entrypoints": {
+    "main": [
+      "icyllis.modernui.mc.fabric.ModernUIFabric"
+    ],
+    "client": [
+      "icyllis.modernui.mc.fabric.ModernUIFabric$Client"
+    ]
+  },
+  "mixins": [
+    "mixins.modernui-fabric.json",
+    "mixins.modernui-textmc.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.21",
+    "minecraft": ">=1.20.1",
+    "java": ">=17",
+    "fabric-api": ">=0.87.0",
+    "forgeconfigapiport": ">=8.0.0"
+  },
+  "suggests": {
+    "another-mod": "*"
+  }
+}

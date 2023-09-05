@@ -19,6 +19,8 @@
 package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.fragment.Fragment;
+import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.ScreenCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -44,7 +46,9 @@ import javax.annotation.Nullable;
  * @param <T> the type of container menu
  * @see SimpleScreen
  */
-final class MenuScreen<T extends AbstractContainerMenu> extends AbstractContainerScreen<T> implements MuiScreen {
+final class MenuScreen<T extends AbstractContainerMenu>
+        extends AbstractContainerScreen<T>
+        implements MuiScreen, ICapabilityProvider {
 
     private final UIManager mHost;
     private final Fragment mFragment;
@@ -115,7 +119,12 @@ final class MenuScreen<T extends AbstractContainerMenu> extends AbstractContaine
     @Override
     @SuppressWarnings("ConstantConditions")
     public ScreenCallback getCallback() {
-        return mCallback != null ? mCallback : getCapability(SCREEN_CALLBACK).orElse(null);
+        return mCallback != null ? mCallback : getCapability(UIManagerForge.SCREEN_CALLBACK).orElse(null);
+    }
+
+    @Override
+    public boolean isMenuScreen() {
+        return true;
     }
 
     @Nonnull

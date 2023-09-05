@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.forge;
 
+import icyllis.modernui.mc.Config;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.apache.commons.lang3.tuple.Pair;

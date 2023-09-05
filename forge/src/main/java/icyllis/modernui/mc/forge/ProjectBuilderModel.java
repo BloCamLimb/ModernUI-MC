@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import icyllis.modernui.mc.ModernUIMod;
 import net.minecraft.client.resources.model.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -41,7 +42,7 @@ final class ProjectBuilderModel extends BakedModelWrapper<BakedModel> {
     }
 
     private static BakedModel bakeCustomModel(@Nonnull Map<ResourceLocation, BakedModel> models, String path) {
-        return models.get(ModernUIForge.location(path));
+        return models.get(ModernUIMod.location(path));
     }
 
     @Nonnull

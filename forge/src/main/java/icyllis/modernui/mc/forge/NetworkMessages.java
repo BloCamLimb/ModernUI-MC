@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.fragment.Fragment;
+import icyllis.modernui.mc.ModernUIMod;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -48,7 +49,7 @@ public sealed class NetworkMessages extends NetworkHandler {
     static NetworkHandler sNetwork;
 
     NetworkMessages() {
-        super(ModernUIForge.location("network"), "360", true);
+        super(ModernUIMod.location("network"), "360", true);
     }
 
     /*@Deprecated
@@ -127,7 +128,7 @@ public sealed class NetworkMessages extends NetworkHandler {
                             p.closeContainer(); // close server menu whatever it is
                         } else {
                             p.containerMenu = menu;
-                            Minecraft.getInstance().setScreen(new MenuScreen<>(UIManager.getInstance(),
+                            Minecraft.getInstance().setScreen(new MenuScreen<>(UIManagerForge.getInstance(),
                                     fragment,
                                     menu,
                                     p.getInventory(),
