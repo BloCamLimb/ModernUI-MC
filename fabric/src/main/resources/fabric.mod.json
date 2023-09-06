@@ -20,7 +20,7 @@
       "icyllis.modernui.mc.fabric.ModernUIFabric"
     ],
     "client": [
-      "icyllis.modernui.mc.fabric.ModernUIFabric$Client"
+      "icyllis.modernui.mc.fabric.ModernUIFabricClient"
     ]
   },
   "mixins": [

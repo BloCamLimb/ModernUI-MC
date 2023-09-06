@@ -144,7 +144,7 @@ if (project.hasProperty("keystore")) {
 processResources {
     inputs.property 'version', mod_version
 
-    filesMatching("META-INF/mods.toml") {
+    filesMatching("fabric.mod.json") {
         expand 'version': mod_version
     }
 }

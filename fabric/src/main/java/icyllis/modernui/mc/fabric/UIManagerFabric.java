@@ -50,8 +50,8 @@ public final class UIManagerFabric extends UIManager {
     private UIManagerFabric() {
         super();
 
-        ModernUIFabric.Client.START_RENDER_TICK.register(() -> super.onRenderTick(false));
-        ModernUIFabric.Client.END_RENDER_TICK.register(() -> super.onRenderTick(true));
+        ModernUIFabricClient.START_RENDER_TICK.register(() -> super.onRenderTick(false));
+        ModernUIFabricClient.END_RENDER_TICK.register(() -> super.onRenderTick(true));
 
         ClientTickEvents.START_CLIENT_TICK.register((mc) -> super.onClientTick(false));
         ClientTickEvents.END_CLIENT_TICK.register((mc) -> super.onClientTick(true));

@@ -20,7 +20,7 @@ package icyllis.modernui.mc.mixin;
 
 import com.mojang.blaze3d.platform.Window;
 import icyllis.modernui.mc.*;
-import icyllis.modernui.mc.fabric.ModernUIFabric;
+import icyllis.modernui.mc.fabric.ModernUIFabricClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import org.lwjgl.glfw.GLFW;
@@ -89,12 +89,12 @@ public abstract class MixinMinecraft {
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;" +
             "render(FJZ)V", shift = At.Shift.BEFORE))
     private void onStartRenderTick(boolean hasMemory, CallbackInfo ci) {
-        ModernUIFabric.Client.START_RENDER_TICK.invoker().run();
+        ModernUIFabricClient.START_RENDER_TICK.invoker().run();
     }
 
     @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GameRenderer;" +
             "render(FJZ)V", shift = At.Shift.AFTER))
     private void onEndRenderTick(boolean hasMemory, CallbackInfo ci) {
-        ModernUIFabric.Client.END_RENDER_TICK.invoker().run();
+        ModernUIFabricClient.END_RENDER_TICK.invoker().run();
     }
 }
