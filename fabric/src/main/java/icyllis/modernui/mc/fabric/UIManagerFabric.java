@@ -28,6 +28,7 @@ import icyllis.modernui.view.KeyEvent;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.sounds.SoundEvents;
 import org.jetbrains.annotations.ApiStatus;
@@ -91,6 +92,11 @@ public final class UIManagerFabric extends UIManager {
                     OptiFineIntegration.setFastRender(false);
                     LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
                 }
+                var windowMode = Config.CLIENT.mLastWindowMode;
+                if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
+                    // ensure it's applied and positioned
+                    windowMode.apply();
+                }
                 mFirstScreenOpened = true;
             }
 
@@ -119,9 +125,13 @@ public final class UIManagerFabric extends UIManager {
             mRoot.enqueueInputEvent(keyEvent);
         }
         if (action == GLFW_PRESS) {
-            if (OPEN_CENTER_KEY.matches(key, scanCode)) {
-                open(new CenterFragment2());
-                return;
+            if (minecraft.screen == null ||
+                    minecraft.screen.shouldCloseOnEsc() ||
+                    minecraft.screen instanceof TitleScreen) {
+                if (Screen.hasControlDown() && OPEN_CENTER_KEY.matches(key, scanCode)) {
+                    open(new CenterFragment2());
+                    return;
+                }
             }
         }
         super.onPostKeyInput(key, scanCode, action, mods);

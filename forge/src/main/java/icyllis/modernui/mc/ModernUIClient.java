@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
@@ -201,13 +200,7 @@ public abstract class ModernUIClient extends ModernUI {
         synchronized (this) {
             // should be a worker thread
             if (mTypeface == null) {
-                if (RenderSystem.isOnRenderThread() || Minecraft.getInstance().isSameThread()) {
-                    LOGGER.error(MARKER,
-                            "Loading typeface on the render thread, but it should be on a worker thread.\n"
-                                    + "Don't report to Modern UI, but to other mods as displayed in stack trace.",
-                            new Exception("Loading typeface at the wrong mod loading stage")
-                                    .fillInStackTrace());
-                }
+                checkTypefaceEarlyLoadingLocked();
                 mTypeface = loadTypefaceInternal(this::setFirstFontFamily, true);
                 // do some warm-up, but do not block ourselves
                 var paint = new FontPaint();
@@ -221,6 +214,8 @@ public abstract class ModernUIClient extends ModernUI {
         }
         return mTypeface;
     }
+
+    protected abstract void checkTypefaceEarlyLoadingLocked();
 
     // reload just Typeface on main thread, called after loaded
     public void reloadTypeface() {

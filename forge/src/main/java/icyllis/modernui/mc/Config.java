@@ -96,18 +96,28 @@ public final class Config {
         registerConfig.accept(TEXT_SPEC);
     }
 
-    public static void reload(@Nonnull ModConfig config) {
+    /*public static void reload(@Nonnull ModConfig config) {
+        final IConfigSpec<?> spec = config.getSpec();
+        *//* else if (spec == SERVER_SPEC) {
+            SERVER.reload();
+            LOGGER.debug(MARKER, "Server config reloaded with {}", event.getClass().getSimpleName());
+        }*//*
+    }*/
+
+    public static void reloadCommon(@Nonnull ModConfig config) {
+        final IConfigSpec<?> spec = config.getSpec();
+        if (spec == COMMON_SPEC) {
+            COMMON.reload();
+            LOGGER.debug(MARKER, "Modern UI common config loaded/reloaded");
+        }
+    }
+
+    public static void reloadAnyClient(@Nonnull ModConfig config) {
         final IConfigSpec<?> spec = config.getSpec();
         if (spec == CLIENT_SPEC) {
             CLIENT.reload();
             LOGGER.debug(MARKER, "Modern UI client config loaded/reloaded");
-        } else if (spec == COMMON_SPEC) {
-            COMMON.reload();
-            LOGGER.debug(MARKER, "Modern UI common config loaded/reloaded");
-        }/* else if (spec == SERVER_SPEC) {
-            SERVER.reload();
-            LOGGER.debug(MARKER, "Server config reloaded with {}", event.getClass().getSimpleName());
-        }*/ else if (spec == TEXT_SPEC) {
+        } else if (spec == TEXT_SPEC) {
             TEXT.reload();
             LOGGER.debug(MARKER, "Modern UI text config loaded/reloaded");
         }

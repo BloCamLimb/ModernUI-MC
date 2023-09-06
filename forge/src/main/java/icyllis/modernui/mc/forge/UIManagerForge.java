@@ -34,6 +34,7 @@ import icyllis.modernui.text.TextUtils;
 import icyllis.modernui.view.KeyEvent;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.renderer.texture.*;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.resources.ResourceLocation;
@@ -179,10 +180,14 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             mRoot.enqueueInputEvent(keyEvent);
         }
         if (event.getAction() == GLFW_PRESS) {
-            InputConstants.Key key = InputConstants.getKey(event.getKey(), event.getScanCode());
-            if (OPEN_CENTER_KEY.isActiveAndMatches(key)) {
-                open(new CenterFragment2());
-                return;
+            if (minecraft.screen == null ||
+                    minecraft.screen.shouldCloseOnEsc() ||
+                    minecraft.screen instanceof TitleScreen) {
+                InputConstants.Key key = InputConstants.getKey(event.getKey(), event.getScanCode());
+                if (OPEN_CENTER_KEY.isActiveAndMatches(key)) {
+                    open(new CenterFragment2());
+                    return;
+                }
             }
         }
         if (!Screen.hasControlDown() || !Screen.hasShiftDown() || !ModernUIMod.isDeveloperMode()) {

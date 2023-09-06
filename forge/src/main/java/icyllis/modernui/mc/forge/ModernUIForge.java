@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.forge;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.*;
 import net.minecraft.client.Minecraft;
@@ -81,18 +82,12 @@ public final class ModernUIForge extends ModernUIMod {
                     "and Modern UI has better performance than it");
         }
 
-        if (FMLEnvironment.dist.isClient()) {
-            Config.initClientConfig(
-                    spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
-                            ModernUI.NAME_CPT + "/client.toml")
-            );
-        }
         Config.initCommonConfig(
                 spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, spec,
                         ModernUI.NAME_CPT + "/common.toml")
         );
         FMLJavaModLoadingContext.get().getModEventBus().addListener(
-                (Consumer<ModConfigEvent>) event -> Config.reload(event.getConfig())
+                (Consumer<ModConfigEvent>) event -> Config.reloadCommon(event.getConfig())
         );
         LocalStorage.init();
 
@@ -152,6 +147,10 @@ public final class ModernUIForge extends ModernUIMod {
 
         private Client() {
             super();
+            Config.initClientConfig(
+                    spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
+                            ModernUI.NAME_CPT + "/client.toml")
+            );
             if (isTextEngineEnabled()) {
                 ModernUIText.init();
                 Config.initTextConfig(
@@ -160,10 +159,24 @@ public final class ModernUIForge extends ModernUIMod {
                 );
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
+            FMLJavaModLoadingContext.get().getModEventBus().addListener(
+                    (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())
+            );
             if (ModernUIMod.sDevelopment) {
                 FMLJavaModLoadingContext.get().getModEventBus().register(Registration.ModClientDev.class);
             }
             LOGGER.info(MARKER, "Initialized Modern UI client");
+        }
+
+        @Override
+        protected void checkTypefaceEarlyLoadingLocked() {
+            if (RenderSystem.isOnRenderThread() || Minecraft.getInstance().isSameThread()) {
+                LOGGER.error(MARKER,
+                        "Loading typeface on the render thread, but it should be on a worker thread.\n"
+                                + "Don't report to Modern UI, but to other mods as displayed in stack trace.",
+                        new Exception("Loading typeface at the wrong mod loading stage")
+                                .fillInStackTrace());
+            }
         }
 
         @SuppressWarnings("ConstantValue")

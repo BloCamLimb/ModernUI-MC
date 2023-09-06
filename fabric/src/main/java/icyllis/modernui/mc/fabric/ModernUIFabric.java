@@ -61,14 +61,8 @@ public class ModernUIFabric extends ModernUIMod implements ModInitializer {
             LOGGER.warn(MARKER, "Signature is missing");
         }
 
-        ModConfigEvents.loading(ID).register(Config::reload);
-        ModConfigEvents.reloading(ID).register(Config::reload);
-        if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
-            Config.initClientConfig(
-                    spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
-                            ModernUI.NAME_CPT + "/client.toml")
-            );
-        }
+        ModConfigEvents.loading(ID).register(Config::reloadCommon);
+        ModConfigEvents.reloading(ID).register(Config::reloadCommon);
         Config.initCommonConfig(
                 spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.COMMON, spec,
                         ModernUI.NAME_CPT + "/common.toml")
@@ -102,6 +96,11 @@ public class ModernUIFabric extends ModernUIMod implements ModInitializer {
         }
 
         @Override
+        protected void checkTypefaceEarlyLoadingLocked() {
+            // No-op, on Fabric, this should be loaded from TitleScreen and measureText on main thread...
+        }
+
+        @Override
         public void onInitializeClient() {
             START_RENDER_TICK.register(EventHandler.Client::onRenderTick);
             END_RENDER_TICK.register(EventHandler.Client::onRenderTick);
@@ -126,6 +125,9 @@ public class ModernUIFabric extends ModernUIMod implements ModInitializer {
                 }
             });
 
+            ModConfigEvents.loading(ID).register(Config::reloadAnyClient);
+            ModConfigEvents.reloading(ID).register(Config::reloadAnyClient);
+
             ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
                 UIManagerFabric.initializeRenderer();
                 var windowMode = Config.CLIENT.mLastWindowMode;
@@ -135,16 +137,23 @@ public class ModernUIFabric extends ModernUIMod implements ModInitializer {
                 }
             });
 
+            Config.initClientConfig(
+                    spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
+                            ModernUI.NAME_CPT + "/client.toml")
+            );
+
             if (isTextEngineEnabled()) {
                 Config.initTextConfig(
                         spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
                                 ModernUI.NAME_CPT + "/text.toml")
                 );
 
-                MuiModApi.addOnWindowResizeListener((width, height, newScale, oldScale) -> {
-                    if (Core.getRenderThread() != null && newScale != oldScale) {
-                        TextLayoutEngine.getInstance().reload();
-                    }
+                ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
+                    MuiModApi.addOnWindowResizeListener((width, height, newScale, oldScale) -> {
+                        if (Core.getRenderThread() != null && newScale != oldScale) {
+                            TextLayoutEngine.getInstance().reload();
+                        }
+                    });
                 });
 
                 MuiModApi.addOnDebugDumpListener(pw -> {
