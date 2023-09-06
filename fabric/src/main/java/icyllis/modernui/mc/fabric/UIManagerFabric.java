@@ -83,6 +83,7 @@ public final class UIManagerFabric extends UIManager {
         if (newScreen != null) {
             if (!mFirstScreenOpened) {
                 if (sDingEnabled) {
+                    glfwRequestWindowAttention(minecraft.getWindow().getWindow());
                     minecraft.getSoundManager().play(
                             SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f)
                     );

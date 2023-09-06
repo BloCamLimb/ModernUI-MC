@@ -152,7 +152,7 @@ processResources {
 jar {
     manifest {
         attributes(
-                "Specification-Title"     : "ModernUI-Forge",
+                "Specification-Title"     : project.name,
                 "Specification-Vendor"    : "BloCamLimb",
                 "Specification-Version"   : "2",
                 "Implementation-Title"    : project.name,
@@ -165,7 +165,7 @@ jar {
 
 publishing {
     publications {
-        mavenForge(MavenPublication) {
+        mavenFabric(MavenPublication) {
             artifact(remapMavenJar.archiveFile) {
                 builtBy build
             }

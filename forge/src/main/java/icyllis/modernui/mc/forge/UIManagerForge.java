@@ -131,12 +131,18 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
 
         if (!mFirstScreenOpened && !(newScreen instanceof LoadingErrorScreen)) {
             if (sDingEnabled) {
+                glfwRequestWindowAttention(minecraft.getWindow().getWindow());
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f));
             }
             if (ModernUIMod.isOptiFineLoaded() &&
                     ModernUIClient.isTextEngineEnabled()) {
                 OptiFineIntegration.setFastRender(false);
                 LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
+            }
+            var windowMode = Config.CLIENT.mLastWindowMode;
+            if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
+                // ensure it's applied and positioned
+                windowMode.apply();
             }
             mFirstScreenOpened = true;
         }

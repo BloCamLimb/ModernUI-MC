@@ -670,9 +670,9 @@ public final class Config {
         private final ForgeConfigSpec.BooleanValue developerMode;
         public final ForgeConfigSpec.IntValue oneTimeEvents;
 
-        public final ForgeConfigSpec.BooleanValue autoShutdown;
+        //public final ForgeConfigSpec.BooleanValue autoShutdown;
 
-        public final ForgeConfigSpec.ConfigValue<List<? extends String>> shutdownTimes;
+        //public final ForgeConfigSpec.ConfigValue<List<? extends String>> shutdownTimes;
 
         private Common(@Nonnull ForgeConfigSpec.Builder builder) {
             builder.comment("Developer Config")
@@ -685,7 +685,7 @@ public final class Config {
 
             builder.pop();
 
-            builder.comment("Auto Shutdown Config")
+            /*builder.comment("Auto Shutdown Config")
                     .push("autoShutdown");
 
             autoShutdown = builder.comment(
@@ -700,7 +700,7 @@ public final class Config {
                         return list;
                     }, s -> true);
 
-            builder.pop();
+            builder.pop();*/
         }
 
         private void reload() {

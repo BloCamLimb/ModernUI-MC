@@ -2,9 +2,12 @@ Changelogs
 ===
 ### Modern UI 3.8.1.5
 #### Forge Extension 1.20.1-47.0.14 / NeoForge Extension 1.20.1-47.1.4
-* Re-architect
-#### Fabric Extension 1.20.1-0.87.0
-* Re-architect
+* Re-architect for platform abstraction
+* Change step size for master volume multiplier option to 0.01
+* Prevent Action Center from being opened when a screen with shouldCloseOnEsc=false is opened
+* Request window attention when "Ding" is enabled
+#### Fabric Extension 1.20.1-0.14.21-0.87.0 / Quilt Extension 1.20.1-7.1.2-0.87.0
+* Functionally equivalent to Forge version but removed some features
 #### Modern Text Engine 1.20.1
 * No change
 
