@@ -1,5 +1,9 @@
 Changelogs
 ===
+### Modern UI 3.8.1.6
+### Modern Text Engine 1.20.1
+* Only override Font's StringSplitter
+
 ### Modern UI 3.8.1.5
 #### Forge Extension 1.20.1-47.0.14 / NeoForge Extension 1.20.1-47.1.4
 * Re-architect for platform abstraction

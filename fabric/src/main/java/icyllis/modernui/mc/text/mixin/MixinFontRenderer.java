@@ -18,14 +18,16 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import icyllis.modernui.mc.text.ModernTextRenderer;
-import icyllis.modernui.mc.text.TextLayoutEngine;
+import icyllis.modernui.mc.text.*;
+import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 import javax.annotation.Nonnull;
 
@@ -35,6 +37,12 @@ public abstract class MixinFontRenderer {
     @Unique
     private final ModernTextRenderer modernUI_MC$textRenderer =
             TextLayoutEngine.getInstance().getTextRenderer();
+
+    @Redirect(method = "<init>", at = @At(value = "NEW",
+            target = "(Lnet/minecraft/client/StringSplitter$WidthProvider;)Lnet/minecraft/client/StringSplitter;"))
+    private StringSplitter onNewSplitter(StringSplitter.WidthProvider widthProvider) {
+        return new ModernStringSplitter(TextLayoutEngine.getInstance(), widthProvider);
+    }
 
     /**
      * @author BloCamLimb

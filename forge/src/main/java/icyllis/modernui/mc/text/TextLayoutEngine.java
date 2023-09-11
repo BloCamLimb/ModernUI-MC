@@ -355,7 +355,9 @@ public class TextLayoutEngine implements PreparableReloadListener {
         reload();
 
         mTextRenderer = new ModernTextRenderer(this);
-        mStringSplitter = new ModernStringSplitter(this);
+        mStringSplitter = new ModernStringSplitter(this, (int ch, Style style) -> {
+            throw new UnsupportedOperationException("Modern Text Engine");
+        });
     }
 
     /**
