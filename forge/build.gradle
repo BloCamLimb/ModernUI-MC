@@ -191,7 +191,7 @@ processResources {
 jar {
     manifest {
         attributes(
-                "Specification-Title"     : "ModernUI-Forge",
+                "Specification-Title"     : project.name,
                 "Specification-Vendor"    : "BloCamLimb",
                 "Specification-Version"   : "2",
                 "Implementation-Title"    : project.name,
