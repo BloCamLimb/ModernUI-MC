@@ -36,7 +36,7 @@ import java.util.function.BiConsumer;
 /**
  * Provides text measurement, Unicode grapheme cluster breaking, Unicode line breaking and so on.
  */
-public final class ModernStringSplitter {
+public final class ModernStringSplitter extends StringSplitter {
 
     private final TextLayoutEngine mEngine;
 
@@ -45,8 +45,31 @@ public final class ModernStringSplitter {
     /**
      * Constructor
      */
-    public ModernStringSplitter(TextLayoutEngine engine) {
+    public ModernStringSplitter(TextLayoutEngine engine,
+                                StringSplitter.WidthProvider widthProvider) {
+        super(widthProvider);
         mEngine = engine;
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    public float stringWidth(@Nullable String text) {
+        return measureText(text);
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    public float stringWidth(@Nonnull FormattedText text) {
+        return measureText(text);
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    public float stringWidth(@Nonnull FormattedCharSequence text) {
+        return measureText(text);
     }
 
     /**
@@ -82,6 +105,95 @@ public final class ModernStringSplitter {
      */
     public float measureText(@Nonnull FormattedCharSequence text) {
         return mEngine.lookupFormattedLayout(text).getTotalAdvance();
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    public int plainIndexAtWidth(@Nonnull String text, int width, @Nonnull Style style) {
+        return indexByWidth(text, (float) width, style);
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    @Nonnull
+    public String plainHeadByWidth(@Nonnull String text, int width, @Nonnull Style style) {
+        return headByWidth(text, (float) width, style);
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    @Nonnull
+    public String plainTailByWidth(@Nonnull String text, int width, @Nonnull Style style) {
+        return tailByWidth(text, (float) width, style);
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    public int formattedIndexByWidth(@Nonnull String text, int width, @Nonnull Style style) {
+        return indexByWidth(text, (float) width, style);
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    @Nullable
+    public Style componentStyleAtWidth(@Nonnull FormattedText text, int width) {
+        return styleAtWidth(text, (float) width);
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    @Nullable
+    public Style componentStyleAtWidth(@Nonnull FormattedCharSequence text, int width) {
+        return styleAtWidth(text, (float) width);
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    @Nonnull
+    public String formattedHeadByWidth(@Nonnull String text, int width, @Nonnull Style style) {
+        return headByWidth(text, (float) width, style);
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    @Nonnull
+    public FormattedText headByWidth(@Nonnull FormattedText text, int width, @Nonnull Style style) {
+        // Handle Enchantment Table
+        /*if (text instanceof Component component &&
+                component.getSiblings().isEmpty() &&
+                component.getStyle().getFont().equals(Minecraft.ALT_FONT) &&
+                component.getContents() instanceof LiteralContents literal) {
+            final MutableFloat maxWidth = new MutableFloat(width);
+            final MutableInt position = new MutableInt();
+            if (!StringDecomposer.iterate(literal.text(), component.getStyle(),
+                    (index, sty, codePoint) -> {
+                        if (maxWidth.addAndGet(-widthProvider.getWidth(codePoint, sty)) >= 0) {
+                            position.setValue(index + Character.charCount(codePoint));
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    })) {
+                String substring = literal.text().substring(0, position.intValue());
+                if (!substring.isEmpty()) {
+                    return FormattedText.of(substring, component.getStyle());
+                }
+            } else {
+                if (!literal.text().isEmpty()) {
+                    return FormattedText.of(literal.text(), component.getStyle());
+                }
+            }
+            return FormattedText.EMPTY;
+        }*/
+        return headByWidth(text, (float) width, style);
     }
 
     /**
@@ -347,6 +459,22 @@ public final class ModernStringSplitter {
                 return Optional.empty(); // continue
             }
         }, style).orElse(text); // else the original text
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    public void splitLines(@Nonnull String text, int width, @Nonnull Style style, @Deprecated boolean withEndSpace,
+                           @Nonnull StringSplitter.LinePosConsumer linePos) {
+        computeLineBreaks(text, (float) width, style, linePos);
+    }
+
+    /**
+     * Modern Text Engine
+     */
+    public void splitLines(@Nonnull FormattedText text, int width, @Nonnull Style style,
+                           @Nonnull BiConsumer<FormattedText, Boolean> consumer) {
+        computeLineBreaks(text, (float) width, style, consumer);
     }
 
     private static final int NOWHERE = 0xFFFFFFFF;

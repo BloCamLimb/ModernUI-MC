@@ -39,7 +39,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public String getRefMapperConfig() {
-        return FMLLoader.getNameFunction("srg").isPresent() ? null : "ModernUI-ModernUI-Forge-refmap.json";
+        return FMLLoader.getNameFunction("srg").isPresent() ? null : "ModernUI-Forge-ModernUI-Forge-refmap.json";
     }
 
     @Override

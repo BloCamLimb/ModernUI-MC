@@ -33,8 +33,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -120,12 +119,12 @@ public final class ModernUIForge {
         if (ModList.get().isLoaded("tipthescales") && !sOptiFineLoaded) {
             //sInterceptTipTheScales = true;
             LOGGER.fatal(MARKER, "Detected TipTheScales without OptiFine");
-            throw new UnsupportedOperationException("Please remove TipTheScales, Modern UI can do everything it can, " +
+            warnSetup("You should remove TipTheScales, Modern UI already includes its features, " +
                     "and Modern UI is also compatible with OptiFine");
         }
         if (ModList.get().isLoaded("reblured")) {
             LOGGER.fatal(MARKER, "Detected ReBlurred");
-            throw new UnsupportedOperationException("Please remove ReBlurred, Modern UI can do everything it can, " +
+            warnSetup("You should remove ReBlurred, Modern UI already includes its features, " +
                     "and Modern UI has better performance than it");
         }
 
@@ -218,9 +217,9 @@ public final class ModernUIForge {
         return new ResourceLocation(ID, path);
     }
 
-    /*public static void warnSetup(String key, Object... args) {
+    public static void warnSetup(String key, Object... args) {
         ModLoader.get().addWarning(new ModLoadingWarning(null, ModLoadingStage.SIDED_SETUP, key, args));
-    }*/
+    }
 
     private static void loadFonts(String first,
                                   @Nonnull Collection<String> fallbacks,

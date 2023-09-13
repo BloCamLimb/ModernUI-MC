@@ -149,7 +149,7 @@ public class PreferencesFragment extends Fragment {
 
             list.addView(createFloatOption(context, "modernui.center.system.globalFontScale",
                     Config.Client.FONT_SCALE_MIN, Config.Client.FONT_SCALE_MAX,
-                    4, Config.CLIENT.mFontScale, Config.CLIENT::saveAndReloadAsync));
+                    4, Config.CLIENT.mFontScale, 10, Config.CLIENT::saveAndReloadAsync));
 
             {
                 var option = createInputBox(context, "modernui.center.system.globalAnimationScale");
@@ -367,11 +367,11 @@ public class PreferencesFragment extends Fragment {
 
             list.addView(createFloatOption(context, "modernui.center.screen.masterVolumeInactive",
                     0, 1, 4,
-                    Config.CLIENT.mMasterVolumeInactive, saveFn));
+                    Config.CLIENT.mMasterVolumeInactive, 100, saveFn));
 
             list.addView(createFloatOption(context, "modernui.center.screen.masterVolumeMinimized",
                     0, 1, 4,
-                    Config.CLIENT.mMasterVolumeMinimized, saveFn));
+                    Config.CLIENT.mMasterVolumeMinimized, 100, saveFn));
 
             {
                 var option = createBooleanOption(context, "modernui.center.screen.inventoryPause",
@@ -607,7 +607,7 @@ public class PreferencesFragment extends Fragment {
 
         category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
                 ModernUIText.Config.SHADOW_OFFSET_MIN, ModernUIText.Config.SHADOW_OFFSET_MAX,
-                5, ModernUIText.CONFIG.mShadowOffset, saveFn));
+                5, ModernUIText.CONFIG.mShadowOffset, 10, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.text.allowAsyncLayout",
                 ModernUIText.CONFIG.mAllowAsyncLayout, saveFn));
@@ -637,15 +637,15 @@ public class PreferencesFragment extends Fragment {
 
         category.addView(createFloatOption(context, "modernui.center.text.baseFontSize",
                 ModernUIText.Config.BASE_FONT_SIZE_MIN, ModernUIText.Config.BASE_FONT_SIZE_MAX,
-                5, ModernUIText.CONFIG.mBaseFontSize, saveFn));
+                5, ModernUIText.CONFIG.mBaseFontSize, 10, saveFn));
 
         category.addView(createFloatOption(context, "modernui.center.text.baselineShift",
                 ModernUIText.Config.BASELINE_MIN, ModernUIText.Config.BASELINE_MAX,
-                5, ModernUIText.CONFIG.mBaselineShift, saveFn));
+                5, ModernUIText.CONFIG.mBaselineShift, 10, saveFn));
 
         category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
                 ModernUIText.Config.OUTLINE_OFFSET_MIN, ModernUIText.Config.OUTLINE_OFFSET_MAX,
-                5, ModernUIText.CONFIG.mOutlineOffset, saveFn));
+                5, ModernUIText.CONFIG.mOutlineOffset, 10, saveFn));
 
         category.addView(createIntegerOption(context, "modernui.center.text.cacheLifespan",
                 ModernUIText.Config.LIFESPAN_MIN, ModernUIText.Config.LIFESPAN_MAX,
@@ -946,9 +946,10 @@ public class PreferencesFragment extends Fragment {
     public static LinearLayout createFloatOption(Context context, String name,
                                                  float minValue, float maxValue, int maxLength,
                                                  ForgeConfigSpec.DoubleValue config,
+                                                 float denominator,
                                                  Runnable saveFn) {
         return createFloatOption(context, name, minValue, maxValue, maxLength,
-                config, config::set, 10, saveFn);
+                config, config::set, denominator, saveFn);
     }
 
     public static LinearLayout createFloatOption(Context context, String name,
