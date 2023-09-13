@@ -19,7 +19,6 @@ allprojects {
     apply plugin: 'java'
 
     group = 'icyllis.modernui'
-    archivesBaseName = 'ModernUI'
 
     java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 

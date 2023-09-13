@@ -46,6 +46,7 @@ import icyllis.modernui.widget.EditText;
 import net.minecraft.*;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.texture.*;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
@@ -390,12 +391,18 @@ public final class UIManager implements LifecycleOwner {
 
         if (!mFirstScreenOpened && !(newScreen instanceof LoadingErrorScreen)) {
             if (sDingEnabled) {
+                glfwRequestWindowAttention(minecraft.getWindow().getWindow());
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f));
             }
             if (ModernUIForge.isOptiFineLoaded() &&
                     ModernUIForge.isTextEngineEnabled()) {
                 OptiFineIntegration.setFastRender(false);
                 LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
+            }
+            var windowMode = Config.CLIENT.mLastWindowMode;
+            if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
+                // ensure it's applied and positioned
+                windowMode.apply();
             }
             mFirstScreenOpened = true;
         }
@@ -615,10 +622,14 @@ public final class UIManager implements LifecycleOwner {
             mRoot.enqueueInputEvent(keyEvent);
         }
         if (event.getAction() == GLFW_PRESS) {
-            InputConstants.Key key = InputConstants.getKey(event.getKey(), event.getScanCode());
-            if (OPEN_CENTER_KEY.isActiveAndMatches(key)) {
-                open(new CenterFragment2());
-                return;
+            if (minecraft.screen == null ||
+                    minecraft.screen.shouldCloseOnEsc() ||
+                    minecraft.screen instanceof TitleScreen) {
+                InputConstants.Key key = InputConstants.getKey(event.getKey(), event.getScanCode());
+                if (OPEN_CENTER_KEY.isActiveAndMatches(key)) {
+                    open(new CenterFragment2());
+                    return;
+                }
             }
         }
         if (!Screen.hasControlDown() || !Screen.hasShiftDown() || !ModernUIForge.isDeveloperMode()) {

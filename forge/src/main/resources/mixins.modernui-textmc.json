@@ -21,7 +21,6 @@
     "MixinIngameGui",
     "MixinLanguage",
     "MixinLevelRenderer",
-    "MixinRenderSystem",
-    "MixinStringSplitter"
+    "MixinRenderSystem"
   ]
 }
