@@ -273,7 +273,7 @@ public final class Config {
                     .defineInRange("framerateMinimized", 0, 0, 255);
             mMasterVolumeInactive = builder.comment(
                             "Master volume multiplier on window inactive (out of focus or minimized), 1 = no change.")
-                    .defineInRange("masterVolumeInactive", 0.25, 0, 1);
+                    .defineInRange("masterVolumeInactive", 1.0, 0, 1);
             mMasterVolumeMinimized = builder.comment(
                             "Master volume multiplier on window minimized, 1 = same as master volume inactive.",
                             "This value will be no greater than master volume inactive.")

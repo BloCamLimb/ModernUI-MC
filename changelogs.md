@@ -1,6 +1,12 @@
 Changelogs
 ===
-### Modern UI 3.8.1.6
+### Modern UI 3.8.2.4
+#### Forge Extension 1.20.1-47.0.14 / NeoForge Extension 1.20.1-47.1.4
+* Change the crash with TipTheScales to warning
+* Remove bitwise AND in shaders
+#### Fabric Extension 1.20.1-0.14.21-0.87.0 / Quilt Extension 1.20.1-7.1.2-0.87.0
+* Remove bitwise AND in shaders
+* Functionally equivalent to Forge version but removed some features
 ### Modern Text Engine 1.20.1
 * Only override Font's StringSplitter
 

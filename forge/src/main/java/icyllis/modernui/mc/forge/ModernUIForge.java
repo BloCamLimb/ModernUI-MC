@@ -73,12 +73,12 @@ public final class ModernUIForge extends ModernUIMod {
         if (ModList.get().isLoaded("tipthescales") && !ModernUIMod.sOptiFineLoaded) {
             //sInterceptTipTheScales = true;
             LOGGER.fatal(MARKER, "Detected TipTheScales without OptiFine");
-            throw new UnsupportedOperationException("Please remove TipTheScales, Modern UI can do everything it can, " +
+            warnSetup("You should remove TipTheScales, Modern UI already includes its features, " +
                     "and Modern UI is also compatible with OptiFine");
         }
         if (ModList.get().isLoaded("reblured")) {
             LOGGER.fatal(MARKER, "Detected ReBlurred");
-            throw new UnsupportedOperationException("Please remove ReBlurred, Modern UI can do everything it can, " +
+            warnSetup("You should remove ReBlurred, Modern UI already includes its features, " +
                     "and Modern UI has better performance than it");
         }
 
@@ -112,9 +112,9 @@ public final class ModernUIForge extends ModernUIMod {
         LOGGER.info(MARKER, "Initialized Modern UI");
     }
 
-    /*public static void warnSetup(String key, Object... args) {
+    public static void warnSetup(String key, Object... args) {
         ModLoader.get().addWarning(new ModLoadingWarning(null, ModLoadingStage.SIDED_SETUP, key, args));
-    }*/
+    }
 
     @SuppressWarnings("UnusedReturnValue")
     public static <E extends Event & IModBusEvent> boolean post(@Nullable String ns, @Nonnull E e) {
