@@ -157,7 +157,7 @@ public class GLShaderManager {
             } else if (path.endsWith(".geom")) {
                 type = GL_GEOMETRY_SHADER;
             } else {
-                ModernUI.LOGGER.warn(GLCore.MARKER, "Unknown type identifier for shader source {}:{}", namespace, path);
+                ModernUI.LOGGER.warn(ModernUI.MARKER, "Unknown type identifier for shader source {}:{}", namespace, path);
                 return 0;
             }
         }
@@ -174,7 +174,7 @@ public class GLShaderManager {
             GLCore.glCompileShader(shader);
             if (GLCore.glGetShaderi(shader, GLCore.GL_COMPILE_STATUS) == GL_FALSE) {
                 String log = GLCore.glGetShaderInfoLog(shader, 8192).trim();
-                ModernUI.LOGGER.error(GLCore.MARKER, "Failed to compile shader {}:{}\n{}", namespace, path, log);
+                ModernUI.LOGGER.error(ModernUI.MARKER, "Failed to compile shader {}:{}\n{}", namespace, path, log);
                 GLCore.glDeleteShader(shader);
                 mShaders.get(namespace).putIfAbsent(path, 0);
                 return 0;
@@ -182,7 +182,7 @@ public class GLShaderManager {
             mShaders.get(namespace).putIfAbsent(path, shader);
             return shader;
         } catch (IOException e) {
-            ModernUI.LOGGER.error(GLCore.MARKER, "Failed to get shader source {}:{}\n", namespace, path, e);
+            ModernUI.LOGGER.error(ModernUI.MARKER, "Failed to get shader source {}:{}\n", namespace, path, e);
         } finally {
             MemoryUtil.memFree(source);
         }
@@ -213,7 +213,7 @@ public class GLShaderManager {
         GLCore.glLinkProgram(program);
         if (GLCore.glGetProgrami(program, GLCore.GL_LINK_STATUS) == GL_FALSE) {
             String log = GLCore.glGetProgramInfoLog(program, 8192);
-            ModernUI.LOGGER.error(GLCore.MARKER, "Failed to link shader program\n{}", log);
+            ModernUI.LOGGER.error(ModernUI.MARKER, "Failed to link shader program\n{}", log);
             // also detaches all shaders
             GLCore.glDeleteProgram(program);
             program = 0;

@@ -22,7 +22,6 @@ import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.font.GlyphInfo;
 import com.mojang.blaze3d.font.SheetGlyphInfo;
 import icyllis.arc3d.core.Strike;
-import icyllis.arc3d.opengl.GLTextureCompat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.*;
@@ -157,7 +156,7 @@ public class BitmapFont implements Font, AutoCloseable {
     private void createTextureLazy() {
         mTexture.allocate2D(GL_RGBA8, mBitmap.getWidth(), mBitmap.getHeight(), 0);
         try {
-            long pixels = mBitmap.getPixels();
+            long pixels = mBitmap.getAddress();
             mTexture.upload(0, 0, 0,
                     mBitmap.getWidth(), mBitmap.getHeight(),
                     0, 0, 0, 1,

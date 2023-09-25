@@ -26,7 +26,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.arc3d.core.Matrix4;
 import icyllis.arc3d.engine.Engine;
-import icyllis.arc3d.opengl.*;
+import icyllis.arc3d.opengl.GLServer;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.LayoutTransition;
@@ -69,14 +69,9 @@ import java.nio.ByteOrder;
 import java.util.List;
 import java.util.Objects;
 
-import static icyllis.arc3d.opengl.GLCore.DEFAULT_TEXTURE;
+import static icyllis.arc3d.opengl.GLCore.*;
 import static icyllis.modernui.ModernUI.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11C.*;
-import static org.lwjgl.opengl.GL13C.GL_TEXTURE0;
-import static org.lwjgl.opengl.GL14C.glBlendFuncSeparate;
-import static org.lwjgl.opengl.GL20C.*;
-import static org.lwjgl.opengl.GL30C.*;
 
 /**
  * Manage UI thread and connect Minecraft to Modern UI view system at most bottom level.
@@ -181,7 +176,7 @@ public abstract class UIManager implements LifecycleOwner {
     public static void initializeRenderer() {
         Core.checkRenderThread();
         if (ModernUIMod.isDeveloperMode()) {
-            GLCore.setupDebugCallback();
+            Core.glSetupDebugCallback();
         }
         Objects.requireNonNull(sInstance);
         sInstance.mCanvas = GLSurfaceCanvas.initialize();
@@ -523,7 +518,7 @@ public abstract class UIManager implements LifecycleOwner {
         final var layer = resolve.getAttachment(GL_COLOR_ATTACHMENT0);
         final int width = layer.getWidth();
         final int height = layer.getHeight();
-        final Bitmap image = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
+        final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
         resolve.bindRead();
         resolve.setReadBuffer(GL_COLOR_ATTACHMENT0);
         glPixelStorei(GL_PACK_ROW_LENGTH, 0);
@@ -531,12 +526,12 @@ public abstract class UIManager implements LifecycleOwner {
         glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
         // SYNC GPU TODO (use transfer buffer?)
-        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image.getPixels());
+        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, bitmap.getAddress());
         Util.ioPool().execute(() -> {
-            try (image) {
-                Bitmap.flipVertically(image);
-                unpremulAlpha(image);
-                image.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
+            try (bitmap) {
+                Bitmap.flipVertically(bitmap);
+                unpremulAlpha(bitmap);
+                bitmap.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -547,8 +542,8 @@ public abstract class UIManager implements LifecycleOwner {
     static void unpremulAlpha(Bitmap bitmap) {
         final int width = bitmap.getWidth();
         final int height = bitmap.getHeight();
-        final int rowStride = bitmap.getRowStride();
-        long addr = bitmap.getPixels();
+        final int rowStride = bitmap.getRowBytes();
+        long addr = bitmap.getAddress();
         final boolean big = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {

@@ -53,7 +53,7 @@ public class MixinRenderSystem {
     private static void onInitRenderer(int debugLevel, boolean debugSync, CallbackInfo ci) {
         Core.initialize();
         if (!Core.initOpenGL()) {
-            GLCore.showCapsErrorDialog();
+            Core.glShowCapsErrorDialog();
         }
         UIManagerFabric.initialize();
     }

@@ -15,7 +15,8 @@ pluginManagement {
 
 rootProject.name = 'ModernUI-MC'
 
-if (file('../ModernUI').exists()) {
+if (file('../Arc3D').exists() && file('../ModernUI').exists()) {
+    includeBuild '../Arc3D'
     includeBuild '../ModernUI'
 }
 

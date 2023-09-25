@@ -19,8 +19,8 @@
 package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import icyllis.arc3d.opengl.GLTextureCompat;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.graphics.GLTextureCompat;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
