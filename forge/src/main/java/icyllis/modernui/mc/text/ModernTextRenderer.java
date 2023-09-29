@@ -202,7 +202,7 @@ public final class ModernTextRenderer {
         return x;
     }
 
-    public static int chooseMode(Matrix4f ctm, Font.DisplayMode displayMode) {
+    public int chooseMode(Matrix4f ctm, Font.DisplayMode displayMode) {
         if (displayMode == Font.DisplayMode.SEE_THROUGH) {
             return TextRenderType.MODE_SEE_THROUGH;
         } else if (TextLayoutEngine.sCurrentInWorldRendering) {
@@ -225,11 +225,13 @@ public final class ModernTextRenderer {
                             MathUtil.isApproxEqual(ctm.m11(), 1)) {
                         // pure translation
                         return TextRenderType.MODE_NORMAL;
-                    } else if (sComputeDeviceFontSize &&
-                            ctm.m00() < .999 &&
-                            MathUtil.isApproxEqual(ctm.m00(), ctm.m11())) {
-                        // uniform scale smaller
-                        return TextRenderType.MODE_DYNAMIC_SCALE;
+                    } else if (sComputeDeviceFontSize && MathUtil.isApproxEqual(ctm.m00(), ctm.m11())) {
+                        float upperLimit = Math.max(1.0f,
+                                (float) TextLayoutEngine.MIN_PIXEL_DENSITY_FOR_SDF / mEngine.getResLevel());
+                        if (ctm.m00() < upperLimit) {
+                            // uniform scale smaller and not too large
+                            return TextRenderType.MODE_UNIFORM_SCALE;
+                        }
                     }
                 }
                 if (sAllowSDFTextIn2D) {

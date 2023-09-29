@@ -295,6 +295,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public static final int EMOJI_SIZE = EMOJI_BASE_SIZE * BITMAP_SCALE;
     public static final int EMOJI_SIZE_LARGE = EMOJI_SIZE * 2;
 
+    public static final int MIN_PIXEL_DENSITY_FOR_SDF = 4;
+
     /**
      * Emoji sequence to sprite index (used as glyph code in emoji atlas).
      */
@@ -987,7 +989,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
      * then resolution level is adjusted to 4.
      */
     public static int adjustPixelDensityForSDF(int resLevel) {
-        return Math.max(resLevel, 4);
+        return Math.max(resLevel, MIN_PIXEL_DENSITY_FOR_SDF);
     }
 
 
@@ -1470,6 +1472,10 @@ public class TextLayoutEngine implements PreparableReloadListener {
             size += e.getValue().getMemorySize();
         }
         return size;
+    }
+
+    public int getResLevel() {
+        return mResLevel;
     }
 
     /**

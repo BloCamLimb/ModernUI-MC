@@ -59,7 +59,7 @@ public class TextRenderType extends RenderType {
      *
      * @since 3.8.1
      */
-    public static final int MODE_DYNAMIC_SCALE = 4; // <- must be power of 2
+    public static final int MODE_UNIFORM_SCALE = 4; // <- must be power of 2
 
     private static volatile ShaderInstance sShaderNormal;
 

@@ -180,12 +180,11 @@ public abstract class UIManager implements LifecycleOwner {
         Objects.requireNonNull(sInstance);
         sInstance.mCanvas = GLSurfaceCanvas.initialize();
         sInstance.mServer = (GLServer) Core.requireDirectContext().getServer();
-        sInstance.mServer.getContext().getResourceCache().setCacheLimit(1 << 26); // 64MB
-        var framebuffer = new GLFramebufferCompat(4);
+        sInstance.mServer.getContext().getResourceCache().setCacheLimit(1 << 27); // 128MB
+        var framebuffer = new GLFramebufferCompat();
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT2, GL_RGBA8);
-        framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT3, GL_RGBA8);
         framebuffer.addRenderbufferAttachment(GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
         sInstance.mFramebuffer = framebuffer;
         BufferUploader.invalidate();
@@ -512,14 +511,19 @@ public abstract class UIManager implements LifecycleOwner {
     @SuppressWarnings("resource")
     protected void takeScreenshot() {
         // take a screenshot from MSAA framebuffer
-        final GLFramebufferCompat resolve = GLFramebufferCompat.resolve(mFramebuffer,
-                GL_COLOR_ATTACHMENT0, mWindow.getWidth(), mWindow.getHeight());
-        final var layer = resolve.getAttachment(GL_COLOR_ATTACHMENT0);
+        final GLFramebufferCompat.Attachment layer;
+        if (mFramebuffer.isMultisampled()) {
+            final GLFramebufferCompat resolve = GLFramebufferCompat.resolve(mFramebuffer,
+                    GL_COLOR_ATTACHMENT0, mWindow.getWidth(), mWindow.getHeight());
+            resolve.bindRead();
+            layer = resolve.getAttachment(GL_COLOR_ATTACHMENT0);
+        } else {
+            mFramebuffer.bindRead();
+            layer = mFramebuffer.getAttachment(GL_COLOR_ATTACHMENT0);
+        }
         final int width = layer.getWidth();
         final int height = layer.getHeight();
         final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
-        resolve.bindRead();
-        resolve.setReadBuffer(GL_COLOR_ATTACHMENT0);
         glPixelStorei(GL_PACK_ROW_LENGTH, 0);
         glPixelStorei(GL_PACK_SKIP_ROWS, 0);
         glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
@@ -532,7 +536,7 @@ public abstract class UIManager implements LifecycleOwner {
                 unpremulAlpha(bitmap);
                 bitmap.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.warn(MARKER, "Failed to save UI screenshot", e);
             }
         });
     }
@@ -940,9 +944,14 @@ public abstract class UIManager implements LifecycleOwner {
 
                 final GLTextureCompat layer = framebuffer.getAttachedTexture(GL_COLOR_ATTACHMENT0);
                 if (blit && layer.getWidth() > 0) {
-                    GLFramebufferCompat resolve = GLFramebufferCompat.resolve(framebuffer,
-                            GL_COLOR_ATTACHMENT0, width, height);
-                    GLTextureCompat resolvedLayer = resolve.getAttachedTexture(GL_COLOR_ATTACHMENT0);
+                    GLTextureCompat resolvedLayer;
+                    if (framebuffer.isMultisampled()) {
+                        GLFramebufferCompat resolve = GLFramebufferCompat.resolve(framebuffer,
+                                GL_COLOR_ATTACHMENT0, width, height);
+                        resolvedLayer = resolve.getAttachedTexture(GL_COLOR_ATTACHMENT0);
+                    } else {
+                        resolvedLayer = layer;
+                    }
 
                     // draw off-screen target to Minecraft mainTarget (not the default framebuffer)
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);

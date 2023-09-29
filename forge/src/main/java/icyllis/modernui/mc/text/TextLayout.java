@@ -320,7 +320,7 @@ public class TextLayout {
             int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
             glyphs = getGlyphs(resLevel);
             density = resLevel;
-        } else if (preferredMode != TextRenderType.MODE_DYNAMIC_SCALE) {
+        } else if (preferredMode != TextRenderType.MODE_UNIFORM_SCALE) {
             glyphs = getGlyphs(mCreatedResLevel);
             density = mCreatedResLevel;
         } else {

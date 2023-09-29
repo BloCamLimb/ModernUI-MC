@@ -54,6 +54,8 @@ import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.*;
 import net.minecraft.util.profiling.ProfilerFiller;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
@@ -69,7 +71,7 @@ import java.util.function.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static icyllis.modernui.ModernUI.*;
+import static icyllis.modernui.ModernUI.LOGGER;
 
 /**
  * Modern UI text engine for Minecraft. This class performs Unicode text layout (and measurement),
@@ -84,6 +86,8 @@ import static icyllis.modernui.ModernUI.*;
  * @since 2.0
  */
 public class TextLayoutEngine implements PreparableReloadListener {
+
+    public static final Marker MARKER = MarkerManager.getMarker("TextLayout");
 
     /**
      * Instance on main/render thread
@@ -294,6 +298,8 @@ public class TextLayoutEngine implements PreparableReloadListener {
     public static final int EMOJI_BASE_SIZE = 9;
     public static final int EMOJI_SIZE = EMOJI_BASE_SIZE * BITMAP_SCALE;
     public static final int EMOJI_SIZE_LARGE = EMOJI_SIZE * 2;
+
+    public static final int MIN_PIXEL_DENSITY_FOR_SDF = 4;
 
     /**
      * Emoji sequence to sprite index (used as glyph code in emoji atlas).
@@ -987,7 +993,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
      * then resolution level is adjusted to 4.
      */
     public static int adjustPixelDensityForSDF(int resLevel) {
-        return Math.max(resLevel, 4);
+        return Math.max(resLevel, MIN_PIXEL_DENSITY_FOR_SDF);
     }
 
 
@@ -1470,6 +1476,10 @@ public class TextLayoutEngine implements PreparableReloadListener {
             size += e.getValue().getMemorySize();
         }
         return size;
+    }
+
+    public int getResLevel() {
+        return mResLevel;
     }
 
     /**
