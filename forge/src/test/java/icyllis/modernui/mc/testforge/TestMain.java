@@ -26,7 +26,6 @@ import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.util.ast.Node;
 import icyllis.arc3d.core.Matrix4;
 import icyllis.arc3d.opengl.GLCore;
-import icyllis.arc3d.opengl.GLFramebufferCompat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.audio.*;
 import icyllis.modernui.core.Window;
@@ -372,7 +371,7 @@ public class TestMain {
         final Window window = sWindow;
         window.makeCurrent();
         Core.initOpenGL();
-        GLCore.showCapsErrorDialog();
+        Core.glShowCapsErrorDialog();
         GLSurfaceCanvas canvas = GLSurfaceCanvas.initialize();
         GLShaderManager.getInstance().reload();
         Matrix4 projection = new Matrix4();
@@ -489,7 +488,7 @@ public class TestMain {
             long time = Core.timeMillis();
             long delta = time - lastTime;
             lastTime = time;
-            GLCore.resetFrame(window);
+            Core.glResetFrame(window);
 
             if (window.getWidth() > 0) {
                 canvas.reset(window.getWidth(), window.getHeight());
