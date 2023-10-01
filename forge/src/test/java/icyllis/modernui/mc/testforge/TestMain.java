@@ -74,7 +74,7 @@ public class TestMain {
 
     public static boolean CREATE_WINDOW = false;
 
-    private static MainWindow sWindow;
+    private static ActivityWindow sWindow;
 
     /*
         Heading font size (In Minecraft: GUI scale 2)
@@ -310,7 +310,7 @@ public class TestMain {
         try {
             Thread.currentThread().setName("Main-Thread");
             Core.initialize();
-            sWindow = MainWindow.initialize("Modern UI Layout Editor", 1600, 900);
+            sWindow = ActivityWindow.createMainWindow("Modern UI Layout Editor", 1600, 900);
             try (var c1 = ModernUI.getInstance().getResourceStream(ModernUI.ID, "AppLogo16x.png");
                  var bitmap1 = BitmapFactory.decodeStream(c1);
                  var c2 = ModernUI.getInstance().getResourceStream(ModernUI.ID, "AppLogo32x.png");
@@ -488,7 +488,7 @@ public class TestMain {
             long time = Core.timeMillis();
             long delta = time - lastTime;
             lastTime = time;
-            Core.glResetFrame(window);
+            /*Core.resetFrame(window);*/
 
             if (window.getWidth() > 0) {
                 canvas.reset(window.getWidth(), window.getHeight());
