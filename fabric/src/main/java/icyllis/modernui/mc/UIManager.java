@@ -807,7 +807,6 @@ public abstract class UIManager implements LifecycleOwner {
             mElapsedTimeMillis += deltaMillis;
             // coordinates UI thread
             if (mRunning) {
-                mRoot.mChoreographer.scheduleFrameAsync(mFrameTimeNanos);
                 // update extension animations
                 BlurHandler.INSTANCE.onRenderTick(mElapsedTimeMillis);
                 if (TooltipRenderer.sTooltip) {
@@ -870,13 +869,8 @@ public abstract class UIManager implements LifecycleOwner {
         ContextMenuBuilder mContextMenu;
         MenuHelper mContextMenuHelper;
 
-        @Override
-        protected Canvas beginRecording(int width, int height) {
-            if (mCanvas != null) {
-                mCanvas.reset(width, height);
-            }
-            return mCanvas;
-        }
+        private volatile boolean mPendingDraw = false;
+        private boolean mBlit;
 
         @Override
         protected boolean dispatchTouchEvent(MotionEvent event) {
@@ -921,29 +915,48 @@ public abstract class UIManager implements LifecycleOwner {
             }
         }
 
+        @Override
+        protected Canvas beginDrawLocked(int width, int height) {
+            if (mCanvas != null) {
+                mCanvas.reset(width, height);
+            }
+            return mCanvas;
+        }
+
+        @Override
+        protected void endDrawLocked(@Nonnull Canvas canvas) {
+            mPendingDraw = true;
+            try {
+                mRenderLock.wait();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
         @RenderThread
         private void flushDrawCommands(GLSurfaceCanvas canvas, GLFramebufferCompat framebuffer,
                                        int width, int height) {
             // wait UI thread, if slow
             synchronized (mRenderLock) {
-                boolean blit = true;
 
-                if (mRedrawn) {
-                    mRedrawn = false;
+                if (mPendingDraw) {
                     glEnable(GL_STENCIL_TEST);
                     try {
-                        blit = canvas.executeDrawOps(framebuffer);
+                        mBlit = canvas.executeDrawOps(framebuffer);
                     } catch (Throwable t) {
                         LOGGER.fatal(MARKER,
                                 "Failed to invoke rendering callbacks, please report the issue to related mods", t);
                         dump();
                         throw t;
+                    } finally {
+                        glDisable(GL_STENCIL_TEST);
+                        mPendingDraw = false;
+                        mRenderLock.notifyAll();
                     }
-                    glDisable(GL_STENCIL_TEST);
                 }
 
                 final GLTextureCompat layer = framebuffer.getAttachedTexture(GL_COLOR_ATTACHMENT0);
-                if (blit && layer.getWidth() > 0) {
+                if (mBlit && layer.getWidth() > 0) {
                     GLTextureCompat resolvedLayer;
                     if (framebuffer.isMultisampled()) {
                         GLFramebufferCompat resolve = GLFramebufferCompat.resolve(framebuffer,
@@ -973,7 +986,7 @@ public abstract class UIManager implements LifecycleOwner {
                 return;
             }
             synchronized (mRenderLock) {
-                if (!mRedrawn) {
+                if (!mPendingDraw) {
                     mTooltipRenderer.drawTooltip(mCanvas, mWindow,
                             itemStack, gr, list,
                             mouseX, mouseY, font,
