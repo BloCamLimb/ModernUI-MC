@@ -472,13 +472,13 @@ public class TestMain {
         tps.setColor(0xff40ddee);
         tps.setTypeface(Typeface.SANS_SERIF);
 
-        GLFramebufferCompat framebuffer = new GLFramebufferCompat(4);
+        /*GLFramebufferCompat framebuffer = new GLFramebufferCompat(4);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT2, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT3, GL_RGBA8);
         framebuffer.addRenderbufferAttachment(GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
-        framebuffer.setDrawBuffer(GL_COLOR_ATTACHMENT0);
+        framebuffer.setDrawBuffer(GL_COLOR_ATTACHMENT0);*/
 
         glfwShowWindow(window.getHandle());
 
@@ -570,7 +570,7 @@ public class TestMain {
                         360 * (playTime / sTrack.getLength()), paint);
 
                 // render thread, wait UI thread
-                canvas.executeDrawOps(framebuffer);
+                //canvas.executeDrawOps(framebuffer);
 
                 if (!note) {
                     LOGGER.info(TextUtils.binaryCompact(canvas.getNativeMemoryUsage()));
@@ -578,8 +578,8 @@ public class TestMain {
                 }
             }
 
-            glBlitNamedFramebuffer(framebuffer.get(), 0, 0, 0, window.getWidth(), window.getHeight(),
-                    0, 0, window.getWidth(), window.getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            /*glBlitNamedFramebuffer(framebuffer.get(), 0, 0, 0, window.getWidth(), window.getHeight(),
+                    0, 0, window.getWidth(), window.getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);*/
 
             window.swapBuffers();
         }
