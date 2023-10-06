@@ -116,13 +116,12 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                 spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
                         ModernUI.NAME_CPT + "/client.toml")
         );
+        Config.initTextConfig(
+                spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
+                        ModernUI.NAME_CPT + "/text.toml")
+        );
 
         if (isTextEngineEnabled()) {
-            Config.initTextConfig(
-                    spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
-                            ModernUI.NAME_CPT + "/text.toml")
-            );
-
             ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
                 MuiModApi.addOnWindowResizeListener((width, height, newScale, oldScale) -> {
                     if (Core.getRenderThread() != null && newScale != oldScale) {
@@ -134,7 +133,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             MuiModApi.addOnDebugDumpListener(pw -> {
                 pw.print("TextLayoutEngine: ");
                 pw.print("CacheCount=" + TextLayoutEngine.getInstance().getCacheCount());
-                int memorySize = TextLayoutEngine.getInstance().getCacheMemorySize();
+                long memorySize = TextLayoutEngine.getInstance().getCacheMemorySize();
                 pw.print(", CacheSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
                 memorySize = TextLayoutEngine.getInstance().getEmojiAtlasMemorySize();
                 pw.println(", EmojiAtlasSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " " +

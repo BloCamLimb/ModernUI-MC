@@ -1331,7 +1331,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     }
 
     public int getEmojiTexture() {
-        return mEmojiAtlas.mTexture.get();
+        return mEmojiAtlas.getTexture().getHandle();
     }
 
     public int getStandardTexture() {
@@ -1373,7 +1373,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
         }
     }
 
-    public int getEmojiAtlasMemorySize() {
+    public long getEmojiAtlasMemorySize() {
         if (mEmojiAtlas != null) {
             return mEmojiAtlas.getMemorySize();
         }

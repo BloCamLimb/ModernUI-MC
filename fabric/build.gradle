@@ -84,8 +84,18 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine:${caffeine_version}")
     implementation("com.vladsch.flexmark:flexmark:${flexmark_version}")
 
-    shadow "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
-    shadow "com.vladsch.flexmark:flexmark:${flexmark_version}"
+    include "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
+    include "com.vladsch.flexmark:flexmark:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-ast:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-builder:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-collection:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-data:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-dependency:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-format:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-html:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-misc:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-sequence:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-visitor:${flexmark_version}"
 
     shadow ':ModernUI-Fonts-2.0'
 }

@@ -20,7 +20,6 @@ package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.graphics.GLTextureCompat;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -197,7 +196,7 @@ public class GlyphManagerForge {
      * ID of current OpenGL cache texture being used by cacheGlyphs() to store
      * pre-rendered glyph images. Render thread only.
      */
-    private GLTextureCompat mTexture;
+    //private GLTextureCompat mTexture;
 
     /**
      * A cache of pre-rendered glyphs mapping each glyph by its glyphCode to
@@ -282,7 +281,7 @@ public class GlyphManagerForge {
         mGlyphCache.clear();
         mDigitsMap.clear();
         //mEmojiMap.clear();
-        mTexture = null;
+        //mTexture = null;
         //emojiTexture = 0;
         TextRenderType.clear();
         mSelectedFonts.clear();
@@ -555,7 +554,7 @@ public class GlyphManagerForge {
         mCurrPosX += renderWidth + GLYPH_SPACING * 2;
         final float f = getResolutionFactor();
 
-        return new VanillaGlyph(mTexture, advance / f, baselineX / f, baselineY / f,
+        return new VanillaGlyph(/*mTexture,*/ advance / f, baselineX / f, baselineY / f,
                 width / f, height / f,
                 (float) x / TEXTURE_SIZE, (float) y / TEXTURE_SIZE,
                 (float) (x + width) / TEXTURE_SIZE, (float) (y + height) / TEXTURE_SIZE);
@@ -664,7 +663,7 @@ public class GlyphManagerForge {
             mCurrLineHeight = Math.max(mCurrLineHeight, renderHeight);
             mCurrPosX += standardRenderWidth + GLYPH_SPACING * 2;
 
-            digits[i] = new VanillaGlyph(mTexture,
+            digits[i] = new VanillaGlyph(/*mTexture,*/
                     standardAdvance / f, baselineX / f, baselineY / f,
                     width / f, height / f,
                     (float) x / TEXTURE_SIZE, (float) y / TEXTURE_SIZE,
@@ -897,8 +896,8 @@ public class GlyphManagerForge {
     private void uploadTexture(int x, int y, int width, int height) {
         /* Load imageBuffer with pixel data ready for transfer to OpenGL texture */
         updateImageBuffer(x, y, width, height);
-        mTexture.upload(0, x, y, width, height, width, 0, 0, 1,
-                GL_ALPHA, GL_UNSIGNED_BYTE, MemoryUtil.memAddress(mUploadBuffer));
+        /*mTexture.upload(0, x, y, width, height, width, 0, 0, 1,
+                GL_ALPHA, GL_UNSIGNED_BYTE, MemoryUtil.memAddress(mUploadBuffer));*/
 
         /*GL11.glPixelStorei(GL11.GL_UNPACK_ROW_LENGTH, width); // not full texture
         GL11.glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);
@@ -919,7 +918,7 @@ public class GlyphManagerForge {
         /* Auto generate mipmap texture */
         if (sEnableMipmap && sMipmapLevel > 0) {
             /*GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);*/
-            mTexture.generateMipmap();
+            //mTexture.generateMipmap();
         }
     }
 
@@ -988,7 +987,7 @@ public class GlyphManagerForge {
         mGlyphGraphics.clearRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
 
         /* Allocate new OpenGL texture */
-        mTexture = new GLTextureCompat(GL_TEXTURE_2D);
+        //mTexture = new GLTextureCompat(GL_TEXTURE_2D);
 
         /* Load imageBuffer with pixel data ready for transfer to OpenGL texture */
         //updateImageBuffer(0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT);
@@ -1018,7 +1017,7 @@ public class GlyphManagerForge {
             GL11.glTexImage2D(GL11.GL_TEXTURE_2D, level, GL11.GL_ALPHA, TEXTURE_SIZE >> level,
                     TEXTURE_SIZE >> level, 0, GL11.GL_ALPHA, GL11.GL_UNSIGNED_BYTE, (IntBuffer) null);
         }*/
-        mTexture.allocate2D(GL_ALPHA, TEXTURE_SIZE, TEXTURE_SIZE, mipmapLevel);
+        //mTexture.allocate2D(GL_ALPHA, TEXTURE_SIZE, TEXTURE_SIZE, mipmapLevel);
 
         //mTexture.swizzle(GL_ONE, GL_ONE, GL_ONE, GL_RED);
 
@@ -1039,7 +1038,7 @@ public class GlyphManagerForge {
             GL11.glTexParameteri(GL11.GL_TEXTURE_2D, GL11.GL_TEXTURE_MAG_FILTER, GL11.GL_NEAREST);
         }*/
 
-        mTexture.setFilter(GL_LINEAR_MIPMAP_LINEAR, GL_NEAREST);
+        //mTexture.setFilter(GL_LINEAR_MIPMAP_LINEAR, GL_NEAREST);
 
         /* Auto generate mipmap */
         /*if (sEnableMipmap) {
@@ -1147,7 +1146,7 @@ public class GlyphManagerForge {
          */
         private final float v2;
 
-        public VanillaGlyph(GLTextureCompat texture, float advance, float baselineX, float baselineY, float width,
+        public VanillaGlyph(/*GLTextureCompat texture, */float advance, float baselineX, float baselineY, float width,
                             float height, float u1, float v1, float u2, float v2) {
             this.advance = advance;
             this.baselineX = baselineX;

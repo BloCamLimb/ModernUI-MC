@@ -54,6 +54,8 @@ import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.*;
 import net.minecraft.util.profiling.ProfilerFiller;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
@@ -69,7 +71,7 @@ import java.util.function.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static icyllis.modernui.ModernUI.*;
+import static icyllis.modernui.ModernUI.LOGGER;
 
 /**
  * Modern UI text engine for Minecraft. This class performs Unicode text layout (and measurement),
@@ -84,6 +86,8 @@ import static icyllis.modernui.ModernUI.*;
  * @since 2.0
  */
 public class TextLayoutEngine implements PreparableReloadListener {
+
+    public static final Marker MARKER = MarkerManager.getMarker("TextLayout");
 
     /**
      * Instance on main/render thread
@@ -1327,7 +1331,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
     }
 
     public int getEmojiTexture() {
-        return mEmojiAtlas.mTexture.get();
+        return mEmojiAtlas.getTexture().getHandle();
     }
 
     public int getStandardTexture() {
@@ -1369,7 +1373,7 @@ public class TextLayoutEngine implements PreparableReloadListener {
         }
     }
 
-    public int getEmojiAtlasMemorySize() {
+    public long getEmojiAtlasMemorySize() {
         if (mEmojiAtlas != null) {
             return mEmojiAtlas.getMemorySize();
         }

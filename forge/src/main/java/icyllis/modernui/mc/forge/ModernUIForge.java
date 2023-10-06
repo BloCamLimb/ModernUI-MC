@@ -151,12 +151,12 @@ public final class ModernUIForge extends ModernUIMod {
                     spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
                             ModernUI.NAME_CPT + "/client.toml")
             );
+            Config.initTextConfig(
+                    spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
+                            ModernUI.NAME_CPT + "/text.toml")
+            );
             if (isTextEngineEnabled()) {
                 ModernUIText.init();
-                Config.initTextConfig(
-                        spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
-                                ModernUI.NAME_CPT + "/text.toml")
-                );
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
             FMLJavaModLoadingContext.get().getModEventBus().addListener(

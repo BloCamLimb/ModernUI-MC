@@ -22,8 +22,11 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import icyllis.arc3d.core.ImageInfo;
+import icyllis.arc3d.opengl.GLBackendFormat;
+import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.annotation.RenderThread;
-import icyllis.modernui.graphics.GLTextureCompat;
+import icyllis.modernui.core.Core;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
@@ -32,13 +35,13 @@ import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
-import static icyllis.arc3d.opengl.GLCore.*;
+import static icyllis.arc3d.opengl.GLCore.GL_RGBA8;
 
-@RenderThread
 public class EffectRenderType extends RenderType {
 
-    private static final GLTextureCompat WHITE = new GLTextureCompat(GL_TEXTURE_2D);
+    private static GLTexture WHITE;
 
     private static final ImmutableList<RenderStateShard> STATES;
     private static final ImmutableList<RenderStateShard> SEE_THROUGH_STATES;
@@ -47,13 +50,6 @@ public class EffectRenderType extends RenderType {
     private static final EffectRenderType SEE_THROUGH_TYPE;
 
     static {
-        WHITE.allocate2D(GL_R8, 2, 2, 0);
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            ByteBuffer pixels = stack.bytes((byte) 0xff, (byte) 0xff, (byte) 0xff, (byte) 0xff);
-            WHITE.upload(0, 0, 0, 2, 2, 0, 0, 0, 1,
-                    GL_RED, GL_UNSIGNED_BYTE, MemoryUtil.memAddress(pixels));
-        }
-        WHITE.setSwizzle(GL_ONE, GL_ONE, GL_ONE, GL_ONE);
         STATES = ImmutableList.of(
                 TextRenderType.RENDERTYPE_MODERN_TEXT_NORMAL,
                 TRANSLUCENT_TRANSPARENCY,
@@ -82,11 +78,11 @@ public class EffectRenderType extends RenderType {
         );
         TYPE = new EffectRenderType("modern_text_effect", 256, () -> {
             STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, WHITE.get());
+            RenderSystem.setShaderTexture(0, WHITE.getHandle());
         }, () -> STATES.forEach(RenderStateShard::clearRenderState));
         SEE_THROUGH_TYPE = new EffectRenderType("modern_text_effect_see_through", 256, () -> {
             SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, WHITE.get());
+            RenderSystem.setShaderTexture(0, WHITE.getHandle());
         }, () -> SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
@@ -95,13 +91,48 @@ public class EffectRenderType extends RenderType {
                 bufferSize, false, true, setupState, clearState);
     }
 
+    @RenderThread
     @Nonnull
     public static EffectRenderType getRenderType(boolean seeThrough) {
+        if (WHITE == null)
+            makeWhiteTexture();
         return seeThrough ? SEE_THROUGH_TYPE : TYPE;
     }
 
+    @RenderThread
     @Nonnull
     public static EffectRenderType getRenderType(Font.DisplayMode mode) {
         throw new IllegalStateException();
+    }
+
+    private static void makeWhiteTexture() {
+        var dContext = Core.requireDirectContext();
+        var format = GLBackendFormat.make(GL_RGBA8);
+        int width = 2, height = 2;
+        WHITE = (GLTexture) dContext
+                .getResourceProvider()
+                .createTexture(
+                        width, height,
+                        format,
+                        1,
+                        0,
+                        null
+                );
+        Objects.requireNonNull(WHITE);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            int colorType = ImageInfo.CT_RGBA_8888;
+            int bpp = ImageInfo.bytesPerPixel(colorType);
+            ByteBuffer pixels = stack.malloc(width * height * bpp);
+            while (pixels.hasRemaining()) {
+                pixels.put((byte) 0xff);
+            }
+            pixels.flip();
+            dContext.getServer().writePixels(
+                    WHITE, 0, 0, width, height,
+                    ImageInfo.CT_RGBA_8888, ImageInfo.CT_RGBA_8888,
+                    width * bpp,
+                    MemoryUtil.memAddress(pixels)
+            );
+        }
     }
 }

@@ -459,7 +459,7 @@ public final class TooltipRenderer {
         paint.recycle();
 
         canvas.restore();
-        canvas.executeDrawOps(null);
+        canvas.executeRenderPass(null);
 
         glBindVertexArray(oldVertexArray);
         glUseProgram(oldProgram);

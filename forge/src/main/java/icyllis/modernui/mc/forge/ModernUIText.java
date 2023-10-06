@@ -73,7 +73,7 @@ public final class ModernUIText {
         MuiModApi.addOnDebugDumpListener(pw -> {
             pw.print("TextLayoutEngine: ");
             pw.print("CacheCount=" + TextLayoutEngine.getInstance().getCacheCount());
-            int memorySize = TextLayoutEngine.getInstance().getCacheMemorySize();
+            long memorySize = TextLayoutEngine.getInstance().getCacheMemorySize();
             pw.print(", CacheSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
             memorySize = TextLayoutEngine.getInstance().getEmojiAtlasMemorySize();
             pw.println(", EmojiAtlasSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");

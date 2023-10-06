@@ -108,8 +108,18 @@ dependencies {
 
     //implementation(forgeDependencies("io.reactivex.rxjava3:rxjava:${rxjava_version}"))
 
-    shadow "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
-    shadow "com.vladsch.flexmark:flexmark:${flexmark_version}"
+    include "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
+    include "com.vladsch.flexmark:flexmark:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-ast:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-builder:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-collection:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-data:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-dependency:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-format:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-html:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-misc:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-sequence:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-visitor:${flexmark_version}"
 
     //shadow "io.reactivex.rxjava3:rxjava:${rxjava_version}"
 
@@ -133,7 +143,7 @@ shadowJar {
     archiveClassifier.set("shadow")
     configurations = [project.configurations.shadow]
 
-    dependencies {
+    /*dependencies {
         exclude 'icu4j-59.1.jar'
         exclude 'commons-logging-1.2.jar'
     }
@@ -152,7 +162,7 @@ shadowJar {
     exclude 'META-INF/LICENSE**'
     exclude 'META-INF/NOTICE**'
     exclude 'META-INF/README**'
-    exclude 'META-INF/maven/**'
+    exclude 'META-INF/maven/**'*/
 }
 
 remapJar {

@@ -26,7 +26,9 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.arc3d.core.Matrix4;
 import icyllis.arc3d.engine.Engine;
+import icyllis.arc3d.engine.ResourceCache;
 import icyllis.arc3d.opengl.GLServer;
+import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.LayoutTransition;
@@ -125,7 +127,7 @@ public abstract class UIManager implements LifecycleOwner {
     /// Rendering \\\
 
     // the UI framebuffer
-    private GLFramebufferCompat mFramebuffer;
+    private GLSurface mSurface;
     protected GLSurfaceCanvas mCanvas;
     protected GLServer mServer;
     private final Matrix4 mProjectionMatrix = new Matrix4();
@@ -182,12 +184,7 @@ public abstract class UIManager implements LifecycleOwner {
         sInstance.mCanvas = GLSurfaceCanvas.initialize();
         sInstance.mServer = (GLServer) Core.requireDirectContext().getServer();
         sInstance.mServer.getContext().getResourceCache().setCacheLimit(1 << 27); // 128MB
-        var framebuffer = new GLFramebufferCompat();
-        framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
-        framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
-        framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT2, GL_RGBA8);
-        framebuffer.addRenderbufferAttachment(GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
-        sInstance.mFramebuffer = framebuffer;
+        sInstance.mSurface = new GLSurface();
         BufferUploader.invalidate();
         LOGGER.info(MARKER, "UI renderer initialized");
     }
@@ -511,19 +508,9 @@ public abstract class UIManager implements LifecycleOwner {
 
     @SuppressWarnings("resource")
     protected void takeScreenshot() {
-        // take a screenshot from MSAA framebuffer
-        final GLFramebufferCompat.Attachment layer;
-        if (mFramebuffer.isMultisampled()) {
-            final GLFramebufferCompat resolve = GLFramebufferCompat.resolve(mFramebuffer,
-                    GL_COLOR_ATTACHMENT0, mWindow.getWidth(), mWindow.getHeight());
-            resolve.bindRead();
-            layer = resolve.getAttachment(GL_COLOR_ATTACHMENT0);
-        } else {
-            mFramebuffer.bindRead();
-            layer = mFramebuffer.getAttachment(GL_COLOR_ATTACHMENT0);
-        }
-        final int width = layer.getWidth();
-        final int height = layer.getHeight();
+        mSurface.bindRead();
+        final int width = mSurface.getBackingWidth();
+        final int height = mSurface.getBackingHeight();
         final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
         glPixelStorei(GL_PACK_ROW_LENGTH, 0);
         glPixelStorei(GL_PACK_SKIP_ROWS, 0);
@@ -709,9 +696,14 @@ public abstract class UIManager implements LifecycleOwner {
         mCanvas.setProjection(mProjectionMatrix.setOrthographic(
                 width, height, 0, icyllis.modernui.core.Window.LAST_SYSTEM_WINDOW * 2 + 1,
                 true));
-        mRoot.flushDrawCommands(mCanvas, mFramebuffer, width, height);
+        mRoot.flushDrawCommands(mCanvas, mSurface, width, height);
 
-        mServer.getContext().getResourceCache().purge();
+        ResourceCache resourceCache = mServer.getContext().getResourceCache();
+        resourceCache.purge();
+        resourceCache.purgeUnlockedSince(
+                System.nanoTime() - 2L * 60 * 1000 * 1000 * 1000,
+                true
+        );
 
         glBindVertexArray(oldVertexArray);
         glUseProgram(oldProgram);
@@ -934,7 +926,7 @@ public abstract class UIManager implements LifecycleOwner {
         }
 
         @RenderThread
-        private void flushDrawCommands(GLSurfaceCanvas canvas, GLFramebufferCompat framebuffer,
+        private void flushDrawCommands(GLSurfaceCanvas canvas, GLSurface surface,
                                        int width, int height) {
             // wait UI thread, if slow
             synchronized (mRenderLock) {
@@ -942,7 +934,7 @@ public abstract class UIManager implements LifecycleOwner {
                 if (mPendingDraw) {
                     glEnable(GL_STENCIL_TEST);
                     try {
-                        mBlit = canvas.executeDrawOps(framebuffer);
+                        mBlit = canvas.executeRenderPass(surface);
                     } catch (Throwable t) {
                         LOGGER.fatal(MARKER,
                                 "Failed to invoke rendering callbacks, please report the issue to related mods", t);
@@ -955,24 +947,16 @@ public abstract class UIManager implements LifecycleOwner {
                     }
                 }
 
-                final GLTextureCompat layer = framebuffer.getAttachedTexture(GL_COLOR_ATTACHMENT0);
-                if (mBlit && layer.getWidth() > 0) {
-                    GLTextureCompat resolvedLayer;
-                    if (framebuffer.isMultisampled()) {
-                        GLFramebufferCompat resolve = GLFramebufferCompat.resolve(framebuffer,
-                                GL_COLOR_ATTACHMENT0, width, height);
-                        resolvedLayer = resolve.getAttachedTexture(GL_COLOR_ATTACHMENT0);
-                    } else {
-                        resolvedLayer = layer;
-                    }
+                if (mBlit && surface.getBackingWidth() > 0) {
+                    GLTexture layer = surface.getAttachedTexture(GL_COLOR_ATTACHMENT0);
 
                     // draw off-screen target to Minecraft mainTarget (not the default framebuffer)
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);
 
                     // do alpha fade in
                     //float alpha = (int) Math.min(300, mElapsedTimeMillis) / 300f;
-                    canvas.drawLayer(resolvedLayer, width, height, 1, true);
-                    canvas.executeDrawOps(null);
+                    canvas.drawLayer(layer, width, height, 1, true);
+                    canvas.executeRenderPass(null);
                 }
             }
         }
