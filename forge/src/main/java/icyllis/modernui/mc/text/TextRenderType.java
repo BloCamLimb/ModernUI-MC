@@ -387,6 +387,9 @@ public class TextRenderType extends RenderType {
     /**
      * Preload Modern UI text shaders for early text rendering. These shaders are loaded only once
      * and cannot be overridden by other resource packs or reloaded.
+     * <p>
+     * Note that Minecraft vanilla will delete OpenGL shader objects when reloading resources, but
+     * since we do not delete OpenGL program object (ShaderInstance), they will remain valid.
      */
     public static synchronized void preloadShaders() {
         if (sShaderNormal != null) {

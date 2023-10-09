@@ -19,7 +19,6 @@
     "MixinGameRenderer",
     "MixinIngameGui",
     "MixinLanguage",
-    "MixinLevelRenderer",
-    "MixinRenderSystem"
+    "MixinLevelRenderer"
   ]
 }
