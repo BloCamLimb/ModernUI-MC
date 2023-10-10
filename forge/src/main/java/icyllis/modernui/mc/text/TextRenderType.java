@@ -345,9 +345,6 @@ public class TextRenderType extends RenderType {
     }
 
     public static ShaderInstance getShaderSDFStroke() {
-        if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
-            return GameRenderer.getRendertypeTextShader();
-        }
         return sCurrentShaderSDFStroke;
     }
 

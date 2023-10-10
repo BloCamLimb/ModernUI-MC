@@ -297,9 +297,13 @@ public final class ModernTextRenderer {
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
 
-        matrix = new Matrix4f(matrix);
         layout.drawText(matrix, source, x, y, r, g, b, a, false,
                 TextRenderType.MODE_SDF_FILL, false, 0, packedLight);
+
+        if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
+            return;
+        }
+        matrix = new Matrix4f(matrix);
 
         a = outlineColor >>> 24;
         if (a <= 1) a = 255;

@@ -286,6 +286,20 @@ public class TextLayout {
         }
     }
 
+    @Nonnull
+    private BakedGlyph[] getGlyphsUniformScale(float density) {
+        if (mBakedGlyphsArray == null) {
+            mBakedGlyphsArray = new SparseArray<>();
+        }
+        int fontSize = TextLayoutProcessor.computeFontSize(density);
+        BakedGlyph[] glyphs = mBakedGlyphsArray.get(fontSize);
+        if (glyphs == null) {
+            glyphs = prepareGlyphs(mCreatedResLevel, fontSize);
+            mBakedGlyphsArray.put(fontSize, glyphs);
+        }
+        return glyphs;
+    }
+
     /**
      * Render this text in Minecraft render system.
      *
@@ -315,30 +329,22 @@ public class TextLayout {
         final int startG = g;
         final int startB = b;
         final float density;
-        BakedGlyph[] glyphs;
+        final BakedGlyph[] glyphs;
         if (preferredMode == TextRenderType.MODE_SDF_FILL) {
             int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
             glyphs = getGlyphs(resLevel);
             density = resLevel;
-        } else if (preferredMode != TextRenderType.MODE_UNIFORM_SCALE) {
-            glyphs = getGlyphs(mCreatedResLevel);
-            density = mCreatedResLevel;
-        } else {
+        } else if (preferredMode == TextRenderType.MODE_UNIFORM_SCALE) {
             float devS = matrix.m00();
             if (devS == 0) {
                 return mTotalAdvance;
             }
             density = mCreatedResLevel * devS;
-            if (mBakedGlyphsArray == null) {
-                mBakedGlyphsArray = new SparseArray<>();
-            }
-            int fontSize = TextLayoutProcessor.computeFontSize(density);
-            glyphs = mBakedGlyphsArray.get(fontSize);
-            if (glyphs == null) {
-                glyphs = prepareGlyphs(mCreatedResLevel, fontSize);
-                mBakedGlyphsArray.put(fontSize, glyphs);
-            }
+            glyphs = getGlyphsUniformScale(density);
             preferredMode = TextRenderType.MODE_NORMAL;
+        } else {
+            glyphs = getGlyphs(mCreatedResLevel);
+            density = mCreatedResLevel;
         }
         final float invDensity = 1.0f / density;
 
