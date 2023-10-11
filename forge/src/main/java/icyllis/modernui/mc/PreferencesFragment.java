@@ -908,7 +908,8 @@ public class PreferencesFragment extends Fragment {
             List<? extends String> colors = config.get();
             if (colors != null && !colors.isEmpty()) {
                 try {
-                    return (double) ((Color.parseColor(colors.get(0)) >>> 24) / 255.0f);
+                    int color = Color.parseColor(colors.get(0));
+                    return (color >>> 24) / 255.0;
                 } catch (IllegalArgumentException e) {
                     e.printStackTrace();
                 }
@@ -916,7 +917,7 @@ public class PreferencesFragment extends Fragment {
             return 1.0;
         };
         Consumer<Double> setter = (d) -> {
-            int v = (int) (d * 255.0 + 0.5);
+            int alpha = (int) (d * 255.0 + 0.5);
             var newList = new ArrayList<String>(config.get());
             if (newList.isEmpty()) {
                 newList.add("#FF000000");
@@ -925,18 +926,8 @@ public class PreferencesFragment extends Fragment {
                  it.hasNext();
             ) {
                 int color = Color.parseColor(it.next());
-                color = color & 0xFFFFFF | (v << 24);
-                if (v != 0) {
-                    it.set(
-                            '#' + Integer.toHexString(color)
-                                    .toUpperCase(Locale.ROOT)
-                    );
-                } else {
-                    it.set(
-                            '#' + Integer.toHexString(0x1000000 | color).substring(1)
-                                    .toUpperCase(Locale.ROOT)
-                    );
-                }
+                color = (color & 0xFFFFFF) | (alpha << 24);
+                it.set(String.format(Locale.ROOT, "#%08X", color));
             }
             config.set(newList);
         };
