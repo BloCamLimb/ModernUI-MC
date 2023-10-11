@@ -46,6 +46,8 @@ public class FourColorPicker extends RelativeLayout {
     private final Rect mPreviewBox = new Rect();
     private final int mBorderRadius;
 
+    private float mThicknessFactor = 4f / 9f;
+
     private final OnFocusChangeListener mOnFieldFocusChange;
 
     public FourColorPicker(Context context,
@@ -174,6 +176,13 @@ public class FourColorPicker extends RelativeLayout {
         mOnFieldFocusChange.onFocusChange(mLLColorField, false);
     }
 
+    public void setThicknessFactor(float thicknessFactor) {
+        if (mThicknessFactor != thicknessFactor) {
+            mThicknessFactor = thicknessFactor;
+            invalidate();
+        }
+    }
+
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
@@ -181,7 +190,7 @@ public class FourColorPicker extends RelativeLayout {
         var paint = Paint.obtain();
         paint.setStyle(Paint.STROKE);
         // TooltipRenderer: rad = 3f, width = 4/3f
-        paint.setStrokeWidth(mBorderRadius * 0.44f);
+        paint.setStrokeWidth(mBorderRadius * mThicknessFactor);
         canvas.drawRoundRectGradient(mPreviewBox.left, mPreviewBox.top, mPreviewBox.right, mPreviewBox.bottom,
                 mULColor, mURColor, mLRColor, mLLColor, mBorderRadius, paint);
         paint.recycle();

@@ -49,6 +49,7 @@ public final class TooltipRenderer {
 
     public static final int[] sFillColor = new int[4];
     public static final int[] sStrokeColor = new int[4];
+    public static volatile float sBorderWidth = 4 / 3f;
 
     // space between mouse and tooltip
     private static final int TOOLTIP_SPACE = 12;
@@ -439,7 +440,7 @@ public final class TooltipRenderer {
             sActiveStrokeColor[i] = (color & 0xFFFFFF) | (alpha << 24);
         }*/
         paint.setStyle(Paint.STROKE);
-        paint.setStrokeWidth(4 / 3f);
+        paint.setStrokeWidth(sBorderWidth);
         if (sRoundedShapes) {
             canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
                     tooltipX + tooltipWidth + H_BORDER,

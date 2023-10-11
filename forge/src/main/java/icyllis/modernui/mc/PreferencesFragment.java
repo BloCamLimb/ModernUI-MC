@@ -521,7 +521,7 @@ public class PreferencesFragment extends Fragment {
             final Button title;
             {
                 title = new Button(context);
-                title.setText(I18n.get("modernui.center.tooltip.borderColor"));
+                title.setText(I18n.get("modernui.center.tooltip.borderStyle"));
                 title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                 title.setTextSize(14);
 
@@ -1029,6 +1029,17 @@ public class PreferencesFragment extends Fragment {
             }
             mContent = new LinearLayout(mParent.getContext());
             mContent.setOrientation(LinearLayout.VERTICAL);
+            {
+                var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.borderWidth",
+                        Config.Client.TOOLTIP_BORDER_WIDTH_MIN, Config.Client.TOOLTIP_BORDER_WIDTH_MAX,
+                        4, Config.CLIENT.mTooltipWidth, (thickness) -> {
+                            Config.CLIENT.mTooltipWidth.set(thickness);
+                            if (mColorPicker != null) {
+                                mColorPicker.setThicknessFactor(thickness.floatValue() / 3f);
+                            }
+                        }, 100, mSaveFn);
+                mContent.addView(option);
+            }
             {
                 var option = createIntegerOption(mParent.getContext(), "modernui.center.tooltip.borderCycle",
                         Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MIN, Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MAX,

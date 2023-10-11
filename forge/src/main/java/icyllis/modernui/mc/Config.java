@@ -173,6 +173,8 @@ public final class Config {
         public static final float FONT_SCALE_MAX = 2.0f;
         public static final int TOOLTIP_BORDER_COLOR_ANIM_MIN = 0;
         public static final int TOOLTIP_BORDER_COLOR_ANIM_MAX = 5000;
+        public static final float TOOLTIP_BORDER_WIDTH_MIN = 0.5f;
+        public static final float TOOLTIP_BORDER_WIDTH_MAX = 2.5f;
 
         public final ForgeConfigSpec.BooleanValue mBlurEffect;
         public final ForgeConfigSpec.IntValue mBackgroundDuration;
@@ -187,6 +189,7 @@ public final class Config {
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipFill;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
         public final ForgeConfigSpec.IntValue mTooltipCycle;
+        public final ForgeConfigSpec.DoubleValue mTooltipWidth;
         //public final ForgeConfigSpec.IntValue mTooltipDuration;
         public final ForgeConfigSpec.BooleanValue mDing;
         public final ForgeConfigSpec.BooleanValue mZoom;
@@ -332,6 +335,9 @@ public final class Config {
                             "The cycle time of tooltip border color in milliseconds. (0 = OFF)")
                     .defineInRange("borderCycleTime", 1000, TOOLTIP_BORDER_COLOR_ANIM_MIN,
                             TOOLTIP_BORDER_COLOR_ANIM_MAX);
+            mTooltipWidth = builder.comment(
+                    "The width of tooltip border, in GUI Scale Independent Pixels.")
+                    .defineInRange("borderWidth", 4 / 3f, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
             /*mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
                     .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);*/
@@ -412,7 +418,7 @@ public final class Config {
                     .define("antiAliasing", true);
             mAutoHinting = builder.comment(
                             "Control the FreeType font hinting of raw glyph metrics.",
-                            "Enable if on low-res monitor; disable for smooth fonts.")
+                            "Enable if on low-res monitor; disable for linear texts.")
                     .define("autoHinting", true);
             /*mLinearSampling = builder.comment(
                             "Enable linear sampling for font atlases with mipmaps, mag filter will be always NEAREST.",
@@ -531,6 +537,7 @@ public final class Config {
             TooltipRenderer.sRoundedShapes = mRoundedTooltip.get();
             TooltipRenderer.sCenterTitle = mCenterTooltipTitle.get();
             TooltipRenderer.sTitleBreak = mTooltipTitleBreak.get();
+            TooltipRenderer.sBorderWidth = mTooltipWidth.get().floatValue();
 
             UIManager.sDingEnabled = mDing.get();
             UIManager.sZoomEnabled = mZoom.get() && !ModernUIMod.isOptiFineLoaded();
