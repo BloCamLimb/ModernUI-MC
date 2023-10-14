@@ -29,7 +29,6 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.ParallelDispatchEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
@@ -83,12 +82,12 @@ public final class ModernUIText {
         LOGGER.info(MARKER, "Loaded modern text engine");
     }
 
-    @SubscribeEvent
+    /*@SubscribeEvent
     static void onParallelDispatch(@Nonnull ParallelDispatchEvent event) {
         // since Forge EVENT_BUS is not started yet, we should manually maintain that
         // in case of some mods render texts before entering main menu
         event.enqueueWork(() -> TextLayoutEngine.getInstance().clear());
-    }
+    }*/
 
     /*@OnlyIn(Dist.CLIENT)
     @SubscribeEvent
