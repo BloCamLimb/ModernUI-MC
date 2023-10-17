@@ -26,8 +26,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.arc3d.core.Matrix4;
 import icyllis.arc3d.engine.Engine;
-import icyllis.arc3d.engine.ResourceCache;
-import icyllis.arc3d.opengl.GLServer;
+import icyllis.arc3d.engine.GPUResourceCache;
+import icyllis.arc3d.opengl.GLDevice;
 import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
@@ -128,7 +128,7 @@ public abstract class UIManager implements LifecycleOwner {
     // the UI framebuffer
     private GLSurface mSurface;
     protected GLSurfaceCanvas mCanvas;
-    protected GLServer mServer;
+    protected GLDevice mDevice;
     private final Matrix4 mProjectionMatrix = new Matrix4();
     protected boolean mNoRender = false;
     protected boolean mClearNextMainTarget = false;
@@ -181,8 +181,8 @@ public abstract class UIManager implements LifecycleOwner {
         }
         Objects.requireNonNull(sInstance);
         sInstance.mCanvas = GLSurfaceCanvas.initialize();
-        sInstance.mServer = (GLServer) Core.requireDirectContext().getServer();
-        sInstance.mServer.getContext().getResourceCache().setCacheLimit(1 << 27); // 128MB
+        sInstance.mDevice = (GLDevice) Core.requireDirectContext().getDevice();
+        sInstance.mDevice.getContext().getResourceCache().setCacheLimit(1 << 27); // 128MB
         sInstance.mSurface = new GLSurface();
         BufferUploader.invalidate();
         LOGGER.info(MARKER, "UI renderer initialized");
@@ -690,14 +690,14 @@ public abstract class UIManager implements LifecycleOwner {
         int width = mWindow.getWidth();
         int height = mWindow.getHeight();
 
-        mServer.markContextDirty(Engine.GLBackendState.kPixelStore);
+        mDevice.markContextDirty(Engine.GLBackendState.kPixelStore);
         // TODO need multiple canvas instances, tooltip shares this now, but different thread; remove Z transform
         mCanvas.setProjection(mProjectionMatrix.setOrthographic(
                 width, height, 0, icyllis.modernui.core.Window.LAST_SYSTEM_WINDOW * 2 + 1,
                 true));
         mRoot.flushDrawCommands(mCanvas, mSurface, width, height);
 
-        ResourceCache resourceCache = mServer.getContext().getResourceCache();
+        GPUResourceCache resourceCache = mDevice.getContext().getResourceCache();
         resourceCache.purge();
         resourceCache.purgeUnlockedSince(
                 System.nanoTime() - 2L * 60 * 1000 * 1000 * 1000,

@@ -116,7 +116,7 @@ public class EffectRenderType extends RenderType {
                         format,
                         1,
                         0,
-                        null
+                        "MCTextEffect"
                 );
         Objects.requireNonNull(WHITE);
         try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -127,9 +127,9 @@ public class EffectRenderType extends RenderType {
                 pixels.put((byte) 0xff);
             }
             pixels.flip();
-            dContext.getServer().writePixels(
+            dContext.getDevice().writePixels(
                     WHITE, 0, 0, width, height,
-                    ImageInfo.CT_RGBA_8888, ImageInfo.CT_RGBA_8888,
+                    colorType, colorType,
                     width * bpp,
                     MemoryUtil.memAddress(pixels)
             );

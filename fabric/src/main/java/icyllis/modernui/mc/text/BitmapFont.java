@@ -22,7 +22,7 @@ import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.font.GlyphInfo;
 import com.mojang.blaze3d.font.SheetGlyphInfo;
 import icyllis.arc3d.core.Strike;
-import icyllis.arc3d.engine.Resource;
+import icyllis.arc3d.engine.GPUResource;
 import icyllis.arc3d.engine.Surface;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
@@ -369,7 +369,7 @@ public class BitmapFont implements Font, AutoCloseable {
             mBitmap.close();
             mBitmap = null;
         }
-        mTexture = Resource.move(mTexture);
+        mTexture = GPUResource.move(mTexture);
     }
 
     public static class Glyph extends BakedGlyph implements GlyphInfo {

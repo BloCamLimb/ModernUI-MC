@@ -252,7 +252,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
-        if (textureMap != null && mServer.getCaps().hasDSASupport()) {
+        if (textureMap != null && mDevice.getCaps().hasDSASupport()) {
             long gpuSize = 0;
             long cpuSize = 0;
             int dynamicTextures = 0;
@@ -311,7 +311,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                     textureAtlases++;
                 }
             }
-            pw.print("TextureManager: ");
+            pw.print("Minecraft's TextureManager: ");
             pw.print("Textures=" + textureMap.size());
             pw.print(", DynamicTextures=" + dynamicTextures);
             pw.print(", Atlases=" + textureAtlases);

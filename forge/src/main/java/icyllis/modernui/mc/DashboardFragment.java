@@ -25,9 +25,8 @@ import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
-import icyllis.modernui.markdown.*;
+import icyllis.modernui.markdown.Markdown;
 import icyllis.modernui.markdown.core.CorePlugin;
-import icyllis.modernui.mc.StillAlive;
 import icyllis.modernui.mc.ui.ThemeControl;
 import icyllis.modernui.text.method.LinkMovementMethod;
 import icyllis.modernui.util.DataSet;
@@ -39,7 +38,7 @@ import javax.annotation.Nonnull;
 public class DashboardFragment extends Fragment {
 
     public static final String CREDIT_TEXT = """
-            Modern UI 3.8
+            Modern UI 3.9
             by
             BloCamLimb
             (Icyllis Milica)
@@ -97,17 +96,19 @@ public class DashboardFragment extends Fragment {
                         .setBufferType(TextView.BufferType.SPANNABLE)
                         .build()
                         .setMarkdown(tv, """
-                                What's New in Modern UI 3.8
+                                What's New in Modern UI 3.9
                                 ----
                                 * Enhanced Text Layout
                                 * Better Mod Compatibility
+                                * Rendering Optimization
                                 * Basic Markdown Support
                                 * Unicode 15.0 Emoji List
                                 * New UI Components
                                 * And More…
-                                
+                                                                
                                 > Author: BloCamLimb \s
-                                  Source Code: [Modern UI](https://github.com/BloCamLimb/ModernUI)""");
+                                  Source Code: [Modern UI](https://github.com/BloCamLimb/ModernUI) \s
+                                  Source Code: [Modern UI (MC)](https://github.com/BloCamLimb/ModernUI-MC)""");
                 mInfoBox = tv;
             } else {
                 tv = mInfoBox;
@@ -122,7 +123,7 @@ public class DashboardFragment extends Fragment {
 
         {
             var tv = new TextView(getContext());
-            tv.setTextSize(14);
+            tv.setTextSize(12);
             tv.setText("Copyright © 2019-2023 BloCamLimb. All rights reserved.");
             var params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT);

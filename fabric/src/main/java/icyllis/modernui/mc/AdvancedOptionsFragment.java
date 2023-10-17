@@ -49,7 +49,7 @@ public class AdvancedOptionsFragment extends Fragment {
 
     ViewGroup mContent;
     TextView mUIManagerDump;
-    TextView mResourceCacheDump;
+    TextView mGPUResourceDump;
     TextView mPSOStatsDump;
     TextView mGPUStatsDump;
 
@@ -219,7 +219,7 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            mResourceCacheDump = tv;
+            mGPUResourceDump = tv;
             content.addView(tv);
         }
 
@@ -275,31 +275,31 @@ public class AdvancedOptionsFragment extends Fragment {
                 mUIManagerDump.post(() -> mUIManagerDump.setText(s));
             });
         }
-        if (mResourceCacheDump != null) {
+        if (mGPUResourceDump != null) {
             Core.executeOnRenderThread(() -> {
                 var rc = Core.requireDirectContext().getResourceCache();
                 var s = String.format("Resource Bytes: %s (%s bytes)",
                         TextUtils.binaryCompact(rc.getResourceBytes()),
                         rc.getResourceBytes()) +
-                        ", " +
+                        "\n" +
                         String.format("Budgeted Resource Bytes: %s (%s bytes)",
                                 TextUtils.binaryCompact(rc.getBudgetedResourceBytes()),
                                 rc.getBudgetedResourceBytes()) +
-                        ", " +
+                        "\n" +
                         String.format("Resource Count: %s",
                                 rc.getResourceCount()) +
-                        ", " +
+                        "\n" +
                         String.format("Budgeted Resource Count: %s",
                                 rc.getBudgetedResourceCount()) +
-                        ", " +
+                        "\n" +
                         String.format("Cleanable Resource Bytes: %s (%s bytes)",
                                 TextUtils.binaryCompact(rc.getCleanableResourceBytes()),
                                 rc.getCleanableResourceBytes()) +
-                        ", " +
-                        String.format("Max Resource Bytes: %s (%s bytes)",
+                        "\n" +
+                        String.format("Maximum Resource Bytes: %s (%s bytes)",
                                 TextUtils.binaryCompact(rc.getMaxResourceBytes()),
                                 rc.getMaxResourceBytes());
-                mResourceCacheDump.post(() -> mResourceCacheDump.setText(s));
+                mGPUResourceDump.post(() -> mGPUResourceDump.setText(s));
             });
         }
         if (mPSOStatsDump != null) {
@@ -312,7 +312,7 @@ public class AdvancedOptionsFragment extends Fragment {
         }
         if (mGPUStatsDump != null) {
             Core.executeOnRenderThread(() -> {
-                var s = Core.requireDirectContext().getServer().getStats().toString();
+                var s = Core.requireDirectContext().getDevice().getStats().toString();
                 mGPUStatsDump.post(() -> mGPUStatsDump.setText(s));
             });
         }

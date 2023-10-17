@@ -103,6 +103,11 @@ minecraft {
 }
 ```
 You need to regenerate run configurations if you make any changes on this.
+#### Building Modern UI for Minecraft
+Modern UI for Minecraft requires the latest [Arc 3D](https://github.com/BloCamLimb/Arc3D) codebase
+and the latest [Modern UI](https://github.com/BloCamLimb/ModernUI) codebase to build.
+You must clone `Arc3D` and `ModernUI` into the same parent directory of `ModernUI-MC` and ensure they're up-to-date.
+Checkout `Arc3D/master` branch and `ModernUI/dev` branch.
 ### Screenshots (outdated, try yourself)
 Navigation  
 ![new5](https://s2.loli.net/2022/03/06/hwAoHTgZNWBvEdq.png)  
