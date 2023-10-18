@@ -75,10 +75,6 @@ dependencies {
         shadow("icyllis.modernui:ModernUI-Core") {
             transitive = false
         }
-        implementation(forgeDependencies("icyllis.modernui:ModernUI-ViewPager"))
-        shadow("icyllis.modernui:ModernUI-ViewPager") {
-            transitive = false
-        }
         implementation(forgeDependencies("icyllis.modernui:ModernUI-Markdown"))
         shadow("icyllis.modernui:ModernUI-Markdown") {
             transitive = false
@@ -86,10 +82,6 @@ dependencies {
     } else {
         implementation(forgeDependencies("icyllis.modernui:ModernUI-Core:${core_version}"))
         shadow("icyllis.modernui:ModernUI-Core:${core_version}") {
-            transitive = false
-        }
-        implementation(forgeDependencies("icyllis.modernui:ModernUI-ViewPager:${core_version}"))
-        shadow("icyllis.modernui:ModernUI-ViewPager:${core_version}") {
             transitive = false
         }
         implementation(forgeDependencies("icyllis.modernui:ModernUI-Markdown:${core_version}"))

@@ -36,7 +36,6 @@ import icyllis.modernui.text.Typeface;
 import icyllis.modernui.text.method.DigitsInputFilter;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
-import icyllis.modernui.viewpager.widget.*;
 import icyllis.modernui.widget.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;

@@ -80,7 +80,6 @@ dependencies {
     // Modern UI core framework
     library "icyllis.modernui:ModernUI-Core:${modernui_version}"
     // Modern UI core extensions
-    library "icyllis.modernui:ModernUI-ViewPager:${modernui_version}"
     library "icyllis.modernui:ModernUI-Markdown:${modernui_version}"
     // Modern UI for Minecraft Forge
     implementation fg.deobf("icyllis.modernui:ModernUI-Forge:${minecraft_version}-${modernui_version}.+")
