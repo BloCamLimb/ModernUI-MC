@@ -121,7 +121,8 @@ public abstract class MixinWindow {
             for (int[] version : versions) {
                 GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, version[0]);
                 GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, version[1]);
-                window = GLFW.glfwCreateWindow(16, 16, "Proxy Window", 0, 0);
+                ModernUI.LOGGER.debug(ModernUI.MARKER, "Trying OpenGL {}.{}", version[0], version[1]);
+                window = GLFW.glfwCreateWindow(640, 480, "System Testing", 0, 0);
                 if (window != 0) {
                     ModernUI.LOGGER.info(ModernUI.MARKER, "Promoted to OpenGL {}.{} Core Profile",
                             version[0], version[1]);
@@ -130,11 +131,11 @@ public abstract class MixinWindow {
             }
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2);
-            ModernUI.LOGGER.debug(ModernUI.MARKER, "Fallback to OpenGL 3.2 Core Profile");
+            ModernUI.LOGGER.warn(ModernUI.MARKER, "Fallback to OpenGL 3.2 Core Profile");
         } catch (Exception e) {
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2);
-            ModernUI.LOGGER.debug(ModernUI.MARKER, "Fallback to OpenGL 3.2 Core Profile", e);
+            ModernUI.LOGGER.warn(ModernUI.MARKER, "Fallback to OpenGL 3.2 Core Profile", e);
         } finally {
             if (window != 0) {
                 GLFW.glfwDestroyWindow(window);

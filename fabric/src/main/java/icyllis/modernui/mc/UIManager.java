@@ -26,7 +26,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.arc3d.core.Matrix4;
 import icyllis.arc3d.engine.Engine;
-import icyllis.arc3d.engine.GPUResourceCache;
+import icyllis.arc3d.engine.ResourceCache;
 import icyllis.arc3d.opengl.GLDevice;
 import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.ModernUI;
@@ -698,7 +698,7 @@ public abstract class UIManager implements LifecycleOwner {
                 true));
         mRoot.flushDrawCommands(mCanvas, mSurface, width, height);
 
-        GPUResourceCache resourceCache = mDevice.getContext().getResourceCache();
+        ResourceCache resourceCache = mDevice.getContext().getResourceCache();
         resourceCache.purge();
         resourceCache.purgeUnlockedSince(
                 System.nanoTime() - 2L * 60 * 1000 * 1000 * 1000,
