@@ -97,33 +97,35 @@ public class CenterFragment2 extends Fragment {
             buttonGroup.addView(createNavButton(1001, "modernui.center.tab.dashboard"));
             buttonGroup.addView(createNavButton(1002, "modernui.center.tab.preferences"));
             buttonGroup.addView(createNavButton(1003, "modernui.center.tab.developerOptions"));
+            buttonGroup.addView(createNavButton(1004, "soundCategory.music"));
 
             buttonGroup.check(1001);
 
             buttonGroup.setOnCheckedChangeListener((group, checkedId) -> {
                 var fm = getChildFragmentManager();
+                FragmentTransaction ft = null;
                 switch (checkedId) {
                     case 1001 -> {
-                        fm.beginTransaction()
-                                .replace(id_tab_container, DashboardFragment.class, null, "dashboard")
-                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-                                .setReorderingAllowed(true)
-                                .commit();
+                        ft = fm.beginTransaction()
+                                .replace(id_tab_container, DashboardFragment.class, null, "dashboard");
                     }
                     case 1002 -> {
-                        fm.beginTransaction()
-                                .replace(id_tab_container, PreferencesFragment.class, null, "preferences")
-                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-                                .setReorderingAllowed(true)
-                                .commit();
+                        ft = fm.beginTransaction()
+                                .replace(id_tab_container, PreferencesFragment.class, null, "preferences");
                     }
                     case 1003 -> {
-                        fm.beginTransaction()
-                                .replace(id_tab_container, AdvancedOptionsFragment.class, null, "developerOptions")
-                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-                                .setReorderingAllowed(true)
-                                .commit();
+                        ft = fm.beginTransaction()
+                                .replace(id_tab_container, AdvancedOptionsFragment.class, null, "developerOptions");
                     }
+                    case 1004 -> {
+                        ft = fm.beginTransaction()
+                                .replace(id_tab_container, MusicFragment.class, null, "music");
+                    }
+                }
+                if (ft != null) {
+                    ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                            .setReorderingAllowed(true)
+                            .commit();
                 }
             });
 
