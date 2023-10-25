@@ -41,6 +41,7 @@ import net.minecraftforge.fml.config.ModConfig;
 import org.jetbrains.annotations.ApiStatus;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Platform;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -277,11 +278,11 @@ public final class Config {
                     .defineInRange("framerateMinimized", 0, 0, 255);
             mMasterVolumeInactive = builder.comment(
                             "Master volume multiplier on window inactive (out of focus or minimized), 1 = no change.")
-                    .defineInRange("masterVolumeInactive", 1.0, 0, 1);
+                    .defineInRange("masterVolumeInactive", 0.5, 0, 1);
             mMasterVolumeMinimized = builder.comment(
                             "Master volume multiplier on window minimized, 1 = same as master volume inactive.",
                             "This value will be no greater than master volume inactive.")
-                    .defineInRange("masterVolumeMinimized", 1.0, 0, 1);
+                    .defineInRange("masterVolumeMinimized", 0.25, 0, 1);
 
             builder.pop();
 
@@ -419,7 +420,7 @@ public final class Config {
             mAutoHinting = builder.comment(
                             "Control the FreeType font hinting of raw glyph metrics.",
                             "Enable if on low-res monitor; disable for linear texts.")
-                    .define("autoHinting", true);
+                    .define("autoHinting", Platform.get() != Platform.MACOSX);
             /*mLinearSampling = builder.comment(
                             "Enable linear sampling for font atlases with mipmaps, mag filter will be always NEAREST.",
                             "If your fonts are not bitmap fonts, then you should keep this setting true.")

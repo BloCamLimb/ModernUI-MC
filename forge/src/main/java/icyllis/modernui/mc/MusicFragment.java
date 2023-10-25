@@ -38,7 +38,7 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 public class MusicFragment extends Fragment {
 
-    private MusicController mMusicController;
+    private MusicPlayer mMusicPlayer;
     private SpectrumDrawable mSpectrumDrawable;
 
     private Button mTitleButton;
@@ -48,10 +48,10 @@ public class MusicFragment extends Fragment {
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
-        mMusicController = MusicController.getInstance();
-        mMusicController.setOnTrackLoadCallback(track -> {
+        mMusicPlayer = MusicPlayer.getInstance();
+        mMusicPlayer.setOnTrackLoadCallback(track -> {
             if (track != null) {
-                mMusicController.setAnalyzerCallback(
+                mMusicPlayer.setAnalyzerCallback(
                         fft -> {
                             fft.setLogAverages(250, 14);
                             fft.setWindowFunc(FFT.NONE);
@@ -65,7 +65,7 @@ public class MusicFragment extends Fragment {
                 Toast.makeText(requireContext(),
                         "Failed to open Ogg Vorbis file", Toast.LENGTH_SHORT).show();
             }
-            var trackName = mMusicController.getTrackName();
+            var trackName = mMusicPlayer.getTrackName();
             mTitleButton.setText(Objects.requireNonNullElse(trackName, "Play A Music!"));
         });
     }
@@ -73,9 +73,9 @@ public class MusicFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
-        mMusicController.setAnalyzerCallback(null, null);
-        if (!mMusicController.isPlaying()) {
-            mMusicController.clearTrack();
+        mMusicPlayer.setAnalyzerCallback(null, null);
+        if (!mMusicPlayer.isPlaying()) {
+            mMusicPlayer.clearTrack();
         }
     }
 
@@ -92,17 +92,17 @@ public class MusicFragment extends Fragment {
         content.setBackground(mSpectrumDrawable);
         content.setGravity(Gravity.CENTER);
 
-        mMusicController.setAnalyzerCallback(null, mSpectrumDrawable::updateAmplitudes);
+        mMusicPlayer.setAnalyzerCallback(null, mSpectrumDrawable::updateAmplitudes);
 
         {
             var button = new Button(requireContext());
             button.setOnClickListener(v -> {
-                String path = MusicController.openDialogGet();
+                String path = MusicPlayer.openDialogGet();
                 if (path != null) {
-                    mMusicController.replaceTrack(Path.of(path));
+                    mMusicPlayer.replaceTrack(Path.of(path));
                 }
             });
-            var trackName = mMusicController.getTrackName();
+            var trackName = mMusicPlayer.getTrackName();
             button.setText(Objects.requireNonNullElse(trackName, "Play A Music!"));
             button.setTextSize(16f);
             button.setTextColor(0xFF28A3F3);
@@ -117,15 +117,15 @@ public class MusicFragment extends Fragment {
             var button = new Button(requireContext());
             button.setOnClickListener(v -> {
                 var btn = (Button) v;
-                if (mMusicController.isPlaying()) {
-                    mMusicController.pause();
+                if (mMusicPlayer.isPlaying()) {
+                    mMusicPlayer.pause();
                     btn.setText("\u23F5");
                 } else {
-                    mMusicController.play();
+                    mMusicPlayer.play();
                     btn.setText("\u23F8");
                 }
             });
-            if (mMusicController.isPlaying()) {
+            if (mMusicPlayer.isPlaying()) {
                 button.setText("\u23F8");
             } else {
                 button.setText("\u23F5");
@@ -138,22 +138,45 @@ public class MusicFragment extends Fragment {
         }
 
         {
-            var seekLayout = new SeekLayout(requireContext());
+            var seekLayout = new SeekLayout(requireContext(), 12);
             mSeekLayout = seekLayout;
             content.addView(seekLayout);
 
             seekLayout.post(this::updateProgress);
             seekLayout.mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                boolean mPlaying;
 
                 @Override
                 public void onStartTrackingTouch(SeekBar seekBar) {
-                    mMusicController.pause();
+                    mPlaying = mMusicPlayer.isPlaying();
+                    if (mPlaying) {
+                        mMusicPlayer.pause();
+                    }
                 }
 
                 @Override
                 public void onStopTrackingTouch(SeekBar seekBar) {
-                    mMusicController.seek(seekBar.getProgress() / 10000f);
-                    mMusicController.play();
+                    mMusicPlayer.seek(seekBar.getProgress() / 10000f);
+                    if (mPlaying) {
+                        mMusicPlayer.play();
+                    }
+                }
+            });
+        }
+
+        {
+            var seekLayout = new SeekLayout(requireContext(), 18);
+            content.addView(seekLayout);
+
+            seekLayout.mMinText.setText("\uD83D\uDD07");
+            seekLayout.mMaxText.setText("\uD83D\uDD0A");
+            seekLayout.mSeekBar.setProgress(Math.round(mMusicPlayer.getGain() * 10000));
+            seekLayout.mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+                @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    if (fromUser) {
+                        mMusicPlayer.setGain(progress / 10000f);
+                    }
                 }
             });
         }
@@ -162,12 +185,12 @@ public class MusicFragment extends Fragment {
     }
 
     private void updateProgress() {
-        if (mMusicController.isPlaying()) {
-            float time = mMusicController.getTrackTime();
-            float length = mMusicController.getTrackLength();
-            mSeekLayout.mCurTime.setText(formatTime((int) time));
+        if (mMusicPlayer.isPlaying()) {
+            float time = mMusicPlayer.getTrackTime();
+            float length = mMusicPlayer.getTrackLength();
+            mSeekLayout.mMinText.setText(formatTime((int) time));
             mSeekLayout.mSeekBar.setProgress((int) (time / length * 10000));
-            mSeekLayout.mMaxTime.setText(formatTime((int) length));
+            mSeekLayout.mMaxText.setText(formatTime((int) length));
         }
         mSeekLayout.postDelayed(this::updateProgress, 200);
     }
@@ -182,35 +205,36 @@ public class MusicFragment extends Fragment {
 
     public static class SeekLayout extends LinearLayout {
 
-        TextView mCurTime;
+        TextView mMinText;
         SeekBar mSeekBar;
-        TextView mMaxTime;
+        TextView mMaxText;
 
-        public SeekLayout(Context context) {
+        public SeekLayout(Context context, float textSize) {
             super(context);
             setOrientation(HORIZONTAL);
 
-            mCurTime = new TextView(context);
-            mCurTime.setTextSize(12);
-            mCurTime.setMinWidth(dp(60));
-            mCurTime.setTextAlignment(TEXT_ALIGNMENT_VIEW_START);
+            mMinText = new TextView(context);
+            mMinText.setTextSize(textSize);
+            mMinText.setMinWidth(dp(60));
+            mMinText.setTextAlignment(TEXT_ALIGNMENT_VIEW_START);
 
-            addView(mCurTime);
+            addView(mMinText);
 
             mSeekBar = new SeekBar(context);
             mSeekBar.setMax(10000);
+            mSeekBar.setClickable(true);
             var lp = new LayoutParams(LayoutParams.MATCH_PARENT, WRAP_CONTENT);
             lp.weight = 1;
             mSeekBar.setLayoutParams(lp);
 
             addView(mSeekBar);
 
-            mMaxTime = new TextView(context);
-            mMaxTime.setTextSize(12);
-            mMaxTime.setMinWidth(dp(60));
-            mMaxTime.setTextAlignment(TEXT_ALIGNMENT_VIEW_END);
+            mMaxText = new TextView(context);
+            mMaxText.setTextSize(textSize);
+            mMaxText.setMinWidth(dp(60));
+            mMaxText.setTextAlignment(TEXT_ALIGNMENT_VIEW_END);
 
-            addView(mMaxTime);
+            addView(mMaxText);
 
             setGravity(Gravity.CENTER);
         }
@@ -382,6 +406,10 @@ public class MusicFragment extends Fragment {
             mLastBassAmplitude = bassAmplitude;
             if (!mParticleList.isEmpty()) {
                 invalidate = true;
+            }
+
+            if (canvas instanceof GLSurfaceCanvas && invalidate) {
+                ((GLSurfaceCanvas) canvas).drawGlowWave(b.left, b.top, b.right, b.bottom);
             }
 
             float alphaMult = 1.5f + MathUtil.sin(time / 600f) / 2;

@@ -34,9 +34,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-public class MusicController {
+public class MusicPlayer {
 
-    private static volatile MusicController sController;
+    private static volatile MusicPlayer sInstance;
 
     private Track mCurrentTrack;
     private FFT mFFT;
@@ -46,19 +46,19 @@ public class MusicController {
 
     private Consumer<Track> mOnTrackLoadCallback;
 
-    public static MusicController getInstance() {
-        if (sController != null) {
-            return sController;
+    public static MusicPlayer getInstance() {
+        if (sInstance != null) {
+            return sInstance;
         }
-        synchronized (MusicController.class) {
-            if (sController == null) {
-                sController = new MusicController();
+        synchronized (MusicPlayer.class) {
+            if (sInstance == null) {
+                sInstance = new MusicPlayer();
             }
         }
-        return sController;
+        return sInstance;
     }
 
-    private MusicController() {
+    private MusicPlayer() {
     }
 
     public static String openDialogGet() {
@@ -163,6 +163,10 @@ public class MusicController {
                 mCurrentTrack.setGain(gain);
             }
         }
+    }
+
+    public float getGain() {
+        return mGain;
     }
 
     public void setAnalyzerCallback(Consumer<FFT> setup, Consumer<FFT> callback) {
