@@ -736,6 +736,15 @@ public class TextLayout {
         return mGlyphFlags;
     }
 
+    @Nullable
+    public byte[] getFontIndices() {
+        return mFontIndices;
+    }
+
+    public Font[] getFontVector() {
+        return mFonts;
+    }
+
     /*
      * Glyphs to relative char indices of the strip string (without formatting codes). However,
      * for vanilla layout {@link VanillaLayoutKey} and {@link TextLayoutEngine#lookupVanillaLayout(String)},

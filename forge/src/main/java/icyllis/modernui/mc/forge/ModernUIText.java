@@ -22,9 +22,11 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.TextUtils;
 import net.minecraft.client.Minecraft;
+import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -144,6 +146,11 @@ public final class ModernUIText {
             if (event.phase == TickEvent.Phase.END) {
                 TextLayoutEngine.getInstance().onEndClientTick();
             }
+        }
+
+        @SubscribeEvent
+        static void onRegisterClientCommands(@Nonnull RegisterClientCommandsEvent event) {
+            MuiTextCommand.register(event.getDispatcher());
         }
     }
 }
