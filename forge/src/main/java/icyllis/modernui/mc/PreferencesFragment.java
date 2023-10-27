@@ -443,6 +443,7 @@ public class PreferencesFragment extends Fragment {
 
             {
                 var option = createSwitchLayout(context, "modernui.center.text.textEngine");
+                option.setTooltipText(I18n.get("modernui.center.text.textEngine_desc"));
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
                 button.setChecked(ModernUIClient.isTextEngineEnabled());
                 button.setOnCheckedChangeListener((view, checked) -> {

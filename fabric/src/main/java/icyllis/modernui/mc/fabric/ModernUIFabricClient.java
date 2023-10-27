@@ -26,9 +26,11 @@ import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.ImageStore;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.TextUtils;
 import net.fabricmc.api.*;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -128,6 +130,10 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                         TextLayoutEngine.getInstance().reload();
                     }
                 });
+            });
+
+            ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+                MuiTextCommand.register(dispatcher);
             });
 
             MuiModApi.addOnDebugDumpListener(pw -> {

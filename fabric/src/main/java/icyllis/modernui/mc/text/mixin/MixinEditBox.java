@@ -18,8 +18,10 @@
 
 package icyllis.modernui.mc.text.mixin;
 
+import com.ibm.icu.text.BreakIterator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.mc.text.*;
+import icyllis.modernui.text.method.WordIterator;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -35,6 +37,7 @@ import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -96,6 +99,9 @@ public abstract class MixinEditBox extends AbstractWidget {
 
     @Shadow
     private BiFunction<String, Integer, FormattedCharSequence> formatter;
+
+    @Unique
+    private WordIterator modernUI_MC$wordIterator;
 
     public MixinEditBox(int x, int y, int w, int h, Component msg) {
         super(x, y, w, h, msg);
@@ -282,5 +288,34 @@ public abstract class MixinEditBox extends AbstractWidget {
     @Inject(method = "setCursorPosition", at = @At("RETURN"))
     public void onSetCursorPosition(int pos, CallbackInfo ci) {
         frame = 0;
+    }
+
+    @Inject(method = "getCursorPos", at = @At("HEAD"), cancellable = true)
+    public void onGetCursorPosition(int dir,
+                                    CallbackInfoReturnable<Integer> cir) {
+        cir.setReturnValue(ModernStringSplitter.offsetByGrapheme(value, cursorPos, dir));
+    }
+
+    @Inject(method = "getWordPosition(IIZ)I", at = @At("HEAD"), cancellable = true)
+    public void onGetWordPosition(int dir, int cursor, boolean withEndSpace,
+                                  CallbackInfoReturnable<Integer> cir) {
+        if (dir == -1 || dir == 1) {
+            WordIterator wordIterator = modernUI_MC$wordIterator;
+            if (wordIterator == null) {
+                modernUI_MC$wordIterator = wordIterator = new WordIterator();
+            }
+            wordIterator.setCharSequence(value, cursor, cursor);
+            int offset;
+            if (dir == -1) {
+                offset = wordIterator.preceding(cursor);
+            } else {
+                offset = wordIterator.following(cursor);
+            }
+            if (offset != BreakIterator.DONE) {
+                cir.setReturnValue(offset);
+            } else {
+                cir.setReturnValue(cursor);
+            }
+        }
     }
 }

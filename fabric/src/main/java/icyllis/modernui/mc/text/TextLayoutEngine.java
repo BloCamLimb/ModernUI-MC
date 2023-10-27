@@ -147,6 +147,13 @@ public class TextLayoutEngine implements PreparableReloadListener {
         }
     }
 
+    /**
+     * Logical font names, CSS convention.
+     */
+    public static final ResourceLocation SANS_SERIF = ModernUIMod.location("sans-serif");
+    public static final ResourceLocation SERIF = ModernUIMod.location("serif");
+    public static final ResourceLocation MONOSPACED = ModernUIMod.location("monospace"); // no -d
+
     /*
      * Draw and cache all glyphs of all fonts needed
      * Lazy-loading because we are waiting for render system to initialize
@@ -521,6 +528,22 @@ public class TextLayoutEngine implements PreparableReloadListener {
 
     @RenderThread
     private void injectAdditionalFonts(boolean force) {
+        if (force) {
+            // register logical fonts
+            mFontCollections.putIfAbsent(SANS_SERIF,
+                    Typeface.SANS_SERIF);
+            mFontCollections.putIfAbsent(SERIF,
+                    Typeface.SERIF);
+            mFontCollections.putIfAbsent(MONOSPACED,
+                    Typeface.MONOSPACED);
+            // register logical fonts in default namespace
+            mFontCollections.putIfAbsent(new ResourceLocation(SANS_SERIF.getPath()),
+                    Typeface.SANS_SERIF);
+            mFontCollections.putIfAbsent(new ResourceLocation(SERIF.getPath()),
+                    Typeface.SERIF);
+            mFontCollections.putIfAbsent(new ResourceLocation(MONOSPACED.getPath()),
+                    Typeface.MONOSPACED);
+        }
         if (mColorEmojiUsed != sUseColorEmoji || force) {
             LinkedHashSet<FontFamily> defaultFonts = new LinkedHashSet<>();
             if (!sUseColorEmoji) {

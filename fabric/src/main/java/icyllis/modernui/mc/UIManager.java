@@ -33,6 +33,7 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.LayoutTransition;
 import icyllis.modernui.annotation.*;
+import icyllis.modernui.audio.AudioManager;
 import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.*;
 import icyllis.modernui.graphics.*;
@@ -170,6 +171,8 @@ public abstract class UIManager implements LifecycleOwner {
 
         mUiThread = new Thread(this::run, "UI thread");
         mUiThread.start();
+        // integrated with Minecraft
+        AudioManager.getInstance().initialize(/*integrated*/ true);
 
         mRunning = true;
     }
@@ -823,6 +826,7 @@ public abstract class UIManager implements LifecycleOwner {
                 if (mCanvas != null) {
                     mCanvas.destroy();
                 }
+                AudioManager.getInstance().close();
                 try {
                     // in case of GLFW is terminated too early
                     mUiThread.join(1000);
