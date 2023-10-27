@@ -163,6 +163,9 @@ public abstract class UIManager implements LifecycleOwner {
 
     protected int mButtonState;
 
+    private final StringBuilder mCharInputBuffer = new StringBuilder();
+    private final Runnable mCommitCharInput = this::commitCharInput;
+
     protected UIManager() {
         MuiModApi.addOnScrollListener(this::onScroll);
         MuiModApi.addOnScreenChangeListener(this::onScreenChange);
@@ -649,6 +652,17 @@ public abstract class UIManager implements LifecycleOwner {
         if (ch == '\0' || ch == '\u007F') {
             return false;
         }
+        mCharInputBuffer.append(ch);
+        Core.postOnMainThread(mCommitCharInput);
+        return true;//root.charTyped(codePoint, modifiers);
+    }
+
+    private void commitCharInput() {
+        if (mCharInputBuffer.isEmpty()) {
+            return;
+        }
+        final String input = mCharInputBuffer.toString();
+        mCharInputBuffer.setLength(0);
         Message msg = Message.obtain(mRoot.mHandler, () -> {
             if (mDecor.findFocus() instanceof EditText text) {
                 final Editable content = text.getText();
@@ -656,13 +670,12 @@ public abstract class UIManager implements LifecycleOwner {
                 int selEnd = text.getSelectionEnd();
                 if (selStart >= 0 && selEnd >= 0) {
                     Selection.setSelection(content, Math.max(selStart, selEnd));
-                    content.replace(Math.min(selStart, selEnd), Math.max(selStart, selEnd), String.valueOf(ch));
+                    content.replace(Math.min(selStart, selEnd), Math.max(selStart, selEnd), input);
                 }
             }
         });
         msg.setAsynchronous(true);
         msg.sendToTarget();
-        return true;//root.charTyped(codePoint, modifiers);
     }
 
     @RenderThread
