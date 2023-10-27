@@ -19,6 +19,9 @@
     "MixinGameRenderer",
     "MixinIngameGui",
     "MixinLanguage",
-    "MixinLevelRenderer"
+    "MixinLevelRenderer",
+    "MixinSignEditScreen",
+    "MixinStringSplitter",
+    "MixinTextFieldHelper"
   ]
 }

@@ -18,10 +18,13 @@
 
 package icyllis.modernui.mc.text;
 
+import icyllis.modernui.ModernUI;
+import icyllis.modernui.graphics.text.GraphemeBreak;
 import icyllis.modernui.graphics.text.LineBreaker;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.ComponentCollector;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.network.chat.*;
@@ -34,7 +37,8 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 
 /**
- * Provides text measurement, Unicode grapheme cluster breaking, Unicode line breaking and so on.
+ * Provides text measurement, truncation, Unicode grapheme cluster breaking,
+ * Unicode line breaking and so on.
  */
 public final class ModernStringSplitter extends StringSplitter {
 
@@ -49,6 +53,28 @@ public final class ModernStringSplitter extends StringSplitter {
                                 StringSplitter.WidthProvider widthProvider) {
         super(widthProvider);
         mEngine = engine;
+    }
+
+    // move a grapheme cluster at least
+    public static int offsetByGrapheme(String value, int cursor, int dir) {
+        int op;
+        if (dir < 0) {
+            op = GraphemeBreak.BEFORE;
+        } else if (dir == 0) {
+            op = GraphemeBreak.AT_OR_BEFORE;
+        } else {
+            op = GraphemeBreak.AFTER;
+        }
+        int offset = Util.offsetByCodepoints(value, cursor, dir);
+        cursor = GraphemeBreak.getTextRunCursor(
+                value, ModernUI.getSelectedLocale(),
+                0, value.length(), cursor, op
+        );
+        if (dir > 0) {
+            return Math.max(offset, cursor);
+        } else {
+            return Math.min(offset, cursor);
+        }
     }
 
     /**

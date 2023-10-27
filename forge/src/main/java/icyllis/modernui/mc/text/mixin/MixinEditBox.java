@@ -20,8 +20,6 @@ package icyllis.modernui.mc.text.mixin;
 
 import com.ibm.icu.text.BreakIterator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import icyllis.modernui.ModernUI;
-import icyllis.modernui.graphics.text.GraphemeBreak;
 import icyllis.modernui.mc.text.*;
 import icyllis.modernui.text.method.WordIterator;
 import net.minecraft.ChatFormatting;
@@ -295,21 +293,7 @@ public abstract class MixinEditBox extends AbstractWidget {
     @Inject(method = "getCursorPos", at = @At("HEAD"), cancellable = true)
     public void onGetCursorPosition(int dir,
                                     CallbackInfoReturnable<Integer> cir) {
-        int op;
-        if (dir == -1) {
-            op = GraphemeBreak.BEFORE;
-        } else if (dir == 0) {
-            op = GraphemeBreak.AT_OR_BEFORE;
-        } else if (dir == 1) {
-            op = GraphemeBreak.AFTER;
-        } else {
-            return;
-        }
-        int offset = GraphemeBreak.getTextRunCursor(
-                value, ModernUI.getSelectedLocale(),
-                0, value.length(), cursorPos, op
-        );
-        cir.setReturnValue(offset);
+        cir.setReturnValue(ModernStringSplitter.offsetByGrapheme(value, cursorPos, dir));
     }
 
     @Inject(method = "getWordPosition(IIZ)I", at = @At("HEAD"), cancellable = true)
