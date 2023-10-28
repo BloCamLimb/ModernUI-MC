@@ -31,9 +31,9 @@ import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.mc.ui.FourColorPicker;
 import icyllis.modernui.mc.ui.ThemeControl;
-import icyllis.modernui.text.InputFilter;
-import icyllis.modernui.text.Typeface;
+import icyllis.modernui.text.*;
 import icyllis.modernui.text.method.DigitsInputFilter;
+import icyllis.modernui.text.style.ForegroundColorSpan;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
 import icyllis.modernui.widget.*;
@@ -336,6 +336,8 @@ public class PreferencesFragment extends Fragment {
         // Screen
         {
             var list = createCategoryList(context, "modernui.center.category.screen");
+
+            list.addView(createGuiScaleOption(context));
 
             list.addView(createColorOpacityOption(context, "modernui.center.screen.backgroundOpacity",
                     Config.CLIENT.mBackgroundColor, saveFn));
@@ -789,6 +791,107 @@ public class PreferencesFragment extends Fragment {
         option.setLayoutParams(params);
 
         return option;
+    }
+
+    private static LinearLayout createGuiScaleOption(Context context) {
+        var layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.HORIZONTAL);
+        layout.setHorizontalGravity(Gravity.START);
+
+        final int dp3 = layout.dp(3);
+        final int dp6 = layout.dp(6);
+        {
+            var title = new TextView(context);
+            title.setText(I18n.get("options.guiScale"));
+            title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+            title.setTextSize(14);
+
+            var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
+            params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
+            layout.addView(title, params);
+        }
+
+        var slider = new SeekBar(context);
+        {
+            slider.setClickable(true);
+            var params = new LinearLayout.LayoutParams(slider.dp(200), WRAP_CONTENT);
+            params.gravity = Gravity.CENTER_VERTICAL;
+            layout.addView(slider, params);
+        }
+
+        var tv = new TextView(context);
+        {
+            tv.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+            tv.setTextSize(14);
+            tv.setPadding(dp3, 0, dp3, 0);
+            var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+            params.gravity = Gravity.CENTER_VERTICAL;
+            layout.addView(tv, params);
+        }
+
+        int curValue = Minecraft.getInstance().options.guiScale().get();
+        tv.setText(guiScaleToString(curValue));
+        tv.setMinWidth(slider.dp(50));
+
+        slider.setMax(MuiModApi.MAX_GUI_SCALE);
+        slider.setProgress(curValue);
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int newValue = seekBar.getProgress();
+                tv.setText(guiScaleToString(newValue));
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                int newValue = seekBar.getProgress();
+                Core.executeOnMainThread(() -> {
+                    Minecraft minecraft = Minecraft.getInstance();
+                    minecraft.options.guiScale().set(newValue);
+                    // ensure it's applied
+                    if ((int) minecraft.getWindow().getGuiScale() !=
+                            minecraft.getWindow().calculateScale(newValue, false)) {
+                        minecraft.resizeDisplay();
+                    }
+                });
+                tv.setText(guiScaleToString(newValue));
+            }
+        });
+
+        var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+        params.gravity = Gravity.CENTER;
+        params.setMargins(dp6, 0, dp6, 0);
+        layout.setLayoutParams(params);
+
+        return layout;
+    }
+
+    private static CharSequence guiScaleToString(int value) {
+        int r = MuiModApi.calcGuiScales();
+        if (value == 0) { // auto
+            int auto = r >> 4 & 0xf;
+            return "(" + auto + ")";
+        } else {
+            String valueString = Integer.toString(value);
+            int min = r >> 8 & 0xf;
+            int max = r & 0xf;
+            if (value < min || value > max) {
+                final String hint;
+                if (value < min) {
+                    hint = (" (" + min + ")");
+                } else {
+                    hint = (" (" + max + ")");
+                }
+                var spannableString = new SpannableString(valueString + hint);
+                spannableString.setSpan(
+                        new ForegroundColorSpan(0xFFFF5555),
+                        0, spannableString.length(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+                return spannableString;
+            }
+            return valueString;
+        }
     }
 
     @NonNull
