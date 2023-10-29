@@ -26,7 +26,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.arc3d.core.Matrix4;
 import icyllis.arc3d.engine.Engine;
-import icyllis.arc3d.engine.ResourceCache;
 import icyllis.arc3d.opengl.GLDevice;
 import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.ModernUI;
@@ -134,6 +133,7 @@ public abstract class UIManager implements LifecycleOwner {
     protected boolean mNoRender = false;
     protected boolean mClearNextMainTarget = false;
     protected boolean mAlwaysClearMainTarget = false;
+    private long mLastPurgeNanos;
 
     protected final TooltipRenderer mTooltipRenderer = new TooltipRenderer();
 
@@ -713,12 +713,16 @@ public abstract class UIManager implements LifecycleOwner {
                 true));
         mRoot.flushDrawCommands(mCanvas, mSurface, width, height);
 
-        ResourceCache resourceCache = mDevice.getContext().getResourceCache();
-        resourceCache.purge();
-        resourceCache.purgeUnlockedSince(
-                System.nanoTime() - 2L * 60 * 1000 * 1000 * 1000,
-                true
-        );
+        var resourceCache = mDevice.getContext().getResourceCache();
+        resourceCache.cleanup();
+        // 2 min
+        if (mFrameTimeNanos - mLastPurgeNanos >= 120_000_000_000L) {
+            mLastPurgeNanos = mFrameTimeNanos;
+            resourceCache.purgeFreeResourcesOlderThan(
+                    System.currentTimeMillis() - 120_000,
+                    /*scratch only*/ true
+            );
+        }
 
         glBindVertexArray(oldVertexArray);
         glUseProgram(oldProgram);

@@ -147,6 +147,15 @@ public class MusicFragment extends Fragment {
                 boolean mPlaying;
 
                 @Override
+                public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                    if (fromUser) {
+                        float fraction = progress / 10000f;
+                        float length = mMusicPlayer.getTrackLength();
+                        mSeekLayout.mMinText.setText(formatTime((int) (fraction * length)));
+                    }
+                }
+
+                @Override
                 public void onStartTrackingTouch(SeekBar seekBar) {
                     mPlaying = mMusicPlayer.isPlaying();
                     if (mPlaying) {
@@ -165,13 +174,13 @@ public class MusicFragment extends Fragment {
         }
 
         {
-            var seekLayout = new SeekLayout(requireContext(), 18);
-            content.addView(seekLayout);
+            var volumeBar = new SeekLayout(requireContext(), 18);
+            content.addView(volumeBar);
 
-            seekLayout.mMinText.setText("\uD83D\uDD07");
-            seekLayout.mMaxText.setText("\uD83D\uDD0A");
-            seekLayout.mSeekBar.setProgress(Math.round(mMusicPlayer.getGain() * 10000));
-            seekLayout.mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            volumeBar.mMinText.setText("\uD83D\uDD07");
+            volumeBar.mMaxText.setText("\uD83D\uDD0A");
+            volumeBar.mSeekBar.setProgress(Math.round(mMusicPlayer.getGain() * 10000));
+            volumeBar.mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override
                 public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                     if (fromUser) {

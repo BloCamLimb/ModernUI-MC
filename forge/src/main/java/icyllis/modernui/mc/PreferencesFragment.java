@@ -853,6 +853,7 @@ public class PreferencesFragment extends Fragment {
                             minecraft.getWindow().calculateScale(newValue, false)) {
                         minecraft.resizeDisplay();
                     }
+                    minecraft.options.save();
                 });
                 tv.setText(guiScaleToString(newValue));
             }

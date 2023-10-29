@@ -302,11 +302,11 @@ public class AdvancedOptionsFragment extends Fragment {
                         String.format("Budgeted Resource Count: %s",
                                 rc.getBudgetedResourceCount()) +
                         "\n" +
-                        String.format("Cleanable Resource Bytes: %s (%s bytes)",
-                                TextUtils.binaryCompact(rc.getCleanableResourceBytes()),
-                                rc.getCleanableResourceBytes()) +
+                        String.format("Free Resource Bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(rc.getFreeResourceBytes()),
+                                rc.getFreeResourceBytes()) +
                         "\n" +
-                        String.format("Maximum Resource Bytes: %s (%s bytes)",
+                        String.format("Max Resource Bytes: %s (%s bytes)",
                                 TextUtils.binaryCompact(rc.getMaxResourceBytes()),
                                 rc.getMaxResourceBytes());
                 mGPUResourceDump.post(() -> mGPUResourceDump.setText(s));
