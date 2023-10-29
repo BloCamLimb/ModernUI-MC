@@ -18,8 +18,7 @@
 
 package icyllis.modernui.mc;
 
-import icyllis.modernui.util.BinaryIO;
-import icyllis.modernui.util.DataSet;
+import icyllis.modernui.util.*;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.handler.codec.DecoderException;
@@ -55,9 +54,9 @@ public final class BinaryDataUtils {
      */
     @Nonnull
     public static FriendlyByteBuf writeDataSet(@Nonnull FriendlyByteBuf buf, @Nullable DataSet source) {
-        try {
-            BinaryIO.writeDataSet(new ByteBufOutputStream(buf), source);
-        } catch (IOException e) {
+        try (var p = new OutputStreamParcel(new ByteBufOutputStream(buf))) {
+            p.writeDataSet(source);
+        } catch (Exception e) {
             throw new EncoderException(e);
         }
         return buf;
@@ -71,9 +70,9 @@ public final class BinaryDataUtils {
      */
     @Nullable
     public static DataSet readDataSet(@Nonnull FriendlyByteBuf buf, @Nullable ClassLoader loader) {
-        try {
-            return BinaryIO.readDataSet(new ByteBufInputStream(buf), loader);
-        } catch (IOException e) {
+        try (var p = new InputStreamParcel(new ByteBufInputStream(buf))) {
+            return p.readDataSet(loader);
+        } catch (Exception e) {
             throw new DecoderException(e);
         }
     }
