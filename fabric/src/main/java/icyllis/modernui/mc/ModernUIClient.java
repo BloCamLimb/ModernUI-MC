@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc;
 
+import icyllis.arc3d.engine.DriverBugWorkarounds;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
@@ -109,6 +110,33 @@ public abstract class ModernUIClient extends ModernUI {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Nullable
+    public static DriverBugWorkarounds getGpuDriverBugWorkarounds() {
+        Properties props = getBootstrapProperties();
+        if (props != null) {
+            Map<String, Boolean> map = new HashMap<>();
+            props.forEach((k, v) -> {
+                if (k instanceof String key && v instanceof String value) {
+                    Boolean state;
+                    if ("true".equalsIgnoreCase(value)) {
+                        state = Boolean.TRUE;
+                    } else if ("false".equalsIgnoreCase(value)) {
+                        state = Boolean.FALSE;
+                    } else {
+                        return;
+                    }
+                    if (key.startsWith("arc3d_driverBugWorkarounds_")) { // <- length == 27
+                        map.put(key.substring(27), state);
+                    }
+                }
+            });
+            if (!map.isEmpty()) {
+                return new DriverBugWorkarounds(map);
+            }
+        }
+        return null;
     }
 
     public static void loadFonts(String first,

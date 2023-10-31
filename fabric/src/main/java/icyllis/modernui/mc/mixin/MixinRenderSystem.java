@@ -19,9 +19,10 @@
 package icyllis.modernui.mc.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import icyllis.arc3d.opengl.GLCore;
+import icyllis.arc3d.engine.ContextOptions;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
+import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.mc.fabric.UIManagerFabric;
 import net.minecraft.util.TimeSource;
 import org.lwjgl.opengl.GL;
@@ -52,7 +53,9 @@ public class MixinRenderSystem {
     @Inject(method = "initRenderer", at = @At("TAIL"), remap = false)
     private static void onInitRenderer(int debugLevel, boolean debugSync, CallbackInfo ci) {
         Core.initialize();
-        if (!Core.initOpenGL()) {
+        ContextOptions options = new ContextOptions();
+        options.mDriverBugWorkarounds = ModernUIClient.getGpuDriverBugWorkarounds();
+        if (!Core.initOpenGL(options)) {
             Core.glShowCapsErrorDialog();
         }
         UIManagerFabric.initialize();
