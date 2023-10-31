@@ -269,14 +269,14 @@ public class PreferencesFragment extends Fragment {
                                     }
                                 }
                             }
-                            v.setText(String.join("\n", result));
+                            replaceText(v, String.join("\n", result));
                             if (!Config.CLIENT.mFallbackFontFamilyList.get().equals(result)) {
                                 Config.CLIENT.mFallbackFontFamilyList.set(result);
                                 Config.CLIENT.saveAsync();
-                                reloadMainTypeface()
+                                reloadDefaultTypeface()
                                         .whenCompleteAsync((oldTypeface, throwable) -> {
                                             if (throwable == null) {
-                                                refreshTextViewsTypeface(
+                                                refreshViewTypeface(
                                                         UIManager.getInstance().getDecorView(),
                                                         oldTypeface
                                                 );
@@ -971,7 +971,7 @@ public class PreferencesFragment extends Fragment {
                 EditText v = (EditText) view;
                 int newValue = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
                         minValue, maxValue);
-                v.setText(Integer.toString(newValue));
+                replaceText(v, Integer.toString(newValue));
                 if (newValue != getter.get()) {
                     setter.accept(newValue);
                     int curProgress = (newValue - minValue) / stepSize;
@@ -988,7 +988,7 @@ public class PreferencesFragment extends Fragment {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 int newValue = seekBar.getProgress() * stepSize + minValue;
-                input.setText(Integer.toString(newValue));
+                replaceText(input, Integer.toString(newValue));
             }
 
             @Override
@@ -996,7 +996,7 @@ public class PreferencesFragment extends Fragment {
                 int newValue = seekBar.getProgress() * stepSize + minValue;
                 if (newValue != getter.get()) {
                     setter.accept(newValue);
-                    input.setText(Integer.toString(newValue));
+                    replaceText(input, Integer.toString(newValue));
                     saveFn.run();
                 }
             }
@@ -1065,7 +1065,7 @@ public class PreferencesFragment extends Fragment {
                 EditText v = (EditText) view;
                 float newValue = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
                         minValue, maxValue);
-                v.setText(Float.toString(newValue));
+                replaceText(v, Float.toString(newValue));
                 if (newValue != getter.get()) {
                     setter.accept((double) newValue);
                     int curProgress = Math.round((newValue - minValue) * denominator);
@@ -1083,7 +1083,7 @@ public class PreferencesFragment extends Fragment {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 double newValue = seekBar.getProgress() / denominator + minValue;
-                input.setText(Float.toString((float) newValue));
+                replaceText(input, Float.toString((float) newValue));
             }
 
             @Override
@@ -1091,7 +1091,7 @@ public class PreferencesFragment extends Fragment {
                 double newValue = seekBar.getProgress() / denominator + minValue;
                 if (newValue != getter.get()) {
                     setter.accept((double) (float) newValue);
-                    input.setText(Float.toString((float) newValue));
+                    replaceText(input, Float.toString((float) newValue));
                     saveFn.run();
                 }
             }
@@ -1354,11 +1354,11 @@ public class PreferencesFragment extends Fragment {
             if (!newValue.equals(Config.CLIENT.mFirstFontFamily.get())) {
                 Config.CLIENT.mFirstFontFamily.set(newValue);
                 Config.CLIENT.saveAsync();
-                reloadMainTypeface()
+                reloadDefaultTypeface()
                         .whenCompleteAsync((oldTypeface, throwable) -> {
                             if (throwable == null) {
                                 mOnFontChanged.run();
-                                refreshTextViewsTypeface(
+                                refreshViewTypeface(
                                         UIManager.getInstance().getDecorView(),
                                         oldTypeface
                                 );
@@ -1373,7 +1373,12 @@ public class PreferencesFragment extends Fragment {
         }
     }
 
-    private static CompletableFuture<Typeface> reloadMainTypeface() {
+    private static void replaceText(EditText editText, CharSequence newText) {
+        Editable text = editText.getText();
+        text.replace(0, text.length(), newText);
+    }
+
+    private static CompletableFuture<Typeface> reloadDefaultTypeface() {
         return Minecraft.getInstance().submit(() -> {
             var oldTypeface = ModernUI.getSelectedTypeface();
             var client = ModernUIClient.getInstance();
@@ -1383,13 +1388,13 @@ public class PreferencesFragment extends Fragment {
         });
     }
 
-    private static void refreshTextViewsTypeface(@NonNull ViewGroup vg,
-                                                 Typeface oldTypeface) {
+    private static void refreshViewTypeface(@NonNull ViewGroup vg,
+                                            Typeface oldTypeface) {
         int cc = vg.getChildCount();
         for (int i = 0; i < cc; i++) {
             View v = vg.getChildAt(i);
             if (v instanceof ViewGroup) {
-                refreshTextViewsTypeface((ViewGroup) v, oldTypeface);
+                refreshViewTypeface((ViewGroup) v, oldTypeface);
             } else if (v instanceof TextView tv) {
                 if (tv.getTypeface() == oldTypeface) {
                     tv.setTypeface(ModernUI.getSelectedTypeface());
