@@ -75,7 +75,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
 
     @Override
     protected void checkFirstLoadTypeface() {
-        // No-op, on Fabric, this should be loaded from TitleScreen and measureText on main thread...
+        // No-op, on Fabric, this can only be loaded on main thread...
     }
 
     @Override

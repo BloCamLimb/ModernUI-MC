@@ -376,9 +376,8 @@ public abstract class MixinEditBox extends AbstractWidget {
         final long nanos = Util.getNanos();
         final boolean mergeInsert;
         // Minecraft split IME batch commit and even a single code point into code units,
-        // if two charTyped() occur at the same time (or 1ms difference at most), try to
-        // merge (concat) them.
-        if (modernUI_MC$lastInsertTextNanos >= nanos - 1_000_000) {
+        // if two charTyped() occur at the same time (<= 2ms), try to merge (concat) them.
+        if (modernUI_MC$lastInsertTextNanos >= nanos - 2_000_000) {
             mergeInsert = true;
         } else {
             modernUI_MC$lastInsertTextNanos = nanos;

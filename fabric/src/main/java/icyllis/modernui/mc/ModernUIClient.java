@@ -247,12 +247,10 @@ public abstract class ModernUIClient extends ModernUI {
     // reload just Typeface on main thread, called after loaded
     public void reloadTypeface() {
         synchronized (this) {
-            if (mTypeface == null) {
-                return;
-            }
+            boolean firstLoad = mTypeface == null;
             mFirstFontFamily = null;
-            mTypeface = loadTypefaceInternal(this::setFirstFontFamily, false);
-            LOGGER.info(MARKER, "Reloaded typeface: {}", mTypeface);
+            mTypeface = loadTypefaceInternal(this::setFirstFontFamily, firstLoad);
+            LOGGER.info(MARKER, "{} typeface: {}", firstLoad ? "Loaded" : "Reloaded", mTypeface);
         }
     }
 
@@ -266,7 +264,7 @@ public abstract class ModernUIClient extends ModernUI {
             @Nonnull Consumer<FontFamily> firstSetter,
             boolean firstLoad) {
         Set<FontFamily> families = new LinkedHashSet<>();
-        if (!firstLoad && Config.CLIENT.mUseColorEmoji.get()) {
+        if (Config.CLIENT.mUseColorEmoji.get()) {
             var emojiFont = FontResourceManager.getInstance().getEmojiFont();
             if (emojiFont != null) {
                 var colorEmojiFamily = new FontFamily(

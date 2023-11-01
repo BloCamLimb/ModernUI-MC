@@ -218,7 +218,7 @@ final class Registration {
             //UIManager.getInstance().registerMenuScreen(Registration.TEST_MENU, menu -> new TestUI());
 
             event.enqueueWork(() -> {
-                ModernUI.getSelectedTypeface();
+                //ModernUI.getSelectedTypeface();
                 UIManagerForge.initializeRenderer();
                 var windowMode = Config.CLIENT.mLastWindowMode;
                 if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {

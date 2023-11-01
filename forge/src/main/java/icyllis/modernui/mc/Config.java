@@ -590,6 +590,7 @@ public final class Config {
                 ModernUIClient.getInstance().reloadFontStrike();
             }
 
+            // scan and preload typeface in background thread
             ModernUI.getSelectedTypeface();
         }
 

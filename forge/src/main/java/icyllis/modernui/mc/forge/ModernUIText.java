@@ -64,7 +64,7 @@ public final class ModernUIText {
     static void setupClient(@Nonnull FMLClientSetupEvent event) {
         // preload text engine, note that this event is fired after client config first load
         // so that the typeface config is valid
-        Minecraft.getInstance().execute(ModernUI::getSelectedTypeface);
+        //Minecraft.getInstance().execute(ModernUI::getSelectedTypeface);
         MuiModApi.addOnWindowResizeListener((width, height, newScale, oldScale) -> {
             if (Core.getRenderThread() != null && newScale != oldScale) {
                 TextLayoutEngine.getInstance().reload();
