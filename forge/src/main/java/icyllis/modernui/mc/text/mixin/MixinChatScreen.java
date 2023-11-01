@@ -77,6 +77,8 @@ public class MixinChatScreen {
                 builder.append(msg, lastEnd, msg.length());
                 modernUI_MC$broadcasting = true;
                 input.setValue(builder.toString());
+                input.setCursorPosition(builder.length() - (msg.length() - lastEnd));
+                input.setHighlightPos(input.getCursorPosition());
                 modernUI_MC$broadcasting = false;
             }
         }
