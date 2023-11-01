@@ -223,6 +223,7 @@ public final class Config {
         //public final ForgeConfigSpec.BooleanValue mLinearSampling;
         public final ForgeConfigSpec.ConfigValue<String> mFirstFontFamily;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFallbackFontFamilyList;
+        public final ForgeConfigSpec.BooleanValue mUseColorEmoji;
 
         /*public final ForgeConfigSpec.BooleanValue mSkipGLCapsError;
         public final ForgeConfigSpec.BooleanValue mShowGLCapsError;*/
@@ -449,6 +450,10 @@ public final class Config {
                         list.add("mui-i18n-compat");
                         return list;
                     }, s -> true);
+            mUseColorEmoji = builder.comment(
+                            "Whether to use Google Noto Color Emoji, otherwise grayscale emoji (faster).",
+                            "See Unicode 15.0 specification for details on how this affects text layout.")
+                    .define("useColorEmoji", true);
 
             builder.pop();
         }
@@ -744,7 +749,6 @@ public final class Config {
         public final ForgeConfigSpec.IntValue mCacheLifespan;
         //public final ForgeConfigSpec.IntValue mRehashThreshold;
         public final ForgeConfigSpec.EnumValue<TextDirection> mTextDirection;
-        public final ForgeConfigSpec.BooleanValue mUseColorEmoji;
         //public final ForgeConfigSpec.BooleanValue mBitmapReplacement;
         public final ForgeConfigSpec.BooleanValue mEmojiShortcodes;
         //public final ForgeConfigSpec.BooleanValue mUseDistanceField;
@@ -816,10 +820,6 @@ public final class Config {
                             "The bidirectional text heuristic algorithm.",
                             "This will affect which BiDi algorithm to use during text layout.")
                     .defineEnum("textDirection", TextDirection.FIRST_STRONG);
-            mUseColorEmoji = builder.comment(
-                            "Whether to use Google Noto Color Emoji, otherwise grayscale emoji (faster).",
-                            "See Unicode 15.0 specification for details on how this affects text layout.")
-                    .define("useColorEmoji", true);
             /*mBitmapReplacement = builder.comment(
                             "Whether to use bitmap replacement for non-Emoji character sequences. Restart is required.")
                     .define("bitmapReplacement", false);*/
@@ -922,7 +922,7 @@ public final class Config {
 
         void reload() {
             boolean reload = false;
-            boolean reloadAll = false;
+            boolean reloadStrike = false;
             ModernTextRenderer.sAllowShadow = mAllowShadow.get();
             if (TextLayoutEngine.sFixedResolution != mFixedResolution.get()) {
                 TextLayoutEngine.sFixedResolution = mFixedResolution.get();
@@ -930,7 +930,7 @@ public final class Config {
             }
             if (TextLayoutProcessor.sBaseFontSize != mBaseFontSize.get()) {
                 TextLayoutProcessor.sBaseFontSize = mBaseFontSize.get().floatValue();
-                reloadAll = true;
+                reloadStrike = true;
             }
             TextLayout.sBaselineOffset = mBaselineShift.get().floatValue();
             ModernTextRenderer.sShadowOffset = mShadowOffset.get().floatValue();
@@ -945,10 +945,6 @@ public final class Config {
                 TextLayoutEngine.sTextDirection = mTextDirection.get().key;
                 reload = true;
             }
-            if (TextLayoutEngine.sUseColorEmoji != mUseColorEmoji.get()) {
-                TextLayoutEngine.sUseColorEmoji = mUseColorEmoji.get();
-                reload = true;
-            }
             TextLayoutEngine.sUseEmojiShortcodes = mEmojiShortcodes.get();
             if (TextLayoutEngine.sUseTextShadersInWorld != mUseTextShadersInWorld.get()) {
                 TextLayoutEngine.sUseTextShadersInWorld = mUseTextShadersInWorld.get();
@@ -956,7 +952,7 @@ public final class Config {
             }
             if (TextLayoutEngine.sDefaultFontBehavior != mDefaultFontBehavior.get().key) {
                 TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
-                reloadAll = true;
+                reloadStrike = true;
             }
             TextLayoutEngine.sAllowAsyncLayout = mAllowAsyncLayout.get();
             if (TextLayoutProcessor.sLbStyle != mLineBreakStyle.get().key) {
@@ -974,9 +970,9 @@ public final class Config {
             ModernTextRenderer.sComputeDeviceFontSize = mComputeDeviceFontSize.get();
             ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();
 
-            if (reloadAll) {
-                Minecraft.getInstance().submit(() -> TextLayoutEngine.getInstance().reloadAll());
-            } else if (reload) {
+            if (reloadStrike) {
+                ModernUIClient.getInstance().reloadFontStrike();
+            } else if (reload && ModernUIClient.isTextEngineEnabled()) {
                 Minecraft.getInstance().submit(() -> TextLayoutEngine.getInstance().reload());
             }
             /*GlyphManagerForge.sPreferredFont = preferredFont.get();

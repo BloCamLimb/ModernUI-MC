@@ -221,6 +221,14 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
+            tv.setText("Rendering pipeline: Arc 3D OpenGL");
+            content.addView(tv);
+        }
+
+        {
+            var tv = new TextView(context);
+            tv.setTextSize(12);
+            tv.setPadding(dp6, dp6, dp6, dp6);
             tv.setText("Rectangle packing algorithm: Skyline (silhouette)");
             content.addView(tv);
         }
@@ -246,14 +254,6 @@ public class AdvancedOptionsFragment extends Fragment {
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
             mGPUStatsDump = tv;
-            content.addView(tv);
-        }
-
-        {
-            var tv = new TextView(context);
-            tv.setTextSize(12);
-            tv.setPadding(dp6, dp6, dp6, dp6);
-            tv.setText("Rendering pipeline: Arc 3D OpenGL");
             content.addView(tv);
         }
 

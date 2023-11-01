@@ -54,7 +54,7 @@ public final class BinaryDataUtils {
      */
     @Nonnull
     public static FriendlyByteBuf writeDataSet(@Nonnull FriendlyByteBuf buf, @Nullable DataSet source) {
-        try (var p = new OutputStreamParcel(new ByteBufOutputStream(buf))) {
+        try (var p = new IOStreamParcel(null, new ByteBufOutputStream(buf))) {
             p.writeDataSet(source);
         } catch (Exception e) {
             throw new EncoderException(e);
@@ -70,7 +70,7 @@ public final class BinaryDataUtils {
      */
     @Nullable
     public static DataSet readDataSet(@Nonnull FriendlyByteBuf buf, @Nullable ClassLoader loader) {
-        try (var p = new InputStreamParcel(new ByteBufInputStream(buf))) {
+        try (var p = new IOStreamParcel(new ByteBufInputStream(buf), null)) {
             return p.readDataSet(loader);
         } catch (Exception e) {
             throw new DecoderException(e);

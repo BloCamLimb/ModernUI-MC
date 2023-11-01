@@ -24,7 +24,6 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.ImageStore;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
@@ -36,17 +35,19 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.fabricmc.fabric.api.resource.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraftforge.fml.config.ModConfig;
 
 import javax.annotation.Nonnull;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 @Environment(EnvType.CLIENT)
 public class ModernUIFabricClient extends ModernUIClient implements ClientModInitializer {
@@ -73,7 +74,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
     }
 
     @Override
-    protected void checkTypefaceEarlyLoadingLocked() {
+    protected void checkFirstLoadTypeface() {
         // No-op, on Fabric, this should be loaded from TitleScreen and measureText on main thread...
     }
 
@@ -140,16 +141,42 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                 pw.print("TextLayoutEngine: ");
                 pw.print("CacheCount=" + TextLayoutEngine.getInstance().getCacheCount());
                 long memorySize = TextLayoutEngine.getInstance().getCacheMemorySize();
-                pw.print(", CacheSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
-                memorySize = TextLayoutEngine.getInstance().getEmojiAtlasMemorySize();
-                pw.println(", EmojiAtlasSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " " +
-                        "bytes)");
-                GlyphManager.getInstance().dumpInfo(pw);
+                pw.println(", CacheSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
             });
 
             ClientTickEvents.END_CLIENT_TICK.register((mc) -> TextLayoutEngine.getInstance().onEndClientTick());
 
+            new TextLayoutEngine();
+
             LOGGER.info(MARKER, "Initialized Modern UI text engine");
+        } else {
+            // see MixinFontManager in another case
+            ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new IdentifiableResourceReloadListener() {
+                @Override
+                public ResourceLocation getFabricId() {
+                    return ModernUIMod.location("font");
+                }
+
+                @Nonnull
+                @Override
+                public CompletableFuture<Void> reload(@Nonnull PreparationBarrier preparationBarrier,
+                                                      @Nonnull ResourceManager resourceManager,
+                                                      @Nonnull ProfilerFiller preparationProfiler,
+                                                      @Nonnull ProfilerFiller reloadProfiler,
+                                                      @Nonnull Executor preparationExecutor,
+                                                      @Nonnull Executor reloadExecutor) {
+                    return FontResourceManager.getInstance().reload(
+                            preparationBarrier,
+                            resourceManager,
+                            preparationProfiler,
+                            reloadProfiler,
+                            preparationExecutor,
+                            reloadExecutor
+                    );
+                }
+            });
+
+            new FontResourceManager();
         }
         LOGGER.info(MARKER, "Initialized Modern UI client");
     }
