@@ -20,7 +20,6 @@ package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
@@ -75,10 +74,7 @@ public final class ModernUIText {
             pw.print("TextLayoutEngine: ");
             pw.print("CacheCount=" + TextLayoutEngine.getInstance().getCacheCount());
             long memorySize = TextLayoutEngine.getInstance().getCacheMemorySize();
-            pw.print(", CacheSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
-            memorySize = TextLayoutEngine.getInstance().getEmojiAtlasMemorySize();
-            pw.println(", EmojiAtlasSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
-            GlyphManager.getInstance().dumpInfo(pw);
+            pw.println(", CacheSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
         });
         MinecraftForge.EVENT_BUS.register(EventHandler.class);
         LOGGER.info(MARKER, "Loaded modern text engine");

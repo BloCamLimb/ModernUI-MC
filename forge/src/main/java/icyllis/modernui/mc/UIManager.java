@@ -36,6 +36,7 @@ import icyllis.modernui.audio.AudioManager;
 import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.*;
 import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.lifecycle.*;
 import icyllis.modernui.text.*;
@@ -636,6 +637,8 @@ public abstract class UIManager implements LifecycleOwner {
             pw.printf("LayoutCore: Count=%d, Size=%s (%d bytes)\n",
                     coreN, TextUtils.binaryCompact(coreMem), coreMem);
         }
+
+        GlyphManager.getInstance().dumpInfo(pw);
 
         MuiModApi.dispatchOnDebugDump(pw);
     }

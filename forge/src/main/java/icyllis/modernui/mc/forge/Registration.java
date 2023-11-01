@@ -193,6 +193,10 @@ final class Registration {
                     handler.post(() -> UIManager.getInstance().updateLayoutDir(Config.CLIENT.mForceRtl.get()));
                 }
             });
+            if (!ModernUIClient.isTextEngineEnabled()) {
+                event.registerReloadListener(FontResourceManager.getInstance());
+            }
+            // else injected by MixinFontManager
 
             LOGGER.debug(MARKER, "Registered resource reload listener");
         }

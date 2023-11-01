@@ -233,7 +233,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                         GlyphManager.getInstance().debug();
                 case GLFW_KEY_V -> {
                     if (ModernUIClient.isTextEngineEnabled()) {
-                        TextLayoutEngine.getInstance().dumpEmojiAtlas();
+                        //TextLayoutEngine.getInstance().dumpEmojiAtlas();
                         TextLayoutEngine.getInstance().dumpBitmapFonts();
                     }
                 }

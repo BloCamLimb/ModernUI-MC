@@ -110,11 +110,11 @@ public class StandardFontSet extends FontSet {
                 if (!Float.isNaN(adv)) {
                     return (GlyphInfo.SpaceGlyphInfo) () -> adv;
                 }
-            } else if (font instanceof StandardFont standardFont) {
+            } else if (font instanceof OutlineFont outlineFont) {
                 // no variation selector
-                if (standardFont.hasGlyph(codePoint, 0)) {
+                if (outlineFont.hasGlyph(codePoint, 0)) {
                     char[] chars = Character.toChars(codePoint);
-                    float adv = standardFont.doSimpleLayout(
+                    float adv = outlineFont.doSimpleLayout(
                             chars,
                             0, chars.length,
                             mStandardPaint, null, null,
@@ -169,10 +169,10 @@ public class StandardFontSet extends FontSet {
                 }
             } else if (font instanceof SpaceFont) {
                 return EmptyGlyph.INSTANCE;
-            } else if (font instanceof StandardFont standardFont) {
+            } else if (font instanceof OutlineFont outlineFont) {
                 char[] chars = Character.toChars(codePoint);
                 IntArrayList glyphs = new IntArrayList(1);
-                float adv = standardFont.doSimpleLayout(
+                float adv = outlineFont.doSimpleLayout(
                         chars,
                         0, chars.length,
                         mStandardPaint, glyphs, null,
@@ -182,7 +182,7 @@ public class StandardFontSet extends FontSet {
                         glyphs.getInt(0) != 0) { // 0 is the missing glyph for TTF
                     // bake glyph ourselves
                     var glyph = TextLayoutEngine.getInstance().lookupGlyph(
-                            standardFont,
+                            outlineFont,
                             mStandardPaint.getFontSize(),
                             glyphs.getInt(0)
                     );

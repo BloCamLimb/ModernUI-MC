@@ -20,9 +20,7 @@ package icyllis.modernui.mc;
 
 import icyllis.arc3d.engine.DriverBugWorkarounds;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
@@ -49,16 +47,18 @@ public abstract class ModernUIClient extends ModernUI {
         if (!sBootstrap) {
             synchronized (ModernUIClient.class) {
                 if (!sBootstrap) {
-                    try {
-                        if (Files.exists(ModernUIMod.BOOTSTRAP_PATH)) {
-                            props.load(
-                                    Files.newInputStream(ModernUIMod.BOOTSTRAP_PATH, StandardOpenOption.READ)
-                            );
-                        } else {
-                            Files.createFile(ModernUIMod.BOOTSTRAP_PATH);
+                    if (Files.exists(ModernUIMod.BOOTSTRAP_PATH)) {
+                        try (var is = Files.newInputStream(ModernUIMod.BOOTSTRAP_PATH, StandardOpenOption.READ)) {
+                            props.load(is);
+                        } catch (IOException e) {
+                            LOGGER.error(MARKER, "Failed to load bootstrap file", e);
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    } else {
+                        try {
+                            Files.createFile(ModernUIMod.BOOTSTRAP_PATH);
+                        } catch (IOException e) {
+                            LOGGER.error(MARKER, "Failed to create bootstrap file", e);
+                        }
                     }
                     sBootstrap = true;
                 }
@@ -101,13 +101,12 @@ public abstract class ModernUIClient extends ModernUI {
         Properties props = getBootstrapProperties();
         if (props != null) {
             props.setProperty(key, value);
-            try {
-                props.store(Files.newOutputStream(ModernUIMod.BOOTSTRAP_PATH,
-                                StandardOpenOption.WRITE,
-                                StandardOpenOption.TRUNCATE_EXISTING),
-                        "Modern UI bootstrap file");
+            try (var os = Files.newOutputStream(ModernUIMod.BOOTSTRAP_PATH,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING)) {
+                props.store(os, "Modern UI bootstrap file");
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error(MARKER, "Failed to write bootstrap file", e);
             }
         }
     }
@@ -228,7 +227,7 @@ public abstract class ModernUIClient extends ModernUI {
         synchronized (this) {
             // should be a worker thread
             if (mTypeface == null) {
-                checkTypefaceEarlyLoadingLocked();
+                checkFirstLoadTypeface();
                 mTypeface = loadTypefaceInternal(this::setFirstFontFamily, true);
                 // do some warm-up, but do not block ourselves
                 var paint = new FontPaint();
@@ -243,7 +242,7 @@ public abstract class ModernUIClient extends ModernUI {
         return mTypeface;
     }
 
-    protected abstract void checkTypefaceEarlyLoadingLocked();
+    protected abstract void checkFirstLoadTypeface();
 
     // reload just Typeface on main thread, called after loaded
     public void reloadTypeface() {
@@ -258,18 +257,8 @@ public abstract class ModernUIClient extends ModernUI {
     }
 
     public void reloadFontStrike() {
-        if (isTextEngineEnabled()) {
-            Minecraft.getInstance().submit(
-                    () -> TextLayoutEngine.getInstance().reloadAll());
-        } else {
-            Minecraft.getInstance().submit(
-                    () -> {
-                        GlyphManager.getInstance().reload();
-                        LOGGER.info(MARKER, "Reloaded glyph manager");
-                        LayoutCache.clear();
-                    }
-            );
-        }
+        Minecraft.getInstance().submit(
+                () -> FontResourceManager.getInstance().reloadAll());
     }
 
     @Nonnull
@@ -277,6 +266,15 @@ public abstract class ModernUIClient extends ModernUI {
             @Nonnull Consumer<FontFamily> firstSetter,
             boolean firstLoad) {
         Set<FontFamily> families = new LinkedHashSet<>();
+        if (!firstLoad && Config.CLIENT.mUseColorEmoji.get()) {
+            var emojiFont = FontResourceManager.getInstance().getEmojiFont();
+            if (emojiFont != null) {
+                var colorEmojiFamily = new FontFamily(
+                        emojiFont
+                );
+                families.add(colorEmojiFamily);
+            }
+        }
         String first = Config.CLIENT.mFirstFontFamily.get();
         List<? extends String> configs = Config.CLIENT.mFallbackFontFamilyList.get();
         if (first != null || configs != null) {
@@ -304,14 +302,14 @@ public abstract class ModernUIClient extends ModernUI {
 
     @Nonnull
     @Override
-    public InputStream getResourceStream(@Nonnull String res, @Nonnull String path) throws IOException {
-        return Minecraft.getInstance().getResourceManager().open(new ResourceLocation(res, path));
+    public InputStream getResourceStream(@Nonnull String namespace, @Nonnull String path) throws IOException {
+        return Minecraft.getInstance().getResourceManager().open(new ResourceLocation(namespace, path));
     }
 
     @Nonnull
     @Override
-    public ReadableByteChannel getResourceChannel(@Nonnull String res, @Nonnull String path) throws IOException {
-        return Channels.newChannel(getResourceStream(res, path));
+    public ReadableByteChannel getResourceChannel(@Nonnull String namespace, @Nonnull String path) throws IOException {
+        return Channels.newChannel(getResourceStream(namespace, path));
     }
 
     @Override

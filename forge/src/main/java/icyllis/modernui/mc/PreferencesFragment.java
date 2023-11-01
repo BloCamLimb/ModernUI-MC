@@ -273,18 +273,7 @@ public class PreferencesFragment extends Fragment {
                             if (!Config.CLIENT.mFallbackFontFamilyList.get().equals(result)) {
                                 Config.CLIENT.mFallbackFontFamilyList.set(result);
                                 Config.CLIENT.saveAsync();
-                                reloadDefaultTypeface()
-                                        .whenCompleteAsync((oldTypeface, throwable) -> {
-                                            if (throwable == null) {
-                                                refreshViewTypeface(
-                                                        UIManager.getInstance().getDecorView(),
-                                                        oldTypeface
-                                                );
-                                                Toast.makeText(context,
-                                                        I18n.get("gui.modernui.font_reloaded"),
-                                                        Toast.LENGTH_SHORT).show();
-                                            }
-                                        }, Core.getUiThreadExecutor());
+                                reloadDefaultTypeface(view.getContext(), () -> {});
                             }
                         }
                     });
@@ -307,6 +296,16 @@ public class PreferencesFragment extends Fragment {
             /*list.addView(createBooleanOption(context, "modernui.center.font.vanillaFont",
                     ModernUIText.CONFIG.mUseVanillaFont,
                     ModernUIText.CONFIG::saveAndReloadAsync));*/
+
+            {
+                var option = createBooleanOption(context, "modernui.center.font.colorEmoji",
+                        Config.CLIENT.mUseColorEmoji, () -> {
+                            Config.CLIENT.saveAsync();
+                            reloadDefaultTypeface(context, () -> {});
+                        });
+                option.setTooltipText(I18n.get("modernui.center.font.colorEmoji_desc"));
+                category.addView(option);
+            }
 
             category.addView(createBooleanOption(context, "modernui.center.font.antiAliasing",
                     Config.CLIENT.mAntiAliasing, Config.CLIENT::saveAndReloadAsync));
@@ -500,9 +499,6 @@ public class PreferencesFragment extends Fragment {
 
         Runnable saveFn = Config.CLIENT::saveAndReloadAsync;
 
-        category.addView(createBooleanOption(context, "modernui.center.tooltip.roundedShapes",
-                Config.CLIENT.mRoundedTooltip, saveFn));
-
         category.addView(createBooleanOption(context, "modernui.center.tooltip.centerTitle",
                 Config.CLIENT.mCenterTooltipTitle, saveFn));
 
@@ -583,13 +579,6 @@ public class PreferencesFragment extends Fragment {
                     Config.TEXT.mDefaultFontBehavior, saveFn);
             option.getChildAt(0)
                     .setTooltipText(I18n.get("modernui.center.text.defaultFontBehavior_desc"));
-            category.addView(option);
-        }
-
-        {
-            var option = createBooleanOption(context, "modernui.center.text.colorEmoji",
-                    Config.TEXT.mUseColorEmoji, saveFn);
-            option.setTooltipText(I18n.get("modernui.center.text.colorEmoji_desc"));
             category.addView(option);
         }
 
@@ -871,7 +860,7 @@ public class PreferencesFragment extends Fragment {
         int r = MuiModApi.calcGuiScales();
         if (value == 0) { // auto
             int auto = r >> 4 & 0xf;
-            return "(" + auto + ")";
+            return "A (" + auto + ")";
         } else {
             String valueString = Integer.toString(value);
             int min = r >> 8 & 0xf;
@@ -1133,6 +1122,8 @@ public class PreferencesFragment extends Fragment {
             }
             mContent = new LinearLayout(mParent.getContext());
             mContent.setOrientation(LinearLayout.VERTICAL);
+            mContent.addView(createBooleanOption(mParent.getContext(), "modernui.center.tooltip.roundedShapes",
+                    Config.CLIENT.mRoundedTooltip, mSaveFn));
             {
                 var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.borderWidth",
                         Config.Client.TOOLTIP_BORDER_WIDTH_MIN, Config.Client.TOOLTIP_BORDER_WIDTH_MAX,
@@ -1354,38 +1345,38 @@ public class PreferencesFragment extends Fragment {
             if (!newValue.equals(Config.CLIENT.mFirstFontFamily.get())) {
                 Config.CLIENT.mFirstFontFamily.set(newValue);
                 Config.CLIENT.saveAsync();
-                reloadDefaultTypeface()
-                        .whenCompleteAsync((oldTypeface, throwable) -> {
-                            if (throwable == null) {
-                                mOnFontChanged.run();
-                                refreshViewTypeface(
-                                        UIManager.getInstance().getDecorView(),
-                                        oldTypeface
-                                );
-                                Toast.makeText(context,
-                                        I18n.get("gui.modernui.font_reloaded"),
-                                        Toast.LENGTH_SHORT).show();
-                            }
-                        }, Core.getUiThreadExecutor());
+                reloadDefaultTypeface(context, mOnFontChanged);
                 return true;
             }
             return false;
         }
     }
 
-    private static void replaceText(EditText editText, CharSequence newText) {
+    private static void replaceText(@NonNull EditText editText, @NonNull CharSequence newText) {
         Editable text = editText.getText();
         text.replace(0, text.length(), newText);
     }
 
-    private static CompletableFuture<Typeface> reloadDefaultTypeface() {
-        return Minecraft.getInstance().submit(() -> {
+    private static void reloadDefaultTypeface(@NonNull Context context, @NonNull Runnable onFontChanged) {
+        var future = Minecraft.getInstance().submit(() -> {
             var oldTypeface = ModernUI.getSelectedTypeface();
             var client = ModernUIClient.getInstance();
             client.reloadTypeface();
             client.reloadFontStrike();
             return oldTypeface;
         });
+        future.whenCompleteAsync((oldTypeface, throwable) -> {
+            if (throwable == null) {
+                onFontChanged.run();
+                refreshViewTypeface(
+                        UIManager.getInstance().getDecorView(),
+                        oldTypeface
+                );
+                Toast.makeText(context,
+                        I18n.get("gui.modernui.font_reloaded"),
+                        Toast.LENGTH_SHORT).show();
+            }
+        }, Core.getUiThreadExecutor());
     }
 
     private static void refreshViewTypeface(@NonNull ViewGroup vg,

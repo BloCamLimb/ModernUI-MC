@@ -120,13 +120,13 @@ public class TestMain {
         GRAPHICS.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
         GRAPHICS.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         if (CREATE_WINDOW) {
-            AudioManager.getInstance().initialize();
+            /*AudioManager.getInstance().initialize();
             try {
                 sTrack = new Track(new OggDecoder(FileChannel.open(Path.of("F:/10.ogg"))));
                 //sGraph = new SpectrumGraph(sTrack, true, 300);
             } catch (Exception e) {
                 e.printStackTrace();
-            }
+            }*/
         }
     }
 
