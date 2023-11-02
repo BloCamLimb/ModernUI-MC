@@ -225,6 +225,7 @@ public final class Config {
         public final ForgeConfigSpec.ConfigValue<String> mFirstFontFamily;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFallbackFontFamilyList;
         public final ForgeConfigSpec.BooleanValue mUseColorEmoji;
+        public final ForgeConfigSpec.BooleanValue mEmojiShortcodes;
 
         /*public final ForgeConfigSpec.BooleanValue mSkipGLCapsError;
         public final ForgeConfigSpec.BooleanValue mShowGLCapsError;*/
@@ -338,7 +339,7 @@ public final class Config {
                     .defineInRange("borderCycleTime", 1000, TOOLTIP_BORDER_COLOR_ANIM_MIN,
                             TOOLTIP_BORDER_COLOR_ANIM_MAX);
             mTooltipWidth = builder.comment(
-                    "The width of tooltip border, in GUI Scale Independent Pixels.")
+                            "The width of tooltip border, in GUI Scale Independent Pixels.")
                     .defineInRange("borderWidth", 4 / 3f, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
             /*mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
@@ -378,6 +379,9 @@ public final class Config {
                     .define("removeTelemetry", false);
             /*mSecurePublicKey = builder.comment("Don't report profile's public key to server.")
                     .define("securePublicKey", false);*/
+            mEmojiShortcodes = builder.comment(
+                            "Allow Slack or Discord shortcodes to replace Unicode Emoji Sequences in chat.")
+                    .define("emojiShortcodes", true);
 
             builder.pop();
 
@@ -752,7 +756,6 @@ public final class Config {
         //public final ForgeConfigSpec.IntValue mRehashThreshold;
         public final ForgeConfigSpec.EnumValue<TextDirection> mTextDirection;
         //public final ForgeConfigSpec.BooleanValue mBitmapReplacement;
-        public final ForgeConfigSpec.BooleanValue mEmojiShortcodes;
         //public final ForgeConfigSpec.BooleanValue mUseDistanceField;
         //public final ForgeConfigSpec.BooleanValue mUseVanillaFont;
         public final ForgeConfigSpec.BooleanValue mUseTextShadersInWorld;
@@ -825,9 +828,6 @@ public final class Config {
             /*mBitmapReplacement = builder.comment(
                             "Whether to use bitmap replacement for non-Emoji character sequences. Restart is required.")
                     .define("bitmapReplacement", false);*/
-            mEmojiShortcodes = builder.comment(
-                            "Allow Slack or Discord shortcodes to replace Unicode Emoji Sequences in chat.")
-                    .define("emojiShortcodes", true);
             /*mUseVanillaFont = builder.comment(
                             "Whether to use Minecraft default bitmap font for basic Latin letters.")
                     .define("useVanillaFont", false);*/
@@ -844,13 +844,13 @@ public final class Config {
                     .define("useDistanceField", true);*/
             mDefaultFontBehavior = builder.comment(
                             "For DEFAULT_FONT and UNIFORM_FONT, should we keep some bitmap providers of them?",
-                            "Ignore All: Use selectedTypeface only.",
+                            "Ignore All: Equivalent to Force Unicode Font.",
                             "Keep ASCII: Include minecraft:font/ascii.png, minecraft:font/accented.png, " +
                                     "minecraft:font/nonlatin_european.png",
                             "Keep Other: Include providers in minecraft:font/default.json other than Keep ASCII and " +
                                     "Unicode font.",
                             "Keep All: Include all except Unicode font.")
-                    .defineEnum("defaultFontBehavior", DefaultFontBehavior.KEEP_OTHER);
+                    .defineEnum("defaultFontBehavior", DefaultFontBehavior.KEEP_ALL);
             mUseComponentCache = builder.comment(
                             "Whether to use text component object as hash key to lookup in layout cache.",
                             "If you find that Modern UI text rendering is not compatible with some mods,",
@@ -947,14 +947,13 @@ public final class Config {
                 TextLayoutEngine.sTextDirection = mTextDirection.get().key;
                 reload = true;
             }
-            TextLayoutEngine.sUseEmojiShortcodes = mEmojiShortcodes.get();
             if (TextLayoutEngine.sUseTextShadersInWorld != mUseTextShadersInWorld.get()) {
                 TextLayoutEngine.sUseTextShadersInWorld = mUseTextShadersInWorld.get();
                 reload = true;
             }
             if (TextLayoutEngine.sDefaultFontBehavior != mDefaultFontBehavior.get().key) {
                 TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
-                reloadStrike = true;
+                reload = true;
             }
             TextLayoutEngine.sAllowAsyncLayout = mAllowAsyncLayout.get();
             if (TextLayoutProcessor.sLbStyle != mLineBreakStyle.get().key) {

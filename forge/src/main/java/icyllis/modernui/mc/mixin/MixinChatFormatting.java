@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,9 +16,9 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.text.mixin;
+package icyllis.modernui.mc.mixin;
 
-import icyllis.modernui.mc.text.TextLayoutEngine;
+import icyllis.modernui.mc.MuiModApi;
 import net.minecraft.ChatFormatting;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -35,6 +35,6 @@ public class MixinChatFormatting {
     @Overwrite
     @Nullable
     public static ChatFormatting getByCode(char formattingCode) {
-        return TextLayoutEngine.getFormattingByCode(formattingCode);
+        return MuiModApi.getFormattingByCode(formattingCode);
     }
 }

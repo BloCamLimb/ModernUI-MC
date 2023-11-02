@@ -18,13 +18,9 @@
 
 package icyllis.modernui.mc.forge;
 
-import icyllis.modernui.ModernUI;
-import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
-import icyllis.modernui.text.TextUtils;
-import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
@@ -65,17 +61,8 @@ public final class ModernUIText {
         // preload text engine, note that this event is fired after client config first load
         // so that the typeface config is valid
         //Minecraft.getInstance().execute(ModernUI::getSelectedTypeface);
-        MuiModApi.addOnWindowResizeListener((width, height, newScale, oldScale) -> {
-            if (Core.getRenderThread() != null && newScale != oldScale) {
-                TextLayoutEngine.getInstance().reload();
-            }
-        });
-        MuiModApi.addOnDebugDumpListener(pw -> {
-            pw.print("TextLayoutEngine: ");
-            pw.print("CacheCount=" + TextLayoutEngine.getInstance().getCacheCount());
-            long memorySize = TextLayoutEngine.getInstance().getCacheMemorySize();
-            pw.println(", CacheSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
-        });
+        MuiModApi.addOnWindowResizeListener(TextLayoutEngine.getInstance());
+        MuiModApi.addOnDebugDumpListener(TextLayoutEngine.getInstance());
         MinecraftForge.EVENT_BUS.register(EventHandler.class);
         LOGGER.info(MARKER, "Loaded modern text engine");
     }

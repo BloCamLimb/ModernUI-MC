@@ -18,6 +18,8 @@
 
 package icyllis.modernui.mc;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
@@ -29,7 +31,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
@@ -62,6 +64,11 @@ public class FontResourceManager implements PreparableReloadListener {
     protected final GlyphManager mGlyphManager;
 
     protected EmojiFont mEmojiFont;
+
+    /**
+     * Shortcodes to Emoji char sequences.
+     */
+    protected final HashMap<String, String> mEmojiShortcodes = new HashMap<>();
 
     public FontResourceManager() {
         synchronized (FontResourceManager.class) {
@@ -102,24 +109,44 @@ public class FontResourceManager implements PreparableReloadListener {
                                           @Nonnull Executor preparationExecutor,
                                           @Nonnull Executor reloadExecutor) {
         preparationProfiler.startTick();
+        CompletableFuture<LoadResults> preparation;
+        {
+            final var results = new LoadResults();
+            final var loadEmojis = CompletableFuture.runAsync(() ->
+                            loadEmojis(resourceManager, results),
+                    preparationExecutor);
+            final var loadShortcodes = CompletableFuture.runAsync(() ->
+                            loadShortcodes(resourceManager, results),
+                    preparationExecutor);
+            preparation = CompletableFuture.allOf(loadEmojis, loadShortcodes)
+                    .thenApply(__ -> results);
+        }
         preparationProfiler.endTick();
-        return CompletableFuture.supplyAsync(() -> {
-                    final var results = new LoadResults();
-                    loadEmojis(resourceManager, results);
-                    return results;
-                }, preparationExecutor)
+        return preparation
                 .thenCompose(preparationBarrier::wait)
                 .thenAcceptAsync(results -> {
                     reloadProfiler.startTick();
-                    mEmojiFont = results.mEmojiFont;
-                    ModernUIClient.getInstance().reloadTypeface();
-                    reloadAll();
+                    reloadProfiler.push("reload");
+                    applyResources(results);
+                    reloadProfiler.pop();
                     reloadProfiler.endTick();
                 }, reloadExecutor);
     }
 
     public static class LoadResults {
         public volatile EmojiFont mEmojiFont;
+        public volatile Map<String, String> mEmojiShortcodes;
+    }
+
+    // SYNC
+    protected void applyResources(@Nonnull LoadResults results) {
+        // reload emojis
+        mEmojiFont = results.mEmojiFont;
+        mEmojiShortcodes.clear();
+        mEmojiShortcodes.putAll(results.mEmojiShortcodes);
+        // reload the whole engine
+        ModernUIClient.getInstance().reloadTypeface();
+        reloadAll();
     }
 
     // ASYNC
@@ -202,9 +229,48 @@ public class FontResourceManager implements PreparableReloadListener {
                 codePoint == 0x1faf7 || codePoint == 0x1faf8;
     }
 
+    /**
+     * @see EmojiDataGen
+     */
+    // ASYNC
+    protected static void loadShortcodes(@Nonnull ResourceManager resources,
+                                         @Nonnull LoadResults results) {
+        final var map = new HashMap<String, String>();
+        try (var reader = resources.openAsReader(ModernUIMod.location("emoji_data.json"))) {
+            for (var entry : new Gson().fromJson(reader, JsonArray.class)) {
+                var row = entry.getAsJsonArray();
+                var sequence = row.get(0).getAsString();
+                // map shortcodes -> emoji sequence
+                var shortcodes = row.get(2).getAsJsonArray();
+                if (!shortcodes.isEmpty()) {
+                    map.put(shortcodes.get(0).getAsString(), sequence);
+                    for (int i = 1; i < shortcodes.size(); i++) {
+                        map.putIfAbsent(shortcodes.get(i).getAsString(), sequence);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.info(GlyphManager.MARKER, "Failed to load emoji data", e);
+        }
+        LOGGER.info(GlyphManager.MARKER, "Scanned emoji shortcodes: {}",
+                map.size());
+        results.mEmojiShortcodes = map;
+    }
+
     @Nullable
     public EmojiFont getEmojiFont() {
         return mEmojiFont;
+    }
+
+    /**
+     * Lookup Emoji char sequence from shortcode.
+     *
+     * @param shortcode the shortcode, e.g. cheese
+     * @return the Emoji sequence
+     */
+    @Nullable
+    public String lookupEmojiShortcode(@Nonnull String shortcode) {
+        return mEmojiShortcodes.get(shortcode);
     }
 
     static class EmojiData {

@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.text;
 
 import icyllis.modernui.graphics.text.LineBreaker;
+import icyllis.modernui.mc.MuiModApi;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
 import net.minecraft.ChatFormatting;
@@ -552,7 +553,7 @@ public final class ModernStringSplitter extends StringSplitter {
             char c = text.charAt(i);
             if (c == ChatFormatting.PREFIX_CODE) {
                 i++;
-                ChatFormatting formatting = TextLayoutEngine.getFormattingByCode(text.charAt(i));
+                ChatFormatting formatting = MuiModApi.getFormattingByCode(text.charAt(i));
                 if (formatting != null) {
                     currStyle = formatting == ChatFormatting.RESET ? base :
                             currStyle.applyLegacyFormat(formatting);
@@ -651,7 +652,7 @@ public final class ModernStringSplitter extends StringSplitter {
                     char c = aText.charAt(i);
                     if (c == ChatFormatting.PREFIX_CODE) {
                         i++;
-                        ChatFormatting formatting = TextLayoutEngine.getFormattingByCode(aText.charAt(i));
+                        ChatFormatting formatting = MuiModApi.getFormattingByCode(aText.charAt(i));
                         if (formatting != null) {
                             currStyle = formatting == ChatFormatting.RESET ? aStyle :
                                     currStyle.applyLegacyFormat(formatting);

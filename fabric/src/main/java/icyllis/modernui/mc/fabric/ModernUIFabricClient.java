@@ -27,7 +27,6 @@ import icyllis.modernui.graphics.ImageStore;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
-import icyllis.modernui.text.TextUtils;
 import net.fabricmc.api.*;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -126,27 +125,18 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
 
         if (isTextEngineEnabled()) {
             ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
-                MuiModApi.addOnWindowResizeListener((width, height, newScale, oldScale) -> {
-                    if (Core.getRenderThread() != null && newScale != oldScale) {
-                        TextLayoutEngine.getInstance().reload();
-                    }
-                });
+                MuiModApi.addOnWindowResizeListener(TextLayoutEngine.getInstance());
             });
 
             ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
                 MuiTextCommand.register(dispatcher);
             });
 
-            MuiModApi.addOnDebugDumpListener(pw -> {
-                pw.print("TextLayoutEngine: ");
-                pw.print("CacheCount=" + TextLayoutEngine.getInstance().getCacheCount());
-                long memorySize = TextLayoutEngine.getInstance().getCacheMemorySize();
-                pw.println(", CacheSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
-            });
+            new TextLayoutEngine();
+
+            MuiModApi.addOnDebugDumpListener(TextLayoutEngine.getInstance());
 
             ClientTickEvents.END_CLIENT_TICK.register((mc) -> TextLayoutEngine.getInstance().onEndClientTick());
-
-            new TextLayoutEngine();
 
             LOGGER.info(MARKER, "Initialized Modern UI text engine");
         } else {

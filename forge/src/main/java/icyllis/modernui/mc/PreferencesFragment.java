@@ -405,6 +405,13 @@ public class PreferencesFragment extends Fragment {
             }
 
             {
+                var option = createBooleanOption(context, "modernui.center.text.emojiShortcodes",
+                        Config.CLIENT.mEmojiShortcodes, Config.CLIENT::saveAsync);
+                option.setTooltipText(I18n.get("modernui.center.text.emojiShortcodes_desc"));
+                list.addView(option);
+            }
+
+            {
                 var option = createSwitchLayout(context, "modernui.center.extension.smoothScrolling");
                 option.setTooltipText(I18n.get("modernui.center.extension.smoothScrolling_desc"));
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
@@ -581,13 +588,6 @@ public class PreferencesFragment extends Fragment {
                     Config.TEXT.mDefaultFontBehavior, saveFn);
             option.getChildAt(0)
                     .setTooltipText(I18n.get("modernui.center.text.defaultFontBehavior_desc"));
-            category.addView(option);
-        }
-
-        {
-            var option = createBooleanOption(context, "modernui.center.text.emojiShortcodes",
-                    Config.TEXT.mEmojiShortcodes, saveFn);
-            option.setTooltipText(I18n.get("modernui.center.text.emojiShortcodes_desc"));
             category.addView(option);
         }
 

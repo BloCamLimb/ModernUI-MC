@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,9 +16,9 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.text.mixin;
+package icyllis.modernui.mc.mixin;
 
-import icyllis.modernui.mc.text.TextLayoutEngine;
+import icyllis.modernui.mc.*;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
 import org.spongepowered.asm.mixin.*;
@@ -40,16 +40,15 @@ public class MixinChatScreen {
     @Unique
     private boolean modernUI_MC$broadcasting;
 
-    // vanilla widget is REALLY buggy
     @Inject(method = "onEdited", at = @At("HEAD"))
-    private void S_onEdited(String s, CallbackInfo ci) {
-        String msg = input.getValue();
+    private void _onEdited(String s, CallbackInfo ci) {
+        final String msg;
         if (!modernUI_MC$broadcasting &&
-                !msg.startsWith("/") &&
-                TextLayoutEngine.sUseEmojiShortcodes &&
+                !(msg = input.getValue()).startsWith("/") &&
+                Config.CLIENT.mEmojiShortcodes.get() &&
                 msg.contains(":")) {
-            final TextLayoutEngine engine = TextLayoutEngine.getInstance();
-            final Matcher matcher = TextLayoutEngine.EMOJI_SHORTCODE_PATTERN.matcher(msg);
+            final FontResourceManager mgr = FontResourceManager.getInstance();
+            final Matcher matcher = MuiModApi.EMOJI_SHORTCODE_PATTERN.matcher(msg);
 
             StringBuilder builder = null;
             int lastEnd = 0;
@@ -62,7 +61,7 @@ public class MixinChatScreen {
                 int en = matcher.end();
                 String emojiSequence = null;
                 if (en - st > 2) {
-                    emojiSequence = engine.lookupEmojiShortcode(msg.substring(st + 1, en - 1));
+                    emojiSequence = mgr.lookupEmojiShortcode(msg.substring(st + 1, en - 1));
                 }
                 if (emojiSequence != null) {
                     builder.append(msg, lastEnd, st);

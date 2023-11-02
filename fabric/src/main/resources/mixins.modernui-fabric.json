@@ -10,6 +10,8 @@
     "AccessNativeImage",
     "AccessOptions",
     "AccessPostChain",
+    "MixinChatFormatting",
+    "MixinChatScreen",
     "MixinClientTelemetryManager",
     "MixinEditBox",
     "MixinGuiGraphics",

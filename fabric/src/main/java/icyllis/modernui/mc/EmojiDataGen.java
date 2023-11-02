@@ -16,7 +16,7 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.text;
+package icyllis.modernui.mc;
 
 import com.google.gson.*;
 import icyllis.modernui.graphics.text.Emoji;

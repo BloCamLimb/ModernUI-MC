@@ -26,6 +26,7 @@ import com.mojang.serialization.JsonOps;
 import icyllis.arc3d.engine.Engine;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
+import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.font.BakedGlyph;
 import icyllis.modernui.graphics.font.GlyphManager;
@@ -36,7 +37,6 @@ import icyllis.modernui.mc.text.mixin.MixinClientLanguage;
 import icyllis.modernui.text.*;
 import icyllis.modernui.util.Pools;
 import icyllis.modernui.view.View;
-import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.font.FontManager;
@@ -53,12 +53,12 @@ import org.apache.logging.log4j.MarkerManager;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.awt.font.GlyphVector;
+import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static icyllis.modernui.ModernUI.LOGGER;
@@ -75,7 +75,8 @@ import static icyllis.modernui.ModernUI.LOGGER;
  * @author BloCamLimb
  * @since 2.0
  */
-public class TextLayoutEngine extends FontResourceManager {
+public class TextLayoutEngine extends FontResourceManager
+        implements MuiModApi.OnWindowResizeListener, MuiModApi.OnDebugDumpListener {
 
     public static final Marker MARKER = MarkerManager.getMarker("TextLayout");
 
@@ -117,26 +118,6 @@ public class TextLayoutEngine extends FontResourceManager {
      * False for compatibility with OptiFine shaders.
      */
     public static volatile boolean sUseTextShadersInWorld = true;
-
-    public static volatile boolean sUseEmojiShortcodes = true;
-
-    /**
-     * Matches Slack emoji shortcode.
-     */
-    public static final Pattern EMOJI_SHORTCODE_PATTERN =
-            Pattern.compile("(:(\\w|\\+|-)+:)(?=|[!.?]|$)");
-
-    /**
-     * Maps ASCII to ChatFormatting, including all cases.
-     */
-    private static final ChatFormatting[] FORMATTING_TABLE = new ChatFormatting[128];
-
-    static {
-        for (ChatFormatting f : ChatFormatting.values()) {
-            FORMATTING_TABLE[f.getChar()] = f;
-            FORMATTING_TABLE[Character.toUpperCase(f.getChar())] = f;
-        }
-    }
 
     /**
      * Logical font names, CSS convention.
@@ -291,10 +272,6 @@ public class TextLayoutEngine extends FontResourceManager {
      * Emoji sequence to sprite index (used as glyph code in emoji atlas).
      */
     //private final ArrayList<String> mEmojiFiles = new ArrayList<>();
-    /**
-     * Shortcodes to Emoji char sequences.
-     */
-    private final HashMap<String, String> mEmojiShortcodes = new HashMap<>();
 
     /*
      * The emoji texture atlas.
@@ -316,6 +293,8 @@ public class TextLayoutEngine extends FontResourceManager {
 
     private final ModernTextRenderer mTextRenderer;
     private final ModernStringSplitter mStringSplitter;
+
+    private Boolean mForceUnicodeFont;
 
     /*
      * Remove all formatting code even though it's invalid {@link #getFormattingByCode(char)} == null
@@ -445,21 +424,50 @@ public class TextLayoutEngine extends FontResourceManager {
                     TextDirectionHeuristics.FIRSTSTRONG_LTR;
         };
 
-        if (oldLevel != 0) {
-            if (mVanillaFontManager != null) {
-                var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
-                for (var fontSet : fontSets.values()) {
-                    if (fontSet instanceof StandardFontSet standardFontSet) {
-                        standardFontSet.invalidateCache(mResLevel);
-                    }
-                }
-            }
-        }
-
         if (oldLevel == 0) {
             LOGGER.info(MARKER, "Loaded text layout engine, res level: {}, locale: {}, layout RTL: {}",
                     mResLevel, locale, layoutRtl);
         } else {
+            // register logical fonts
+            mFontCollections.putIfAbsent(SANS_SERIF,
+                    Typeface.SANS_SERIF);
+            mFontCollections.putIfAbsent(SERIF,
+                    Typeface.SERIF);
+            mFontCollections.putIfAbsent(MONOSPACED,
+                    Typeface.MONOSPACED);
+            // register logical fonts in default namespace
+            mFontCollections.putIfAbsent(new ResourceLocation(SANS_SERIF.getPath()),
+                    Typeface.SANS_SERIF);
+            mFontCollections.putIfAbsent(new ResourceLocation(SERIF.getPath()),
+                    Typeface.SERIF);
+            mFontCollections.putIfAbsent(new ResourceLocation(MONOSPACED.getPath()),
+                    Typeface.MONOSPACED);
+
+            if (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL) {
+                mFontCollections.put(Minecraft.DEFAULT_FONT, ModernUI.getSelectedTypeface());
+            } else {
+                LinkedHashSet<FontFamily> defaultFonts = new LinkedHashSet<>();
+                populateDefaultFonts(defaultFonts, sDefaultFontBehavior);
+                defaultFonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
+                mFontCollections.put(Minecraft.DEFAULT_FONT,
+                        new FontCollection(defaultFonts.toArray(new FontFamily[0])));
+            }
+
+            if (mVanillaFontManager != null) {
+                var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
+                if (fontSets.get(Minecraft.DEFAULT_FONT) instanceof StandardFontSet standardFontSet) {
+                    standardFontSet.reload(mFontCollections.get(Minecraft.DEFAULT_FONT), mResLevel);
+                }
+                for (var e : fontSets.entrySet()) {
+                    if (e.getKey().equals(Minecraft.DEFAULT_FONT)) {
+                        continue;
+                    }
+                    if (e.getValue() instanceof StandardFontSet standardFontSet) {
+                        standardFontSet.invalidateCache(mResLevel);
+                    }
+                }
+            }
+
             LOGGER.info(MARKER, "Reloaded text layout engine, res level: {} to {}, locale: {}, layout RTL: {}",
                     oldLevel, mResLevel, locale, layoutRtl);
         }
@@ -472,10 +480,26 @@ public class TextLayoutEngine extends FontResourceManager {
     @RenderThread
     public void reloadAll() {
         super.reloadAll();
-        redirectDefaultFonts();
         reload();
     }
 
+    @Override
+    public void onWindowResize(int width, int height, int newScale, int oldScale) {
+        Boolean forceUnicodeFont = Minecraft.getInstance().options.forceUnicodeFont().get();
+        if (Core.getRenderThread() != null &&
+                (newScale != oldScale || !Objects.equals(mForceUnicodeFont, forceUnicodeFont))) {
+            reload();
+            mForceUnicodeFont = forceUnicodeFont;
+        }
+    }
+
+    @Override
+    public void onDebugDump(@Nonnull PrintWriter pw) {
+        pw.print("TextLayoutEngine: ");
+        pw.print("CacheCount=" + getCacheCount());
+        long memorySize = getCacheMemorySize();
+        pw.println(", CacheSize=" + TextUtils.binaryCompact(memorySize) + " (" + memorySize + " bytes)");
+    }
 
     //// START Resource Reloading
 
@@ -488,48 +512,8 @@ public class TextLayoutEngine extends FontResourceManager {
         return this;
     }
 
-    @RenderThread
-    private void redirectDefaultFonts() {
-        // register logical fonts
-        mFontCollections.putIfAbsent(SANS_SERIF,
-                Typeface.SANS_SERIF);
-        mFontCollections.putIfAbsent(SERIF,
-                Typeface.SERIF);
-        mFontCollections.putIfAbsent(MONOSPACED,
-                Typeface.MONOSPACED);
-        // register logical fonts in default namespace
-        mFontCollections.putIfAbsent(new ResourceLocation(SANS_SERIF.getPath()),
-                Typeface.SANS_SERIF);
-        mFontCollections.putIfAbsent(new ResourceLocation(SERIF.getPath()),
-                Typeface.SERIF);
-        mFontCollections.putIfAbsent(new ResourceLocation(MONOSPACED.getPath()),
-                Typeface.MONOSPACED);
-
-        LinkedHashSet<FontFamily> defaultFonts = new LinkedHashSet<>();
-        if (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL) {
-            mFontCollections.remove(Minecraft.DEFAULT_FONT);
-        } else {
-            populateDefaultFonts(defaultFonts, sDefaultFontBehavior);
-            defaultFonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
-            mFontCollections.put(Minecraft.DEFAULT_FONT,
-                    new FontCollection(defaultFonts.toArray(new FontFamily[0])));
-        }
-
-        if (mVanillaFontManager != null) {
-            var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
-            if (fontSets.get(Minecraft.DEFAULT_FONT) instanceof StandardFontSet standardFontSet) {
-                standardFontSet.reload(getFontCollection(Minecraft.DEFAULT_FONT), mResLevel);
-            }
-        }
-    }
-
     private void populateDefaultFonts(Set<FontFamily> set, int behavior) {
-        if (behavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL) {
-            return;
-        }
         if (mDefaultFontCollection == null) {
-            // reload() when force=false and fonts not loaded yet
-            // we force to do this again in reloadAll()
             return;
         }
         for (FontFamily family : mDefaultFontCollection.getFamilies()) {
@@ -566,12 +550,17 @@ public class TextLayoutEngine extends FontResourceManager {
         preparationProfiler.endTick();
         return prepareResources(resourceManager, preparationExecutor)
                 .thenCompose(preparationBarrier::wait)
-                .thenAcceptAsync(results -> applyResources(results, reloadProfiler), reloadExecutor);
+                .thenAcceptAsync(results -> {
+                    reloadProfiler.startTick();
+                    reloadProfiler.push("reload");
+                    applyResources(results);
+                    reloadProfiler.pop();
+                    reloadProfiler.endTick();
+                }, reloadExecutor);
     }
 
     private static final class LoadResults extends FontResourceManager.LoadResults {
         volatile Map<ResourceLocation, FontCollection> mFontCollections;
-        volatile Map<String, String> mEmojiShortcodes;
     }
 
     // ASYNC
@@ -593,9 +582,7 @@ public class TextLayoutEngine extends FontResourceManager {
     }
 
     // SYNC
-    private void applyResources(@Nonnull LoadResults results, @Nonnull ProfilerFiller reloadProfiler) {
-        reloadProfiler.startTick();
-        reloadProfiler.push("reload");
+    private void applyResources(@Nonnull LoadResults results) {
         // close bitmaps if never baked
         for (var fontCollection : mFontCollections.values()) {
             for (var family : fontCollection.getFamilies()) {
@@ -630,15 +617,7 @@ public class TextLayoutEngine extends FontResourceManager {
         } else {
             LOGGER.warn(MARKER, "Where is font manager?");
         }
-        // reload emojis
-        mEmojiFont = results.mEmojiFont;
-        mEmojiShortcodes.clear();
-        mEmojiShortcodes.putAll(results.mEmojiShortcodes);
-        // reload the whole engine
-        ModernUIClient.getInstance().reloadTypeface();
-        reloadAll();
-        reloadProfiler.pop();
-        reloadProfiler.endTick();
+        super.applyResources(results);
     }
 
     private static boolean isUnicodeFont(@Nonnull ResourceLocation name) {
@@ -823,34 +802,6 @@ public class TextLayoutEngine extends FontResourceManager {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * @see EmojiDataGen
-     */
-    // ASYNC
-    private static void loadShortcodes(@Nonnull ResourceManager resources,
-                                       @Nonnull LoadResults results) {
-        final var map = new HashMap<String, String>();
-        try (var reader = resources.openAsReader(ModernUIMod.location("emoji_data.json"))) {
-            for (var entry : new Gson().fromJson(reader, JsonArray.class)) {
-                var row = entry.getAsJsonArray();
-                var sequence = row.get(0).getAsString();
-                // map shortcodes -> emoji sequence
-                var shortcodes = row.get(2).getAsJsonArray();
-                if (!shortcodes.isEmpty()) {
-                    map.put(shortcodes.get(0).getAsString(), sequence);
-                    for (int i = 1; i < shortcodes.size(); i++) {
-                        map.putIfAbsent(shortcodes.get(i).getAsString(), sequence);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.info(MARKER, "Failed to load emoji data", e);
-        }
-        LOGGER.info(MARKER, "Scanned emoji shortcodes: {}",
-                map.size());
-        results.mEmojiShortcodes = map;
     }
 
     ////// END Resource Reloading
@@ -1135,6 +1086,10 @@ public class TextLayoutEngine extends FontResourceManager {
      */
     @Nonnull
     public FontCollection getFontCollection(@Nonnull ResourceLocation fontName) {
+        if (mForceUnicodeFont == Boolean.TRUE &&
+                fontName.equals(Minecraft.DEFAULT_FONT)) {
+            fontName = Minecraft.UNIFORM_FONT;
+        }
         FontCollection fontCollection;
         return (fontCollection = mFontCollections.get(fontName)) != null
                 ? fontCollection
@@ -1195,17 +1150,6 @@ public class TextLayoutEngine extends FontResourceManager {
     @Nullable
     private BakedGlyph lookupEmoji(@Nonnull char[] buf, int start, int end) {
         return null;
-    }
-
-    /**
-     * Lookup Emoji char sequence from shortcode.
-     *
-     * @param shortcode the shortcode, e.g. cheese
-     * @return the Emoji sequence
-     */
-    @Nullable
-    public String lookupEmojiShortcode(@Nonnull String shortcode) {
-        return mEmojiShortcodes.get(shortcode);
     }
 
     /*public void dumpEmojiAtlas() {
@@ -1277,23 +1221,6 @@ public class TextLayoutEngine extends FontResourceManager {
 
     public int getResLevel() {
         return mResLevel;
-    }
-
-    /**
-     * Get the {@link ChatFormatting} by the given formatting code. Vanilla's method is
-     * overwritten by this, see {@link icyllis.modernui.mc.text.mixin.MixinChatFormatting}.
-     * <p>
-     * Vanilla would create a new String from the char, call String.toLowerCase() and
-     * String.charAt(0), search this char with a clone of ChatFormatting values. However,
-     * it is unnecessary to consider non-ASCII compatibility, so we simplify it to a LUT.
-     *
-     * @param code c, case-insensitive
-     * @return chat formatting, {@code null} if nothing
-     * @see ChatFormatting#getByCode(char)
-     */
-    @Nullable
-    public static ChatFormatting getFormattingByCode(char code) {
-        return code < 128 ? FORMATTING_TABLE[code] : null;
     }
 
     /**
