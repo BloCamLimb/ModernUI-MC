@@ -287,11 +287,14 @@ final class Registration {
                         /*values*/ new GuiScaleValueSet(),
                         /*initialValue*/ 0,
                         /*onValueUpdate*/ value -> {
-                    Minecraft minecraft = Minecraft.getInstance();
-                    if ((int) minecraft.getWindow().getGuiScale() !=
-                            minecraft.getWindow().calculateScale(value, false)) {
-                        minecraft.resizeDisplay();
-                    }
+                    // execute in next tick, prevent transient GUI scale change
+                    Minecraft.getInstance().tell(() -> {
+                        Minecraft minecraft = Minecraft.getInstance();
+                        if ((int) minecraft.getWindow().getGuiScale() !=
+                                minecraft.getWindow().calculateScale(value, false)) {
+                            minecraft.resizeDisplay();
+                        }
+                    });
                 });
                 // no barrier
                 Options options = Minecraft.getInstance().options;

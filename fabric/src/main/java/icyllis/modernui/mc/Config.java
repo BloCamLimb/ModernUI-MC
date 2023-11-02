@@ -197,7 +197,7 @@ public final class Config {
         public final ForgeConfigSpec.BooleanValue mForceRtl;
         public final ForgeConfigSpec.DoubleValue mFontScale;
         public final ForgeConfigSpec.EnumValue<WindowMode> mWindowMode;
-        //public final ForgeConfigSpec.BooleanValue mUseNewGuiScale;
+        public final ForgeConfigSpec.BooleanValue mUseNewGuiScale;
         //public final ForgeConfigSpec.BooleanValue mRemoveSignature;
         public final ForgeConfigSpec.BooleanValue mRemoveTelemetry;
         //public final ForgeConfigSpec.BooleanValue mSecurePublicKey;
@@ -362,8 +362,8 @@ public final class Config {
 
             mWindowMode = builder.comment("Control the window mode, normal mode does nothing.")
                     .defineEnum("windowMode", WindowMode.NORMAL);
-            /*mUseNewGuiScale = builder.comment("Whether to replace vanilla GUI scale button to slider with tips.")
-                    .define("useNewGuiScale", true);*/
+            mUseNewGuiScale = builder.comment("Whether to replace vanilla GUI scale button to slider with tips.")
+                    .define("useNewGuiScale", true);
 
             /*mSkipGLCapsError = builder.comment("UI renderer is disabled when the OpenGL capability test fails.",
                             "Sometimes the driver reports wrong values, you can enable this to ignore it.")

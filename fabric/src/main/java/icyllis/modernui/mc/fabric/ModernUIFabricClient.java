@@ -18,6 +18,8 @@
 
 package icyllis.modernui.mc.fabric;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
 import fuzs.forgeconfigapiport.api.config.v2.ModConfigEvents;
 import icyllis.modernui.ModernUI;
@@ -25,6 +27,7 @@ import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.ImageStore;
 import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.mixin.AccessOptions;
 import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.fabricmc.api.*;
@@ -35,18 +38,26 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.resource.*;
-import net.minecraft.client.Minecraft;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.*;
+import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.resources.language.LanguageManager;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.ExtraCodecs;
+import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraftforge.fml.config.ModConfig;
 
 import javax.annotation.Nonnull;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.stream.IntStream;
 
 @Environment(EnvType.CLIENT)
 public class ModernUIFabricClient extends ModernUIClient implements ClientModInitializer {
@@ -111,6 +122,55 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
                 // ensure it's applied and positioned
                 windowMode.apply();
+            }
+
+            if (Config.CLIENT.mUseNewGuiScale.get()) {
+                final OptionInstance<Integer> newGuiScale = new OptionInstance<>(
+                        /*caption*/ "options.guiScale",
+                        /*tooltip*/ OptionInstance.noTooltip(),
+                        /*toString*/ (caption, value) -> {
+                    int r = MuiModApi.calcGuiScales();
+                    if (value == 0) { // auto
+                        int auto = r >> 4 & 0xf;
+                        return Options.genericValueLabel(caption,
+                                Component.translatable("options.guiScale.auto")
+                                        .append(Component.literal(" (" + auto + ")")));
+                    } else {
+                        MutableComponent valueComponent = Component.literal(value.toString());
+                        int min = r >> 8 & 0xf;
+                        int max = r & 0xf;
+                        if (value < min || value > max) {
+                            final MutableComponent hint;
+                            if (value < min) {
+                                hint = Component.literal(" (<" + min + ")");
+                            } else {
+                                hint = Component.literal(" (>" + max + ")");
+                            }
+                            valueComponent.append(hint);
+                            valueComponent.withStyle(ChatFormatting.RED);
+                        }
+                        return Options.genericValueLabel(caption, valueComponent);
+                    }
+                },
+                        /*values*/ new GuiScaleValueSet(),
+                        /*initialValue*/ 0,
+                        /*onValueUpdate*/ value -> {
+                    // execute in next tick, prevent transient GUI scale change
+                    Minecraft.getInstance().tell(() -> {
+                        Minecraft minecraft = Minecraft.getInstance();
+                        if ((int) minecraft.getWindow().getGuiScale() !=
+                                minecraft.getWindow().calculateScale(value, false)) {
+                            minecraft.resizeDisplay();
+                        }
+                    });
+                });
+                Options options = mc.options;
+                newGuiScale.set(options.guiScale().get());
+                ((AccessOptions) options).setGuiScale(newGuiScale);
+                if (ModernUIMod.isOptiFineLoaded()) {
+                    OptiFineIntegration.setGuiScale(newGuiScale);
+                    LOGGER.debug(MARKER, "Override OptiFine Gui Scale");
+                }
             }
         });
 
@@ -192,5 +252,55 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             return mSelectedJavaLocale;
         }
         return super.onGetSelectedLocale();
+    }
+
+    static class GuiScaleValueSet implements OptionInstance.IntRangeBase,
+            OptionInstance.SliderableOrCyclableValueSet<Integer> {
+
+        @Override
+        public int minInclusive() {
+            return 0;
+        }
+
+        @Override
+        public int maxInclusive() {
+            return MuiModApi.MAX_GUI_SCALE;
+        }
+
+        @Nonnull
+        @Override
+        public Integer fromSliderValue(double progress) {
+            return Math.toIntExact(Math.round(Mth.map(progress, 0.0, 1.0, minInclusive(), maxInclusive())));
+        }
+
+        @Nonnull
+        @Override
+        public Optional<Integer> validateValue(@Nonnull Integer value) {
+            return Optional.of(Mth.clamp(value, minInclusive(), maxInclusive()));
+        }
+
+        @Nonnull
+        @Override
+        public Codec<Integer> codec() {
+            return ExtraCodecs.validate(Codec.INT, value -> {
+                int max = maxInclusive() + 1;
+                if (value.compareTo(minInclusive()) >= 0 && value.compareTo(max) <= 0) {
+                    return DataResult.success(value);
+                }
+                return DataResult.error(() ->
+                        "Value " + value + " outside of range [" + minInclusive() + ":" + max + "]", value);
+            });
+        }
+
+        @Nonnull
+        @Override
+        public CycleButton.ValueListSupplier<Integer> valueListSupplier() {
+            return CycleButton.ValueListSupplier.create(IntStream.range(minInclusive(), maxInclusive() + 1).boxed().toList());
+        }
+
+        @Override
+        public boolean createCycleButton() {
+            return false;
+        }
     }
 }
