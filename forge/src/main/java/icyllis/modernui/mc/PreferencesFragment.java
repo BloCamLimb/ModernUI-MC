@@ -55,7 +55,8 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 public class PreferencesFragment extends Fragment {
 
     LinearLayout mTooltipCategory;
-    LinearLayout mTextEngineCategory;
+    LinearLayout mTextLayoutCategory;
+    LinearLayout mTextRenderingCategory;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -273,7 +274,8 @@ public class PreferencesFragment extends Fragment {
                             if (!Config.CLIENT.mFallbackFontFamilyList.get().equals(result)) {
                                 Config.CLIENT.mFallbackFontFamilyList.set(result);
                                 Config.CLIENT.saveAsync();
-                                reloadDefaultTypeface(view.getContext(), () -> {});
+                                reloadDefaultTypeface(view.getContext(), () -> {
+                                });
                             }
                         }
                     });
@@ -301,7 +303,8 @@ public class PreferencesFragment extends Fragment {
                 var option = createBooleanOption(context, "modernui.center.font.colorEmoji",
                         Config.CLIENT.mUseColorEmoji, () -> {
                             Config.CLIENT.saveAsync();
-                            reloadDefaultTypeface(context, () -> {});
+                            reloadDefaultTypeface(context, () -> {
+                            });
                         });
                 option.setTooltipText(I18n.get("modernui.center.font.colorEmoji_desc"));
                 category.addView(option);
@@ -457,14 +460,18 @@ public class PreferencesFragment extends Fragment {
                                     Toast.LENGTH_SHORT)
                             .show();
                     if (checked) {
-                        if (mTextEngineCategory == null) {
-                            mTextEngineCategory = createTextEngineCategory(view.getContext());
-                            content.addView(mTextEngineCategory);
+                        if (mTextLayoutCategory == null) {
+                            mTextLayoutCategory = createTextLayoutCategory(view.getContext());
+                            mTextRenderingCategory = createTextRenderingCategory(view.getContext());
+                            content.addView(mTextLayoutCategory);
+                            content.addView(mTextRenderingCategory);
                         } else {
-                            mTextEngineCategory.setVisibility(View.VISIBLE);
+                            mTextLayoutCategory.setVisibility(View.VISIBLE);
+                            mTextRenderingCategory.setVisibility(View.VISIBLE);
                         }
-                    } else if (mTextEngineCategory != null) {
-                        mTextEngineCategory.setVisibility(View.GONE);
+                    } else if (mTextLayoutCategory != null) {
+                        mTextLayoutCategory.setVisibility(View.GONE);
+                        mTextRenderingCategory.setVisibility(View.GONE);
                     }
                 });
                 list.addView(option);
@@ -483,8 +490,11 @@ public class PreferencesFragment extends Fragment {
         }
 
         if (ModernUIClient.isTextEngineEnabled()) {
-            mTextEngineCategory = createTextEngineCategory(context);
-            content.addView(mTextEngineCategory);
+            mTextLayoutCategory = createTextLayoutCategory(context);
+            content.addView(mTextLayoutCategory);
+
+            mTextRenderingCategory = createTextRenderingCategory(context);
+            content.addView(mTextRenderingCategory);
         }
 
         content.setDividerDrawable(ThemeControl.makeDivider(content));
@@ -540,8 +550,72 @@ public class PreferencesFragment extends Fragment {
         return category;
     }
 
-    public static LinearLayout createTextEngineCategory(Context context) {
-        var category = createCategoryList(context, "modernui.center.category.text");
+    public static LinearLayout createTextLayoutCategory(Context context) {
+        var category = createCategoryList(context, "modernui.center.category.textLayout");
+
+        Runnable saveFn = Config.TEXT::saveAndReloadAsync;
+
+        {
+            var option = createSpinnerOption(context, "modernui.center.text.defaultFontBehavior",
+                    Config.Text.DefaultFontBehavior.values(),
+                    Config.TEXT.mDefaultFontBehavior, saveFn);
+            option.getChildAt(0)
+                    .setTooltipText(I18n.get("modernui.center.text.defaultFontBehavior_desc"));
+            category.addView(option);
+        }
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.emojiShortcodes",
+                    Config.TEXT.mEmojiShortcodes, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.emojiShortcodes_desc"));
+            category.addView(option);
+        }
+
+        category.addView(createSpinnerOption(context, "modernui.center.text.bidiHeuristicAlgo",
+                Config.Text.TextDirection.values(),
+                Config.TEXT.mTextDirection,
+                saveFn));
+
+        {
+            var option = createSpinnerOption(context, "modernui.center.text.lineBreakStyle",
+                    Config.Text.LineBreakStyle.values(),
+                    Config.TEXT.mLineBreakStyle, saveFn);
+            option.getChildAt(0)
+                    .setTooltipText(I18n.get("modernui.center.text.lineBreakStyle_desc"));
+            category.addView(option);
+        }
+
+        category.addView(createSpinnerOption(context, "modernui.center.text.lineBreakWordStyle",
+                Config.Text.LineBreakWordStyle.values(),
+                Config.TEXT.mLineBreakWordStyle, saveFn));
+
+        category.addView(createBooleanOption(context, "modernui.center.text.allowAsyncLayout",
+                Config.TEXT.mAllowAsyncLayout, saveFn));
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.useComponentCache",
+                    Config.TEXT.mUseComponentCache, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.useComponentCache_desc"));
+            category.addView(option);
+        }
+
+        category.addView(createBooleanOption(context, "modernui.center.text.fixedResolution",
+                Config.TEXT.mFixedResolution, saveFn));
+
+        category.addView(createFloatOption(context, "modernui.center.text.baseFontSize",
+                Config.Text.BASE_FONT_SIZE_MIN, Config.Text.BASE_FONT_SIZE_MAX,
+                5, Config.TEXT.mBaseFontSize, 10, saveFn));
+
+        category.addView(createIntegerOption(context, "modernui.center.text.cacheLifespan",
+                Config.Text.LIFESPAN_MIN, Config.Text.LIFESPAN_MAX,
+                2, 1,
+                Config.TEXT.mCacheLifespan, saveFn));
+
+        return category;
+    }
+
+    public static LinearLayout createTextRenderingCategory(Context context) {
+        var category = createCategoryList(context, "modernui.center.category.textRendering");
 
         Runnable saveFn = Config.TEXT::saveAndReloadAsync;
 
@@ -573,63 +647,12 @@ public class PreferencesFragment extends Fragment {
             category.addView(option);
         }
 
-        {
-            var option = createSpinnerOption(context, "modernui.center.text.defaultFontBehavior",
-                    Config.Text.DefaultFontBehavior.values(),
-                    Config.TEXT.mDefaultFontBehavior, saveFn);
-            option.getChildAt(0)
-                    .setTooltipText(I18n.get("modernui.center.text.defaultFontBehavior_desc"));
-            category.addView(option);
-        }
-
-        {
-            var option = createBooleanOption(context, "modernui.center.text.emojiShortcodes",
-                    Config.TEXT.mEmojiShortcodes, saveFn);
-            option.setTooltipText(I18n.get("modernui.center.text.emojiShortcodes_desc"));
-            category.addView(option);
-        }
-
-        category.addView(createSpinnerOption(context, "modernui.center.text.bidiHeuristicAlgo",
-                Config.Text.TextDirection.values(),
-                Config.TEXT.mTextDirection,
-                saveFn));
-
         category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
                 Config.TEXT.mAllowShadow, saveFn));
 
         category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
                 Config.Text.SHADOW_OFFSET_MIN, Config.Text.SHADOW_OFFSET_MAX,
                 5, Config.TEXT.mShadowOffset, 10, saveFn));
-
-        category.addView(createBooleanOption(context, "modernui.center.text.allowAsyncLayout",
-                Config.TEXT.mAllowAsyncLayout, saveFn));
-
-        {
-            var option = createSpinnerOption(context, "modernui.center.text.lineBreakStyle",
-                    Config.Text.LineBreakStyle.values(),
-                    Config.TEXT.mLineBreakStyle, saveFn);
-            option.getChildAt(0)
-                    .setTooltipText(I18n.get("modernui.center.text.lineBreakStyle_desc"));
-            category.addView(option);
-        }
-
-        category.addView(createSpinnerOption(context, "modernui.center.text.lineBreakWordStyle",
-                Config.Text.LineBreakWordStyle.values(),
-                Config.TEXT.mLineBreakWordStyle, saveFn));
-
-        {
-            var option = createBooleanOption(context, "modernui.center.text.useComponentCache",
-                    Config.TEXT.mUseComponentCache, saveFn);
-            option.setTooltipText(I18n.get("modernui.center.text.useComponentCache_desc"));
-            category.addView(option);
-        }
-
-        category.addView(createBooleanOption(context, "modernui.center.text.fixedResolution",
-                Config.TEXT.mFixedResolution, saveFn));
-
-        category.addView(createFloatOption(context, "modernui.center.text.baseFontSize",
-                Config.Text.BASE_FONT_SIZE_MIN, Config.Text.BASE_FONT_SIZE_MAX,
-                5, Config.TEXT.mBaseFontSize, 10, saveFn));
 
         category.addView(createFloatOption(context, "modernui.center.text.baselineShift",
                 Config.Text.BASELINE_MIN, Config.Text.BASELINE_MAX,
@@ -638,11 +661,6 @@ public class PreferencesFragment extends Fragment {
         category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
                 Config.Text.OUTLINE_OFFSET_MIN, Config.Text.OUTLINE_OFFSET_MAX,
                 5, Config.TEXT.mOutlineOffset, 10, saveFn));
-
-        category.addView(createIntegerOption(context, "modernui.center.text.cacheLifespan",
-                Config.Text.LIFESPAN_MIN, Config.Text.LIFESPAN_MAX,
-                2, 1,
-                Config.TEXT.mCacheLifespan, saveFn));
 
         return category;
     }

@@ -271,7 +271,7 @@ public final class Config {
                     .define("inventoryPause", false);
             mFramerateInactive = builder.comment(
                             "Framerate limit on window inactive (out of focus or minimized), 0 = no change.")
-                    .defineInRange("framerateInactive", 60, 0, 255);
+                    .defineInRange("framerateInactive", 30, 0, 255);
             mFramerateMinimized = builder.comment(
                             "Framerate limit on window minimized, 0 = same as framerate inactive.",
                             "This value will be no greater than framerate inactive.")

@@ -386,7 +386,9 @@ public class TextLayout {
                 rx = x + positions[i << 1] + (float) glyph.x * scaleFactor;
                 ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
                 if (isShadow) {
+                    // bitmap font shadow offset is always 1 pixel
                     rx += 1.0f - ModernTextRenderer.sShadowOffset;
+                    ry += 1.0f - ModernTextRenderer.sShadowOffset;
                 }
 
                 w = (float) glyph.width * scaleFactor;
@@ -424,7 +426,9 @@ public class TextLayout {
                     rx += x + positions[i << 1] + (float) glyph.x * scaleFactor;
                     ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
                     if (isShadow) {
+                        // bitmap font shadow offset is always 1 pixel
                         rx += 1.0f - ModernTextRenderer.sShadowOffset;
+                        ry += 1.0f - ModernTextRenderer.sShadowOffset;
                     }
                     w = (float) glyph.width * scaleFactor;
                     h = (float) glyph.height * scaleFactor;

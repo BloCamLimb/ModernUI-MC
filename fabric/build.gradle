@@ -96,7 +96,7 @@ shadowJar {
     archiveClassifier.set("shadow")
     configurations = [project.configurations.shadow]
 
-    dependencies {
+    /*dependencies {
         exclude 'icu4j-59.1.jar'
         exclude 'commons-logging-1.2.jar'
     }
@@ -115,7 +115,7 @@ shadowJar {
     exclude 'META-INF/LICENSE**'
     exclude 'META-INF/NOTICE**'
     exclude 'META-INF/README**'
-    exclude 'META-INF/maven/**'
+    exclude 'META-INF/maven/**'*/
 }
 
 remapJar {
