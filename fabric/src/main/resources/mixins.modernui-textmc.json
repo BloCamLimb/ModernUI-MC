@@ -20,8 +20,6 @@
     "MixinIngameGui",
     "MixinLanguage",
     "MixinLevelRenderer",
-    "MixinSignEditScreen",
-    "MixinStringSplitter",
-    "MixinTextFieldHelper"
+    "MixinSignEditScreen"
   ]
 }

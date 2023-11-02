@@ -19,11 +19,14 @@
 package icyllis.modernui.mc;
 
 import com.mojang.blaze3d.platform.Window;
+import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.MathUtil;
+import icyllis.modernui.graphics.text.GraphemeBreak;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.server.level.ServerPlayer;
@@ -209,6 +212,28 @@ public abstract class MuiModApi {
         }
         assert min <= auto && auto <= max;
         return min << 8 | auto << 4 | max;
+    }
+
+    // move a grapheme cluster at least
+    public static int offsetByGrapheme(String value, int cursor, int dir) {
+        int op;
+        if (dir < 0) {
+            op = GraphemeBreak.BEFORE;
+        } else if (dir == 0) {
+            op = GraphemeBreak.AT_OR_BEFORE;
+        } else {
+            op = GraphemeBreak.AFTER;
+        }
+        int offset = Util.offsetByCodepoints(value, cursor, dir);
+        cursor = GraphemeBreak.getTextRunCursor(
+                value, ModernUI.getSelectedLocale(),
+                0, value.length(), cursor, op
+        );
+        if (dir > 0) {
+            return Math.max(offset, cursor);
+        } else {
+            return Math.min(offset, cursor);
+        }
     }
 
     /**

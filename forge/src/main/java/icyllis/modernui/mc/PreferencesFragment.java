@@ -425,6 +425,26 @@ public class PreferencesFragment extends Fragment {
             }
 
             {
+                var option = createSwitchLayout(context, "modernui.center.text.enhancedTextField");
+                option.setTooltipText(I18n.get("modernui.center.text.enhancedTextField_desc"));
+                var button = option.<SwitchButton>requireViewById(R.id.button1);
+                button.setChecked(!Boolean.parseBoolean(
+                        ModernUIClient.getBootstrapProperty(ModernUIMod.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD)
+                ));
+                button.setOnCheckedChangeListener((__, checked) -> {
+                    ModernUIClient.setBootstrapProperty(
+                            ModernUIMod.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD,
+                            Boolean.toString(!checked)
+                    );
+                    Toast.makeText(__.getContext(),
+                                    I18n.get("gui.modernui.restart_to_work"),
+                                    Toast.LENGTH_SHORT)
+                            .show();
+                });
+                list.addView(option);
+            }
+
+            {
                 var option = createSwitchLayout(context, "modernui.center.extension.tooltip");
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
                 button.setChecked(Config.CLIENT.mTooltip.get());

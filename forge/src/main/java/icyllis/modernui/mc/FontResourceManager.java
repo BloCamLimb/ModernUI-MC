@@ -37,6 +37,8 @@ import static icyllis.modernui.ModernUI.LOGGER;
 
 /**
  * Load extra font resources for Modern UI.
+ * <p>
+ * Subclass by {@link icyllis.modernui.mc.text.TextLayoutEngine}.
  *
  * @see ModernUIClient
  */

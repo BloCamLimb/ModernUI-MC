@@ -11,6 +11,7 @@
     "AccessOptions",
     "AccessPostChain",
     "MixinClientTelemetryManager",
+    "MixinEditBox",
     "MixinGuiGraphics",
     "MixinInventoryScreen",
     "MixinKeyboardHandler",
@@ -20,6 +21,8 @@
     "MixinRenderSystem",
     "MixinScreen",
     "MixinSelectionList",
+    "MixinStringSplitter",
+    "MixinTextFieldHelper",
     "MixinWindow"
   ]
 }

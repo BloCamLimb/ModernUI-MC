@@ -16,9 +16,9 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.text.mixin;
+package icyllis.modernui.mc.mixin;
 
-import icyllis.modernui.mc.text.ModernStringSplitter;
+import icyllis.modernui.mc.MuiModApi;
 import net.minecraft.client.gui.font.TextFieldHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -35,7 +35,7 @@ public class MixinTextFieldHelper {
             )
     )
     private int onMoveByChars(String value, int cursor, int dir) {
-        return ModernStringSplitter.offsetByGrapheme(value, cursor, dir);
+        return MuiModApi.offsetByGrapheme(value, cursor, dir);
     }
 
     @Redirect(
@@ -46,6 +46,6 @@ public class MixinTextFieldHelper {
             )
     )
     private int onRemoveCharsFromCursor(String value, int cursor, int dir) {
-        return ModernStringSplitter.offsetByGrapheme(value, cursor, dir);
+        return MuiModApi.offsetByGrapheme(value, cursor, dir);
     }
 }

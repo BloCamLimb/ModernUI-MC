@@ -31,6 +31,7 @@ public abstract class ModernUIMod {
     // false to disable extensions
     public static final String BOOTSTRAP_DISABLE_TEXT_ENGINE = "modernui_mc_disableTextEngine";
     public static final String BOOTSTRAP_DISABLE_SMOOTH_SCROLLING = "modernui_mc_disableSmoothScrolling";
+    public static final String BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD = "modernui_mc_disableEnhancedTextField";
 
     // this creates config folder
     public static final Path BOOTSTRAP_PATH = FMLPaths.getOrCreateGameRelativePath(
