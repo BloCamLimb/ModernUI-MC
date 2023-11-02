@@ -947,10 +947,6 @@ public final class Config {
                 TextLayoutEngine.sTextDirection = mTextDirection.get().key;
                 reload = true;
             }
-            if (TextLayoutEngine.sUseTextShadersInWorld != mUseTextShadersInWorld.get()) {
-                TextLayoutEngine.sUseTextShadersInWorld = mUseTextShadersInWorld.get();
-                reload = true;
-            }
             if (TextLayoutEngine.sDefaultFontBehavior != mDefaultFontBehavior.get().key) {
                 TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
                 reload = true;

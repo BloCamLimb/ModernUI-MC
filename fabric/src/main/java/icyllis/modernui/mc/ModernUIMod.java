@@ -54,6 +54,8 @@ public abstract class ModernUIMod {
     public static volatile boolean sDeveloperMode;
 
     public static boolean sOptiFineLoaded;
+    public static boolean sIrisApiLoaded;
+    public static boolean sIrisLoaded;
 
     static {
         try {
@@ -65,7 +67,24 @@ public abstract class ModernUIMod {
             } catch (Exception e) {
                 LOGGER.info(MARKER, "OptiFine installed...");
             }
-        } catch (ClassNotFoundException ignored) {
+        } catch (Exception ignored) {
+        }
+        try {
+            Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+            sIrisApiLoaded = true;
+            LOGGER.info(MARKER, "Iris API installed...");
+        } catch (Exception ignored) {
+        }
+        try {
+            Class<?> clazz = Class.forName("net.coderbot.iris.Iris");
+            sIrisLoaded = true;
+            try {
+                String version = (String) clazz.getMethod("getVersion").invoke(null);
+                LOGGER.info(MARKER, "Iris installed: {}", version);
+            } catch (Exception e) {
+                LOGGER.info(MARKER, "Iris installed...");
+            }
+        } catch (Exception ignored) {
         }
     }
 
@@ -76,6 +95,14 @@ public abstract class ModernUIMod {
 
     public static boolean isOptiFineLoaded() {
         return sOptiFineLoaded;
+    }
+
+    public static boolean isIrisApiLoaded() {
+        return sIrisApiLoaded;
+    }
+
+    public static boolean isIrisLoaded() {
+        return sIrisLoaded;
     }
 
     public static boolean isDeveloperMode() {

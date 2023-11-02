@@ -79,7 +79,7 @@
   "modernui.center.text.enhancedTextField": "增强文本输入框",
   "modernui.center.text.enhancedTextField_desc": "该选项增强了原版文本输入框的Unicode支持，例如移动字素而不是码点，移动任何语言的单词，增加撤销与重做支持。",
   "modernui.center.text.textShadersInWorld": "在3D世界中使用现代文字着色器",
-  "modernui.center.text.textShadersInWorld_desc": "启用时，该选项允许 Modern UI 在 3D 世界中使用距离场文字渲染，此外它还能处理透明度顺序并提升渲染性能。然而，在 OptiFine 光影或 Iris 光影启用时，你应该禁用该选项。\n该选项只适用于外框字体。",
+  "modernui.center.text.textShadersInWorld_desc": "启用时，该选项允许 Modern UI 在 3D 世界中使用距离场文字渲染，此外它还能处理透明度顺序并提升渲染性能。该选项在 OptiFine 光影或 Iris 光影启用时自动禁用。\n该选项只适用于外框字体。",
   "modernui.center.text.defaultFontBehavior": "默认字体行为",
   "modernui.center.text.defaultFontBehavior_desc": "该选项决定如何使用原版默认字体。\n忽略全部：使用 Modern UI 字体（强制Unicode字体）。\n保留ASCII：保留ASCII字体。\n保留其他：保留除了ASCII之外的其他字体。\n保留全部：保留除了Unicode之外的其他字体。",
   "modernui.center.text.smartSDFShaders": "智能SDF文字着色器",

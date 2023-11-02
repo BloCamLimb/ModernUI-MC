@@ -89,6 +89,18 @@ public abstract class ModernUIClient extends ModernUI {
         );
     }
 
+    public static boolean areShadersEnabled() {
+        if (ModernUIMod.isOptiFineLoaded()) {
+            if (OptiFineIntegration.isShaderPackLoaded()) {
+                return true;
+            }
+        }
+        if (ModernUIMod.isIrisApiLoaded()) {
+            return IrisApiIntegration.isShaderPackInUse();
+        }
+        return false;
+    }
+
     public static String getBootstrapProperty(String key) {
         Properties props = getBootstrapProperties();
         if (props != null) {

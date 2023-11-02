@@ -79,7 +79,7 @@
   "modernui.center.text.enhancedTextField": "Enhanced Text Field",
   "modernui.center.text.enhancedTextField_desc": "This option enhances the Unicode support for Minecraft text field, such as moving graphemes instead of code points, moving words in any language, and adding undo/redo support.",
   "modernui.center.text.textShadersInWorld": "Use Modern Text Shaders in 3D World",
-  "modernui.center.text.textShadersInWorld_desc": "When enabled, this option allows Modern UI to use distance field text in 3D world. It can also handle the order of transparency and improve rendering performance. However, you should disable this option when OptiFine Shaders or Iris Shaders are active.\nThis option only applies to outline fonts.",
+  "modernui.center.text.textShadersInWorld_desc": "When enabled, this option allows Modern UI to use distance field text in 3D world. It can also handle the order of transparency and improve rendering performance. This option is automatically disabled when OptiFine Shaders or Iris Shaders are enabled.\nThis option only applies to outline fonts.",
   "modernui.center.text.defaultFontBehavior": "Default Font Behavior",
   "modernui.center.text.defaultFontBehavior_desc": "This option determines how to use Vanilla default font.\nIgnore All: use Modern UI font (Force Unicode Font).\nKeep ASCII: keep ASCII fonts.\nKeep Other: keep fonts other than ASCII fonts.\nKeep All: keep all fonts except the Unicode font.",
   "modernui.center.text.smartSDFShaders": "Smart SDF Text Shaders",

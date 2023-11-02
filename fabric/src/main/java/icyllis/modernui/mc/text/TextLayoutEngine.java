@@ -1186,6 +1186,12 @@ public class TextLayoutEngine extends FontResourceManager
                     mFormattedCache = new HashMap<>(mFormattedCache);
                 }
             }*/
+            boolean useTextShadersEffective = Config.TEXT.mUseTextShadersInWorld.get()
+                    && !ModernUIClient.areShadersEnabled();
+            if (sUseTextShadersInWorld != useTextShadersEffective) {
+                reload();
+                sUseTextShadersInWorld = useTextShadersEffective;
+            }
         }
         // convert ticks to seconds
         mTimer = (mTimer + 1) % 20;
