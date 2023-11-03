@@ -19,6 +19,7 @@
 package icyllis.modernui.mc;
 
 import icyllis.modernui.R;
+import icyllis.modernui.TestFragment;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
@@ -98,6 +99,7 @@ public class CenterFragment2 extends Fragment {
             buttonGroup.addView(createNavButton(1002, "modernui.center.tab.preferences"));
             buttonGroup.addView(createNavButton(1003, "modernui.center.tab.developerOptions"));
             buttonGroup.addView(createNavButton(1004, "soundCategory.music"));
+            buttonGroup.addView(createNavButton(1005, "Dev"));
 
             buttonGroup.check(1001);
 
@@ -120,6 +122,10 @@ public class CenterFragment2 extends Fragment {
                     case 1004 -> {
                         ft = fm.beginTransaction()
                                 .replace(id_tab_container, MusicFragment.class, null, "music");
+                    }
+                    case 1005 -> {
+                        ft = fm.beginTransaction()
+                                .replace(id_tab_container, TestFragment.class, null, "dev");
                     }
                 }
                 if (ft != null) {

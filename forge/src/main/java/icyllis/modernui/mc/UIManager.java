@@ -189,7 +189,7 @@ public abstract class UIManager implements LifecycleOwner {
         Objects.requireNonNull(sInstance);
         sInstance.mCanvas = GLSurfaceCanvas.initialize();
         sInstance.mDevice = (GLDevice) Core.requireDirectContext().getDevice();
-        sInstance.mDevice.getContext().getResourceCache().setCacheLimit(1 << 27); // 128MB
+        sInstance.mDevice.getContext().getResourceCache().setCacheLimit(1 << 28); // 256MB
         sInstance.mSurface = new GLSurface();
         BufferUploader.invalidate();
         LOGGER.info(MARKER, "UI renderer initialized");
@@ -725,6 +725,7 @@ public abstract class UIManager implements LifecycleOwner {
                     System.currentTimeMillis() - 120_000,
                     /*scratch only*/ true
             );
+            GlyphManager.getInstance().compact();
         }
 
         glBindVertexArray(oldVertexArray);

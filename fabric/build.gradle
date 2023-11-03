@@ -14,7 +14,7 @@ configurations {
 
 loom {
     silentMojangMappingsLicense()
-    accessWidenerPath = file("src/main/resources/modernui-fabric.accesswidener")
+    accessWidenerPath = file("src/main/resources/modernui.accesswidener")
     runConfigs.each { it.setIdeConfigGenerated(true) } // Uncomment this if run configs not generated
     addTaskBeforeRun(":${name}:classes")
 }

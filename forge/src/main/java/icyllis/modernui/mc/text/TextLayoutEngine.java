@@ -318,9 +318,16 @@ public class TextLayoutEngine extends FontResourceManager
         /* Pre-cache the ASCII digits to allow for fast glyph substitution */
         //cacheDigitGlyphs();
 
-        // When OpenGL texture ID changed (atlas resized), we want to use the new first atlas
-        // for deferred rendering, we need to clear any existing TextRenderType instances
-        mGlyphManager.addAtlasInvalidationCallback(invalidationInfo -> TextRenderType.clear());
+        mGlyphManager.addAtlasInvalidationCallback(invalidationInfo -> {
+            if (invalidationInfo.resize()) {
+                // When OpenGL texture ID changed (atlas resized), we want to use the new first atlas
+                // for batch rendering, we need to clear any existing TextRenderType instances
+                TextRenderType.clear();
+            } else {
+                // called by compact(), need to lookupGlyph() and cacheGlyph() again
+                reload();
+            }
+        });
         // init
         reload();
 
