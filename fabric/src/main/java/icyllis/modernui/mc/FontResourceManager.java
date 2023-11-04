@@ -149,6 +149,10 @@ public class FontResourceManager implements PreparableReloadListener {
         reloadAll();
     }
 
+    // SYNC, close native resources
+    public void close() {
+    }
+
     // ASYNC
     protected static void loadEmojis(@Nonnull ResourceManager resources,
                                      @Nonnull LoadResults results) {

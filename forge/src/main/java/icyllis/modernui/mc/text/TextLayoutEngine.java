@@ -590,21 +590,11 @@ public class TextLayoutEngine extends FontResourceManager
 
     // SYNC
     private void applyResources(@Nonnull LoadResults results) {
-        // close bitmaps if never baked
-        for (var fontCollection : mFontCollections.values()) {
-            for (var family : fontCollection.getFamilies()) {
-                if (family.getClosestMatch(FontPaint.NORMAL) instanceof BitmapFont bitmapFont) {
-                    bitmapFont.close();
-                }
-            }
-        }
+        close();
         // reload fonts
         mFontCollections.clear();
         mFontCollections.putAll(results.mFontCollections);
         mDefaultFontCollection = mFontCollections.get(Minecraft.DEFAULT_FONT);
-        if (mDefaultFontCollection == null) {
-            throw new IllegalStateException("Default font failed to load");
-        }
         // vanilla compatibility
         if (mVanillaFontManager != null) {
             var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
@@ -624,7 +614,30 @@ public class TextLayoutEngine extends FontResourceManager
         } else {
             LOGGER.warn(MARKER, "Where is font manager?");
         }
+        if (mDefaultFontCollection == null) {
+            throw new IllegalStateException("Default font failed to load");
+        }
         super.applyResources(results);
+    }
+
+    @Override
+    public void close() {
+        // close bitmaps if never baked
+        for (var fontCollection : mFontCollections.values()) {
+            for (var family : fontCollection.getFamilies()) {
+                if (family.getClosestMatch(FontPaint.NORMAL) instanceof BitmapFont bitmapFont) {
+                    bitmapFont.close();
+                }
+            }
+        }
+        if (mDefaultFontCollection != null) {
+            for (var family : mDefaultFontCollection.getFamilies()) {
+                if (family.getClosestMatch(FontPaint.NORMAL) instanceof BitmapFont bitmapFont) {
+                    bitmapFont.close();
+                }
+            }
+        }
+        TextRenderType.clear();
     }
 
     private static boolean isUnicodeFont(@Nonnull ResourceLocation name) {
