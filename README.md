@@ -14,7 +14,6 @@ This engine provides appropriate methods for processing Unicode text and gives y
 * Use improved SDF text rendering in 2D/3D (also use batch rendering)
 * Compute exact font size in device space for native glyph rendering
 * Use Google Noto Color Emoji and support all the Unicode 15.0 Emoji
-* Support Discord/Slack/GitHub/IamCal/JoyPixels emoji shortcodes in Chatting
 * Configurable bidirectional text heuristic algorithm
 * Configurable text shadow and raw font size
 * Unicode line breaking and CSS line-break & word-break
@@ -35,6 +34,9 @@ Additionally, this Mod provides many utilities which improve game performance an
 * Playing a "Ding" sound when Minecraft loads and reaches the Main Menu
 * Enabling smooth scrolling in Vanilla's Selection List and Forge's Scroll Panel
 * Pressing "C" to Zoom that is the same as OptiFine
+* Undo/Redo and Unicode word iterator for all text fields
+* Playing local music, allowing to seek and view spectrum
+* Support Discord/Slack/GitHub/IamCal/JoyPixels emoji shortcodes in Chatting
 * A fancy tooltip style
   + Choose rounded border or normal border (with anti-aliasing)
   + Add title break and control title line spacing

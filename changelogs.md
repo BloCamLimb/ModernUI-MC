@@ -1,5 +1,54 @@
 Changelogs
 ===
+### Modern UI 3.9.0.4
+#### Forge Extension 1.20.1 / NeoForge Extension 1.20.1
+* Fix validation errors
+* Add font atlas compact
+* Add Iris shaders integration
+* Schedule GUI Scale value listener on next tick
+* Better text config category
+* Change typeface loading behavior
+* Restore cursor position for Emoji shortcode substitution
+* Rework font manager to implement core Emoji rendering
+* Add GPU driver bug workarounds bootstrap properties
+* Improve text field undo/redo
+* Add undo/redo for EditBox
+* Add GUI Scale to Preferences
+* Add batch input commit
+* Update translations
+* Implement grapheme break for all text fields
+* Implement break iter for vanilla EditBox
+* Add music player
+* Increase window size for OpenGL version test, fix game freeze on Linux
+* Update font resources and licenses
+* Add tooltip border width config
+* Fix format error when setting color opacity
+* Remove unused assets
+* Completely switch to Arc3D and abandon GL*Compat
+* Auto clean up less used GPU resources
+* Always generate text config
+* Use jar-in-jar for caffeine and flexmark
+* Update synchronization, improve render performance
+* Disable MSAA by default, 0.176x VRAM usage than before, and faster
+* Update to latest Arc3D and ModernUI
+#### Fabric Extension 1.20.1 / Quilt Extension 1.20.1
+* Add GUI Scale slider for Fabric
+* Fix mod logo on Fabric
+* Others are functionally equivalent to Forge version
+### Modern Text Engine 1.20.1
+* Auto disable modern text shaders when Iris shaders are active
+* Now follow vanilla's Force Unicode Font setting
+* Fix compat with Loot Beams
+* Fix compat with Debugify
+* Fix compat with Curios
+* Fix shadow offset Y for bitmap font
+* Fix fist line rendering in sign edit GUI
+* Add text layout command
+* Remove text cache cleanup on parallel dispatch
+* Dont draw text outline when 'modern text shaders in 3D' disabled
+* Keep text shader preload consistent with vanilla UI shader preload
+* Improve UniformScale text when GUI scale is less than 4
+
 ### Modern UI 3.8.2.4
 #### Forge Extension 1.20.1-47.0.14 / NeoForge Extension 1.20.1-47.1.4
 * Change the crash with TipTheScales to warning
