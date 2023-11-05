@@ -24,7 +24,6 @@ import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.lifecycle.LifecycleOwner;
-import icyllis.modernui.mc.ScreenCallback;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessNativeImage;
 import icyllis.modernui.text.TextUtils;
@@ -46,8 +45,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.*;
 
 import javax.annotation.Nonnull;
 import java.io.PrintWriter;
@@ -121,46 +119,43 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         minecraft.setScreen(new SimpleScreen(this, fragment));
     }
 
-    @SubscribeEvent
-    void onScreenOpen(@Nonnull ScreenEvent.Opening event) {
-        final Screen newScreen = event.getNewScreen();
-
-        if (!mFirstScreenOpened && !(newScreen instanceof LoadingErrorScreen)) {
-            if (sDingEnabled) {
-                glfwRequestWindowAttention(minecraft.getWindow().getWindow());
-                minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f));
+    @Override
+    protected void onScreenChange(@Nullable Screen oldScreen, @Nullable Screen newScreen) {
+        if (newScreen != null) {
+            if (!mFirstScreenOpened && !(newScreen instanceof LoadingErrorScreen)) {
+                if (sDingEnabled) {
+                    glfwRequestWindowAttention(minecraft.getWindow().getWindow());
+                    minecraft.getSoundManager().play(
+                            SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f)
+                    );
+                }
+                if (ModernUIMod.isOptiFineLoaded() &&
+                        ModernUIClient.isTextEngineEnabled()) {
+                    OptiFineIntegration.setFastRender(false);
+                    LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
+                }
+                var windowMode = Config.CLIENT.mLastWindowMode;
+                if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
+                    // ensure it's applied and positioned
+                    windowMode.apply();
+                }
+                mFirstScreenOpened = true;
             }
-            if (ModernUIMod.isOptiFineLoaded() &&
-                    ModernUIClient.isTextEngineEnabled()) {
-                OptiFineIntegration.setFastRender(false);
-                LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
-            }
-            var windowMode = Config.CLIENT.mLastWindowMode;
-            if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
-                // ensure it's applied and positioned
-                windowMode.apply();
-            }
-            mFirstScreenOpened = true;
-        }
 
-        // true if there will be no screen to open
-        if (newScreen == null) {
-            removed();
-            return;
+            if (mScreen != newScreen && newScreen instanceof MuiScreen) {
+                //mTicks = 0;
+                mElapsedTimeMillis = 0;
+            }
+            if (mScreen != newScreen && mScreen != null) {
+                onHoverMove(false);
+            }
+            // for non-mui screens
+            if (mScreen == null && minecraft.screen == null) {
+                //mTicks = 0;
+                mElapsedTimeMillis = 0;
+            }
         }
-
-        if (mScreen != newScreen && newScreen instanceof MuiScreen) {
-            //mTicks = 0;
-            mElapsedTimeMillis = 0;
-        }
-        if (mScreen != newScreen && mScreen != null) {
-            onHoverMove(false);
-        }
-        // for non-mui screens
-        if (mScreen == null && minecraft.screen == null) {
-            //mTicks = 0;
-            mElapsedTimeMillis = 0;
-        }
+        super.onScreenChange(oldScreen, newScreen);
     }
 
     /**
