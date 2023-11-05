@@ -19,8 +19,8 @@
 package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.ScreenCallback;
+import icyllis.modernui.mc.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -94,7 +94,7 @@ final class MenuScreen<T extends AbstractContainerMenu>
     public void render(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
         ScreenCallback callback = getCallback();
         if (callback == null || callback.hasDefaultBackground()) {
-            renderBackground(gr);
+            renderBackground(gr, mouseX, mouseY, deltaTick);
         }
         mHost.render();
     }
@@ -156,17 +156,20 @@ final class MenuScreen<T extends AbstractContainerMenu>
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+        mHost.onScroll(deltaX, deltaY);
         return true;
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        mHost.onKeyPress(keyCode, scanCode, modifiers);
         return false;
     }
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        mHost.onKeyRelease(keyCode, scanCode, modifiers);
         return false;
     }
 

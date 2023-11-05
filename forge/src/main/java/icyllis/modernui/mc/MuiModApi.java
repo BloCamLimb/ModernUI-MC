@@ -49,17 +49,17 @@ import java.util.regex.Pattern;
  */
 public abstract class MuiModApi {
 
-    @FunctionalInterface
+    /*@FunctionalInterface
     public interface OnScrollListener {
 
-        /**
-         * Called when a scroll event polling from the main handler and responding to the main window.
-         *
-         * @param scrollX raw relative movement of the horizontal scroll wheel or touchpad gesture
-         * @param scrollY raw relative movement of the vertical scroll wheel or touchpad gesture
-         */
+        *//*
+     * Called when a scroll event polling from the main handler and responding to the main window.
+     *
+     * @param scrollX raw relative movement of the horizontal scroll wheel or touchpad gesture
+     * @param scrollY raw relative movement of the vertical scroll wheel or touchpad gesture
+     *//*
         void onScroll(double scrollX, double scrollY);
-    }
+    }*/
 
     @FunctionalInterface
     public interface OnScreenChangeListener {
@@ -100,13 +100,24 @@ public abstract class MuiModApi {
         void onDebugDump(@Nonnull PrintWriter writer);
     }
 
-    static final CopyOnWriteArrayList<OnScrollListener> sOnScrollListeners =
-            new CopyOnWriteArrayList<>();
+    @FunctionalInterface
+    public interface OnPreKeyInputListener {
+
+        /**
+         * Called when {@link org.lwjgl.glfw.GLFWKeyCallbackI} invoked.
+         */
+        void onPreKeyInput(long window, int keyCode, int scanCode, int action, int mods);
+    }
+
+    /*static final CopyOnWriteArrayList<OnScrollListener> sOnScrollListeners =
+            new CopyOnWriteArrayList<>();*/
     static final CopyOnWriteArrayList<OnScreenChangeListener> sOnScreenChangeListeners =
             new CopyOnWriteArrayList<>();
     static final CopyOnWriteArrayList<OnWindowResizeListener> sOnWindowResizeListeners =
             new CopyOnWriteArrayList<>();
     static final CopyOnWriteArrayList<OnDebugDumpListener> sOnDebugDumpListeners =
+            new CopyOnWriteArrayList<>();
+    static final CopyOnWriteArrayList<OnPreKeyInputListener> sOnPreKeyInputListeners =
             new CopyOnWriteArrayList<>();
 
     /**
@@ -127,7 +138,7 @@ public abstract class MuiModApi {
      * <p>
      * This is served as a local interaction model, the server will not intersect with this before.
      * Otherwise, initiate this with a network model via
-     * {@link net.minecraftforge.network.NetworkHooks#openScreen(ServerPlayer, MenuProvider, Consumer)}.
+     * {@link ServerPlayer#openMenu(MenuProvider, Consumer)}.
      * <p>
      * Specially, the main {@link Fragment} subclass can implement {@link ICapabilityProvider}
      * to provide capabilities, some of which may be internally handled by the framework.
@@ -274,24 +285,24 @@ public abstract class MuiModApi {
         return code < 128 ? FORMATTING_TABLE[code] : null;
     }
 
-    /**
+    /*
      * Registers a callback to be called when {@link org.lwjgl.glfw.GLFWScrollCallback} is called.
      *
      * @param listener the listener to register
      * @see OnScrollListener
      */
-    public static void addOnScrollListener(@Nonnull OnScrollListener listener) {
+    /*public static void addOnScrollListener(@Nonnull OnScrollListener listener) {
         sOnScrollListeners.addIfAbsent(listener);
-    }
+    }*/
 
-    /**
+    /*
      * Remove a registered listener.
      *
      * @param listener the listener to unregister
      */
-    public static void removeOnScrollListener(@Nonnull OnScrollListener listener) {
+    /*public static void removeOnScrollListener(@Nonnull OnScrollListener listener) {
         sOnScrollListeners.remove(listener);
-    }
+    }*/
 
     /**
      * Registers a callback to be called when {@link Minecraft#setScreen(Screen)} is called.
@@ -350,12 +361,20 @@ public abstract class MuiModApi {
         sOnDebugDumpListeners.remove(listener);
     }
 
+    public static void addOnPreKeyInputListener(@Nonnull OnPreKeyInputListener listener) {
+        sOnPreKeyInputListeners.addIfAbsent(listener);
+    }
+
+    public static void removeOnPreKeyInputListener(@Nonnull OnPreKeyInputListener listener) {
+        sOnPreKeyInputListeners.remove(listener);
+    }
+
     // INTERNAL HOOK
-    public static void dispatchOnScroll(double scrollX, double scrollY) {
+    /*public static void dispatchOnScroll(double scrollX, double scrollY) {
         for (var l : sOnScrollListeners) {
             l.onScroll(scrollX, scrollY);
         }
-    }
+    }*/
 
     // INTERNAL HOOK
     public static void dispatchOnScreenChange(@Nullable Screen oldScreen, @Nullable Screen newScreen) {
@@ -375,6 +394,13 @@ public abstract class MuiModApi {
     public static void dispatchOnDebugDump(@Nonnull PrintWriter writer) {
         for (var l : sOnDebugDumpListeners) {
             l.onDebugDump(writer);
+        }
+    }
+
+    // INTERNAL HOOK
+    public static void dispatchOnPreKeyInput(long window, int keyCode, int scanCode, int action, int mods) {
+        for (var l : sOnPreKeyInputListeners) {
+            l.onPreKeyInput(window, keyCode, scanCode, action, mods);
         }
     }
 }

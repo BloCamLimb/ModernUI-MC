@@ -30,7 +30,7 @@ import javax.annotation.Nonnull;
  * Make your main {@link Fragment} subclass implement this interface,
  * or to use defaults.
  *
- * @see MenuScreenFactory
+ * @see icyllis.modernui.mc.fabric.MenuScreenFactory
  */
 public interface ScreenCallback {
 

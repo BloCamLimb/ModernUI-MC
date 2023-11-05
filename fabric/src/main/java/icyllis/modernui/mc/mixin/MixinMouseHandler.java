@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.mixin;
 
-import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.UIManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
@@ -50,14 +49,14 @@ public class MixinMouseHandler {
     @Final
     private Minecraft minecraft;
 
-    /**
+    /*
      * Capture the horizontal scroll offset
      */
-    @Inject(method = "onScroll", at = @At(value = "INVOKE",
+    /*@Inject(method = "onScroll", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/screens/Screen;mouseScrolled(DDD)Z"))
     private void onScrollCallback(long handle, double xoffset, double yoffset, CallbackInfo ci) {
         MuiModApi.dispatchOnScroll(xoffset, yoffset);
-    }
+    }*/
 
     @Inject(method = "onPress", at = @At("TAIL"))
     private void onMouseButtonPost(long handle, int button, int action, int mods, CallbackInfo ci) {

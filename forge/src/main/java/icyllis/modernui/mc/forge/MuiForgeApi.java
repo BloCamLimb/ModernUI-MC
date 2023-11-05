@@ -36,7 +36,6 @@ import net.minecraft.world.inventory.MenuConstructor;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.event.entity.player.PlayerContainerEvent;
-import net.minecraftforge.network.NetworkHooks;
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
@@ -59,7 +58,7 @@ public final class MuiForgeApi extends MuiModApi {
      * <p>
      * This is served as a local interaction model, the server will not intersect with this before.
      * Otherwise, initiate this with a network model via
-     * {@link net.minecraftforge.network.NetworkHooks#openScreen(ServerPlayer, MenuProvider, Consumer)}.
+     * {@link ServerPlayer#openMenu(MenuProvider, Consumer)}.
      * <p>
      * Specially, the main {@link Fragment} subclass can implement {@link ICapabilityProvider}
      * to provide capabilities, some of which may be internally handled by the framework.
@@ -136,7 +135,7 @@ public final class MuiForgeApi extends MuiModApi {
      * <p>
      * This is served as a client/server interaction model, there must be a running server.
      * <p>
-     * Do not use this, use {@link NetworkHooks#openScreen(ServerPlayer, MenuProvider, Consumer)}
+     * Do not use this, use {@link ServerPlayer#openMenu(MenuProvider, Consumer)}
      * because Modern UI is client-only.
      *
      * @param player   the server player to open the screen for
@@ -158,7 +157,7 @@ public final class MuiForgeApi extends MuiModApi {
      * <p>
      * This is served as a client/server interaction model, there must be a running server.
      * <p>
-     * Do not use this, use {@link NetworkHooks#openScreen(ServerPlayer, MenuProvider, Consumer)}
+     * Do not use this, use {@link ServerPlayer#openMenu(MenuProvider, Consumer)}
      * because Modern UI is client-only.
      *
      * @param player   the server player to open the screen for
@@ -182,7 +181,7 @@ public final class MuiForgeApi extends MuiModApi {
      * <p>
      * This is served as a client/server interaction model, there must be a running server.
      * <p>
-     * Do not use this, use {@link NetworkHooks#openScreen(ServerPlayer, MenuProvider, Consumer)}
+     * Do not use this, use {@link ServerPlayer#openMenu(MenuProvider, Consumer)}
      * because Modern UI is client-only.
      *
      * @param player   the server player to open the screen for
@@ -202,7 +201,7 @@ public final class MuiForgeApi extends MuiModApi {
                         new Exception().fillInStackTrace());
                 return;
             }
-            NetworkHooks.openScreen(p, provider, writer);
+            p.openMenu(provider, writer);
         }
     }
 

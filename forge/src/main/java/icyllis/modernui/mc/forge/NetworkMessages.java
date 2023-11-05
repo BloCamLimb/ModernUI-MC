@@ -29,14 +29,13 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.network.NetworkEvent;
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Internal use.
@@ -49,7 +48,7 @@ public sealed class NetworkMessages extends NetworkHandler {
     static NetworkHandler sNetwork;
 
     NetworkMessages() {
-        super(ModernUIMod.location("network"), "360", true);
+        super(ModernUIMod.location("network"), 390, true);
     }
 
     /*@Deprecated
@@ -89,7 +88,7 @@ public sealed class NetworkMessages extends NetworkHandler {
         @Override
         protected void handleClientMessage(int index,
                                            @Nonnull FriendlyByteBuf payload,
-                                           @Nonnull Supplier<NetworkEvent.Context> source,
+                                           @Nonnull CustomPayloadEvent.Context source,
                                            @Nonnull BlockableEventLoop<?> looper) {
             /*case 0:
                     syncFood(payload, player);
@@ -108,7 +107,7 @@ public sealed class NetworkMessages extends NetworkHandler {
 
         @SuppressWarnings("deprecation")
         private static void openMenu(@Nonnull FriendlyByteBuf payload,
-                                     @Nonnull Supplier<NetworkEvent.Context> source,
+                                     @Nonnull CustomPayloadEvent.Context source,
                                      @Nonnull BlockableEventLoop<?> looper) {
             final int containerId = payload.readVarInt();
             // No barrier, SAFE

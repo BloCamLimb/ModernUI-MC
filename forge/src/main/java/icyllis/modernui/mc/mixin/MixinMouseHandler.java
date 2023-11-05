@@ -25,6 +25,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+@Deprecated
 @Mixin(MouseHandler.class)
 public class MixinMouseHandler {
 
@@ -44,12 +45,12 @@ public class MixinMouseHandler {
                                     boolean flag, int i, boolean[] aboolean, double d0, double d1) {
     }*/
 
-    /**
+    /*
      * Capture the horizontal scroll offset
      */
-    @Inject(method = "onScroll", at = @At(value = "INVOKE",
+    /*@Inject(method = "onScroll", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/screens/Screen;mouseScrolled(DDD)Z"))
     private void onScrollCallback(long handle, double xoffset, double yoffset, CallbackInfo ci) {
         MuiModApi.dispatchOnScroll(xoffset, yoffset);
-    }
+    }*/
 }

@@ -37,7 +37,6 @@ import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nonnull;
 
@@ -54,7 +53,7 @@ final class EventHandler {
             if (event.getSide().isServer() && ((diamond = event.getItemStack().is(Items.DIAMOND))
                     || event.getItemStack().is(Items.EMERALD))) {
                 if (event.getEntity().isShiftKeyDown()) {
-                    NetworkHooks.openScreen((ServerPlayer) event.getEntity(), new MenuProvider() {
+                    ((ServerPlayer) event.getEntity()).openMenu(new MenuProvider() {
                         @Nonnull
                         @Override
                         public Component getDisplayName() {

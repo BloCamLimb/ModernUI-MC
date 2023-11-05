@@ -26,14 +26,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.thread.BlockableEventLoop;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.network.NetworkEvent;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.event.EventNetworkChannel;
+import net.minecraftforge.network.*;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.function.Supplier;
 
 /**
  * This class maintains a channel to {@link NetworkRegistry} that fixes some bugs.
@@ -43,7 +41,7 @@ public class NetworkHandler {
 
     protected final ResourceLocation mName;
 
-    protected final String mProtocol;
+    protected final int mVersion;
     protected final boolean mOptional;
 
     /**
@@ -51,21 +49,21 @@ public class NetworkHandler {
      * you must be careful with the class loading.
      *
      * @param name     the channel name
-     * @param protocol the network protocol
+     * @param version  the network protocol
      * @param optional allow absent or request same protocol?
      */
     public NetworkHandler(@Nonnull ResourceLocation name,
-                          @Nonnull String protocol,
+                          int version,
                           boolean optional) {
         mName = name;
-        mProtocol = protocol;
+        mVersion = version;
         mOptional = optional;
 
-        EventNetworkChannel channel = NetworkRegistry.newEventChannel(
-                name,
-                this::getProtocol,
-                this::tryServerVersionOnClient,
-                this::tryClientVersionOnServer);
+        EventNetworkChannel channel = ChannelBuilder.named(name)
+                .networkProtocolVersion(version)
+                .clientAcceptedVersions(this::tryServerVersionOnClient)
+                .serverAcceptedVersions(this::tryClientVersionOnServer)
+                .eventNetworkChannel();
 
         if (FMLEnvironment.dist.isClient()) {
             channel.addListener(this::onClientCustomPayload);
@@ -78,49 +76,56 @@ public class NetworkHandler {
      *
      * @return the protocol
      */
-    public String getProtocol() {
-        return mProtocol;
+    public int getVersion() {
+        return mVersion;
     }
 
     /**
      * This method will run on client to verify the server protocol that sent by handshake network channel.
      *
-     * @param protocol the protocol of this channel sent from server side
+     * @param version the protocol of this channel sent from server side
      * @return {@code true} to accept the protocol, {@code false} otherwise
      */
-    protected boolean tryServerVersionOnClient(@Nonnull String protocol) {
-        return mOptional && protocol.equals(NetworkRegistry.ABSENT) || mProtocol.equals(protocol);
+    protected boolean tryServerVersionOnClient(Channel.VersionTest.Status status, int version) {
+        return mOptional && status == Channel.VersionTest.Status.MISSING || mVersion == version;
     }
 
     /**
      * This method will run on server to verify the remote client protocol that sent by handshake network channel.
      *
-     * @param protocol the protocol of this channel sent from client side
+     * @param version the protocol of this channel sent from client side
      * @return {@code true} to accept the protocol, {@code false} otherwise
      */
-    protected boolean tryClientVersionOnServer(@Nonnull String protocol) {
-        return mOptional && protocol.equals(NetworkRegistry.ABSENT) || mProtocol.equals(protocol);
+    protected boolean tryClientVersionOnServer(Channel.VersionTest.Status status, int version) {
+        return mOptional && status == Channel.VersionTest.Status.MISSING || mVersion == version;
+    }
+
+    protected void onCustomPayload(@Nonnull CustomPayloadEvent event) {
+        switch (event.getSource().getDirection()) {
+            case PLAY_TO_CLIENT -> onClientCustomPayload(event);
+            case PLAY_TO_SERVER -> onServerCustomPayload(event);
+        }
     }
 
     // server to client
     @OnlyIn(Dist.CLIENT)
-    protected void onClientCustomPayload(@Nonnull NetworkEvent.ServerCustomPayloadEvent event) {
+    protected void onClientCustomPayload(@Nonnull CustomPayloadEvent event) {
         FriendlyByteBuf payload = event.getPayload();
         LocalPlayer currentPlayer = Minecraft.getInstance().player;
         if (payload != null && event.getLoginIndex() == Integer.MAX_VALUE && currentPlayer != null) {
             handleClientMessage(payload.readUnsignedShort(), payload, event.getSource(), Minecraft.getInstance());
         }
-        event.getSource().get().setPacketHandled(true);
+        event.getSource().setPacketHandled(true);
     }
 
     // client to server
-    protected void onServerCustomPayload(@Nonnull NetworkEvent.ClientCustomPayloadEvent event) {
+    protected void onServerCustomPayload(@Nonnull CustomPayloadEvent event) {
         FriendlyByteBuf payload = event.getPayload();
-        ServerPlayer currentPlayer = event.getSource().get().getSender();
+        ServerPlayer currentPlayer = event.getSource().getSender();
         if (payload != null && event.getLoginIndex() == Integer.MAX_VALUE && currentPlayer != null) {
             handleServerMessage(payload.readUnsignedShort(), payload, event.getSource(), currentPlayer.server);
         }
-        event.getSource().get().setPacketHandled(true);
+        event.getSource().setPacketHandled(true);
     }
 
     /**
@@ -131,18 +136,18 @@ public class NetworkHandler {
      * you can also retain the payload to prevent it from being released after this
      * method call. In the latter case, you must manually release the payload.
      * <p>
-     * Note that you should use {@link #getClientPlayer(Supplier)} to get the player.
+     * Note that you should use {@link #getClientPlayer(CustomPayloadEvent.Context)} to get the player.
      *
      * @param index   the message index
      * @param payload the message body
      * @param source  the network event source
      * @param looper  the game event loop
-     * @see #getClientPlayer(Supplier)
+     * @see #getClientPlayer(CustomPayloadEvent.Context)
      */
     @OnlyIn(Dist.CLIENT)
     protected void handleClientMessage(int index,
                                        @Nonnull FriendlyByteBuf payload,
-                                       @Nonnull Supplier<NetworkEvent.Context> source,
+                                       @Nonnull CustomPayloadEvent.Context source,
                                        @Nonnull BlockableEventLoop<?> looper) {
     }
 
@@ -154,7 +159,7 @@ public class NetworkHandler {
      * you can also retain the payload to prevent it from being released after this
      * method call. In the latter case, you must manually release the payload.
      * <p>
-     * Note that you should use {@link #getServerPlayer(Supplier)} to get the player.
+     * Note that you should use {@link #getServerPlayer(CustomPayloadEvent.Context)} to get the player.
      * <p>
      * You should do safety check with player before making changes to the game world.
      * Any player who can join the server may hack the protocol to send packets.
@@ -164,11 +169,11 @@ public class NetworkHandler {
      * @param payload the message body
      * @param source  the network event source
      * @param looper  the game event loop
-     * @see #getServerPlayer(Supplier)
+     * @see #getServerPlayer(CustomPayloadEvent.Context)
      */
     protected void handleServerMessage(int index,
                                        @Nonnull FriendlyByteBuf payload,
-                                       @Nonnull Supplier<NetworkEvent.Context> source,
+                                       @Nonnull CustomPayloadEvent.Context source,
                                        @Nonnull BlockableEventLoop<?> looper) {
     }
 
@@ -179,12 +184,12 @@ public class NetworkHandler {
      *
      * @param source the source of the network event
      * @return the client player, may return null in the future
-     * @see #handleClientMessage(int, FriendlyByteBuf, Supplier, BlockableEventLoop)
+     * @see #handleClientMessage(int, FriendlyByteBuf, CustomPayloadEvent.Context, BlockableEventLoop)
      */
     @Nullable
     @OnlyIn(Dist.CLIENT)
-    public static LocalPlayer getClientPlayer(@Nonnull Supplier<NetworkEvent.Context> source) {
-        return source.get().getNetworkManager().isConnected() ? Minecraft.getInstance().player : null;
+    public static LocalPlayer getClientPlayer(@Nonnull CustomPayloadEvent.Context source) {
+        return source.getConnection().isConnected() ? Minecraft.getInstance().player : null;
     }
 
     /**
@@ -194,11 +199,11 @@ public class NetworkHandler {
      *
      * @param source the source of the network event
      * @return the server player, may return null in the future
-     * @see #handleServerMessage(int, FriendlyByteBuf, Supplier, BlockableEventLoop)
+     * @see #handleServerMessage(int, FriendlyByteBuf, CustomPayloadEvent.Context, BlockableEventLoop)
      */
     @Nullable
-    public static ServerPlayer getServerPlayer(@Nonnull Supplier<NetworkEvent.Context> source) {
-        return source.get().getNetworkManager().isConnected() ? source.get().getSender() : null;
+    public static ServerPlayer getServerPlayer(@Nonnull CustomPayloadEvent.Context source) {
+        return source.getConnection().isConnected() ? source.getSender() : null;
     }
 
     /**

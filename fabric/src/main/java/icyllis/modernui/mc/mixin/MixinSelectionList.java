@@ -61,7 +61,7 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
      * @reason Smooth scrolling
      */
     @Overwrite
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         if (scrollY != 0) {
             if (modernUI_MC$mScrollController != null) {
                 modernUI_MC$mScrollController.setMaxScroll(getMaxScroll());

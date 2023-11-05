@@ -55,7 +55,7 @@ public abstract class MixinEditBox {
     private String value;
 
     @Shadow
-    private int frame;
+    private long focusedTime;
 
     @Unique
     private WordIterator modernUI_MC$wordIterator;
@@ -71,7 +71,7 @@ public abstract class MixinEditBox {
      */
     @Inject(method = "setCursorPosition", at = @At("RETURN"))
     public void onSetCursorPosition(int pos, CallbackInfo ci) {
-        frame = 0;
+        focusedTime = Util.getMillis();
     }
 
     @Inject(method = "getCursorPos", at = @At("HEAD"), cancellable = true)

@@ -147,17 +147,20 @@ final class SimpleScreen extends Screen implements MuiScreen, ICapabilityProvide
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+        mHost.onScroll(deltaX, deltaY);
         return true;
     }
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        mHost.onKeyPress(keyCode, scanCode, modifiers);
         return false;
     }
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        mHost.onKeyRelease(keyCode, scanCode, modifiers);
         return false;
     }
 

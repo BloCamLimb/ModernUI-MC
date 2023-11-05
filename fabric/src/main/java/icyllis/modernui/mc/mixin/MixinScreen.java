@@ -46,7 +46,7 @@ public class MixinScreen {
     protected Minecraft minecraft;*/
 
     @Redirect(
-            method = "renderBackground",
+            method = "renderTransparentBackground",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/gui/GuiGraphics;fillGradient(IIIIII)V"

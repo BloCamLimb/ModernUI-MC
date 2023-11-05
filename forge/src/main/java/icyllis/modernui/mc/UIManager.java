@@ -39,6 +39,8 @@ import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.lifecycle.*;
+import icyllis.modernui.mc.testforge.TestPauseFragment;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.*;
 import icyllis.modernui.view.*;
 import icyllis.modernui.view.menu.ContextMenuBuilder;
@@ -168,9 +170,14 @@ public abstract class UIManager implements LifecycleOwner {
     private final Runnable mCommitCharInput = this::commitCharInput;
 
     protected UIManager() {
-        MuiModApi.addOnScrollListener(this::onScroll);
+        //MuiModApi.addOnScrollListener(this::onScroll);
         MuiModApi.addOnScreenChangeListener(this::onScreenChange);
         MuiModApi.addOnWindowResizeListener((width, height, guiScale, oldGuiScale) -> resize());
+        MuiModApi.addOnPreKeyInputListener((window, keyCode, scanCode, action, mods) -> {
+            if (window == minecraft.getWindow().getWindow()) {
+                onPreKeyInput(keyCode, scanCode, action, mods);
+            }
+        });
 
         mUiThread = new Thread(this::run, "UI thread");
         mUiThread.start();
@@ -458,7 +465,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     // Hook method, DO NOT CALL
-    private void onScroll(double scrollX, double scrollY) {
+    public void onScroll(double scrollX, double scrollY) {
         if (mScreen != null) {
             final long now = Core.timeNanos();
             final Window window = mWindow;
@@ -510,7 +517,64 @@ public abstract class UIManager implements LifecycleOwner {
         }
     }
 
-    public void onPostKeyInput(int key, int scanCode, int action, int mods) {
+    public void onKeyPress(int keyCode, int scanCode, int mods) {
+        KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), KeyEvent.ACTION_DOWN, keyCode, 0,
+                mods, scanCode, 0);
+        mRoot.enqueueInputEvent(keyEvent);
+    }
+
+    public void onKeyRelease(int keyCode, int scanCode, int mods) {
+        KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), KeyEvent.ACTION_UP, keyCode, 0,
+                mods, scanCode, 0);
+        mRoot.enqueueInputEvent(keyEvent);
+    }
+
+    protected void onPreKeyInput(int keyCode, int scanCode, int action, int mods) {
+        if (!Screen.hasControlDown() || !Screen.hasShiftDown() || !ModernUIMod.isDeveloperMode()) {
+            return;
+        }
+        if (action == GLFW_PRESS) {
+            switch (keyCode) {
+                case GLFW_KEY_Y -> takeScreenshot();
+                //case GLFW_KEY_H -> open(new TestFragment());
+                case GLFW_KEY_J -> open(new TestPauseFragment());
+                case GLFW_KEY_U -> {
+                    mClearNextMainTarget = true;
+                }
+                case GLFW_KEY_N -> mDecor.postInvalidate();
+                case GLFW_KEY_P -> dump();
+                case GLFW_KEY_M -> changeRadialBlur();
+                case GLFW_KEY_T -> {
+                    /*String text = "\u09b9\u09cd\u09af\u09be\n\u09b2\u09cb" + ChatFormatting.RED + "\uD83E\uDD14" +
+                            ChatFormatting.BOLD + "\uD83E\uDD14\uD83E\uDD14";
+                    for (int i = 1; i <= 10; i++) {
+                        float width = i * 5;
+                        int index = ModernStringSplitter.breakText(text, width, Style.EMPTY, true);
+                        LOGGER.info("Break forwards: width {} index:{}", width, index);
+                        index = ModernStringSplitter.breakText(text, width, Style.EMPTY, false);
+                        LOGGER.info("Break backwards: width {} index:{}", width, index);
+                    }
+                    LOGGER.info(TextLayoutEngine.getInstance().lookupVanillaLayout(text));*/
+                }
+                case GLFW_KEY_G ->
+                /*if (minecraft.screen == null && minecraft.isLocalServer() &&
+                        minecraft.getSingleplayerServer() != null && !minecraft.getSingleplayerServer().isPublished()) {
+                    start(new TestPauseUI());
+                }*/
+                /*minecraft.getLanguageManager().getLanguages().forEach(l ->
+                        ModernUI.LOGGER.info(MARKER, "Locale {} RTL {}", l.getCode(), ULocale.forLocale(l
+                        .getJavaLocale()).isRightToLeft()));*/
+                        GlyphManager.getInstance().debug();
+                case GLFW_KEY_V -> {
+                    if (ModernUIClient.isTextEngineEnabled()) {
+                        //TextLayoutEngine.getInstance().dumpEmojiAtlas();
+                        TextLayoutEngine.getInstance().dumpBitmapFonts();
+                    }
+                }
+                case GLFW_KEY_O -> mNoRender = !mNoRender;
+                case GLFW_KEY_F -> System.gc();
+            }
+        }
     }
 
     @SuppressWarnings("resource")

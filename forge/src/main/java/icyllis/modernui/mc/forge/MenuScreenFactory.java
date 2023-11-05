@@ -56,7 +56,7 @@ import java.util.function.Consumer;
  * {@link net.minecraftforge.common.extensions.IForgeMenuType#create(IContainerFactory)}
  * to create your registry entries when the register event is fired.
  *
- * @see net.minecraftforge.network.NetworkHooks#openScreen(ServerPlayer, MenuProvider, Consumer)
+ * @see ServerPlayer#openMenu(MenuProvider, Consumer)
  */
 @FunctionalInterface
 public interface MenuScreenFactory<T extends AbstractContainerMenu> extends

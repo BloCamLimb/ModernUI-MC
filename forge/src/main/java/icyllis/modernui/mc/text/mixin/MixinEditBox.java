@@ -21,6 +21,7 @@ package icyllis.modernui.mc.text.mixin;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.mc.text.*;
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -83,7 +84,7 @@ public abstract class MixinEditBox extends AbstractWidget {
     private String value;
 
     @Shadow
-    private int frame;
+    private long focusedTime;
 
     @Shadow
     private boolean bordered;
@@ -135,7 +136,8 @@ public abstract class MixinEditBox extends AbstractWidget {
         final int clampedViewHighlightPos = Mth.clamp(highlightPos - displayPos, 0, viewText.length());
 
         final boolean cursorInRange = viewCursorPos >= 0 && viewCursorPos <= viewText.length();
-        final boolean cursorVisible = isFocused() && ((frame / 10) & 1) == 0 && cursorInRange;
+        final boolean cursorVisible =
+                isFocused() && (((Util.getMillis() - focusedTime) / 500) & 1) == 0 && cursorInRange;
 
         final int baseX = bordered ? getX() + 4 : getX();
         final int baseY = bordered ? getY() + (height - 8) / 2 : getY();

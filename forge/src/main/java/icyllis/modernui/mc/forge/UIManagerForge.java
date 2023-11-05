@@ -23,15 +23,11 @@ import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.lifecycle.LifecycleOwner;
 import icyllis.modernui.mc.ScreenCallback;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessNativeImage;
-import icyllis.modernui.mc.testforge.TestPauseFragment;
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.TextUtils;
-import icyllis.modernui.view.KeyEvent;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -177,70 +173,20 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         super.onPostMouseInput(event.getButton(), event.getAction(), event.getModifiers());
     }
 
-    @SubscribeEvent
-    void onPostKeyInput(@Nonnull InputEvent.Key event) {
-        if (mScreen != null) {
-            int action = event.getAction() == GLFW_RELEASE ? KeyEvent.ACTION_UP : KeyEvent.ACTION_DOWN;
-            KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), action, event.getKey(), 0,
-                    event.getModifiers(), event.getScanCode(), 0);
-            mRoot.enqueueInputEvent(keyEvent);
-        }
-        if (event.getAction() == GLFW_PRESS) {
+    @Override
+    protected void onPreKeyInput(int keyCode, int scanCode, int action, int mods) {
+        if (action == GLFW_PRESS) {
             if (minecraft.screen == null ||
                     minecraft.screen.shouldCloseOnEsc() ||
                     minecraft.screen instanceof TitleScreen) {
-                InputConstants.Key key = InputConstants.getKey(event.getKey(), event.getScanCode());
+                InputConstants.Key key = InputConstants.getKey(keyCode, scanCode);
                 if (OPEN_CENTER_KEY.isActiveAndMatches(key)) {
                     open(new CenterFragment2());
                     return;
                 }
             }
         }
-        if (!Screen.hasControlDown() || !Screen.hasShiftDown() || !ModernUIMod.isDeveloperMode()) {
-            return;
-        }
-        if (event.getAction() == GLFW_PRESS) {
-            switch (event.getKey()) {
-                case GLFW_KEY_Y -> takeScreenshot();
-                //case GLFW_KEY_H -> open(new TestFragment());
-                case GLFW_KEY_J -> open(new TestPauseFragment());
-                case GLFW_KEY_U -> {
-                    mClearNextMainTarget = true;
-                }
-                case GLFW_KEY_N -> mDecor.postInvalidate();
-                case GLFW_KEY_P -> dump();
-                case GLFW_KEY_M -> changeRadialBlur();
-                case GLFW_KEY_T -> {
-                    /*String text = "\u09b9\u09cd\u09af\u09be\n\u09b2\u09cb" + ChatFormatting.RED + "\uD83E\uDD14" +
-                            ChatFormatting.BOLD + "\uD83E\uDD14\uD83E\uDD14";
-                    for (int i = 1; i <= 10; i++) {
-                        float width = i * 5;
-                        int index = ModernStringSplitter.breakText(text, width, Style.EMPTY, true);
-                        LOGGER.info("Break forwards: width {} index:{}", width, index);
-                        index = ModernStringSplitter.breakText(text, width, Style.EMPTY, false);
-                        LOGGER.info("Break backwards: width {} index:{}", width, index);
-                    }
-                    LOGGER.info(TextLayoutEngine.getInstance().lookupVanillaLayout(text));*/
-                }
-                case GLFW_KEY_G ->
-                /*if (minecraft.screen == null && minecraft.isLocalServer() &&
-                        minecraft.getSingleplayerServer() != null && !minecraft.getSingleplayerServer().isPublished()) {
-                    start(new TestPauseUI());
-                }*/
-                /*minecraft.getLanguageManager().getLanguages().forEach(l ->
-                        ModernUI.LOGGER.info(MARKER, "Locale {} RTL {}", l.getCode(), ULocale.forLocale(l
-                        .getJavaLocale()).isRightToLeft()));*/
-                        GlyphManager.getInstance().debug();
-                case GLFW_KEY_V -> {
-                    if (ModernUIClient.isTextEngineEnabled()) {
-                        //TextLayoutEngine.getInstance().dumpEmojiAtlas();
-                        TextLayoutEngine.getInstance().dumpBitmapFonts();
-                    }
-                }
-                case GLFW_KEY_O -> mNoRender = !mNoRender;
-                case GLFW_KEY_F -> System.gc();
-            }
-        }
+        super.onPreKeyInput(keyCode, scanCode, action, mods);
     }
 
     @SuppressWarnings("unchecked")
