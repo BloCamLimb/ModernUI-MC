@@ -9,8 +9,6 @@
     "AccessFontManager",
     "AccessRenderBuffers",
     "MixinBidiReorder",
-    "MixinChatFormatting",
-    "MixinChatScreen",
     "MixinClientLanguage",
     "MixinCommandSuggestions",
     "MixinEditBox",
@@ -20,6 +18,6 @@
     "MixinIngameGui",
     "MixinLanguage",
     "MixinLevelRenderer",
-    "MixinRenderSystem"
+    "MixinSignEditScreen"
   ]
 }

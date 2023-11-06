@@ -29,11 +29,15 @@ import java.util.Set;
 public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     private boolean mDisableSmoothScrolling;
+    private boolean mDisableEnhancedTextField;
 
     @Override
     public void onLoad(String mixinPackage) {
         mDisableSmoothScrolling = Boolean.parseBoolean(
-                ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
+                ModernUIForge.Client.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
+        );
+        mDisableEnhancedTextField = Boolean.parseBoolean(
+                ModernUIForge.Client.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD)
         );
     }
 
@@ -49,8 +53,13 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
             return false;
         }*/
         if (mDisableSmoothScrolling) {
-            return !mixinClassName.equals("icyllis.modernui.mc.forge.mixin.MixinScrollPanel") &&
-                    !mixinClassName.equals("icyllis.modernui.mc.forge.mixin.MixinSelectionList");
+            return !mixinClassName.equals("icyllis.modernui.mc.mixin.MixinScrollPanel") &&
+                    !mixinClassName.equals("icyllis.modernui.mc.mixin.MixinSelectionList");
+        }
+        if (mDisableEnhancedTextField) {
+            return !mixinClassName.equals("icyllis.modernui.mc.mixin.MixinEditBox") &&
+                    !mixinClassName.equals("icyllis.modernui.mc.mixin.MixinStringSplitter") &&
+                    !mixinClassName.equals("icyllis.modernui.mc.mixin.MixinTextFieldHelper");
         }
         if (true/*(mLevel & ModernUIForge.BOOTSTRAP_ENABLE_DEBUG_INJECTORS) == 0*/) {
             return !mixinClassName.endsWith("DBG");

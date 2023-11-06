@@ -29,13 +29,13 @@ import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.text.FontFamily;
-import icyllis.modernui.mc.forge.ui.*;
-import icyllis.modernui.text.InputFilter;
-import icyllis.modernui.text.Typeface;
+import icyllis.modernui.mc.forge.ui.FourColorPicker;
+import icyllis.modernui.mc.forge.ui.ThemeControl;
+import icyllis.modernui.text.*;
 import icyllis.modernui.text.method.DigitsInputFilter;
+import icyllis.modernui.text.style.ForegroundColorSpan;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
-import icyllis.modernui.viewpager.widget.*;
 import icyllis.modernui.widget.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
@@ -55,7 +55,8 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 public class PreferencesFragment extends Fragment {
 
     LinearLayout mTooltipCategory;
-    LinearLayout mTextEngineCategory;
+    LinearLayout mTextLayoutCategory;
+    LinearLayout mTextRenderingCategory;
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -269,22 +270,12 @@ public class PreferencesFragment extends Fragment {
                                     }
                                 }
                             }
-                            v.setText(String.join("\n", result));
+                            replaceText(v, String.join("\n", result));
                             if (!Config.CLIENT.mFallbackFontFamilyList.get().equals(result)) {
                                 Config.CLIENT.mFallbackFontFamilyList.set(result);
                                 Config.CLIENT.saveAsync();
-                                reloadMainTypeface()
-                                        .whenCompleteAsync((oldTypeface, throwable) -> {
-                                            if (throwable == null) {
-                                                refreshTextViewsTypeface(
-                                                        UIManager.getInstance().getDecorView(),
-                                                        oldTypeface
-                                                );
-                                                Toast.makeText(context,
-                                                        I18n.get("gui.modernui.font_reloaded"),
-                                                        Toast.LENGTH_SHORT).show();
-                                            }
-                                        }, Core.getUiThreadExecutor());
+                                reloadDefaultTypeface(view.getContext(), () -> {
+                                });
                             }
                         }
                     });
@@ -308,6 +299,17 @@ public class PreferencesFragment extends Fragment {
                     ModernUIText.CONFIG.mUseVanillaFont,
                     ModernUIText.CONFIG::saveAndReloadAsync));*/
 
+            {
+                var option = createBooleanOption(context, "modernui.center.font.colorEmoji",
+                        Config.CLIENT.mUseColorEmoji, () -> {
+                            Config.CLIENT.saveAsync();
+                            reloadDefaultTypeface(context, () -> {
+                            });
+                        });
+                option.setTooltipText(I18n.get("modernui.center.font.colorEmoji_desc"));
+                category.addView(option);
+            }
+
             category.addView(createBooleanOption(context, "modernui.center.font.antiAliasing",
                     Config.CLIENT.mAntiAliasing, Config.CLIENT::saveAndReloadAsync));
 
@@ -317,7 +319,7 @@ public class PreferencesFragment extends Fragment {
             content.addView(category);
         }
 
-        content.setDividerDrawable(new DividerDrawable(content));
+        content.setDividerDrawable(ThemeControl.makeDivider(content));
         content.setDividerPadding(content.dp(8));
         content.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
 
@@ -336,6 +338,8 @@ public class PreferencesFragment extends Fragment {
         // Screen
         {
             var list = createCategoryList(context, "modernui.center.category.screen");
+
+            list.addView(createGuiScaleOption(context));
 
             list.addView(createColorOpacityOption(context, "modernui.center.screen.backgroundOpacity",
                     Config.CLIENT.mBackgroundColor, saveFn));
@@ -401,15 +405,42 @@ public class PreferencesFragment extends Fragment {
             }
 
             {
+                var option = createBooleanOption(context, "modernui.center.text.emojiShortcodes",
+                        Config.CLIENT.mEmojiShortcodes, Config.CLIENT::saveAsync);
+                option.setTooltipText(I18n.get("modernui.center.text.emojiShortcodes_desc"));
+                list.addView(option);
+            }
+
+            {
                 var option = createSwitchLayout(context, "modernui.center.extension.smoothScrolling");
                 option.setTooltipText(I18n.get("modernui.center.extension.smoothScrolling_desc"));
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
                 button.setChecked(!Boolean.parseBoolean(
-                        ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
+                        ModernUIForge.Client.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
                 ));
                 button.setOnCheckedChangeListener((__, checked) -> {
-                    ModernUIForge.setBootstrapProperty(
+                    ModernUIForge.Client.setBootstrapProperty(
                             ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING,
+                            Boolean.toString(!checked)
+                    );
+                    Toast.makeText(__.getContext(),
+                                    I18n.get("gui.modernui.restart_to_work"),
+                                    Toast.LENGTH_SHORT)
+                            .show();
+                });
+                list.addView(option);
+            }
+
+            {
+                var option = createSwitchLayout(context, "modernui.center.text.enhancedTextField");
+                option.setTooltipText(I18n.get("modernui.center.text.enhancedTextField_desc"));
+                var button = option.<SwitchButton>requireViewById(R.id.button1);
+                button.setChecked(!Boolean.parseBoolean(
+                        ModernUIForge.Client.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD)
+                ));
+                button.setOnCheckedChangeListener((__, checked) -> {
+                    ModernUIForge.Client.setBootstrapProperty(
+                            ModernUIForge.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD,
                             Boolean.toString(!checked)
                     );
                     Toast.makeText(__.getContext(),
@@ -443,10 +474,11 @@ public class PreferencesFragment extends Fragment {
 
             {
                 var option = createSwitchLayout(context, "modernui.center.text.textEngine");
+                option.setTooltipText(I18n.get("modernui.center.text.textEngine_desc"));
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(ModernUIForge.isTextEngineEnabled());
+                button.setChecked(ModernUIForge.Client.isTextEngineEnabled());
                 button.setOnCheckedChangeListener((view, checked) -> {
-                    ModernUIForge.setBootstrapProperty(
+                    ModernUIForge.Client.setBootstrapProperty(
                             ModernUIForge.BOOTSTRAP_DISABLE_TEXT_ENGINE,
                             Boolean.toString(!checked)
                     );
@@ -455,14 +487,18 @@ public class PreferencesFragment extends Fragment {
                                     Toast.LENGTH_SHORT)
                             .show();
                     if (checked) {
-                        if (mTextEngineCategory == null) {
-                            mTextEngineCategory = createTextEngineCategory(view.getContext());
-                            content.addView(mTextEngineCategory);
+                        if (mTextLayoutCategory == null) {
+                            mTextLayoutCategory = createTextLayoutCategory(view.getContext());
+                            mTextRenderingCategory = createTextRenderingCategory(view.getContext());
+                            content.addView(mTextLayoutCategory);
+                            content.addView(mTextRenderingCategory);
                         } else {
-                            mTextEngineCategory.setVisibility(View.VISIBLE);
+                            mTextLayoutCategory.setVisibility(View.VISIBLE);
+                            mTextRenderingCategory.setVisibility(View.VISIBLE);
                         }
-                    } else if (mTextEngineCategory != null) {
-                        mTextEngineCategory.setVisibility(View.GONE);
+                    } else if (mTextLayoutCategory != null) {
+                        mTextLayoutCategory.setVisibility(View.GONE);
+                        mTextRenderingCategory.setVisibility(View.GONE);
                     }
                 });
                 list.addView(option);
@@ -480,12 +516,15 @@ public class PreferencesFragment extends Fragment {
             content.addView(mTooltipCategory);
         }
 
-        if (ModernUIForge.isTextEngineEnabled()) {
-            mTextEngineCategory = createTextEngineCategory(context);
-            content.addView(mTextEngineCategory);
+        if (ModernUIForge.Client.isTextEngineEnabled()) {
+            mTextLayoutCategory = createTextLayoutCategory(context);
+            content.addView(mTextLayoutCategory);
+
+            mTextRenderingCategory = createTextRenderingCategory(context);
+            content.addView(mTextRenderingCategory);
         }
 
-        content.setDividerDrawable(new DividerDrawable(content));
+        content.setDividerDrawable(ThemeControl.makeDivider(content));
         content.setDividerPadding(content.dp(8));
         content.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
 
@@ -496,9 +535,6 @@ public class PreferencesFragment extends Fragment {
         var category = createCategoryList(context, "modernui.center.category.tooltip");
 
         Runnable saveFn = Config.CLIENT::saveAndReloadAsync;
-
-        category.addView(createBooleanOption(context, "modernui.center.tooltip.roundedShapes",
-                Config.CLIENT.mRoundedTooltip, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.tooltip.centerTitle",
                 Config.CLIENT.mCenterTooltipTitle, saveFn));
@@ -520,7 +556,7 @@ public class PreferencesFragment extends Fragment {
             final Button title;
             {
                 title = new Button(context);
-                title.setText(I18n.get("modernui.center.tooltip.borderColor"));
+                title.setText(I18n.get("modernui.center.tooltip.borderStyle"));
                 title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                 title.setTextSize(14);
 
@@ -541,116 +577,110 @@ public class PreferencesFragment extends Fragment {
         return category;
     }
 
-    public static LinearLayout createTextEngineCategory(Context context) {
-        var category = createCategoryList(context, "modernui.center.category.text");
+    public static LinearLayout createTextLayoutCategory(Context context) {
+        var category = createCategoryList(context, "modernui.center.category.textLayout");
 
-        Runnable saveFn = ModernUIText.CONFIG::saveAndReloadAsync;
-
-        {
-            var option = createBooleanOption(context, "modernui.center.text.textShadersInWorld",
-                    ModernUIText.CONFIG.mUseTextShadersInWorld, saveFn);
-            option.setTooltipText(I18n.get("modernui.center.text.textShadersInWorld_desc"));
-            category.addView(option);
-        }
-
-        {
-            var option = createBooleanOption(context, "modernui.center.text.allowSDFTextIn2D",
-                    ModernUIText.CONFIG.mAllowSDFTextIn2D, saveFn);
-            option.setTooltipText(I18n.get("modernui.center.text.allowSDFTextIn2D_desc"));
-            category.addView(option);
-        }
-
-        {
-            var option = createBooleanOption(context, "modernui.center.text.smartSDFShaders",
-                    ModernUIText.CONFIG.mSmartSDFShaders, saveFn);
-            option.setTooltipText(I18n.get("modernui.center.text.smartSDFShaders_desc"));
-            category.addView(option);
-        }
-
-        {
-            var option = createBooleanOption(context, "modernui.center.text.computeDeviceFontSize",
-                    ModernUIText.CONFIG.mComputeDeviceFontSize, saveFn);
-            option.setTooltipText(I18n.get("modernui.center.text.computeDeviceFontSize_desc"));
-            category.addView(option);
-        }
+        Runnable saveFn = Config.TEXT::saveAndReloadAsync;
 
         {
             var option = createSpinnerOption(context, "modernui.center.text.defaultFontBehavior",
-                    ModernUIText.Config.DefaultFontBehavior.values(),
-                    ModernUIText.CONFIG.mDefaultFontBehavior, saveFn);
+                    Config.Text.DefaultFontBehavior.values(),
+                    Config.TEXT.mDefaultFontBehavior, saveFn);
             option.getChildAt(0)
                     .setTooltipText(I18n.get("modernui.center.text.defaultFontBehavior_desc"));
             category.addView(option);
         }
 
-        {
-            var option = createBooleanOption(context, "modernui.center.text.colorEmoji",
-                    ModernUIText.CONFIG.mUseColorEmoji, saveFn);
-            option.setTooltipText(I18n.get("modernui.center.text.colorEmoji_desc"));
-            category.addView(option);
-        }
-
-        {
-            var option = createBooleanOption(context, "modernui.center.text.emojiShortcodes",
-                    ModernUIText.CONFIG.mEmojiShortcodes, saveFn);
-            option.setTooltipText(I18n.get("modernui.center.text.emojiShortcodes_desc"));
-            category.addView(option);
-        }
-
         category.addView(createSpinnerOption(context, "modernui.center.text.bidiHeuristicAlgo",
-                ModernUIText.Config.TextDirection.values(),
-                ModernUIText.CONFIG.mTextDirection,
+                Config.Text.TextDirection.values(),
+                Config.TEXT.mTextDirection,
                 saveFn));
-
-        category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
-                ModernUIText.CONFIG.mAllowShadow, saveFn));
-
-        category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
-                ModernUIText.Config.SHADOW_OFFSET_MIN, ModernUIText.Config.SHADOW_OFFSET_MAX,
-                5, ModernUIText.CONFIG.mShadowOffset, 10, saveFn));
-
-        category.addView(createBooleanOption(context, "modernui.center.text.allowAsyncLayout",
-                ModernUIText.CONFIG.mAllowAsyncLayout, saveFn));
 
         {
             var option = createSpinnerOption(context, "modernui.center.text.lineBreakStyle",
-                    ModernUIText.Config.LineBreakStyle.values(),
-                    ModernUIText.CONFIG.mLineBreakStyle, saveFn);
+                    Config.Text.LineBreakStyle.values(),
+                    Config.TEXT.mLineBreakStyle, saveFn);
             option.getChildAt(0)
                     .setTooltipText(I18n.get("modernui.center.text.lineBreakStyle_desc"));
             category.addView(option);
         }
 
         category.addView(createSpinnerOption(context, "modernui.center.text.lineBreakWordStyle",
-                ModernUIText.Config.LineBreakWordStyle.values(),
-                ModernUIText.CONFIG.mLineBreakWordStyle, saveFn));
+                Config.Text.LineBreakWordStyle.values(),
+                Config.TEXT.mLineBreakWordStyle, saveFn));
+
+        category.addView(createBooleanOption(context, "modernui.center.text.allowAsyncLayout",
+                Config.TEXT.mAllowAsyncLayout, saveFn));
 
         {
             var option = createBooleanOption(context, "modernui.center.text.useComponentCache",
-                    ModernUIText.CONFIG.mUseComponentCache, saveFn);
+                    Config.TEXT.mUseComponentCache, saveFn);
             option.setTooltipText(I18n.get("modernui.center.text.useComponentCache_desc"));
             category.addView(option);
         }
 
         category.addView(createBooleanOption(context, "modernui.center.text.fixedResolution",
-                ModernUIText.CONFIG.mFixedResolution, saveFn));
+                Config.TEXT.mFixedResolution, saveFn));
 
         category.addView(createFloatOption(context, "modernui.center.text.baseFontSize",
-                ModernUIText.Config.BASE_FONT_SIZE_MIN, ModernUIText.Config.BASE_FONT_SIZE_MAX,
-                5, ModernUIText.CONFIG.mBaseFontSize, 10, saveFn));
-
-        category.addView(createFloatOption(context, "modernui.center.text.baselineShift",
-                ModernUIText.Config.BASELINE_MIN, ModernUIText.Config.BASELINE_MAX,
-                5, ModernUIText.CONFIG.mBaselineShift, 10, saveFn));
-
-        category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
-                ModernUIText.Config.OUTLINE_OFFSET_MIN, ModernUIText.Config.OUTLINE_OFFSET_MAX,
-                5, ModernUIText.CONFIG.mOutlineOffset, 10, saveFn));
+                Config.Text.BASE_FONT_SIZE_MIN, Config.Text.BASE_FONT_SIZE_MAX,
+                5, Config.TEXT.mBaseFontSize, 10, saveFn));
 
         category.addView(createIntegerOption(context, "modernui.center.text.cacheLifespan",
-                ModernUIText.Config.LIFESPAN_MIN, ModernUIText.Config.LIFESPAN_MAX,
+                Config.Text.LIFESPAN_MIN, Config.Text.LIFESPAN_MAX,
                 2, 1,
-                ModernUIText.CONFIG.mCacheLifespan, saveFn));
+                Config.TEXT.mCacheLifespan, saveFn));
+
+        return category;
+    }
+
+    public static LinearLayout createTextRenderingCategory(Context context) {
+        var category = createCategoryList(context, "modernui.center.category.textRendering");
+
+        Runnable saveFn = Config.TEXT::saveAndReloadAsync;
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.textShadersInWorld",
+                    Config.TEXT.mUseTextShadersInWorld, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.textShadersInWorld_desc"));
+            category.addView(option);
+        }
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.allowSDFTextIn2D",
+                    Config.TEXT.mAllowSDFTextIn2D, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.allowSDFTextIn2D_desc"));
+            category.addView(option);
+        }
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.smartSDFShaders",
+                    Config.TEXT.mSmartSDFShaders, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.smartSDFShaders_desc"));
+            category.addView(option);
+        }
+
+        {
+            var option = createBooleanOption(context, "modernui.center.text.computeDeviceFontSize",
+                    Config.TEXT.mComputeDeviceFontSize, saveFn);
+            option.setTooltipText(I18n.get("modernui.center.text.computeDeviceFontSize_desc"));
+            category.addView(option);
+        }
+
+        category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
+                Config.TEXT.mAllowShadow, saveFn));
+
+        category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
+                Config.Text.SHADOW_OFFSET_MIN, Config.Text.SHADOW_OFFSET_MAX,
+                5, Config.TEXT.mShadowOffset, 10, saveFn));
+
+        category.addView(createFloatOption(context, "modernui.center.text.baselineShift",
+                Config.Text.BASELINE_MIN, Config.Text.BASELINE_MAX,
+                5, Config.TEXT.mBaselineShift, 10, saveFn));
+
+        category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
+                Config.Text.OUTLINE_OFFSET_MIN, Config.Text.OUTLINE_OFFSET_MAX,
+                5, Config.TEXT.mOutlineOffset, 10, saveFn));
 
         return category;
     }
@@ -790,6 +820,108 @@ public class PreferencesFragment extends Fragment {
         return option;
     }
 
+    private static LinearLayout createGuiScaleOption(Context context) {
+        var layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.HORIZONTAL);
+        layout.setHorizontalGravity(Gravity.START);
+
+        final int dp3 = layout.dp(3);
+        final int dp6 = layout.dp(6);
+        {
+            var title = new TextView(context);
+            title.setText(I18n.get("options.guiScale"));
+            title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+            title.setTextSize(14);
+
+            var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
+            params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
+            layout.addView(title, params);
+        }
+
+        var slider = new SeekBar(context);
+        {
+            slider.setClickable(true);
+            var params = new LinearLayout.LayoutParams(slider.dp(200), WRAP_CONTENT);
+            params.gravity = Gravity.CENTER_VERTICAL;
+            layout.addView(slider, params);
+        }
+
+        var tv = new TextView(context);
+        {
+            tv.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+            tv.setTextSize(14);
+            tv.setPadding(dp3, 0, dp3, 0);
+            var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+            params.gravity = Gravity.CENTER_VERTICAL;
+            layout.addView(tv, params);
+        }
+
+        int curValue = Minecraft.getInstance().options.guiScale().get();
+        tv.setText(guiScaleToString(curValue));
+        tv.setMinWidth(slider.dp(50));
+
+        slider.setMax(MuiForgeApi.MAX_GUI_SCALE);
+        slider.setProgress(curValue);
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                int newValue = seekBar.getProgress();
+                tv.setText(guiScaleToString(newValue));
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                int newValue = seekBar.getProgress();
+                Core.executeOnMainThread(() -> {
+                    Minecraft minecraft = Minecraft.getInstance();
+                    minecraft.options.guiScale().set(newValue);
+                    // ensure it's applied
+                    if ((int) minecraft.getWindow().getGuiScale() !=
+                            minecraft.getWindow().calculateScale(newValue, false)) {
+                        minecraft.resizeDisplay();
+                    }
+                    minecraft.options.save();
+                });
+                tv.setText(guiScaleToString(newValue));
+            }
+        });
+
+        var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+        params.gravity = Gravity.CENTER;
+        params.setMargins(dp6, 0, dp6, 0);
+        layout.setLayoutParams(params);
+
+        return layout;
+    }
+
+    private static CharSequence guiScaleToString(int value) {
+        int r = MuiForgeApi.calcGuiScales();
+        if (value == 0) { // auto
+            int auto = r >> 4 & 0xf;
+            return "A (" + auto + ")";
+        } else {
+            String valueString = Integer.toString(value);
+            int min = r >> 8 & 0xf;
+            int max = r & 0xf;
+            if (value < min || value > max) {
+                final String hint;
+                if (value < min) {
+                    hint = (" (" + min + ")");
+                } else {
+                    hint = (" (" + max + ")");
+                }
+                var spannableString = new SpannableString(valueString + hint);
+                spannableString.setSpan(
+                        new ForegroundColorSpan(0xFFFF5555),
+                        0, spannableString.length(),
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                );
+                return spannableString;
+            }
+            return valueString;
+        }
+    }
+
     @NonNull
     public static LinearLayout createInputBox(Context context, String name) {
         var layout = new LinearLayout(context);
@@ -866,7 +998,7 @@ public class PreferencesFragment extends Fragment {
                 EditText v = (EditText) view;
                 int newValue = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
                         minValue, maxValue);
-                v.setText(Integer.toString(newValue));
+                replaceText(v, Integer.toString(newValue));
                 if (newValue != getter.get()) {
                     setter.accept(newValue);
                     int curProgress = (newValue - minValue) / stepSize;
@@ -883,7 +1015,7 @@ public class PreferencesFragment extends Fragment {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 int newValue = seekBar.getProgress() * stepSize + minValue;
-                input.setText(Integer.toString(newValue));
+                replaceText(input, Integer.toString(newValue));
             }
 
             @Override
@@ -891,7 +1023,7 @@ public class PreferencesFragment extends Fragment {
                 int newValue = seekBar.getProgress() * stepSize + minValue;
                 if (newValue != getter.get()) {
                     setter.accept(newValue);
-                    input.setText(Integer.toString(newValue));
+                    replaceText(input, Integer.toString(newValue));
                     saveFn.run();
                 }
             }
@@ -907,7 +1039,8 @@ public class PreferencesFragment extends Fragment {
             List<? extends String> colors = config.get();
             if (colors != null && !colors.isEmpty()) {
                 try {
-                    return (double) ((Color.parseColor(colors.get(0)) >>> 24) / 255.0f);
+                    int color = Color.parseColor(colors.get(0));
+                    return (color >>> 24) / 255.0;
                 } catch (IllegalArgumentException e) {
                     e.printStackTrace();
                 }
@@ -915,7 +1048,7 @@ public class PreferencesFragment extends Fragment {
             return 1.0;
         };
         Consumer<Double> setter = (d) -> {
-            int v = (int) (d * 255.0 + 0.5);
+            int alpha = (int) (d * 255.0 + 0.5);
             var newList = new ArrayList<String>(config.get());
             if (newList.isEmpty()) {
                 newList.add("#FF000000");
@@ -924,18 +1057,8 @@ public class PreferencesFragment extends Fragment {
                  it.hasNext();
             ) {
                 int color = Color.parseColor(it.next());
-                color = color & 0xFFFFFF | (v << 24);
-                if (v != 0) {
-                    it.set(
-                            '#' + Integer.toHexString(color)
-                                    .toUpperCase(Locale.ROOT)
-                    );
-                } else {
-                    it.set(
-                            '#' + Integer.toHexString(0x1000000 | color).substring(1)
-                                    .toUpperCase(Locale.ROOT)
-                    );
-                }
+                color = (color & 0xFFFFFF) | (alpha << 24);
+                it.set(String.format(Locale.ROOT, "#%08X", color));
             }
             config.set(newList);
         };
@@ -969,7 +1092,7 @@ public class PreferencesFragment extends Fragment {
                 EditText v = (EditText) view;
                 float newValue = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
                         minValue, maxValue);
-                v.setText(Float.toString(newValue));
+                replaceText(v, Float.toString(newValue));
                 if (newValue != getter.get()) {
                     setter.accept((double) newValue);
                     int curProgress = Math.round((newValue - minValue) * denominator);
@@ -987,7 +1110,7 @@ public class PreferencesFragment extends Fragment {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 double newValue = seekBar.getProgress() / denominator + minValue;
-                input.setText(Float.toString((float) newValue));
+                replaceText(input, Float.toString((float) newValue));
             }
 
             @Override
@@ -995,7 +1118,7 @@ public class PreferencesFragment extends Fragment {
                 double newValue = seekBar.getProgress() / denominator + minValue;
                 if (newValue != getter.get()) {
                     setter.accept((double) (float) newValue);
-                    input.setText(Float.toString((float) newValue));
+                    replaceText(input, Float.toString((float) newValue));
                     saveFn.run();
                 }
             }
@@ -1037,6 +1160,19 @@ public class PreferencesFragment extends Fragment {
             }
             mContent = new LinearLayout(mParent.getContext());
             mContent.setOrientation(LinearLayout.VERTICAL);
+            mContent.addView(createBooleanOption(mParent.getContext(), "modernui.center.tooltip.roundedShapes",
+                    Config.CLIENT.mRoundedTooltip, mSaveFn));
+            {
+                var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.borderWidth",
+                        Config.Client.TOOLTIP_BORDER_WIDTH_MIN, Config.Client.TOOLTIP_BORDER_WIDTH_MAX,
+                        4, Config.CLIENT.mTooltipWidth, (thickness) -> {
+                            Config.CLIENT.mTooltipWidth.set(thickness);
+                            if (mColorPicker != null) {
+                                mColorPicker.setThicknessFactor(thickness.floatValue() / 3f);
+                            }
+                        }, 100, mSaveFn);
+                mContent.addView(option);
+            }
             {
                 var option = createIntegerOption(mParent.getContext(), "modernui.center.tooltip.borderCycle",
                         Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MIN, Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MAX,
@@ -1247,42 +1383,47 @@ public class PreferencesFragment extends Fragment {
             if (!newValue.equals(Config.CLIENT.mFirstFontFamily.get())) {
                 Config.CLIENT.mFirstFontFamily.set(newValue);
                 Config.CLIENT.saveAsync();
-                reloadMainTypeface()
-                        .whenCompleteAsync((oldTypeface, throwable) -> {
-                            if (throwable == null) {
-                                mOnFontChanged.run();
-                                refreshTextViewsTypeface(
-                                        UIManager.getInstance().getDecorView(),
-                                        oldTypeface
-                                );
-                                Toast.makeText(context,
-                                        I18n.get("gui.modernui.font_reloaded"),
-                                        Toast.LENGTH_SHORT).show();
-                            }
-                        }, Core.getUiThreadExecutor());
+                reloadDefaultTypeface(context, mOnFontChanged);
                 return true;
             }
             return false;
         }
     }
 
-    private static CompletableFuture<Typeface> reloadMainTypeface() {
-        return Minecraft.getInstance().submit(() -> {
+    private static void replaceText(@NonNull EditText editText, @NonNull CharSequence newText) {
+        Editable text = editText.getText();
+        text.replace(0, text.length(), newText);
+    }
+
+    private static void reloadDefaultTypeface(@NonNull Context context, @NonNull Runnable onFontChanged) {
+        var future = Minecraft.getInstance().submit(() -> {
             var oldTypeface = ModernUI.getSelectedTypeface();
             var client = ModernUIForge.Client.getInstance();
             client.reloadTypeface();
             client.reloadFontStrike();
             return oldTypeface;
         });
+        future.whenCompleteAsync((oldTypeface, throwable) -> {
+            if (throwable == null) {
+                onFontChanged.run();
+                refreshViewTypeface(
+                        UIManager.getInstance().getDecorView(),
+                        oldTypeface
+                );
+                Toast.makeText(context,
+                        I18n.get("gui.modernui.font_reloaded"),
+                        Toast.LENGTH_SHORT).show();
+            }
+        }, Core.getUiThreadExecutor());
     }
 
-    private static void refreshTextViewsTypeface(@NonNull ViewGroup vg,
-                                                 Typeface oldTypeface) {
+    private static void refreshViewTypeface(@NonNull ViewGroup vg,
+                                            Typeface oldTypeface) {
         int cc = vg.getChildCount();
         for (int i = 0; i < cc; i++) {
             View v = vg.getChildAt(i);
             if (v instanceof ViewGroup) {
-                refreshTextViewsTypeface((ViewGroup) v, oldTypeface);
+                refreshViewTypeface((ViewGroup) v, oldTypeface);
             } else if (v instanceof TextView tv) {
                 if (tv.getTypeface() == oldTypeface) {
                     tv.setTypeface(ModernUI.getSelectedTypeface());

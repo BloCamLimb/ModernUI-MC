@@ -54,7 +54,7 @@ public class AdvancedOptionsFragment extends Fragment {
 
     ViewGroup mContent;
     TextView mUIManagerDump;
-    TextView mResourceCacheDump;
+    TextView mGPUResourceDump;
     TextView mPSOStatsDump;
     TextView mGPUStatsDump;
 
@@ -123,7 +123,7 @@ public class AdvancedOptionsFragment extends Fragment {
                 /*category.addView(createBooleanOption(context, "Remove Message Signature",
                         Config.CLIENT.mRemoveSignature, Config.CLIENT::saveAndReloadAsync));*/
 
-                category.addView(createBooleanOption(context, "Remove Telemetry Session",
+                category.addView(createBooleanOption(context, "Remove telemetry session",
                         Config.CLIENT.mRemoveTelemetry, Config.CLIENT::saveAndReloadAsync));
 
                 /*category.addView(createBooleanOption(context, "Secure Profile Public Key",
@@ -131,56 +131,56 @@ public class AdvancedOptionsFragment extends Fragment {
             }
 
             {
-                var button = createDebugButton(context, "Take UI Screenshot (Y)");
+                var button = createDebugButton(context, "Take UI screenshot (Y)");
                 button.setOnClickListener((__) ->
                         Core.executeOnRenderThread(() -> UIManager.getInstance().takeScreenshot()));
                 category.addView(button);
             }
             {
-                var button = createDebugButton(context, "Dump UI Manager (P)");
+                var button = createDebugButton(context, "Dump UI manager (P)");
                 button.setOnClickListener((__) ->
                         Core.executeOnMainThread(() -> UIManager.getInstance().dump()));
                 category.addView(button);
             }
             {
-                var button = createDebugButton(context, "Debug Glyph Manager (G)");
+                var button = createDebugButton(context, "Dump font atlases (G)");
                 button.setOnClickListener((__) ->
                         Core.executeOnMainThread(() -> GlyphManager.getInstance().debug()));
                 category.addView(button);
             }
-            if (ModernUIForge.isTextEngineEnabled()) {
+            if (ModernUIForge.Client.isTextEngineEnabled()) {
                 {
-                    var button = createDebugButton(context, "Dump BitmapFonts and EmojiAtlas (V)");
+                    var button = createDebugButton(context, "Dump bitmap fonts (V)");
                     button.setOnClickListener((__) ->
                             Core.executeOnMainThread(() -> {
-                                TextLayoutEngine.getInstance().dumpEmojiAtlas();
+                                //TextLayoutEngine.getInstance().dumpEmojiAtlas();
                                 TextLayoutEngine.getInstance().dumpBitmapFonts();
                             }));
                     category.addView(button);
                 }
                 {
-                    var button = createDebugButton(context, "Reload TextLayoutEngine");
+                    var button = createDebugButton(context, "Reload text layout (MC)");
                     button.setOnClickListener((__) ->
                             Core.executeOnMainThread(() -> TextLayoutEngine.getInstance().reload()));
                     category.addView(button);
                 }
-                {
-                    var button = createDebugButton(context, "Reload TextLayoutEngine (Fully)");
-                    button.setOnClickListener((__) ->
-                            Core.executeOnMainThread(() -> TextLayoutEngine.getInstance().reloadAll()));
-                    category.addView(button);
-                }
             }
             {
-                var button = createDebugButton(context, "Reload GlyphManager");
+                var button = createDebugButton(context, "Reload glyph manager");
                 button.setOnClickListener((__) ->
                         Core.executeOnMainThread(() -> GlyphManager.getInstance().reload()));
                 category.addView(button);
             }
             {
-                var button = createDebugButton(context, "Reset LayoutCache");
+                var button = createDebugButton(context, "Reset layout cache");
                 button.setOnClickListener((__) ->
                         Core.executeOnMainThread(LayoutCache::clear));
+                category.addView(button);
+            }
+            {
+                var button = createDebugButton(context, "Reload full text engine");
+                button.setOnClickListener((__) ->
+                        ModernUIForge.Client.getInstance().reloadFontStrike());
                 category.addView(button);
             }
             {
@@ -221,7 +221,7 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            tv.setText("Rectangle Packing Algorithm: Skyline (Silhouette)");
+            tv.setText("Rendering pipeline: Arc 3D OpenGL");
             content.addView(tv);
         }
 
@@ -229,7 +229,15 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            mResourceCacheDump = tv;
+            tv.setText("Rectangle packing algorithm: Skyline (silhouette)");
+            content.addView(tv);
+        }
+
+        {
+            var tv = new TextView(context);
+            tv.setTextSize(12);
+            tv.setPadding(dp6, dp6, dp6, dp6);
+            mGPUResourceDump = tv;
             content.addView(tv);
         }
 
@@ -246,14 +254,6 @@ public class AdvancedOptionsFragment extends Fragment {
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
             mGPUStatsDump = tv;
-            content.addView(tv);
-        }
-
-        {
-            var tv = new TextView(context);
-            tv.setTextSize(12);
-            tv.setPadding(dp6, dp6, dp6, dp6);
-            tv.setText("Rendering Pipeline: Arc 3D OpenGL");
             content.addView(tv);
         }
 
@@ -285,31 +285,32 @@ public class AdvancedOptionsFragment extends Fragment {
                 mUIManagerDump.post(() -> mUIManagerDump.setText(s));
             });
         }
-        if (mResourceCacheDump != null) {
+        if (mGPUResourceDump != null) {
             Core.executeOnRenderThread(() -> {
                 var rc = Core.requireDirectContext().getResourceCache();
-                var s = String.format("Resource Bytes: %s (%s bytes)",
-                        TextUtils.binaryCompact(rc.getResourceBytes()),
-                        rc.getResourceBytes()) +
-                        ", " +
-                        String.format("Budgeted Resource Bytes: %s (%s bytes)",
+                var s = "GPU Resource Cache:\n" +
+                        String.format("Resource bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(rc.getResourceBytes()),
+                                rc.getResourceBytes()) +
+                        "\n" +
+                        String.format("Budgeted resource bytes: %s (%s bytes)",
                                 TextUtils.binaryCompact(rc.getBudgetedResourceBytes()),
                                 rc.getBudgetedResourceBytes()) +
-                        ", " +
-                        String.format("Resource Count: %s",
+                        "\n" +
+                        String.format("Resource count: %s",
                                 rc.getResourceCount()) +
-                        ", " +
-                        String.format("Budgeted Resource Count: %s",
+                        "\n" +
+                        String.format("Budgeted resource count: %s",
                                 rc.getBudgetedResourceCount()) +
-                        ", " +
-                        String.format("Cleanable Resource Bytes: %s (%s bytes)",
-                                TextUtils.binaryCompact(rc.getCleanableResourceBytes()),
-                                rc.getCleanableResourceBytes()) +
-                        ", " +
-                        String.format("Max Resource Bytes: %s (%s bytes)",
+                        "\n" +
+                        String.format("Free resource bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(rc.getFreeResourceBytes()),
+                                rc.getFreeResourceBytes()) +
+                        "\n" +
+                        String.format("Max resource bytes: %s (%s bytes)",
                                 TextUtils.binaryCompact(rc.getMaxResourceBytes()),
                                 rc.getMaxResourceBytes());
-                mResourceCacheDump.post(() -> mResourceCacheDump.setText(s));
+                mGPUResourceDump.post(() -> mGPUResourceDump.setText(s));
             });
         }
         if (mPSOStatsDump != null) {
@@ -322,7 +323,7 @@ public class AdvancedOptionsFragment extends Fragment {
         }
         if (mGPUStatsDump != null) {
             Core.executeOnRenderThread(() -> {
-                var s = Core.requireDirectContext().getServer().getStats().toString();
+                var s = Core.requireDirectContext().getDevice().getStats().toString();
                 mGPUStatsDump.post(() -> mGPUStatsDump.setText(s));
             });
         }
