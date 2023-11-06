@@ -1,7 +1,7 @@
 Changelogs
 ===
-### Modern UI 3.9.0.4
-#### Forge Extension 1.20.1 / NeoForge Extension 1.20.1
+### Modern UI 3.9.0.5
+#### Forge Extension 1.20.2
 * Fix validation errors
 * Add font atlas compact
 * Add Iris shaders integration
@@ -31,11 +31,11 @@ Changelogs
 * Update synchronization, improve render performance
 * Disable MSAA by default, 0.176x VRAM usage than before, and faster
 * Update to latest Arc3D and ModernUI
-#### Fabric Extension 1.20.1 / Quilt Extension 1.20.1
+#### Fabric Extension 1.20.2 / Quilt Extension 1.20.2
 * Add GUI Scale slider for Fabric
 * Fix mod logo on Fabric
 * Others are functionally equivalent to Forge version
-### Modern Text Engine 1.20.1
+### Modern Text Engine 1.20.2
 * Auto disable modern text shaders when Iris shaders are active
 * Now follow vanilla's Force Unicode Font setting
 * Fix compat with Loot Beams
