@@ -53,13 +53,13 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
             return false;
         }*/
         if (mDisableSmoothScrolling) {
-            return !mixinClassName.equals("icyllis.modernui.mc.mixin.MixinScrollPanel") &&
-                    !mixinClassName.equals("icyllis.modernui.mc.mixin.MixinSelectionList");
+            return !mixinClassName.equals("icyllis.modernui.mc.forge.mixin.MixinScrollPanel") &&
+                    !mixinClassName.equals("icyllis.modernui.mc.forge.mixin.MixinSelectionList");
         }
         if (mDisableEnhancedTextField) {
-            return !mixinClassName.equals("icyllis.modernui.mc.mixin.MixinEditBox") &&
-                    !mixinClassName.equals("icyllis.modernui.mc.mixin.MixinStringSplitter") &&
-                    !mixinClassName.equals("icyllis.modernui.mc.mixin.MixinTextFieldHelper");
+            return !mixinClassName.equals("icyllis.modernui.mc.forge.mixin.MixinEditBox") &&
+                    !mixinClassName.equals("icyllis.modernui.mc.forge.mixin.MixinStringSplitter") &&
+                    !mixinClassName.equals("icyllis.modernui.mc.forge.mixin.MixinTextFieldHelper");
         }
         if (true/*(mLevel & ModernUIForge.BOOTSTRAP_ENABLE_DEBUG_INJECTORS) == 0*/) {
             return !mixinClassName.endsWith("DBG");
