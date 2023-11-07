@@ -287,6 +287,20 @@ public class TextLayout {
         }
     }
 
+    @Nonnull
+    private BakedGlyph[] getGlyphsUniformScale(float density) {
+        if (mBakedGlyphsArray == null) {
+            mBakedGlyphsArray = new SparseArray<>();
+        }
+        int fontSize = TextLayoutProcessor.computeFontSize(density);
+        BakedGlyph[] glyphs = mBakedGlyphsArray.get(fontSize);
+        if (glyphs == null) {
+            glyphs = prepareGlyphs(mCreatedResLevel, fontSize);
+            mBakedGlyphsArray.put(fontSize, glyphs);
+        }
+        return glyphs;
+    }
+
     /**
      * Render this text in Minecraft render system.
      *
@@ -316,30 +330,22 @@ public class TextLayout {
         final int startG = g;
         final int startB = b;
         final float density;
-        BakedGlyph[] glyphs;
+        final BakedGlyph[] glyphs;
         if (preferredMode == TextRenderType.MODE_SDF_FILL) {
             int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
             glyphs = getGlyphs(resLevel);
             density = resLevel;
-        } else if (preferredMode != TextRenderType.MODE_DYNAMIC_SCALE) {
-            glyphs = getGlyphs(mCreatedResLevel);
-            density = mCreatedResLevel;
-        } else {
+        } else if (preferredMode == TextRenderType.MODE_UNIFORM_SCALE) {
             float devS = ((AccessMatrix4f) (Object) matrix).getM00();
             if (devS == 0) {
                 return mTotalAdvance;
             }
             density = mCreatedResLevel * devS;
-            if (mBakedGlyphsArray == null) {
-                mBakedGlyphsArray = new SparseArray<>();
-            }
-            int fontSize = TextLayoutProcessor.computeFontSize(density);
-            glyphs = mBakedGlyphsArray.get(fontSize);
-            if (glyphs == null) {
-                glyphs = prepareGlyphs(mCreatedResLevel, fontSize);
-                mBakedGlyphsArray.put(fontSize, glyphs);
-            }
+            glyphs = getGlyphsUniformScale(density);
             preferredMode = TextRenderType.MODE_NORMAL;
+        } else {
+            glyphs = getGlyphs(mCreatedResLevel);
+            density = mCreatedResLevel;
         }
         final float invDensity = 1.0f / density;
 
@@ -381,7 +387,9 @@ public class TextLayout {
                 rx = x + positions[i << 1] + (float) glyph.x * scaleFactor;
                 ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
                 if (isShadow) {
+                    // bitmap font shadow offset is always 1 pixel
                     rx += 1.0f - ModernTextRenderer.sShadowOffset;
+                    ry += 1.0f - ModernTextRenderer.sShadowOffset;
                 }
 
                 w = (float) glyph.width * scaleFactor;
@@ -419,7 +427,9 @@ public class TextLayout {
                     rx += x + positions[i << 1] + (float) glyph.x * scaleFactor;
                     ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
                     if (isShadow) {
+                        // bitmap font shadow offset is always 1 pixel
                         rx += 1.0f - ModernTextRenderer.sShadowOffset;
+                        ry += 1.0f - ModernTextRenderer.sShadowOffset;
                     }
                     w = (float) glyph.width * scaleFactor;
                     h = (float) glyph.height * scaleFactor;
@@ -729,6 +739,15 @@ public class TextLayout {
     @Nonnull
     public int[] getGlyphFlags() {
         return mGlyphFlags;
+    }
+
+    @Nullable
+    public byte[] getFontIndices() {
+        return mFontIndices;
+    }
+
+    public Font[] getFontVector() {
+        return mFonts;
     }
 
     /*

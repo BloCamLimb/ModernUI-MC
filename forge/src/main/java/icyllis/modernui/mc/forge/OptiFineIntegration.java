@@ -20,21 +20,27 @@ package icyllis.modernui.mc.forge;
 
 import net.minecraft.client.*;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 
 @ApiStatus.Internal
 public final class OptiFineIntegration {
 
     private static Field of_fast_render;
+    private static Field shaderPackLoaded;
 
     static {
-        assert (FMLEnvironment.dist.isClient());
         try {
             of_fast_render = Options.class.getDeclaredField("ofFastRender");
-        } catch (NoSuchFieldException e) {
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        try {
+            Class<?> clazz = Class.forName("net.optifine.shaders.Shaders");
+            shaderPackLoaded = clazz.getDeclaredField("shaderPackLoaded");
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -48,8 +54,7 @@ public final class OptiFineIntegration {
             Class<?> clazz = Class.forName("net.optifine.shaders.gui.GuiShaders");
             Constructor<?> constructor = clazz.getConstructor(Screen.class, Options.class);
             minecraft.setScreen((Screen) constructor.newInstance(minecraft.screen, minecraft.options));
-        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException |
-                 InstantiationException | InvocationTargetException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -66,7 +71,7 @@ public final class OptiFineIntegration {
             try {
                 of_fast_render.setBoolean(minecraft.options, fastRender);
                 minecraft.options.save();
-            } catch (IllegalAccessException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -81,5 +86,16 @@ public final class OptiFineIntegration {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public static boolean isShaderPackLoaded() {
+        if (shaderPackLoaded != null) {
+            try {
+                return shaderPackLoaded.getBoolean(null);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
     }
 }

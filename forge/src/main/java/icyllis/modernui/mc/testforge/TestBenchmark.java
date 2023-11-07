@@ -20,7 +20,6 @@ package icyllis.modernui.mc.testforge;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.text.TextUtils;
-import icyllis.modernui.util.BinaryIO;
 import icyllis.modernui.util.DataSet;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.ints.*;
@@ -124,13 +123,13 @@ public class TestBenchmark {
         }
     }
 
-    public static void dataSetDeflation() {
+    /*public static void dataSetDeflation() {
         try {
             BinaryIO.deflate(new FileOutputStream("F:/testdata_set1.dat"), sDataSet);
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
+    }*/
 
     public static void compoundTagDeflation() {
         try {
@@ -140,13 +139,13 @@ public class TestBenchmark {
         }
     }
 
-    public static void dataSetInflation() {
+    /*public static void dataSetInflation() {
         try {
             BinaryIO.inflate(new FileInputStream("F:/testdata_set1.dat"), null);
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
+    }*/
 
     public static void compoundTagInflation() {
         try {

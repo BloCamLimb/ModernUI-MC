@@ -190,6 +190,10 @@ final class Registration {
                     handler.post(() -> UIManager.getInstance().updateLayoutDir(Config.CLIENT.mForceRtl.get()));
                 }
             });
+            if (!ModernUIForge.Client.isTextEngineEnabled()) {
+                event.registerReloadListener(FontResourceManager.getInstance());
+            }
+            // else injected by MixinFontManager
 
             LOGGER.debug(MARKER, "Registered resource reload listener");
         }
@@ -206,7 +210,7 @@ final class Registration {
             //UIManager.getInstance().registerMenuScreen(Registration.TEST_MENU, menu -> new TestUI());
 
             event.enqueueWork(() -> {
-                ModernUI.getSelectedTypeface();
+                //ModernUI.getSelectedTypeface();
                 UIManager.initializeRenderer();
                 var windowMode = Config.CLIENT.mLastWindowMode;
                 if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
@@ -275,11 +279,14 @@ final class Registration {
                         /*values*/ new GuiScaleValueSet(),
                         /*initialValue*/ 0,
                         /*onValueUpdate*/ value -> {
-                    Minecraft minecraft = Minecraft.getInstance();
-                    if ((int) minecraft.getWindow().getGuiScale() !=
-                            minecraft.getWindow().calculateScale(value, false)) {
-                        minecraft.resizeDisplay();
-                    }
+                    // execute in next tick, prevent transient GUI scale change
+                    Minecraft.getInstance().tell(() -> {
+                        Minecraft minecraft = Minecraft.getInstance();
+                        if ((int) minecraft.getWindow().getGuiScale() !=
+                                minecraft.getWindow().calculateScale(value, false)) {
+                            minecraft.resizeDisplay();
+                        }
+                    });
                 });
                 // no barrier
                 Options options = Minecraft.getInstance().options;

@@ -32,7 +32,7 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage) {
-        mEnable = ModernUIForge.isTextEngineEnabled();
+        mEnable = ModernUIForge.Client.isTextEngineEnabled();
     }
 
     @Override

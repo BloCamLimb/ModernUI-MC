@@ -8,9 +8,12 @@
   "client": [
     "AccessOptions",
     "AccessPostChain",
+    "MixinChatFormatting",
+    "MixinChatScreen",
     "MixinClientBundleTooltip",
     "MixinClientTelemetryManager",
     "MixinClientTextTooltip",
+    "MixinEditBox",
     "MixinInventoryScreen",
     "MixinLevelRendererDBG",
     "MixinLocalPlayer",
@@ -21,6 +24,8 @@
     "MixinScreen",
     "MixinScrollPanel",
     "MixinSelectionList",
+    "MixinStringSplitter",
+    "MixinTextFieldHelper",
     "MixinWindow"
   ]
 }

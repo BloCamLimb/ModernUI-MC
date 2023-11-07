@@ -31,6 +31,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -41,8 +42,17 @@ import javax.annotation.Nullable;
 import java.util.function.BiFunction;
 
 /**
- * This mostly fixes text advance shift and decreases dynamic layout overhead,
- * but it cannot be truly internationalized due to Minecraft design defects.
+ * Changes:
+ * <ul>
+ * <li>Fixes some bidirectional text rendering bugs (not editing).</li>
+ * <li>Fixes possible IndexOutOfBoundsException crash.</li>
+ * <li>Use floating-point text advance precision.</li>
+ * <li>Increases dynamic layout performance.</li>
+ * <li>Adjust text highlight style.</li>
+ * <li>Adjust text cursor rendering position.</li>
+ * </ul>
+ * <p>
+ * This cannot be fully internationalized because of Minecraft bad implementation.
  */
 @Mixin(EditBox.class)
 public abstract class MixinEditBox extends AbstractWidget {
@@ -50,18 +60,6 @@ public abstract class MixinEditBox extends AbstractWidget {
     @Shadow
     @Final
     private static String CURSOR_APPEND_CHARACTER;
-
-    @Shadow
-    @Final
-    private static int BORDER_COLOR_FOCUSED;
-
-    @Shadow
-    @Final
-    private static int BORDER_COLOR;
-
-    @Shadow
-    @Final
-    private static int BACKGROUND_COLOR;
 
     @Shadow
     private boolean isEditable;
@@ -104,14 +102,11 @@ public abstract class MixinEditBox extends AbstractWidget {
     @Inject(method = "<init>(Lnet/minecraft/client/gui/Font;IIIILnet/minecraft/client/gui/components/EditBox;" +
             "Lnet/minecraft/network/chat/Component;)V",
             at = @At("RETURN"))
-    public void E_EditBox(Font font, int x, int y, int w, int h, @Nullable EditBox src, Component title,
-                          CallbackInfo ci) {
+    public void EditBox(Font font, int x, int y, int w, int h, @Nullable EditBox src, Component msg,
+                        CallbackInfo ci) {
         // fast path
         formatter = (s, i) -> new VanillaTextWrapper(s);
     }
-
-    @Shadow
-    public abstract boolean isVisible();
 
     @Shadow
     public abstract int getInnerWidth();
@@ -119,22 +114,15 @@ public abstract class MixinEditBox extends AbstractWidget {
     @Shadow
     protected abstract int getMaxLength();
 
-    /**
-     * @author BloCamLimb
-     * @reason Modern Text Engine
-     */
-    @Override
-    @Overwrite
-    public void renderButton(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float deltaTicks) {
-        if (!isVisible()) {
-            return;
-        }
-        TextLayoutEngine engine = TextLayoutEngine.getInstance();
-        if (bordered) {
-            int color = isFocused() ? BORDER_COLOR_FOCUSED : BORDER_COLOR;
-            fill(poseStack, x - 1, y - 1, x + width + 1, y + height + 1, color);
-            fill(poseStack, x, y, x + width, y + height, BACKGROUND_COLOR);
-        }
+    @Inject(
+            method = "renderButton",
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/components/EditBox;isEditable:Z",
+                    opcode = Opcodes.GETFIELD),
+            cancellable = true)
+    public void onRenderWidget(@Nonnull PoseStack poseStack, int mouseX, int mouseY, float deltaTicks,
+                               CallbackInfo ci) {
+        final TextLayoutEngine engine = TextLayoutEngine.getInstance();
+
         final int color = isEditable ? textColor : textColorUneditable;
 
         final String viewText =
@@ -147,7 +135,7 @@ public abstract class MixinEditBox extends AbstractWidget {
 
         final int baseX = bordered ? x + 4 : x;
         final int baseY = bordered ? y + (height - 8) / 2 : y;
-        float seqX = baseX;
+        float hori = baseX;
 
         final Matrix4f matrix = poseStack.last().pose();
         final MultiBufferSource.BufferSource bufferSource =
@@ -160,11 +148,11 @@ public abstract class MixinEditBox extends AbstractWidget {
             if (subSequence != null &&
                     !(subSequence instanceof VanillaTextWrapper)) {
                 separate = true;
-                seqX = engine.getTextRenderer().drawText(subSequence, seqX, baseY, color, true,
+                hori = engine.getTextRenderer().drawText(subSequence, hori, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             } else {
                 separate = false;
-                seqX = engine.getTextRenderer().drawText(viewText, seqX, baseY, color, true,
+                hori = engine.getTextRenderer().drawText(viewText, hori, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             }
         } else {
@@ -177,20 +165,19 @@ public abstract class MixinEditBox extends AbstractWidget {
         final float cursorX;
         if (cursorInRange) {
             if (!separate && !viewText.isEmpty()) {
-                TextLayout layout = engine.lookupVanillaLayout(viewText,
-                        Style.EMPTY, TextLayoutEngine.COMPUTE_ADVANCES);
-                float accAdv = 0;
-                int seekIndex = 0;
+                TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(viewText);
+                float curAdv = 0;
+                int stripIndex = 0;
                 for (int i = 0; i < viewCursorPos; i++) {
                     if (viewText.charAt(i) == ChatFormatting.PREFIX_CODE) {
                         i++;
                         continue;
                     }
-                    accAdv += layout.getAdvances()[seekIndex++];
+                    curAdv += layout.getAdvances()[stripIndex++];
                 }
-                cursorX = baseX + accAdv;
+                cursorX = baseX + curAdv;
             } else {
-                cursorX = seqX;
+                cursorX = hori;
             }
         } else {
             cursorX = viewCursorPos > 0 ? baseX + width : baseX;
@@ -201,10 +188,10 @@ public abstract class MixinEditBox extends AbstractWidget {
             FormattedCharSequence subSequence = formatter.apply(subText, cursorPos);
             if (subSequence != null &&
                     !(subSequence instanceof VanillaTextWrapper)) {
-                engine.getTextRenderer().drawText(subSequence, seqX, baseY, color, true,
+                engine.getTextRenderer().drawText(subSequence, hori, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             } else {
-                engine.getTextRenderer().drawText(subText, seqX, baseY, color, true,
+                engine.getTextRenderer().drawText(subText, hori, baseY, color, true,
                         matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             }
         }
@@ -217,17 +204,16 @@ public abstract class MixinEditBox extends AbstractWidget {
         if (viewCursorPos != clampedViewHighlightPos) {
             bufferSource.endBatch();
 
-            TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(viewText,
-                    Style.EMPTY, TextLayoutEngine.COMPUTE_ADVANCES);
+            TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(viewText);
             float startX = baseX;
             float endX = cursorX;
-            int seekIndex = 0;
+            int stripIndex = 0;
             for (int i = 0; i < clampedViewHighlightPos; i++) {
                 if (viewText.charAt(i) == ChatFormatting.PREFIX_CODE) {
                     i++;
                     continue;
                 }
-                startX += layout.getAdvances()[seekIndex++];
+                startX += layout.getAdvances()[stripIndex++];
             }
 
             if (endX < startX) {
@@ -289,10 +275,7 @@ public abstract class MixinEditBox extends AbstractWidget {
         } else {
             bufferSource.endBatch();
         }
-    }
-
-    @Inject(method = "setCursorPosition", at = @At("RETURN"))
-    public void E_setCursorPosition(int pos, CallbackInfo ci) {
-        frame = 0;
+        // unconditional
+        ci.cancel();
     }
 }

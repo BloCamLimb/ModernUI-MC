@@ -26,7 +26,6 @@ import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.util.ast.Node;
 import icyllis.arc3d.core.Matrix4;
 import icyllis.arc3d.opengl.GLCore;
-import icyllis.arc3d.opengl.GLFramebufferCompat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.audio.*;
 import icyllis.modernui.core.Window;
@@ -74,7 +73,7 @@ public class TestMain {
 
     public static boolean CREATE_WINDOW = false;
 
-    private static MainWindow sWindow;
+    private static ActivityWindow sWindow;
 
     /*
         Heading font size (In Minecraft: GUI scale 2)
@@ -120,13 +119,13 @@ public class TestMain {
         GRAPHICS.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
         GRAPHICS.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         if (CREATE_WINDOW) {
-            AudioManager.getInstance().initialize();
+            /*AudioManager.getInstance().initialize();
             try {
                 sTrack = new Track(new OggDecoder(FileChannel.open(Path.of("F:/10.ogg"))));
                 //sGraph = new SpectrumGraph(sTrack, true, 300);
             } catch (Exception e) {
                 e.printStackTrace();
-            }
+            }*/
         }
     }
 
@@ -310,7 +309,7 @@ public class TestMain {
         try {
             Thread.currentThread().setName("Main-Thread");
             Core.initialize();
-            sWindow = MainWindow.initialize("Modern UI Layout Editor", 1600, 900);
+            sWindow = ActivityWindow.createMainWindow("Modern UI Layout Editor", 1600, 900);
             try (var c1 = ModernUI.getInstance().getResourceStream(ModernUI.ID, "AppLogo16x.png");
                  var bitmap1 = BitmapFactory.decodeStream(c1);
                  var c2 = ModernUI.getInstance().getResourceStream(ModernUI.ID, "AppLogo32x.png");
@@ -371,7 +370,7 @@ public class TestMain {
         final Window window = sWindow;
         window.makeCurrent();
         Core.initOpenGL();
-        GLCore.showCapsErrorDialog();
+        //GLCore.showCapsErrorDialog();
         GLSurfaceCanvas canvas = GLSurfaceCanvas.initialize();
         Matrix4 projection = new Matrix4();
         //projection = Matrix4.makePerspective(MathUtil.PI_DIV_2, window.getAspectRatio(), 0.01f, 1000);
@@ -471,13 +470,13 @@ public class TestMain {
         tps.setColor(0xff40ddee);
         tps.setTypeface(Typeface.SANS_SERIF);
 
-        GLFramebufferCompat framebuffer = new GLFramebufferCompat(4);
+        /*GLFramebufferCompat framebuffer = new GLFramebufferCompat(4);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT2, GL_RGBA8);
         framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT3, GL_RGBA8);
         framebuffer.addRenderbufferAttachment(GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
-        framebuffer.setDrawBuffer(GL_COLOR_ATTACHMENT0);
+        framebuffer.setDrawBuffer(GL_COLOR_ATTACHMENT0);*/
 
         glfwShowWindow(window.getHandle());
 
@@ -487,7 +486,7 @@ public class TestMain {
             long time = Core.timeMillis();
             long delta = time - lastTime;
             lastTime = time;
-            GLCore.resetFrame(window);
+            //GLCore.resetFrame(window);
 
             if (window.getWidth() > 0) {
                 canvas.reset(window.getWidth(), window.getHeight());
@@ -569,7 +568,7 @@ public class TestMain {
                         360 * (playTime / sTrack.getLength()), paint);
 
                 // render thread, wait UI thread
-                canvas.executeDrawOps(framebuffer);
+                //canvas.executeDrawOps(framebuffer);
 
                 if (!note) {
                     LOGGER.info(TextUtils.binaryCompact(canvas.getNativeMemoryUsage()));
@@ -577,8 +576,8 @@ public class TestMain {
                 }
             }
 
-            glBlitNamedFramebuffer(framebuffer.get(), 0, 0, 0, window.getWidth(), window.getHeight(),
-                    0, 0, window.getWidth(), window.getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);
+            /*glBlitNamedFramebuffer(framebuffer.get(), 0, 0, 0, window.getWidth(), window.getHeight(),
+                    0, 0, window.getWidth(), window.getHeight(), GL_COLOR_BUFFER_BIT, GL_NEAREST);*/
 
             window.swapBuffers();
         }
