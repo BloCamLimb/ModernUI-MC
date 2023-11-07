@@ -42,43 +42,33 @@ public class MixinChatScreen {
 
     @Inject(method = "onEdited", at = @At("HEAD"))
     private void _onEdited(String s, CallbackInfo ci) {
-        final String msg;
         if (!modernUI_MC$broadcasting &&
-                !(msg = input.getValue()).startsWith("/") &&
                 Config.CLIENT.mEmojiShortcodes.get() &&
-                msg.contains(":")) {
-            final FontResourceManager mgr = FontResourceManager.getInstance();
-            final Matcher matcher = MuiModApi.EMOJI_SHORTCODE_PATTERN.matcher(msg);
-
-            StringBuilder builder = null;
-            int lastEnd = 0;
-            boolean replaced = false;
-            while (matcher.find()) {
-                if (builder == null) {
-                    builder = new StringBuilder();
+                !input.getValue().startsWith("/") &&
+                (!(input instanceof IModernEditBox) ||
+                        !((IModernEditBox) input).modernUI_MC$getUndoManager().isInUndo())) {
+            final FontResourceManager manager = FontResourceManager.getInstance();
+            CYCLE:
+            for (;;) {
+                final Matcher matcher = MuiModApi.EMOJI_SHORTCODE_PATTERN.matcher(input.getValue());
+                while (matcher.find()) {
+                    int start = matcher.start();
+                    int end = matcher.end();
+                    if (end - start > 2) {
+                        String replacement = manager.lookupEmojiShortcode(
+                                input.getValue().substring(start + 1, end - 1)
+                        );
+                        if (replacement != null) {
+                            modernUI_MC$broadcasting = true;
+                            input.setHighlightPos(start);
+                            input.setCursorPosition(end);
+                            input.insertText(replacement);
+                            modernUI_MC$broadcasting = false;
+                            continue CYCLE;
+                        }
+                    }
                 }
-                int st = matcher.start();
-                int en = matcher.end();
-                String emojiSequence = null;
-                if (en - st > 2) {
-                    emojiSequence = mgr.lookupEmojiShortcode(msg.substring(st + 1, en - 1));
-                }
-                if (emojiSequence != null) {
-                    builder.append(msg, lastEnd, st);
-                    builder.append(emojiSequence);
-                    replaced = true;
-                } else {
-                    builder.append(msg, lastEnd, en);
-                }
-                lastEnd = en;
-            }
-            if (replaced) {
-                builder.append(msg, lastEnd, msg.length());
-                modernUI_MC$broadcasting = true;
-                input.setValue(builder.toString());
-                input.setCursorPosition(builder.length() - (msg.length() - lastEnd));
-                input.setHighlightPos(input.getCursorPosition());
-                modernUI_MC$broadcasting = false;
+                break;
             }
         }
     }

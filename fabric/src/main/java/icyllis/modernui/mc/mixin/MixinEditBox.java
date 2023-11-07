@@ -21,8 +21,7 @@ package icyllis.modernui.mc.mixin;
 import com.ibm.icu.text.BreakIterator;
 import icyllis.modernui.core.UndoManager;
 import icyllis.modernui.core.UndoOwner;
-import icyllis.modernui.mc.MuiModApi;
-import icyllis.modernui.mc.text.EditBoxEditAction;
+import icyllis.modernui.mc.*;
 import icyllis.modernui.text.method.WordIterator;
 import net.minecraft.Util;
 import net.minecraft.client.gui.components.EditBox;
@@ -46,7 +45,7 @@ import org.spongepowered.asm.mixin.injection.callback.*;
  * This cannot be fully internationalized because of Minecraft bad implementation.
  */
 @Mixin(EditBox.class)
-public abstract class MixinEditBox {
+public abstract class MixinEditBox implements IModernEditBox {
 
     @Shadow
     private int cursorPos;
@@ -175,7 +174,7 @@ public abstract class MixinEditBox {
         }
         EditBoxEditAction edit = new EditBoxEditAction(
                 modernUI_MC$undoOwner(),
-                /*cursorPos*/ j,
+                /*cursorPos*/ cursorPos,
                 oldText,
                 k,
                 ""
@@ -240,5 +239,10 @@ public abstract class MixinEditBox {
             return true;
         }
         return false;
+    }
+
+    @Override
+    public UndoManager modernUI_MC$getUndoManager() {
+        return modernUI_MC$undoManager;
     }
 }
