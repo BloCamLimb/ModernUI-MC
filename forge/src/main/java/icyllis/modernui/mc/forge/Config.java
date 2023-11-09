@@ -440,7 +440,7 @@ public final class Config {
                             "2) File path for external fonts on your PC, for instance: /usr/shared/fonts/x.otf",
                             "Fonts under 'modernui:font' in resource packs and OS builtin fonts will be registered.",
                             "Using bitmap fonts should consider other text settings, default glyph size should be 16x.",
-                            "This list is only read once when the game is loaded. A game restart is required to reload")
+                            "This list is only read once when the game is loaded, or reloaded via in-game GUI.")
                     .defineList("fallbackFontFamilyList", () -> {
                         List<String> list = new ArrayList<>();
                         list.add("Noto Sans");
@@ -589,7 +589,8 @@ public final class Config {
                 reload = true;
             }*/
             if (reloadStrike) {
-                ModernUIForge.Client.getInstance().reloadFontStrike();
+                Minecraft.getInstance().submit(
+                        () -> FontResourceManager.getInstance().reloadAll());
             }
 
             // scan and preload typeface in background thread
@@ -966,9 +967,16 @@ public final class Config {
             ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();
 
             if (reloadStrike) {
-                ModernUIForge.Client.getInstance().reloadFontStrike();
+                Minecraft.getInstance().submit(
+                        () -> FontResourceManager.getInstance().reloadAll());
             } else if (reload && ModernUIForge.Client.isTextEngineEnabled()) {
-                Minecraft.getInstance().submit(() -> TextLayoutEngine.getInstance().reload());
+                Minecraft.getInstance().submit(
+                        () -> {
+                            try {
+                                TextLayoutEngine.getInstance().reload();
+                            } catch (Exception ignored) {
+                            }
+                        });
             }
             /*GlyphManagerForge.sPreferredFont = preferredFont.get();
             GlyphManagerForge.sAntiAliasing = antiAliasing.get();
