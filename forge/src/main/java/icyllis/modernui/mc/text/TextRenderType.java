@@ -21,12 +21,11 @@ package icyllis.modernui.mc.text;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import icyllis.arc3d.core.RefCnt;
 import icyllis.arc3d.core.SharedPtr;
 import icyllis.arc3d.engine.SamplerState;
 import icyllis.arc3d.opengl.*;
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
-import icyllis.modernui.graphics.RefCnt;
 import icyllis.modernui.mc.forge.ModernUIForge;
 import icyllis.modernui.mc.forge.ModernUIText;
 import icyllis.modernui.mc.text.mixin.AccessRenderBuffers;
@@ -61,7 +60,7 @@ public class TextRenderType extends RenderType {
      *
      * @since 3.8.1
      */
-    public static final int MODE_DYNAMIC_SCALE = 4; // <- must be power of 2
+    public static final int MODE_UNIFORM_SCALE = 4; // <- must be power of 2
 
     private static volatile ShaderInstance sShaderNormal;
 
@@ -214,9 +213,9 @@ public class TextRenderType extends RenderType {
 
     private static void ensureLinearFontSampler() {
         if (sLinearFontSampler == null) {
-            GLServer engine = (GLServer) Core.requireDirectContext().getServer();
+            GLDevice device = (GLDevice) Core.requireDirectContext().getDevice();
             // default state is bilinear
-            sLinearFontSampler = engine.getResourceProvider().findOrCreateCompatibleSampler(
+            sLinearFontSampler = device.getResourceProvider().findOrCreateCompatibleSampler(
                     SamplerState.DEFAULT);
             Objects.requireNonNull(sLinearFontSampler, "Failed to create sampler object");
         }
@@ -347,9 +346,6 @@ public class TextRenderType extends RenderType {
     }
 
     public static ShaderInstance getShaderSDFStroke() {
-        if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
-            return GameRenderer.getRendertypeTextShader();
-        }
         return sCurrentShaderSDFStroke;
     }
 
@@ -389,6 +385,9 @@ public class TextRenderType extends RenderType {
     /**
      * Preload Modern UI text shaders for early text rendering. These shaders are loaded only once
      * and cannot be overridden by other resource packs or reloaded.
+     * <p>
+     * Note that Minecraft vanilla will delete OpenGL shader objects when reloading resources, but
+     * since we do not delete OpenGL program object (ShaderInstance), they will remain valid.
      */
     public static synchronized void preloadShaders() {
         if (sShaderNormal != null) {
@@ -416,14 +415,14 @@ public class TextRenderType extends RenderType {
     private static ResourceProvider obtainResourceProvider() {
         final var fallback = Minecraft.getInstance().getClientPackSource().getVanillaPack();
         return location -> {
-            // don't worry
+            // don't worry, ShaderInstance ctor will close it
             InputStream stream = ModernUIText.class
                     .getResourceAsStream("/assets/" + location.getNamespace() + "/" + location.getPath());
             if (stream == null) {
                 // fallback to vanilla
                 return fallback.getResource(location);
             }
-            return new SimpleResource(ModernUI.ID, location, stream, null);
+            return new SimpleResource(ID, location, stream, null);
         };
     }
 }

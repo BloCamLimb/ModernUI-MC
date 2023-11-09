@@ -21,12 +21,13 @@ package icyllis.modernui.mc.text;
 import com.google.gson.*;
 import com.mojang.blaze3d.font.GlyphInfo;
 import icyllis.arc3d.core.Strike;
-import icyllis.arc3d.opengl.GLTextureCompat;
+import icyllis.arc3d.engine.GpuResource;
+import icyllis.arc3d.engine.Surface;
+import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.*;
-import icyllis.modernui.graphics.font.BakedGlyph;
-import icyllis.modernui.graphics.font.GlyphManager;
+import icyllis.modernui.graphics.font.*;
 import icyllis.modernui.graphics.text.*;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.*;
@@ -36,8 +37,6 @@ import net.minecraft.util.GsonHelper;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -62,7 +61,7 @@ public class BitmapFont implements Font, AutoCloseable {
     private Bitmap mBitmap;
     private final Int2ObjectMap<Glyph> mGlyphs = new Int2ObjectOpenHashMap<>();
 
-    private final GLTextureCompat mTexture = new GLTextureCompat(GL_TEXTURE_2D);
+    private GLTexture mTexture;
 
     private final int mAscent;  // positive
     private final int mDescent; // positive
@@ -163,14 +162,31 @@ public class BitmapFont implements Font, AutoCloseable {
 
     // create texture from bitmap on render thread
     private void createTextureLazy() {
-        mTexture.allocate2D(GL_RGBA8, mBitmap.getWidth(), mBitmap.getHeight(), 0);
         try {
-            long pixels = mBitmap.getPixels();
-            mTexture.upload(0, 0, 0,
-                    mBitmap.getWidth(), mBitmap.getHeight(),
-                    0, 0, 0, 1,
-                    GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-            mTexture.setFilter(GL_NEAREST, GL_NEAREST);
+            mTexture = (GLTexture) Core
+                    .requireDirectContext()
+                    .getResourceProvider()
+                    .createTexture(
+                            mBitmap.getWidth(),
+                            mBitmap.getHeight(),
+                            GLBackendFormat.make(GL_RGBA8),
+                            1,
+                            Surface.FLAG_BUDGETED,
+                            mBitmap.getColorType(),
+                            mBitmap.getColorType(),
+                            mBitmap.getRowBytes(),
+                            mBitmap.getAddress(),
+                            mName.toString()
+                    );
+            Objects.requireNonNull(mTexture, "Failed to create font texture");
+
+            int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
+            glBindTexture(GL_TEXTURE_2D, mTexture.getHandle());
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+            glBindTexture(GL_TEXTURE_2D, boundTexture);
         } finally {
             mBitmap.close();
             mBitmap = null;
@@ -178,15 +194,15 @@ public class BitmapFont implements Font, AutoCloseable {
     }
 
     public void dumpAtlas(String path) {
-        if (path != null && mBitmap == null && Core.isOnRenderThread()) {
-            ModernUI.LOGGER.info(GlyphManager.MARKER, "Glyphs: {}", mGlyphs.size());
-            try (var bitmap = Bitmap.download(
+        ModernUI.LOGGER.info(GlyphManager.MARKER,
+                "BitmapFont: {}, glyphs: {}, texture: {}",
+                mName, mGlyphs.size(), mTexture);
+        if (path != null && mTexture != null && Core.isOnRenderThread()) {
+            GLFontAtlas.dumpAtlas(
+                    (GLCaps) Core.requireDirectContext().getCaps(),
+                    mTexture,
                     Bitmap.Format.RGBA_8888,
-                    mTexture)) {
-                bitmap.saveToPath(Bitmap.SaveFormat.PNG, 0, Path.of(path));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+                    path);
         }
     }
 
@@ -228,7 +244,7 @@ public class BitmapFont implements Font, AutoCloseable {
     }
 
     public int getCurrentTexture() {
-        return mTexture.get();
+        return mTexture != null ? mTexture.getHandle() : 0;
     }
 
     public int getAscent() {
@@ -361,7 +377,7 @@ public class BitmapFont implements Font, AutoCloseable {
             mBitmap.close();
             mBitmap = null;
         }
-        mTexture.close();
+        mTexture = GpuResource.move(mTexture);
     }
 
     public static class Glyph extends BakedGlyph implements GlyphInfo {

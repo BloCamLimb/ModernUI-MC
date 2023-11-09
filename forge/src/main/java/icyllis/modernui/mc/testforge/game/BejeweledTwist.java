@@ -23,7 +23,6 @@ import icyllis.modernui.animation.Animator;
 import icyllis.modernui.animation.ObjectAnimator;
 import icyllis.modernui.animation.TimeInterpolator;
 import icyllis.modernui.audio.AudioManager;
-import icyllis.modernui.audio.OggDecoder;
 import icyllis.modernui.audio.Track;
 import icyllis.modernui.core.*;
 import icyllis.modernui.core.Core;

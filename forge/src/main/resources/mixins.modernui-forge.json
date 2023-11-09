@@ -12,9 +12,12 @@
     "AccessOption",
     "AccessPostChain",
     "AccessVideoSettings",
+    "MixinChatFormatting",
+    "MixinChatScreen",
     "MixinClientBundleTooltip",
     "MixinClientPacketListener",
     "MixinClientTextTooltip",
+    "MixinEditBox",
     "MixinInventoryScreen",
     "MixinLevelRendererDBG",
     "MixinMinecraft",
@@ -23,6 +26,8 @@
     "MixinScreen",
     "MixinScrollPanel",
     "MixinSelectionList",
+    "MixinStringSplitter",
+    "MixinTextFieldHelper",
     "MixinWindow"
   ]
 }

@@ -18,8 +18,7 @@
 
 package icyllis.modernui.mc.forge.ui;
 
-import icyllis.modernui.graphics.drawable.ShapeDrawable;
-import icyllis.modernui.graphics.drawable.StateListDrawable;
+import icyllis.modernui.graphics.drawable.*;
 import icyllis.modernui.util.StateSet;
 import icyllis.modernui.view.View;
 
@@ -39,5 +38,13 @@ public class ThemeControl {
         background.setEnterFadeDuration(250);
         background.setExitFadeDuration(250);
         view.setBackground(background);
+    }
+
+    public static Drawable makeDivider(View view) {
+        ShapeDrawable drawable = new ShapeDrawable();
+        drawable.setShape(ShapeDrawable.HLINE);
+        drawable.setColor(THEME_COLOR);
+        drawable.setSize(-1, view.dp(2));
+        return drawable;
     }
 }

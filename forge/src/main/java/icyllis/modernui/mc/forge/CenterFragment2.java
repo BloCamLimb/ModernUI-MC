@@ -19,11 +19,11 @@
 package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.R;
+import icyllis.modernui.TestFragment;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.*;
-import icyllis.modernui.mc.forge.ui.DividerDrawable;
 import icyllis.modernui.mc.forge.ui.ThemeControl;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.util.*;
@@ -72,7 +72,7 @@ public class CenterFragment2 extends Fragment {
         var base = new LinearLayout(getContext());
         base.setOrientation(LinearLayout.VERTICAL);
         base.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
-        base.setDividerDrawable(new DividerDrawable(base));
+        base.setDividerDrawable(ThemeControl.makeDivider(base));
         base.setDividerPadding(base.dp(8));
 
         // TITLE
@@ -98,33 +98,35 @@ public class CenterFragment2 extends Fragment {
             buttonGroup.addView(createNavButton(1001, "modernui.center.tab.dashboard"));
             buttonGroup.addView(createNavButton(1002, "modernui.center.tab.preferences"));
             buttonGroup.addView(createNavButton(1003, "modernui.center.tab.developerOptions"));
+            buttonGroup.addView(createNavButton(1005, "Dev"));
 
             buttonGroup.check(1001);
 
             buttonGroup.setOnCheckedChangeListener((group, checkedId) -> {
                 var fm = getChildFragmentManager();
+                FragmentTransaction ft = null;
                 switch (checkedId) {
                     case 1001 -> {
-                        fm.beginTransaction()
-                                .replace(id_tab_container, DashboardFragment.class, null, "dashboard")
-                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-                                .setReorderingAllowed(true)
-                                .commit();
+                        ft = fm.beginTransaction()
+                                .replace(id_tab_container, DashboardFragment.class, null, "dashboard");
                     }
                     case 1002 -> {
-                        fm.beginTransaction()
-                                .replace(id_tab_container, PreferencesFragment.class, null, "preferences")
-                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-                                .setReorderingAllowed(true)
-                                .commit();
+                        ft = fm.beginTransaction()
+                                .replace(id_tab_container, PreferencesFragment.class, null, "preferences");
                     }
                     case 1003 -> {
-                        fm.beginTransaction()
-                                .replace(id_tab_container, AdvancedOptionsFragment.class, null, "developerOptions")
-                                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-                                .setReorderingAllowed(true)
-                                .commit();
+                        ft = fm.beginTransaction()
+                                .replace(id_tab_container, AdvancedOptionsFragment.class, null, "developerOptions");
                     }
+                    case 1005 -> {
+                        ft = fm.beginTransaction()
+                                .replace(id_tab_container, TestFragment.class, null, "dev");
+                    }
+                }
+                if (ft != null) {
+                    ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                            .setReorderingAllowed(true)
+                            .commit();
                 }
             });
 

@@ -25,7 +25,8 @@ import com.mojang.blaze3d.vertex.BufferUploader;
 import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.arc3d.core.Matrix4;
 import icyllis.arc3d.engine.Engine;
-import icyllis.arc3d.opengl.*;
+import icyllis.arc3d.opengl.GLDevice;
+import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.LayoutTransition;
@@ -170,13 +171,14 @@ public final class UIManager implements LifecycleOwner {
     /// Rendering \\\
 
     // the UI framebuffer
-    private GLFramebufferCompat mFramebuffer;
+    private GLSurface mSurface;
     GLSurfaceCanvas mCanvas;
-    GLServer mServer;
+    GLDevice mDevice;
     private final Matrix4 mProjectionMatrix = new Matrix4();
     boolean mNoRender = false;
     boolean mClearNextMainTarget = false;
     boolean mAlwaysClearMainTarget = false;
+    private long mLastPurgeNanos;
 
     final TooltipRenderer mTooltipRenderer = new TooltipRenderer();
 
@@ -206,6 +208,9 @@ public final class UIManager implements LifecycleOwner {
 
     private int mButtonState;
 
+    private final StringBuilder mCharInputBuffer = new StringBuilder();
+    private final Runnable mCommitCharInput = this::commitCharInput;
+
     private UIManager() {
         // events
         MinecraftForge.EVENT_BUS.register(this);
@@ -229,20 +234,14 @@ public final class UIManager implements LifecycleOwner {
     static void initializeRenderer() {
         Core.checkRenderThread();
         if (ModernUIForge.isDeveloperMode()) {
-            GLCore.setupDebugCallback();
+            Core.glSetupDebugCallback();
         }
         try {
             Objects.requireNonNull(sInstance);
             sInstance.mCanvas = GLSurfaceCanvas.initialize();
-            sInstance.mServer = (GLServer) Core.requireDirectContext().getServer();
-            sInstance.mServer.getContext().getResourceCache().setCacheLimit(1 << 26); // 64MB
-            var framebuffer = new GLFramebufferCompat(4);
-            framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT0, GL_RGBA8);
-            framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT1, GL_RGBA8);
-            framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT2, GL_RGBA8);
-            framebuffer.addTextureAttachment(GL_COLOR_ATTACHMENT3, GL_RGBA8);
-            framebuffer.addRenderbufferAttachment(GL_STENCIL_ATTACHMENT, GL_STENCIL_INDEX8);
-            sInstance.mFramebuffer = framebuffer;
+            sInstance.mDevice = (GLDevice) Core.requireDirectContext().getDevice();
+            sInstance.mDevice.getContext().getResourceCache().setCacheLimit(1 << 28); // 256MB
+            sInstance.mSurface = new GLSurface();
             BufferUploader.reset();
             LOGGER.info(MARKER, "UI renderer initialized");
         } catch (Throwable e) {
@@ -283,7 +282,8 @@ public final class UIManager implements LifecycleOwner {
             }
             break;
         }
-        LOGGER.info(MARKER, "Quited UI thread");
+        Core.requireUiRecordingContext().unref();
+        LOGGER.debug(MARKER, "Quited UI thread");
     }
 
     /**
@@ -417,7 +417,7 @@ public final class UIManager implements LifecycleOwner {
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f));
             }
             if (ModernUIForge.isOptiFineLoaded() &&
-                    ModernUIForge.isTextEngineEnabled()) {
+                    ModernUIForge.Client.isTextEngineEnabled()) {
                 OptiFineIntegration.setFastRender(false);
                 LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
             }
@@ -530,7 +530,7 @@ public final class UIManager implements LifecycleOwner {
 
     @UiThread
     private void finish() {
-        LOGGER.info(MARKER, "Quiting UI thread");
+        LOGGER.debug(MARKER, "Quiting UI thread");
 
         mFragmentController.dispatchStop();
         mFragmentLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP);
@@ -680,8 +680,8 @@ public final class UIManager implements LifecycleOwner {
                         .getJavaLocale()).isRightToLeft()));*/
                         GlyphManager.getInstance().debug();
                 case GLFW_KEY_V -> {
-                    if (ModernUIForge.isTextEngineEnabled()) {
-                        TextLayoutEngine.getInstance().dumpEmojiAtlas();
+                    if (ModernUIForge.Client.isTextEngineEnabled()) {
+                        //TextLayoutEngine.getInstance().dumpEmojiAtlas();
                         TextLayoutEngine.getInstance().dumpBitmapFonts();
                     }
                 }
@@ -692,28 +692,23 @@ public final class UIManager implements LifecycleOwner {
 
     @SuppressWarnings("resource")
     void takeScreenshot() {
-        // take a screenshot from MSAA framebuffer
-        final GLFramebufferCompat resolve = GLFramebufferCompat.resolve(mFramebuffer,
-                GL_COLOR_ATTACHMENT0, mWindow.getWidth(), mWindow.getHeight());
-        final var layer = resolve.getAttachment(GL_COLOR_ATTACHMENT0);
-        final int width = layer.getWidth();
-        final int height = layer.getHeight();
-        final Bitmap image = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
-        resolve.bindRead();
-        resolve.setReadBuffer(GL_COLOR_ATTACHMENT0);
+        mSurface.bindRead();
+        final int width = mSurface.getBackingWidth();
+        final int height = mSurface.getBackingHeight();
+        final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
         glPixelStorei(GL_PACK_ROW_LENGTH, 0);
         glPixelStorei(GL_PACK_SKIP_ROWS, 0);
         glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
         // SYNC GPU TODO (use transfer buffer?)
-        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, image.getPixels());
+        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, bitmap.getAddress());
         Util.ioPool().execute(() -> {
-            try (image) {
-                Bitmap.flipVertically(image);
-                unpremulAlpha(image);
-                image.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
+            try (bitmap) {
+                Bitmap.flipVertically(bitmap);
+                unpremulAlpha(bitmap);
+                bitmap.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.warn(MARKER, "Failed to save UI screenshot", e);
             }
         });
     }
@@ -722,8 +717,8 @@ public final class UIManager implements LifecycleOwner {
     static void unpremulAlpha(Bitmap bitmap) {
         final int width = bitmap.getWidth();
         final int height = bitmap.getHeight();
-        final int rowStride = bitmap.getRowStride();
-        long addr = bitmap.getPixels();
+        final int rowStride = bitmap.getRowBytes();
+        long addr = bitmap.getAddress();
         final boolean big = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
@@ -818,7 +813,7 @@ public final class UIManager implements LifecycleOwner {
             textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
-        if (textureMap != null && mServer.getCaps().hasDSASupport()) {
+        if (textureMap != null && mDevice.getCaps().hasDSASupport()) {
             long gpuSize = 0;
             long cpuSize = 0;
             int dynamicTextures = 0;
@@ -874,7 +869,7 @@ public final class UIManager implements LifecycleOwner {
                     textureAtlases++;
                 }
             }
-            pw.print("TextureManager: ");
+            pw.print("Minecraft's TextureManager: ");
             pw.print("Textures=" + textureMap.size());
             pw.print(", DynamicTextures=" + dynamicTextures);
             pw.print(", Atlases=" + textureAtlases);
@@ -889,6 +884,8 @@ public final class UIManager implements LifecycleOwner {
             pw.printf("LayoutCore: Count=%d, Size=%s (%d bytes)\n",
                     coreN, TextUtils.binaryCompact(coreMem), coreMem);
         }
+
+        GlyphManager.getInstance().dumpInfo(pw);
 
         ModernUIForge.dispatchOnDebugDump(pw);
     }
@@ -905,6 +902,17 @@ public final class UIManager implements LifecycleOwner {
         if (ch == '\0' || ch == '\u007F') {
             return false;
         }
+        mCharInputBuffer.append(ch);
+        Core.postOnMainThread(mCommitCharInput);
+        return true;//root.charTyped(codePoint, modifiers);
+    }
+
+    private void commitCharInput() {
+        if (mCharInputBuffer.isEmpty()) {
+            return;
+        }
+        final String input = mCharInputBuffer.toString();
+        mCharInputBuffer.setLength(0);
         Message msg = Message.obtain(mRoot.mHandler, () -> {
             if (mDecor.findFocus() instanceof EditText text) {
                 final Editable content = text.getText();
@@ -912,13 +920,12 @@ public final class UIManager implements LifecycleOwner {
                 int selEnd = text.getSelectionEnd();
                 if (selStart >= 0 && selEnd >= 0) {
                     Selection.setSelection(content, Math.max(selStart, selEnd));
-                    content.replace(Math.min(selStart, selEnd), Math.max(selStart, selEnd), String.valueOf(ch));
+                    content.replace(Math.min(selStart, selEnd), Math.max(selStart, selEnd), String.valueOf(input));
                 }
             }
         });
         msg.setAsynchronous(true);
         msg.sendToTarget();
-        return true;//root.charTyped(codePoint, modifiers);
     }
 
     @RenderThread
@@ -949,14 +956,24 @@ public final class UIManager implements LifecycleOwner {
         int width = mWindow.getWidth();
         int height = mWindow.getHeight();
 
-        mServer.markContextDirty(Engine.GLBackendState.kPixelStore);
+        mDevice.markContextDirty(Engine.GLBackendState.kPixelStore);
         // TODO need multiple canvas instances, tooltip shares this now, but different thread; remove Z transform
         mCanvas.setProjection(mProjectionMatrix.setOrthographic(
                 width, height, 0, icyllis.modernui.core.Window.LAST_SYSTEM_WINDOW * 2 + 1,
                 true));
-        mRoot.flushDrawCommands(mCanvas, mFramebuffer, width, height);
+        mRoot.flushDrawCommands(mCanvas, mSurface, width, height);
 
-        mServer.getContext().getResourceCache().purge();
+        var resourceCache = mDevice.getContext().getResourceCache();
+        resourceCache.cleanup();
+        // 2 min
+        if (mFrameTimeNanos - mLastPurgeNanos >= 120_000_000_000L) {
+            mLastPurgeNanos = mFrameTimeNanos;
+            resourceCache.purgeFreeResourcesOlderThan(
+                    System.currentTimeMillis() - 120_000,
+                    /*scratch only*/ true
+            );
+            GlyphManager.getInstance().compact();
+        }
 
         glBindVertexArray(oldVertexArray);
         glUseProgram(oldProgram);
@@ -1081,7 +1098,7 @@ public final class UIManager implements LifecycleOwner {
             mElapsedTimeMillis += deltaMillis;
             // coordinates UI thread
             if (mRunning) {
-                mRoot.mChoreographer.scheduleFrameAsync(mFrameTimeNanos);
+                //mRoot.mChoreographer.scheduleFrameAsync(mFrameTimeNanos);
                 // update extension animations
                 BlurHandler.INSTANCE.onRenderTick(mElapsedTimeMillis);
                 if (TooltipRenderer.sTooltip) {
@@ -1101,10 +1118,14 @@ public final class UIManager implements LifecycleOwner {
             // main thread
             if (!minecraft.isRunning() && mRunning) {
                 mRunning = false;
+                LOGGER.debug(MARKER, "Quiting Modern UI");
                 mRoot.mHandler.post(this::finish);
                 if (mCanvas != null) {
                     mCanvas.destroy();
                 }
+                FontResourceManager.getInstance().close();
+                ImageStore.getInstance().clear();
+                Core.requireDirectContext().unref();
                 try {
                     // in case of GLFW is terminated too early
                     mUiThread.join(1000);
@@ -1167,13 +1188,8 @@ public final class UIManager implements LifecycleOwner {
         ContextMenuBuilder mContextMenu;
         MenuHelper mContextMenuHelper;
 
-        @Override
-        protected Canvas beginRecording(int width, int height) {
-            if (mCanvas != null) {
-                mCanvas.reset(width, height);
-            }
-            return mCanvas;
-        }
+        private volatile boolean mPendingDraw = false;
+        private boolean mBlit;
 
         @Override
         protected boolean dispatchTouchEvent(MotionEvent event) {
@@ -1219,40 +1235,56 @@ public final class UIManager implements LifecycleOwner {
             }
         }
 
+        @Override
+        protected Canvas beginDrawLocked(int width, int height) {
+            if (mCanvas != null) {
+                mCanvas.reset(width, height);
+            }
+            return mCanvas;
+        }
+
+        @Override
+        protected void endDrawLocked(@Nonnull Canvas canvas) {
+            mPendingDraw = true;
+            try {
+                mRenderLock.wait();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
         @RenderThread
-        private void flushDrawCommands(GLSurfaceCanvas canvas, GLFramebufferCompat framebuffer,
+        private void flushDrawCommands(GLSurfaceCanvas canvas, GLSurface surface,
                                        int width, int height) {
             // wait UI thread, if slow
             synchronized (mRenderLock) {
-                boolean blit = true;
 
-                if (mRedrawn) {
-                    mRedrawn = false;
+                if (mPendingDraw) {
                     glEnable(GL_STENCIL_TEST);
                     try {
-                        blit = canvas.executeDrawOps(framebuffer);
+                        mBlit = canvas.executeRenderPass(surface);
                     } catch (Throwable t) {
                         LOGGER.fatal(MARKER,
                                 "Failed to invoke rendering callbacks, please report the issue to related mods", t);
                         dump();
                         throw t;
+                    } finally {
+                        glDisable(GL_STENCIL_TEST);
+                        mPendingDraw = false;
+                        mRenderLock.notifyAll();
                     }
-                    glDisable(GL_STENCIL_TEST);
                 }
 
-                final GLTextureCompat layer = framebuffer.getAttachedTexture(GL_COLOR_ATTACHMENT0);
-                if (blit && layer.getWidth() > 0) {
-                    GLFramebufferCompat resolve = GLFramebufferCompat.resolve(framebuffer,
-                            GL_COLOR_ATTACHMENT0, width, height);
-                    GLTextureCompat resolvedLayer = resolve.getAttachedTexture(GL_COLOR_ATTACHMENT0);
+                if (mBlit && surface.getBackingWidth() > 0) {
+                    GLTexture layer = surface.getAttachedTexture(GL_COLOR_ATTACHMENT0);
 
                     // draw off-screen target to Minecraft mainTarget (not the default framebuffer)
                     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);
 
                     // do alpha fade in
                     //float alpha = (int) Math.min(300, mElapsedTimeMillis) / 300f;
-                    canvas.drawLayer(resolvedLayer, width, height, 1, true);
-                    canvas.executeDrawOps(null);
+                    canvas.drawLayer(layer, width, height, 1, true);
+                    canvas.executeRenderPass(null);
                 }
             }
         }
@@ -1262,7 +1294,7 @@ public final class UIManager implements LifecycleOwner {
                 return;
             }
             synchronized (mRenderLock) {
-                if (!mRedrawn) {
+                if (!mPendingDraw) {
                     mTooltipRenderer.drawTooltip(mCanvas, mWindow,
                             event.getItemStack(), event.getPoseStack(),
                             event.getComponents(),

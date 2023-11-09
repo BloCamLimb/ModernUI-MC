@@ -26,12 +26,12 @@ import icyllis.modernui.mc.forge.mixin.AccessOption;
 import icyllis.modernui.mc.forge.mixin.AccessVideoSettings;
 import icyllis.modernui.mc.testforge.TestContainerMenu;
 import icyllis.modernui.mc.testforge.TestPauseFragment;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.screens.VideoSettingsScreen;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
-import net.minecraft.network.chat.TextComponent;
-import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.network.chat.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.inventory.MenuType;
@@ -113,6 +113,10 @@ final class Registration {
                 handler.post(() -> UIManager.getInstance().updateLayoutDir(Config.CLIENT.mForceRtl.get()));
             }
         });
+        if (!ModernUIForge.Client.isTextEngineEnabled()) {
+            event.registerReloadListener(FontResourceManager.getInstance());
+        }
+        // else injected by MixinFontManager
 
         LOGGER.debug(MARKER, "Registered resource reload listener");
     }
@@ -192,7 +196,7 @@ final class Registration {
         //UIManager.getInstance().registerMenuScreen(Registration.TEST_MENU, menu -> new TestUI());
 
         Minecraft.getInstance().execute(() -> {
-            ModernUI.getSelectedTypeface();
+            //ModernUI.getSelectedTypeface();
             UIManager.initializeRenderer();
             var windowMode = Config.CLIENT.mLastWindowMode;
             if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
@@ -244,20 +248,47 @@ final class Registration {
                 if (settings[i] != Option.GUI_SCALE) {
                     continue;
                 }
-                ProgressOption option = new ProgressOption("options.guiScale", 0, 2, 1,
+                ProgressOption option = new ProgressOption("options.guiScale", 0, MuiForgeApi.MAX_GUI_SCALE, 1,
                         options -> (double) options.guiScale,
                         (options, aDouble) -> {
-                            if (options.guiScale != aDouble.intValue()) {
-                                options.guiScale = aDouble.intValue();
-                                Minecraft.getInstance().resizeDisplay();
-                            }
+                            final int value = aDouble.intValue();
+                            options.guiScale = value;
+                            // execute in next tick, prevent transient GUI scale change
+                            Minecraft.getInstance().tell(() -> {
+                                Minecraft minecraft = Minecraft.getInstance();
+                                if ((int) minecraft.getWindow().getGuiScale() !=
+                                        minecraft.getWindow().calculateScale(value, false)) {
+                                    minecraft.resizeDisplay();
+                                }
+                            });
                         },
-                        (options, progressOption) -> options.guiScale == 0 ?
-                                ((AccessOption) progressOption)
-                                        .callGenericValueLabel(new TranslatableComponent("options.guiScale.auto")
-                                                .append(new TextComponent(" (" + (MuiForgeApi.calcGuiScales() >> 4 & 0xf) + ")"))) :
-                                ((AccessOption) progressOption)
-                                        .callGenericValueLabel(new TextComponent(Integer.toString(options.guiScale)))
+                        (options, progressOption) -> {
+                            final int value = options.guiScale;
+                            int r = MuiForgeApi.calcGuiScales();
+                            if (value == 0) { // auto
+                                int auto = r >> 4 & 0xf;
+                                MutableComponent valueComponent = new TranslatableComponent("options.guiScale.auto")
+                                        .append(new TextComponent(" (" + auto + ")"));
+                                return ((AccessOption) progressOption)
+                                        .callGenericValueLabel(valueComponent);
+                            } else {
+                                MutableComponent valueComponent = new TextComponent(Integer.toString(value));
+                                int min = r >> 8 & 0xf;
+                                int max = r & 0xf;
+                                if (value < min || value > max) {
+                                    final MutableComponent hint;
+                                    if (value < min) {
+                                        hint = new TextComponent(" (<" + min + ")");
+                                    } else {
+                                        hint = new TextComponent(" (>" + max + ")");
+                                    }
+                                    valueComponent.append(hint);
+                                    valueComponent.withStyle(ChatFormatting.RED);
+                                }
+                                return ((AccessOption) progressOption)
+                                        .callGenericValueLabel(valueComponent);
+                            }
+                        }
                 );
                 settings[i] = EventHandler.Client.sNewGuiScale = option;
                 captured = true;

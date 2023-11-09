@@ -19,10 +19,9 @@
 package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import icyllis.arc3d.engine.DriverBugWorkarounds;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
@@ -32,10 +31,11 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.IModBusEvent;
+import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.javafmlmod.FMLModContainer;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -64,12 +64,14 @@ public final class ModernUIForge {
     // false to disable extensions
     public static final String BOOTSTRAP_DISABLE_TEXT_ENGINE = "modernui_mc_disableTextEngine";
     public static final String BOOTSTRAP_DISABLE_SMOOTH_SCROLLING = "modernui_mc_disableSmoothScrolling";
+    public static final String BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD = "modernui_mc_disableEnhancedTextField";
     //public static final int BOOTSTRAP_ENABLE_DEBUG_INJECTORS = 0x4;
 
     private static final Path BOOTSTRAP_PATH = FMLPaths.getOrCreateGameRelativePath(
             FMLPaths.CONFIGDIR.get().resolve(NAME_CPT), NAME_CPT).resolve("bootstrap.properties");
 
     private static boolean sOptiFineLoaded;
+    private static boolean sIrisApiLoaded;
 
     static volatile boolean sInterceptTipTheScales;
 
@@ -89,7 +91,13 @@ public final class ModernUIForge {
             } catch (Exception e) {
                 LOGGER.info(MARKER, "OptiFine installed...");
             }
-        } catch (ClassNotFoundException ignored) {
+        } catch (Exception ignored) {
+        }
+        try {
+            Class.forName("net.irisshaders.iris.api.v0.IrisApi");
+            sIrisApiLoaded = true;
+            LOGGER.info(MARKER, "Iris API installed...");
+        } catch (Exception ignored) {
         }
     }
 
@@ -97,15 +105,7 @@ public final class ModernUIForge {
 
     // mod-loading thread
     public ModernUIForge() {
-        // get '/run' parent
-        Path path = FMLPaths.GAMEDIR.get().getParent();
-        // the root directory of your project
-        File dir = path.toFile();
-        String[] r = dir.list((file, name) -> name.equals("build.gradle"));
-        if (r != null && r.length > 0 && dir.getName().equals(NAME_CPT)) {
-            sDevelopment = true;
-            LOGGER.debug(MARKER, "Auto detected in development environment");
-        } else if (!FMLEnvironment.production) {
+        if (!FMLEnvironment.production) {
             sDevelopment = true;
             LOGGER.debug(MARKER, "Auto detected in FML development environment");
         } else if (ModernUI.class.getSigners() == null) {
@@ -118,7 +118,13 @@ public final class ModernUIForge {
             LOGGER.info(MARKER, "Disabled TipTheScales");
         }
 
-        Config.init();
+        Config.initCommonConfig(
+                spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, spec,
+                        ModernUI.NAME_CPT + "/common.toml")
+        );
+        FMLJavaModLoadingContext.get().getModEventBus().addListener(
+                (Consumer<ModConfigEvent>) event -> Config.reloadCommon(event.getConfig())
+        );
         LocalStorage.init();
 
         // the 'new' method is in another class, so it's class-loading-safe
@@ -155,38 +161,6 @@ public final class ModernUIForge {
         }
     }
 
-    public static boolean isTextEngineEnabled() {
-        return !Boolean.parseBoolean(
-                getBootstrapProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
-        );
-    }
-
-    // INTERNAL
-    public static String getBootstrapProperty(String key) {
-        Properties props = DistExecutor.safeCallWhenOn(Dist.CLIENT,
-                () -> Loader::getBootstrapProperties);
-        if (props != null) {
-            return props.getProperty(key);
-        }
-        return null;
-    }
-
-    public static void setBootstrapProperty(String key, String value) {
-        Properties props = DistExecutor.safeCallWhenOn(Dist.CLIENT,
-                () -> Loader::getBootstrapProperties);
-        if (props != null) {
-            props.setProperty(key, value);
-            try {
-                props.store(Files.newOutputStream(BOOTSTRAP_PATH,
-                                StandardOpenOption.WRITE,
-                                StandardOpenOption.TRUNCATE_EXISTING),
-                        "Modern UI bootstrap file");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     @Nonnull
     public static ResourceLocation location(String path) {
         return new ResourceLocation(ID, path);
@@ -196,94 +170,16 @@ public final class ModernUIForge {
         ModLoader.get().addWarning(new ModLoadingWarning(null, ModLoadingStage.SIDED_SETUP, key, args));
     }*/
 
-    private static void loadFonts(String first,
-                                  @Nonnull Collection<String> fallbacks,
-                                  @Nonnull Set<FontFamily> selected,
-                                  @Nonnull Consumer<FontFamily> firstSetter,
-                                  boolean firstLoad) {
-        if (firstLoad) {
-            var resources = Minecraft.getInstance().getResourceManager();
-            for (var location : resources.listResources("font",
-                    res -> res.endsWith(".ttf") ||
-                            res.endsWith(".otf") ||
-                            res.endsWith(".ttc") ||
-                            res.endsWith(".otc"))) {
-                if (!location.getNamespace().equals(ModernUI.ID)) {
-                    continue;
-                }
-                try {
-                    for (var resource : resources.getResources(location)) {
-                        try (var inputStream = resource.getInputStream()) {
-                            FontFamily f = FontFamily.createFamily(inputStream, /*register*/true);
-                            LOGGER.debug(MARKER, "Registered font '{}', location '{}'",
-                                    f.getFamilyName(), location);
-                        } catch (Exception e) {
-                            LOGGER.error(MARKER, "Failed to load font '{}'",
-                                    location);
-                        }
-                    }
-                } catch (Exception e) {
-                    LOGGER.error(MARKER, "Failed to load font '{}",
-                            location);
-                }
-            }
-        }
-        boolean hasFail = loadSingleFont(first, selected, firstSetter);
-        for (String fallback : fallbacks) {
-            hasFail |= loadSingleFont(fallback, selected, null);
-        }
-        if (hasFail && isDeveloperMode()) {
-            LOGGER.debug(MARKER, "Available system font families: {}",
-                    String.join(",", FontFamily.getSystemFontMap().keySet()));
-        }
-    }
-
-    private static boolean loadSingleFont(String value,
-                                          @Nonnull Set<FontFamily> selected,
-                                          @Nullable Consumer<FontFamily> firstSetter) {
-        if (StringUtils.isEmpty(value)) {
-            return true;
-        }
-        if (firstSetter != null) {
-            try {
-                FontFamily f = FontFamily.createFamily(new File(
-                        value.replaceAll("\\\\", "/")), /*register*/false);
-                selected.add(f);
-                LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as LOCAL FILE",
-                        f.getFamilyName(), value);
-                firstSetter.accept(f);
-                return true;
-            } catch (Exception ignored) {
-            }
-        }
-        FontFamily family = FontFamily.getSystemFontWithAlias(value);
-        if (family == null) {
-            Optional<FontFamily> optional = FontFamily.getSystemFontMap().values().stream()
-                    .filter(f -> f.getFamilyName().equalsIgnoreCase(value))
-                    .findFirst();
-            if (optional.isPresent()) {
-                family = optional.get();
-            }
-        }
-        if (family != null) {
-            selected.add(family);
-            LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as SYSTEM FONT",
-                    family.getFamilyName(), value);
-            if (firstSetter != null) {
-                firstSetter.accept(family);
-            }
-            return true;
-        }
-        LOGGER.info(MARKER, "Font '{}' failed to load or invalid", value);
-        return false;
-    }
-
     public static boolean isDeveloperMode() {
         return sDeveloperMode || sDevelopment;
     }
 
     public static boolean isOptiFineLoaded() {
         return sOptiFineLoaded;
+    }
+
+    public static boolean isIrisApiLoaded() {
+        return sIrisApiLoaded;
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -306,30 +202,6 @@ public final class ModernUIForge {
         public static void init() {
             new Client();
         }
-
-        private static volatile boolean sBootstrap;
-
-        public static Properties getBootstrapProperties() {
-            if (!sBootstrap) {
-                synchronized (ModernUIForge.class) {
-                    if (!sBootstrap) {
-                        try {
-                            if (Files.exists(BOOTSTRAP_PATH)) {
-                                Client.props.load(
-                                        Files.newInputStream(BOOTSTRAP_PATH, StandardOpenOption.READ)
-                                );
-                            } else {
-                                Files.createFile(BOOTSTRAP_PATH);
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        sBootstrap = true;
-                    }
-                }
-            }
-            return Client.props;
-        }
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -337,8 +209,30 @@ public final class ModernUIForge {
 
         private static volatile Client sInstance;
 
-        static {
-            assert FMLEnvironment.dist.isClient();
+        private static volatile boolean sBootstrap;
+
+        private static Properties getBootstrapProperties() {
+            if (!sBootstrap) {
+                synchronized (Client.class) {
+                    if (!sBootstrap) {
+                        if (Files.exists(BOOTSTRAP_PATH)) {
+                            try (var is = Files.newInputStream(BOOTSTRAP_PATH, StandardOpenOption.READ)) {
+                                props.load(is);
+                            } catch (IOException e) {
+                                LOGGER.error(MARKER, "Failed to load bootstrap file", e);
+                            }
+                        } else {
+                            try {
+                                Files.createFile(BOOTSTRAP_PATH);
+                            } catch (IOException e) {
+                                LOGGER.error(MARKER, "Failed to create bootstrap file", e);
+                            }
+                        }
+                        sBootstrap = true;
+                    }
+                }
+            }
+            return props;
         }
 
         private volatile Typeface mTypeface;
@@ -347,13 +241,22 @@ public final class ModernUIForge {
         private Client() {
             super();
             sInstance = this;
-            if (!Boolean.parseBoolean(
-                    Loader.getBootstrapProperties().getProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
-            )) {
+            Config.initClientConfig(
+                    spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
+                            ModernUI.NAME_CPT + "/client.toml")
+            );
+            Config.initTextConfig(
+                    spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
+                            ModernUI.NAME_CPT + "/text.toml")
+            );
+            FontResourceManager.getInstance();
+            if (isTextEngineEnabled()) {
                 ModernUIText.init();
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
-            ModernUIText.initConfig();
+            FMLJavaModLoadingContext.get().getModEventBus().addListener(
+                    (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())
+            );
             if (sDevelopment) {
                 FMLJavaModLoadingContext.get().getModEventBus().register(Registration.ModClientDev.class);
             }
@@ -362,6 +265,155 @@ public final class ModernUIForge {
 
         public static Client getInstance() {
             return sInstance;
+        }
+
+        public static boolean isTextEngineEnabled() {
+            return !Boolean.parseBoolean(
+                    getBootstrapProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
+            );
+        }
+
+        public static boolean areShadersEnabled() {
+            if (isOptiFineLoaded()) {
+                if (OptiFineIntegration.isShaderPackLoaded()) {
+                    return true;
+                }
+            }
+            if (isIrisApiLoaded()) {
+                return IrisApiIntegration.isShaderPackInUse();
+            }
+            return false;
+        }
+
+        public static String getBootstrapProperty(String key) {
+            Properties props = getBootstrapProperties();
+            if (props != null) {
+                return props.getProperty(key);
+            }
+            return null;
+        }
+
+        public static void setBootstrapProperty(String key, String value) {
+            Properties props = getBootstrapProperties();
+            if (props != null) {
+                props.setProperty(key, value);
+                try (var os = Files.newOutputStream(BOOTSTRAP_PATH,
+                        StandardOpenOption.WRITE,
+                        StandardOpenOption.TRUNCATE_EXISTING)) {
+                    props.store(os, "Modern UI bootstrap file");
+                } catch (IOException e) {
+                    LOGGER.error(MARKER, "Failed to write bootstrap file", e);
+                }
+            }
+        }
+
+        @Nullable
+        public static DriverBugWorkarounds getGpuDriverBugWorkarounds() {
+            Properties props = getBootstrapProperties();
+            if (props != null) {
+                Map<String, Boolean> map = new HashMap<>();
+                props.forEach((k, v) -> {
+                    if (k instanceof String key && v instanceof String value) {
+                        Boolean state;
+                        if ("true".equalsIgnoreCase(value)) {
+                            state = Boolean.TRUE;
+                        } else if ("false".equalsIgnoreCase(value)) {
+                            state = Boolean.FALSE;
+                        } else {
+                            return;
+                        }
+                        if (key.startsWith("arc3d_driverBugWorkarounds_")) { // <- length == 27
+                            map.put(key.substring(27), state);
+                        }
+                    }
+                });
+                if (!map.isEmpty()) {
+                    return new DriverBugWorkarounds(map);
+                }
+            }
+            return null;
+        }
+
+        public static void loadFonts(String first,
+                                     @Nonnull Collection<String> fallbacks,
+                                     @Nonnull Set<FontFamily> selected,
+                                     @Nonnull Consumer<FontFamily> firstSetter,
+                                     boolean firstLoad) {
+            if (firstLoad) {
+                var resources = Minecraft.getInstance().getResourceManager();
+                for (var location : resources.listResources("font",
+                        res -> res.endsWith(".ttf") ||
+                                res.endsWith(".otf") ||
+                                res.endsWith(".ttc") ||
+                                res.endsWith(".otc"))) {
+                    if (!location.getNamespace().equals(ModernUI.ID)) {
+                        continue;
+                    }
+                    try {
+                        for (var resource : resources.getResources(location)) {
+                            try (var inputStream = resource.getInputStream()) {
+                                FontFamily f = FontFamily.createFamily(inputStream, /*register*/true);
+                                LOGGER.debug(MARKER, "Registered font '{}', location '{}'",
+                                        f.getFamilyName(), location);
+                            } catch (Exception e) {
+                                LOGGER.error(MARKER, "Failed to load font '{}'",
+                                        location);
+                            }
+                        }
+                    } catch (Exception e) {
+                        LOGGER.error(MARKER, "Failed to load font '{}",
+                                location);
+                    }
+                }
+            }
+            boolean hasFail = loadSingleFont(first, selected, firstSetter);
+            for (String fallback : fallbacks) {
+                hasFail |= loadSingleFont(fallback, selected, null);
+            }
+            if (hasFail && isDeveloperMode()) {
+                LOGGER.debug(MARKER, "Available system font families: {}",
+                        String.join(",", FontFamily.getSystemFontMap().keySet()));
+            }
+        }
+
+        private static boolean loadSingleFont(String value,
+                                              @Nonnull Set<FontFamily> selected,
+                                              @Nullable Consumer<FontFamily> firstSetter) {
+            if (StringUtils.isEmpty(value)) {
+                return true;
+            }
+            if (firstSetter != null) {
+                try {
+                    FontFamily f = FontFamily.createFamily(new File(
+                            value.replaceAll("\\\\", "/")), /*register*/false);
+                    selected.add(f);
+                    LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as LOCAL FILE",
+                            f.getFamilyName(), value);
+                    firstSetter.accept(f);
+                    return true;
+                } catch (Exception ignored) {
+                }
+            }
+            FontFamily family = FontFamily.getSystemFontWithAlias(value);
+            if (family == null) {
+                Optional<FontFamily> optional = FontFamily.getSystemFontMap().values().stream()
+                        .filter(f -> f.getFamilyName().equalsIgnoreCase(value))
+                        .findFirst();
+                if (optional.isPresent()) {
+                    family = optional.get();
+                }
+            }
+            if (family != null) {
+                selected.add(family);
+                LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as SYSTEM FONT",
+                        family.getFamilyName(), value);
+                if (firstSetter != null) {
+                    firstSetter.accept(family);
+                }
+                return true;
+            }
+            LOGGER.info(MARKER, "Font '{}' failed to load or invalid", value);
+            return false;
         }
 
         @Nullable
@@ -421,30 +473,16 @@ public final class ModernUIForge {
         // reload just Typeface on main thread, called after loaded
         public void reloadTypeface() {
             synchronized (this) {
-                if (mTypeface == null) {
-                    return;
-                }
+                boolean firstLoad = mTypeface == null;
                 mFirstFontFamily = null;
-                mTypeface = loadTypefaceInternal(this::setFirstFontFamily, false);
-                LOGGER.info(MARKER, "Reloaded typeface: {}", mTypeface);
+                mTypeface = loadTypefaceInternal(this::setFirstFontFamily, firstLoad);
+                LOGGER.info(MARKER, "{} typeface: {}", firstLoad ? "Loaded" : "Reloaded", mTypeface);
             }
         }
 
         public void reloadFontStrike() {
-            if (!Boolean.parseBoolean(
-                    Loader.getBootstrapProperties().getProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
-            )) {
-                Minecraft.getInstance().submit(
-                        () -> TextLayoutEngine.getInstance().reloadAll());
-            } else {
-                Minecraft.getInstance().submit(
-                        () -> {
-                            GlyphManager.getInstance().reload();
-                            LOGGER.info(MARKER, "Reloaded glyph manager");
-                            LayoutCache.clear();
-                        }
-                );
-            }
+            Minecraft.getInstance().submit(
+                    () -> FontResourceManager.getInstance().reloadAll());
         }
 
         @Nonnull
@@ -452,6 +490,15 @@ public final class ModernUIForge {
                 @Nonnull Consumer<FontFamily> firstSetter,
                 boolean firstLoad) {
             Set<FontFamily> families = new LinkedHashSet<>();
+            if (Config.CLIENT.mUseColorEmoji.get()) {
+                var emojiFont = FontResourceManager.getInstance().getEmojiFont();
+                if (emojiFont != null) {
+                    var colorEmojiFamily = new FontFamily(
+                            emojiFont
+                    );
+                    families.add(colorEmojiFamily);
+                }
+            }
             String first = Config.CLIENT.mFirstFontFamily.get();
             List<? extends String> configs = Config.CLIENT.mFallbackFontFamilyList.get();
             if (first != null || configs != null) {
@@ -470,14 +517,14 @@ public final class ModernUIForge {
 
         @Nonnull
         @Override
-        public InputStream getResourceStream(@Nonnull String res, @Nonnull String path) throws IOException {
-            return Minecraft.getInstance().getResourceManager().getResource(new ResourceLocation(res, path)).getInputStream();
+        public InputStream getResourceStream(@Nonnull String namespace, @Nonnull String path) throws IOException {
+            return Minecraft.getInstance().getResourceManager().getResource(new ResourceLocation(namespace, path)).getInputStream();
         }
 
         @Nonnull
         @Override
-        public ReadableByteChannel getResourceChannel(@Nonnull String res, @Nonnull String path) throws IOException {
-            return Channels.newChannel(getResourceStream(res, path));
+        public ReadableByteChannel getResourceChannel(@Nonnull String namespace, @Nonnull String path) throws IOException {
+            return Channels.newChannel(getResourceStream(namespace, path));
         }
 
         @Override

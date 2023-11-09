@@ -27,7 +27,6 @@ import net.minecraft.client.gui.screens.VideoSettingsScreen;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.client.event.ScreenOpenEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -129,19 +128,17 @@ final class EventHandler {
             BlurHandler.INSTANCE.blur(event.getScreen());
         }
 
-        @SubscribeEvent
+        /*@SubscribeEvent
         static void onGuiInit(@Nonnull ScreenEvent.InitScreenEvent event) {
             if (event.getScreen() instanceof VideoSettingsScreen && sNewGuiScale != null) {
                 sNewGuiScale.setMaxValue(MuiForgeApi.calcGuiScales() & 0xf);
             }
-        }
+        }*/
 
         @SubscribeEvent
         static void onRenderTick(@Nonnull TickEvent.RenderTickEvent event) {
-            if (event.phase == TickEvent.Phase.END) {
-                Core.flushMainCalls();
-                Core.flushRenderCalls();
-            }
+            Core.flushMainCalls();
+            Core.flushRenderCalls();
         }
 
         /*@SubscribeEvent(receiveCanceled = true)

@@ -25,6 +25,10 @@ import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.MathUtil;
+import icyllis.modernui.graphics.text.GraphemeBreak;
+import icyllis.modernui.mc.forge.mixin.MixinChatFormatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
@@ -43,6 +47,7 @@ import javax.annotation.Nullable;
 import java.io.PrintWriter;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 /**
  * Public APIs for Minecraft Forge mods to Modern UI.
@@ -61,6 +66,12 @@ public final class MuiForgeApi {
      * This prevents rasterization of large vector graphics.
      */
     public static final int MAX_GUI_SCALE = 8;
+
+    /**
+     * Matches Slack emoji shortcode.
+     */
+    public static final Pattern EMOJI_SHORTCODE_PATTERN =
+            Pattern.compile("(:(\\w|\\+|-)+:)(?=|[!.?]|$)");
 
     private MuiForgeApi() {
     }
@@ -271,6 +282,57 @@ public final class MuiForgeApi {
         }
         assert min <= auto && auto <= max;
         return min << 8 | auto << 4 | max;
+    }
+
+    // move a grapheme cluster at least
+    public static int offsetByGrapheme(String value, int cursor, int dir) {
+        int op;
+        if (dir < 0) {
+            op = GraphemeBreak.BEFORE;
+        } else if (dir == 0) {
+            op = GraphemeBreak.AT_OR_BEFORE;
+        } else {
+            op = GraphemeBreak.AFTER;
+        }
+        int offset = Util.offsetByCodepoints(value, cursor, dir);
+        cursor = GraphemeBreak.getTextRunCursor(
+                value, ModernUI.getSelectedLocale(),
+                0, value.length(), cursor, op
+        );
+        if (dir > 0) {
+            return Math.max(offset, cursor);
+        } else {
+            return Math.min(offset, cursor);
+        }
+    }
+
+    /**
+     * Maps ASCII to ChatFormatting, including all cases.
+     */
+    private static final ChatFormatting[] FORMATTING_TABLE = new ChatFormatting[128];
+
+    static {
+        for (ChatFormatting f : ChatFormatting.values()) {
+            FORMATTING_TABLE[f.getChar()] = f;
+            FORMATTING_TABLE[Character.toUpperCase(f.getChar())] = f;
+        }
+    }
+
+    /**
+     * Get the {@link ChatFormatting} by the given formatting code. Vanilla's method is
+     * overwritten by this, see {@link MixinChatFormatting}.
+     * <p>
+     * Vanilla would create a new String from the char, call String.toLowerCase() and
+     * String.charAt(0), search this char with a clone of ChatFormatting values. However,
+     * it is unnecessary to consider non-ASCII compatibility, so we simplify it to a LUT.
+     *
+     * @param code c, case-insensitive
+     * @return chat formatting, {@code null} if nothing
+     * @see ChatFormatting#getByCode(char)
+     */
+    @Nullable
+    public static ChatFormatting getFormattingByCode(char code) {
+        return code < 128 ? FORMATTING_TABLE[code] : null;
     }
 
     /**

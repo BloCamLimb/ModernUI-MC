@@ -236,11 +236,13 @@ public final class ModernTextRenderer {
                             MathUtil.isApproxEqual(m[5], 1)) {
                         // pure translation
                         return TextRenderType.MODE_NORMAL;
-                    } else if (sComputeDeviceFontSize &&
-                            m[0] < .999 &&
-                            MathUtil.isApproxEqual(m[0], m[5])) {
-                        // uniform scale smaller
-                        return TextRenderType.MODE_DYNAMIC_SCALE;
+                    } else if (sComputeDeviceFontSize && MathUtil.isApproxEqual(m[0], m[5])) {
+                        float upperLimit = Math.max(1.0f,
+                                (float) TextLayoutEngine.MIN_PIXEL_DENSITY_FOR_SDF / mEngine.getResLevel());
+                        if (m[0] < upperLimit) {
+                            // uniform scale smaller and not too large
+                            return TextRenderType.MODE_UNIFORM_SCALE;
+                        }
                     }
                 }
                 if (sAllowSDFTextIn2D) {
@@ -306,9 +308,13 @@ public final class ModernTextRenderer {
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
 
-        matrix = new Matrix4f(matrix);
         layout.drawText(matrix, source, x, y, r, g, b, a, false,
                 TextRenderType.MODE_SDF_FILL, false, 0, packedLight);
+
+        if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
+            return;
+        }
+        matrix = new Matrix4f(matrix);
 
         a = outlineColor >>> 24;
         if (a <= 1) a = 255;

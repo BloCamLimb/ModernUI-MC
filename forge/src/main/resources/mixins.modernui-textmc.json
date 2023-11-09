@@ -10,7 +10,6 @@
     "AccessMatrix4f",
     "AccessRenderBuffers",
     "MixinBidiReorder",
-    "MixinChatFormatting",
     "MixinClientLanguage",
     "MixinCommandSuggestions",
     "MixinEditBox",
@@ -19,7 +18,6 @@
     "MixinGameRenderer",
     "MixinIngameGui",
     "MixinLanguage",
-    "MixinLevelRenderer",
-    "MixinRenderSystem"
+    "MixinLevelRenderer"
   ]
 }
