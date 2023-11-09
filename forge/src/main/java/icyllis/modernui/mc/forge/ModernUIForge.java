@@ -21,7 +21,6 @@ package icyllis.modernui.mc.forge;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.*;
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraftforge.api.distmarker.Dist;
@@ -156,12 +155,10 @@ public final class ModernUIForge extends ModernUIMod {
                     spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
                             ModernUI.NAME_CPT + "/text.toml")
             );
+            FontResourceManager.getInstance();
             if (isTextEngineEnabled()) {
                 ModernUIText.init();
-                new TextLayoutEngine();
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
-            } else {
-                new FontResourceManager();
             }
             FMLJavaModLoadingContext.get().getModEventBus().addListener(
                     (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())

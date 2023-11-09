@@ -590,7 +590,8 @@ public final class Config {
                 reload = true;
             }*/
             if (reloadStrike) {
-                ModernUIClient.getInstance().reloadFontStrike();
+                Minecraft.getInstance().submit(
+                        () -> FontResourceManager.getInstance().reloadAll());
             }
 
             //ModernUI.getSelectedTypeface();
@@ -966,9 +967,16 @@ public final class Config {
             ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();
 
             if (reloadStrike) {
-                ModernUIClient.getInstance().reloadFontStrike();
+                Minecraft.getInstance().submit(
+                        () -> FontResourceManager.getInstance().reloadAll());
             } else if (reload && ModernUIClient.isTextEngineEnabled()) {
-                Minecraft.getInstance().submit(() -> TextLayoutEngine.getInstance().reload());
+                Minecraft.getInstance().submit(
+                        () -> {
+                            try {
+                                TextLayoutEngine.getInstance().reload();
+                            } catch (Exception ignored) {
+                            }
+                        });
             }
             /*GlyphManagerForge.sPreferredFont = preferredFont.get();
             GlyphManagerForge.sAntiAliasing = antiAliasing.get();
