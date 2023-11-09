@@ -22,7 +22,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.engine.DriverBugWorkarounds;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.text.*;
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
@@ -284,12 +283,10 @@ public final class ModernUIForge {
                     spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
                             ModernUI.NAME_CPT + "/text.toml")
             );
+            FontResourceManager.getInstance();
             if (isTextEngineEnabled()) {
                 ModernUIText.init();
-                new TextLayoutEngine();
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
-            } else {
-                new FontResourceManager();
             }
             FMLJavaModLoadingContext.get().getModEventBus().addListener(
                     (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())

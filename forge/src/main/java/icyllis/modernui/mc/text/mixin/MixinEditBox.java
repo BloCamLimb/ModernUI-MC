@@ -165,7 +165,8 @@ public abstract class MixinEditBox extends AbstractWidget {
         final float cursorX;
         if (cursorInRange) {
             if (!separate && !viewText.isEmpty()) {
-                TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(viewText);
+                TextLayout layout = engine.lookupVanillaLayout(viewText,
+                        Style.EMPTY, TextLayoutEngine.COMPUTE_ADVANCES);
                 float curAdv = 0;
                 int stripIndex = 0;
                 for (int i = 0; i < viewCursorPos; i++) {
@@ -204,7 +205,8 @@ public abstract class MixinEditBox extends AbstractWidget {
         if (viewCursorPos != clampedViewHighlightPos) {
             bufferSource.endBatch();
 
-            TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(viewText);
+            TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(viewText,
+                    Style.EMPTY, TextLayoutEngine.COMPUTE_ADVANCES);
             float startX = baseX;
             float endX = cursorX;
             int stripIndex = 0;
