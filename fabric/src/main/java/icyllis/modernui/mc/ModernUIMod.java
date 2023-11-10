@@ -53,8 +53,10 @@ public abstract class ModernUIMod {
     public static volatile boolean sDevelopment;
     public static volatile boolean sDeveloperMode;
 
-    public static boolean sOptiFineLoaded;
-    public static boolean sIrisApiLoaded;
+    protected static boolean sOptiFineLoaded;
+    protected static boolean sIrisApiLoaded;
+    protected static volatile boolean sLegendaryTooltipsLoaded;
+    protected static volatile boolean sSodiumLoaded;
 
     static {
         try {
@@ -87,6 +89,14 @@ public abstract class ModernUIMod {
 
     public static boolean isIrisApiLoaded() {
         return sIrisApiLoaded;
+    }
+
+    public static boolean isLegendaryTooltipsLoaded() {
+        return sLegendaryTooltipsLoaded;
+    }
+
+    public static boolean isSodiumLoaded() {
+        return sSodiumLoaded;
     }
 
     public static boolean isDeveloperMode() {

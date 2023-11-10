@@ -293,7 +293,7 @@ public final class Config {
 
             mTooltip = builder.comment(
                             "Whether to enable Modern UI enhanced tooltip, or back to vanilla default.")
-                    .define("enable", true);
+                    .define("enable", !ModernUIMod.isLegendaryTooltipsLoaded());
             mRoundedTooltip = builder.comment(
                             "Whether to use rounded tooltip shapes, or to use rectangular shapes.")
                     .define("roundedShape", true);

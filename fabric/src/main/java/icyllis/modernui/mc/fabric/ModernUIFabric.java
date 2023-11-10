@@ -41,6 +41,9 @@ public class ModernUIFabric extends ModernUIMod implements ModInitializer {
             LOGGER.warn(MARKER, "Signature is missing");
         }
 
+        sLegendaryTooltipsLoaded = FabricLoader.getInstance().isModLoaded("legendarytooltips");
+        sSodiumLoaded = FabricLoader.getInstance().isModLoaded("sodium");
+
         ModConfigEvents.loading(ID).register(Config::reloadCommon);
         ModConfigEvents.reloading(ID).register(Config::reloadCommon);
         Config.initCommonConfig(

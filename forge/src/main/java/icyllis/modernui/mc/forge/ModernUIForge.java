@@ -81,6 +81,7 @@ public final class ModernUIForge extends ModernUIMod {
             warnSetup("You should remove ReBlurred, Modern UI already includes its features, " +
                     "and Modern UI has better performance than it");
         }
+        sLegendaryTooltipsLoaded = ModList.get().isLoaded("legendarytooltips");
 
         Config.initCommonConfig(
                 spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, spec,
