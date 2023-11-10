@@ -81,11 +81,6 @@ public class TextLayoutEngine extends FontResourceManager
     public static final Marker MARKER = MarkerManager.getMarker("TextLayout");
 
     /**
-     * Global instance
-     */
-    private static volatile TextLayoutEngine sInstance;
-
-    /**
      * Config values
      */
     //public static int sDefaultFontSize;
@@ -309,9 +304,6 @@ public class TextLayoutEngine extends FontResourceManager
     private int mTimer;
 
     public TextLayoutEngine() {
-        super();
-        sInstance = this;
-
         /* StringCache is created by the main game thread; remember it for later thread safety checks */
         //mainThread = Thread.currentThread();
 
@@ -344,7 +336,7 @@ public class TextLayoutEngine extends FontResourceManager
      */
     @Nonnull
     public static TextLayoutEngine getInstance() {
-        return sInstance;
+        return (TextLayoutEngine) FontResourceManager.getInstance();
     }
 
     /**

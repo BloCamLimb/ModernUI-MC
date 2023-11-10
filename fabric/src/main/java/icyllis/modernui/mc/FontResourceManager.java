@@ -20,8 +20,10 @@ package icyllis.modernui.mc;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
@@ -70,14 +72,7 @@ public class FontResourceManager implements PreparableReloadListener {
      */
     protected final HashMap<String, String> mEmojiShortcodes = new HashMap<>();
 
-    public FontResourceManager() {
-        synchronized (FontResourceManager.class) {
-            if (sInstance == null) {
-                sInstance = this;
-            } else {
-                throw new RuntimeException("Multiple instances");
-            }
-        }
+    protected FontResourceManager() {
         // init first
         mGlyphManager = GlyphManager.getInstance();
     }
@@ -88,6 +83,18 @@ public class FontResourceManager implements PreparableReloadListener {
      * @return the instance
      */
     public static FontResourceManager getInstance() {
+        if (sInstance == null) {
+            synchronized (FontResourceManager.class) {
+                if (sInstance == null) {
+                    if (ModernUIClient.isTextEngineEnabled()) {
+                        sInstance = new TextLayoutEngine();
+                    } else {
+                        sInstance = new FontResourceManager();
+                        LOGGER.info(ModernUI.MARKER, "Created FontResourceManager");
+                    }
+                }
+            }
+        }
         return sInstance;
     }
 

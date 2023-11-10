@@ -183,6 +183,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                         ModernUI.NAME_CPT + "/text.toml")
         );
 
+        FontResourceManager.getInstance();
         if (isTextEngineEnabled()) {
             ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
                 MuiModApi.addOnWindowResizeListener(TextLayoutEngine.getInstance());
@@ -191,8 +192,6 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
                 MuiTextCommand.register(dispatcher);
             });
-
-            new TextLayoutEngine();
 
             MuiModApi.addOnDebugDumpListener(TextLayoutEngine.getInstance());
 
@@ -225,8 +224,6 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                     );
                 }
             });
-
-            new FontResourceManager();
         }
         LOGGER.info(MARKER, "Initialized Modern UI client");
     }

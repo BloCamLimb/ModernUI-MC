@@ -210,7 +210,7 @@ public abstract class MixinEditBox extends AbstractWidget {
         if (viewCursorPos != clampedViewHighlightPos) {
             gr.flush();
 
-            TextLayout layout = TextLayoutEngine.getInstance().lookupVanillaLayout(viewText,
+            TextLayout layout = engine.lookupVanillaLayout(viewText,
                     Style.EMPTY, TextLayoutEngine.COMPUTE_ADVANCES);
             float startX = baseX;
             float endX = cursorX;
