@@ -128,8 +128,8 @@ remapJar {
 tasks.register('remapMavenJar', RemapJarTask) {
     dependsOn(jar)
     inputFile.set(jar.archiveFile)
+    addNestedDependencies = false
     /*targetNamespace.set("srg") // to srg names
-    addNestedDependencies.set(true)
     remapAccessWidener.set(true)*/
     archiveClassifier.set("maven")
 }
