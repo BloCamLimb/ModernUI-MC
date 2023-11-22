@@ -23,7 +23,7 @@ import com.mojang.blaze3d.font.GlyphInfo;
 import com.mojang.blaze3d.font.SheetGlyphInfo;
 import icyllis.arc3d.core.Strike;
 import icyllis.arc3d.engine.GpuResource;
-import icyllis.arc3d.engine.Surface;
+import icyllis.arc3d.engine.ISurface;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
@@ -163,7 +163,7 @@ public class BitmapFont implements Font, AutoCloseable {
                             mBitmap.getHeight(),
                             GLBackendFormat.make(GL_RGBA8),
                             1,
-                            Surface.FLAG_BUDGETED,
+                            ISurface.FLAG_BUDGETED,
                             mBitmap.getColorType(),
                             mBitmap.getColorType(),
                             mBitmap.getRowBytes(),
