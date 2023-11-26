@@ -285,6 +285,10 @@ public final class ModernTextRenderer {
             return;
         }
 
+        boolean isBlack = (color & 0xFFFFFF) == 0;
+        if (isBlack) {
+            color = outlineColor;
+        }
         int a = color >>> 24;
         if (a <= 1) a = 255;
         int r = color >> 16 & 0xff;
@@ -300,7 +304,9 @@ public final class ModernTextRenderer {
         layout.drawText(matrix, source, x, y, r, g, b, a, false,
                 TextRenderType.MODE_SDF_FILL, false, 0, packedLight);
 
-        if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
+        // disable outline if either text color is BLACK or SDF shader is unavailable
+        if (isBlack ||
+                (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld)) {
             return;
         }
         matrix = new Matrix4f(matrix);
