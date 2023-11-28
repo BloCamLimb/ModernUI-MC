@@ -97,9 +97,13 @@ public class CenterFragment2 extends Fragment {
 
             buttonGroup.addView(createNavButton(1001, "modernui.center.tab.dashboard"));
             buttonGroup.addView(createNavButton(1002, "modernui.center.tab.preferences"));
-            buttonGroup.addView(createNavButton(1003, "modernui.center.tab.developerOptions"));
+            if (ModernUIMod.isDeveloperMode()) {
+                buttonGroup.addView(createNavButton(1003, "modernui.center.tab.developerOptions"));
+            }
             buttonGroup.addView(createNavButton(1004, "soundCategory.music"));
-            buttonGroup.addView(createNavButton(1005, "Dev"));
+            if (ModernUIMod.isDeveloperMode()) {
+                buttonGroup.addView(createNavButton(1005, "Dev"));
+            }
 
             buttonGroup.check(1001);
 

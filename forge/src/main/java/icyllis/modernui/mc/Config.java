@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc;
 
+import com.ibm.icu.lang.UScript;
 import com.mojang.blaze3d.platform.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
@@ -690,7 +691,7 @@ public final class Config {
      */
     public static class Common {
 
-        private final ForgeConfigSpec.BooleanValue developerMode;
+        public final ForgeConfigSpec.BooleanValue developerMode;
         public final ForgeConfigSpec.IntValue oneTimeEvents;
 
         public final ForgeConfigSpec.BooleanValue autoShutdown;
@@ -724,6 +725,13 @@ public final class Config {
                     }, s -> true);
 
             builder.pop();
+        }
+
+        public void saveAndReloadAsync() {
+            Util.ioPool().execute(() -> {
+                COMMON_SPEC.save();
+                reload();
+            });
         }
 
         private void reload() {
@@ -846,15 +854,26 @@ public final class Config {
                             "Enable to use distance field for text rendering in 3D world.",
                             "It improves performance with deferred rendering and sharpens when doing 3D transform.")
                     .define("useDistanceField", true);*/
+            boolean nonLatin = false;
+            {
+                int[] scripts = UScript.getCode(ModernUI.getSelectedLocale());
+                for (int script : scripts) {
+                    if (script > UScript.INHERITED && script != UScript.LATIN) {
+                        nonLatin = true;
+                        break;
+                    }
+                }
+            }
             mDefaultFontBehavior = builder.comment(
-                            "For DEFAULT_FONT and UNIFORM_FONT, should we keep some bitmap providers of them?",
+                            "For \"minecraft:default\" font, should we keep some bitmap providers of them?",
                             "Ignore All: Equivalent to Force Unicode Font.",
                             "Keep ASCII: Include minecraft:font/ascii.png, minecraft:font/accented.png, " +
                                     "minecraft:font/nonlatin_european.png",
-                            "Keep Other: Include providers in minecraft:font/default.json other than Keep ASCII and " +
-                                    "Unicode font.",
-                            "Keep All: Include all except Unicode font.")
-                    .defineEnum("defaultFontBehavior", DefaultFontBehavior.KEEP_ALL);
+                            "Keep Other: Include providers other than ASCII and Unicode font.",
+                            "Keep All: Include all except Unicode font.",
+                            "The default value depends on OS language and region.")
+                    .defineEnum("defaultFontBehavior",
+                            nonLatin ? DefaultFontBehavior.KEEP_OTHER : DefaultFontBehavior.KEEP_ALL);
             mUseComponentCache = builder.comment(
                             "Whether to use text component object as hash key to lookup in layout cache.",
                             "If you find that Modern UI text rendering is not compatible with some mods,",
@@ -862,8 +881,9 @@ public final class Config {
                             "Modern UI will use another cache strategy if this is disabled.")
                     .define("useComponentCache", true);
             mAllowAsyncLayout = builder.comment(
-                            "Allow text layout to be computed from non-main threads.",
-                            "Otherwise, block on current thread.")
+                            "Allow text layout to be computed from background threads, which may lead to " +
+                                    "inconsistency issues.",
+                            "Otherwise, block the current thread and wait for main thread.")
                     .define("allowAsyncLayout", true);
             mLineBreakStyle = builder.comment(
                             "See CSS line-break property, https://developer.mozilla.org/en-US/docs/Web/CSS/line-break")
