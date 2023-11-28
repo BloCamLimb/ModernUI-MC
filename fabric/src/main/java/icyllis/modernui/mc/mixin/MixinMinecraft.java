@@ -97,4 +97,9 @@ public abstract class MixinMinecraft {
     private void onEndRenderTick(boolean hasMemory, CallbackInfo ci) {
         ModernUIFabricClient.END_RENDER_TICK.invoker().run();
     }
+
+    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lnet/minecraft/Util;shutdownExecutors()V"))
+    private void onClose(CallbackInfo ci) {
+        UIManager.destroy();
+    }
 }

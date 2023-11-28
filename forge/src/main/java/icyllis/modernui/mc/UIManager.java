@@ -907,22 +907,8 @@ public abstract class UIManager implements LifecycleOwner {
             // main thread
             if (!minecraft.isRunning() && mRunning) {
                 mRunning = false;
-                LOGGER.debug(MARKER, "Quiting Modern UI");
                 mRoot.mHandler.post(this::finish);
-                if (mCanvas != null) {
-                    mCanvas.destroy();
-                }
-                FontResourceManager.getInstance().close();
-                ImageStore.getInstance().clear();
-                Core.requireDirectContext().unref();
-                AudioManager.getInstance().close();
-                try {
-                    // in case of GLFW is terminated too early
-                    mUiThread.join(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                LOGGER.debug(MARKER, "Quited Modern UI");
+                // later destroy() will be called
             } else if (minecraft.isRunning() && mRunning &&
                     mScreen == null && minecraft.getOverlay() == null) {
                 // Render the UI above everything
@@ -945,6 +931,29 @@ public abstract class UIManager implements LifecycleOwner {
         if (isEnd) {
             BlurHandler.INSTANCE.onClientTick();
         }
+    }
+
+    public static void destroy() {
+        // see onRenderTick() above
+        LOGGER.debug(MARKER, "Quiting Modern UI");
+        if (sInstance != null) {
+            if (sInstance.mCanvas != null) {
+                sInstance.mCanvas.destroy();
+            }
+        }
+        FontResourceManager.getInstance().close();
+        ImageStore.getInstance().clear();
+        Core.requireDirectContext().unref();
+        if (sInstance != null) {
+            AudioManager.getInstance().close();
+            try {
+                // in case of GLFW is terminated too early
+                sInstance.mUiThread.join(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        LOGGER.debug(MARKER, "Quited Modern UI");
     }
 
     @UiThread

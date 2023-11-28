@@ -85,4 +85,9 @@ public abstract class MixinMinecraft {
             }
         }
     }
+
+    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lnet/minecraft/Util;shutdownExecutors()V"))
+    private void onClose(CallbackInfo ci) {
+        UIManager.destroy();
+    }
 }
