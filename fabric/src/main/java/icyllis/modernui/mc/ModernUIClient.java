@@ -156,6 +156,28 @@ public abstract class ModernUIClient extends ModernUI {
                                  @Nonnull Consumer<FontFamily> firstSetter,
                                  boolean firstLoad) {
         if (firstLoad) {
+            var directory = Minecraft.getInstance().getResourcePackDirectory();
+            try (var paths = Files.newDirectoryStream(directory)) {
+                for (var p : paths) {
+                    String name = p.getFileName().toString();
+                    if (name.endsWith(".ttf") ||
+                            name.endsWith(".otf") ||
+                            name.endsWith(".ttc") ||
+                            name.endsWith(".otc")) {
+                        p = p.toAbsolutePath();
+                        try {
+                            FontFamily f = FontFamily.createFamily(p.toFile(), /*register*/true);
+                            LOGGER.info(MARKER, "Registered font '{}', path '{}'",
+                                    f.getFamilyName(), p);
+                        } catch (Exception e) {
+                            LOGGER.error(MARKER, "Failed to register font '{}'",
+                                    p, e);
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                LOGGER.error(MARKER, "Failed to open resource pack directory", e);
+            }
             var resources = Minecraft.getInstance().getResourceManager();
             for (var entry : resources.listResourceStacks("font",
                     res -> {
@@ -174,8 +196,8 @@ public abstract class ModernUIClient extends ModernUI {
                         LOGGER.debug(MARKER, "Registered font '{}', location '{}' in pack: '{}'",
                                 f.getFamilyName(), entry.getKey(), resource.sourcePackId());
                     } catch (Exception e) {
-                        LOGGER.error(MARKER, "Failed to load font '{}' in pack: '{}'",
-                                entry.getKey(), resource.sourcePackId());
+                        LOGGER.error(MARKER, "Failed to register font '{}' in pack: '{}'",
+                                entry.getKey(), resource.sourcePackId(), e);
                     }
                 }
             }
@@ -185,8 +207,8 @@ public abstract class ModernUIClient extends ModernUI {
             hasFail |= loadSingleFont(fallback, selected, null);
         }
         if (hasFail && ModernUIMod.isDeveloperMode()) {
-            LOGGER.debug(MARKER, "Available system font families: {}",
-                    String.join(",", FontFamily.getSystemFontMap().keySet()));
+            LOGGER.debug(MARKER, "Available system font families:\n{}",
+                    String.join("\n", FontFamily.getSystemFontMap().keySet()));
         }
     }
 
@@ -196,17 +218,17 @@ public abstract class ModernUIClient extends ModernUI {
         if (StringUtils.isEmpty(value)) {
             return true;
         }
-        if (firstSetter != null) {
-            try {
-                FontFamily f = FontFamily.createFamily(new File(
-                        value.replaceAll("\\\\", "/")), /*register*/false);
-                selected.add(f);
-                LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as LOCAL FILE",
-                        f.getFamilyName(), value);
-                firstSetter.accept(f);
-                return true;
-            } catch (Exception ignored) {
+        try {
+            File f = new File(value.replaceAll("\\\\", "/"));
+            FontFamily family = FontFamily.createFamily(f, /*register*/false);
+            selected.add(family);
+            LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as LOCAL FILE",
+                    family.getFamilyName(), value);
+            if (firstSetter != null) {
+                firstSetter.accept(family);
             }
+            return true;
+        } catch (Exception ignored) {
         }
         FontFamily family = FontFamily.getSystemFontWithAlias(value);
         if (family == null) {

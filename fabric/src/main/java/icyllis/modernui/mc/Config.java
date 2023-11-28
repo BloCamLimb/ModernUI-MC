@@ -436,12 +436,15 @@ public final class Config {
                     .define("firstFontFamily", "Source Han Sans CN Medium");
             mFallbackFontFamilyList = builder.comment(
                             "A set of fallback font families to determine the typeface to use.",
-                            "TrueType & OpenType are supported. Each element can be one of the following two cases.",
-                            "1) Font family English name that registered to Modern UI, for instance: Segoe UI",
-                            "2) File path for external fonts on your PC, for instance: /usr/shared/fonts/x.otf",
-                            "Fonts under 'modernui:font' in resource packs and OS builtin fonts will be registered.",
-                            "Using bitmap fonts should consider other text settings, default glyph size should be 16x.",
-                            "This list is only read once when the game is loaded, or reloaded via in-game GUI.")
+                            "The order is first > fallbacks. TrueType & OpenType are supported.",
+                            "Each element can be one of the following two cases:",
+                            "1) Name of registered font family, for instance: Segoe UI",
+                            "2) Path of font files on your PC, for instance: /usr/shared/fonts/x.otf",
+                            "Registered font families include:",
+                            "1) OS builtin fonts.",
+                            "2) Font files in '/resourcepacks' directory.",
+                            "3) Font files under 'modernui:font' in resource packs.",
+                            "This is only read once when the game is loaded, you can reload via in-game GUI.")
                     .defineList("fallbackFontFamilyList", () -> {
                         List<String> list = new ArrayList<>();
                         list.add("Noto Sans");
