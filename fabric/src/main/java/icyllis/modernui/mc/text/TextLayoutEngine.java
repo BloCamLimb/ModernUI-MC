@@ -409,6 +409,7 @@ public class TextLayoutEngine extends FontResourceManager
             }*/
             mResLevel = Math.min(scale, MuiModApi.MAX_GUI_SCALE);
         }
+        mForceUnicodeFont = Minecraft.getInstance().options.forceUnicodeFont().get();
 
         Locale locale = ModernUI.getSelectedLocale();
         boolean layoutRtl = TextUtils.getLayoutDirectionFromLocale(locale) == View.LAYOUT_DIRECTION_RTL;
@@ -484,11 +485,15 @@ public class TextLayoutEngine extends FontResourceManager
 
     @Override
     public void onWindowResize(int width, int height, int newScale, int oldScale) {
-        Boolean forceUnicodeFont = Minecraft.getInstance().options.forceUnicodeFont().get();
-        if (Core.getRenderThread() != null &&
-                (newScale != oldScale || !Objects.equals(mForceUnicodeFont, forceUnicodeFont))) {
-            reload();
-            mForceUnicodeFont = forceUnicodeFont;
+        if (Core.getRenderThread() != null) {
+            boolean reload = (newScale != oldScale);
+            if (!reload) {
+                Boolean forceUnicodeFont = Minecraft.getInstance().options.forceUnicodeFont().get();
+                reload = !Objects.equals(mForceUnicodeFont, forceUnicodeFont);
+            }
+            if (reload) {
+                reload();
+            }
         }
     }
 
