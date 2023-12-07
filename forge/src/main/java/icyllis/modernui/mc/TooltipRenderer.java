@@ -50,6 +50,7 @@ public final class TooltipRenderer {
     public static final int[] sFillColor = new int[4];
     public static final int[] sStrokeColor = new int[4];
     public static volatile float sBorderWidth = 4 / 3f;
+    public static volatile float sShadowRadius = 10;
 
     // space between mouse and tooltip
     private static final int TOOLTIP_SPACE = 12;
@@ -411,12 +412,18 @@ public final class TooltipRenderer {
         }*/
         paint.setStyle(Paint.FILL);
         if (sRoundedShapes) {
-            canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
-                    tooltipX + tooltipWidth + H_BORDER,
-                    tooltipY + tooltipHeight + V_BORDER,
+            float spread = 0;
+            if (sShadowRadius >= 2) {
+                spread = sShadowRadius * 0.5f - 1f;
+                paint.setSmoothWidth(sShadowRadius);
+            }
+            canvas.drawRoundRectGradient(tooltipX - H_BORDER - spread, tooltipY - V_BORDER - spread,
+                    tooltipX + tooltipWidth + H_BORDER + spread,
+                    tooltipY + tooltipHeight + V_BORDER + spread,
                     sFillColor[0], sFillColor[1],
                     sFillColor[2], sFillColor[3],
-                    3, paint);
+                    3 + spread, paint);
+            paint.setSmoothWidth(0);
         } else {
             canvas.drawRectGradient(tooltipX - H_BORDER + 1, tooltipY - V_BORDER + 1,
                     tooltipX + tooltipWidth + H_BORDER - 1,

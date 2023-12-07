@@ -72,6 +72,7 @@
   "modernui.center.tooltip.backgroundOpacity": "背景不透明度",
   "modernui.center.tooltip.borderStyle": "邊框樣式",
   "modernui.center.tooltip.borderWidth": "邊框寬度",
+  "modernui.center.tooltip.shadowRadius": "陰影半徑",
   "modernui.center.tooltip.borderCycle": "邊框顏色變換時間",
   "modernui.center.tooltip.borderCycle_desc": "當不為 0 時，此值（以毫秒為單位）設定從一個頂點的顏色過渡到下一個頂點的持續時間。",
   "modernui.center.text.textEngine": "現代文字引擎",

@@ -1177,6 +1177,12 @@ public class PreferencesFragment extends Fragment {
                 mContent.addView(option);
             }
             {
+                var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.shadowRadius",
+                        Config.Client.TOOLTIP_SHADOW_RADIUS_MIN, Config.Client.TOOLTIP_SHADOW_RADIUS_MAX,
+                        4, Config.CLIENT.mTooltipShadow, 10, mSaveFn);
+                mContent.addView(option);
+            }
+            {
                 var option = createIntegerOption(mParent.getContext(), "modernui.center.tooltip.borderCycle",
                         Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MIN, Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MAX,
                         4, 100, Config.CLIENT.mTooltipCycle, mSaveFn);
