@@ -80,6 +80,18 @@ public final class TooltipRenderer {
     private boolean mDraw;
     //public static float sAlpha = 1;
 
+    private float mScroll;
+    // 0 = off, 1 = down, -1 = up
+    private int mMarqueeDir;
+    // the time point when marquee is at top or bottom
+    private long mMarqueeEndMillis;
+
+    private static final long MARQUEE_DELAY_MILLIS = 1200;
+
+    private boolean mFrameGap;
+    private long mCurrTimeMillis;
+    private long mCurrDeltaMillis;
+
     public TooltipRenderer() {
     }
 
@@ -96,23 +108,34 @@ public final class TooltipRenderer {
         }*/
         if (mDraw) {
             mDraw = false;
-            if (sBorderColorCycle > 0) {
-                float p = (timeMillis % sBorderColorCycle) / (float) sBorderColorCycle;
-                if (mLayoutRTL) {
-                    int pos = (int) ((timeMillis / sBorderColorCycle) & 3);
-                    for (int i = 0; i < 4; i++) {
-                        mActiveStrokeColor[i] = lerpInLinearSpace(p,
-                                sStrokeColor[(i + pos) & 3],
-                                sStrokeColor[(i + pos + 1) & 3]);
-                    }
-                } else {
-                    int pos = 3 - (int) ((timeMillis / sBorderColorCycle) & 3);
-                    for (int i = 0; i < 4; i++) {
-                        mActiveStrokeColor[i] = lerpInLinearSpace(p,
-                                sStrokeColor[(i + pos) & 3],
-                                sStrokeColor[(i + pos + 3) & 3]);
-                    }
-                }
+            if (mFrameGap) {
+                mMarqueeEndMillis = timeMillis;
+                mMarqueeDir = 1;
+                mScroll = 0;
+            }
+            mFrameGap = false;
+        } else {
+            mFrameGap = true;
+        }
+        mCurrTimeMillis = timeMillis;
+        mCurrDeltaMillis = deltaMillis;
+    }
+
+    void updateBorderColor() {
+        float p = (mCurrTimeMillis % sBorderColorCycle) / (float) sBorderColorCycle;
+        if (mLayoutRTL) {
+            int pos = (int) ((mCurrTimeMillis / sBorderColorCycle) & 3);
+            for (int i = 0; i < 4; i++) {
+                mActiveStrokeColor[i] = lerpInLinearSpace(p,
+                        sStrokeColor[(i + pos) & 3],
+                        sStrokeColor[(i + pos + 1) & 3]);
+            }
+        } else {
+            int pos = 3 - (int) ((mCurrTimeMillis / sBorderColorCycle) & 3);
+            for (int i = 0; i < 4; i++) {
+                mActiveStrokeColor[i] = lerpInLinearSpace(p,
+                        sStrokeColor[(i + pos) & 3],
+                        sStrokeColor[(i + pos + 3) & 3]);
             }
         }
     }
@@ -366,7 +389,36 @@ public final class TooltipRenderer {
             if (tooltipY + tooltipHeight + 6 > screenHeight) {
                 tooltipY = screenHeight - tooltipHeight - 6;
             }
+            if (tooltipY < 6) {
+                tooltipY = 6;
+            }
             partialY = (tooltipY - (int) tooltipY);
+        }
+
+        float maxScroll = 6 + tooltipHeight + 6 - screenHeight;
+        if (maxScroll > 0) {
+            mScroll = MathUtil.clamp(mScroll, 0, maxScroll);
+
+            if (mMarqueeDir != 0 && mCurrTimeMillis - mMarqueeEndMillis >= MARQUEE_DELAY_MILLIS) {
+                mScroll += mMarqueeDir * mCurrDeltaMillis * 0.018f;
+                if (mMarqueeDir > 0) {
+                    if (mScroll >= maxScroll) {
+                        mMarqueeDir = -1;
+                        mMarqueeEndMillis = mCurrTimeMillis;
+                    }
+                } else {
+                    if (mScroll <= 0) {
+                        mMarqueeDir = 1;
+                        mMarqueeEndMillis = mCurrTimeMillis;
+                    }
+                }
+            }
+        } else {
+            mScroll = 0;
+        }
+
+        if (sBorderColorCycle > 0) {
+            updateBorderColor();
         }
 
         // we should disable depth test, because texts may be translucent
@@ -377,7 +429,7 @@ public final class TooltipRenderer {
 
         gr.pose().pushPose();
         // because of the order of draw calls, we actually don't need z-shifting
-        gr.pose().translate(0, 0, 400);
+        gr.pose().translate(0, -mScroll, 400);
         final Matrix4f pose = gr.pose().last().pose();
 
         final int oldVertexArray = glGetInteger(GL_VERTEX_ARRAY_BINDING);
