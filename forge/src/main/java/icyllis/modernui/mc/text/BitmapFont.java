@@ -166,7 +166,7 @@ public class BitmapFont implements Font, AutoCloseable {
                             ISurface.FLAG_BUDGETED,
                             mBitmap.getColorType(),
                             mBitmap.getColorType(),
-                            mBitmap.getRowBytes(),
+                            mBitmap.getRowStride(),
                             mBitmap.getAddress(),
                             mName.toString()
                     );

@@ -604,7 +604,7 @@ public abstract class UIManager implements LifecycleOwner {
     static void unpremulAlpha(Bitmap bitmap) {
         final int width = bitmap.getWidth();
         final int height = bitmap.getHeight();
-        final int rowStride = bitmap.getRowBytes();
+        final int rowStride = bitmap.getRowStride();
         long addr = bitmap.getAddress();
         final boolean big = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
         for (int i = 0; i < height; i++) {
