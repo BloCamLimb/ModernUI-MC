@@ -171,7 +171,7 @@ public class PreferencesFragment extends Fragment {
                 list.addView(option);
             }
 
-            list.addView(createBooleanOption(context, "Developer Mode",
+            list.addView(createBooleanOption(context, "modernui.center.system.developerMode",
                     Config.COMMON.developerMode, Config.COMMON::saveAndReloadAsync));
 
             content.addView(list);

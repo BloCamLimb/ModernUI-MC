@@ -409,7 +409,11 @@ public class TextLayoutEngine extends FontResourceManager
             }*/
             mResLevel = Math.min(scale, MuiModApi.MAX_GUI_SCALE);
         }
-        mForceUnicodeFont = Minecraft.getInstance().options.forceUnicodeFont().get();
+        var opts = Minecraft.getInstance().options;
+        //noinspection ConstantValue
+        if (opts != null) { // this can be null on Fabric, because this class loads too early
+            mForceUnicodeFont = opts.forceUnicodeFont().get();
+        }
 
         Locale locale = ModernUI.getSelectedLocale();
         boolean layoutRtl = TextUtils.getLayoutDirectionFromLocale(locale) == View.LAYOUT_DIRECTION_RTL;

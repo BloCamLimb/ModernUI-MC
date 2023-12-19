@@ -429,7 +429,7 @@ public final class TooltipRenderer {
 
         gr.pose().pushPose();
         // because of the order of draw calls, we actually don't need z-shifting
-        gr.pose().translate(0, 0, 400);
+        gr.pose().translate(0, -mScroll, 400);
         final Matrix4f pose = gr.pose().last().pose();
 
         final int oldVertexArray = glGetInteger(GL_VERTEX_ARRAY_BINDING);
