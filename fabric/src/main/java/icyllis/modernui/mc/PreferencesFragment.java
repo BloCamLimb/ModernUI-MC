@@ -539,11 +539,11 @@ public class PreferencesFragment extends Fragment {
 
         Runnable saveFn = Config.CLIENT::saveAndReloadAsync;
 
-        /*category.addView(createBooleanOption(context, "modernui.center.tooltip.centerTitle",
+        category.addView(createBooleanOption(context, "modernui.center.tooltip.centerTitle",
                 Config.CLIENT.mCenterTooltipTitle, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.tooltip.titleBreak",
-                Config.CLIENT.mTooltipTitleBreak, saveFn));*/
+                Config.CLIENT.mTooltipTitleBreak, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.tooltip.exactPositioning",
                 Config.CLIENT.mExactTooltipPositioning, saveFn));

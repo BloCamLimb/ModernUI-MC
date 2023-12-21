@@ -18,23 +18,25 @@
 
 package icyllis.modernui.mc.mixin;
 
-import icyllis.modernui.mc.TooltipRenderer;
-import icyllis.modernui.mc.UIManager;
+import icyllis.modernui.mc.*;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
 import net.minecraft.world.item.ItemStack;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import javax.annotation.Nonnull;
 import java.util.List;
 
 @Mixin(GuiGraphics.class)
-public abstract class MixinGuiGraphics {
+public abstract class MixinGuiGraphics implements IModernGuiGraphics {
+
+    @Unique
+    private ItemStack tooltipStack = ItemStack.EMPTY;
 
     @Shadow
     public abstract int guiWidth();
@@ -42,18 +44,35 @@ public abstract class MixinGuiGraphics {
     @Shadow
     public abstract int guiHeight();
 
+    @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V",
+            at = @At("HEAD"))
+    private void preRenderTooltip(Font font, ItemStack stack, int x, int y, CallbackInfo ci) {
+        tooltipStack = stack;
+    }
+
+    @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V",
+            at = @At("TAIL"))
+    private void postRenderTooltip(Font font, ItemStack stack, int x, int y, CallbackInfo ci) {
+        tooltipStack = ItemStack.EMPTY;
+    }
+
     @Inject(method = "renderTooltipInternal", at = @At("HEAD"), cancellable = true)
     private void onRenderTooltip(Font font, List<ClientTooltipComponent> components,
                                  int x, int y, ClientTooltipPositioner positioner,
                                  CallbackInfo ci) {
         if (TooltipRenderer.sTooltip) {
             if (!components.isEmpty()) {
-                UIManager.getInstance().drawExtTooltip(ItemStack.EMPTY,
+                UIManager.getInstance().drawExtTooltip(tooltipStack,
                         (GuiGraphics) (Object) this,
                         components, x, y, font,
                         guiWidth(), guiHeight(), positioner);
             }
             ci.cancel();
         }
+    }
+
+    @Override
+    public void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack) {
+        tooltipStack = stack;
     }
 }

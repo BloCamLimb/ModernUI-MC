@@ -338,7 +338,7 @@ public final class TooltipRenderer {
 
         int tooltipWidth;
         int tooltipHeight;
-        boolean titleGap = true;
+        boolean titleGap = false;
         int titleBreakHeight = 0;
         if (list.size() == 1) {
             ClientTooltipComponent component = list.get(0);

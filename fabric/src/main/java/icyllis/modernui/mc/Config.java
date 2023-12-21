@@ -186,8 +186,8 @@ public final class Config {
         public final ForgeConfigSpec.BooleanValue mInventoryPause;
         public final ForgeConfigSpec.BooleanValue mTooltip;
         public final ForgeConfigSpec.BooleanValue mRoundedTooltip;
-        /*public final ForgeConfigSpec.BooleanValue mCenterTooltipTitle;
-        public final ForgeConfigSpec.BooleanValue mTooltipTitleBreak;*/
+        public final ForgeConfigSpec.BooleanValue mCenterTooltipTitle;
+        public final ForgeConfigSpec.BooleanValue mTooltipTitleBreak;
         public final ForgeConfigSpec.BooleanValue mExactTooltipPositioning;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipFill;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
@@ -300,14 +300,14 @@ public final class Config {
             mRoundedTooltip = builder.comment(
                             "Whether to use rounded tooltip shapes, or to use rectangular shapes.")
                     .define("roundedShape", true);
-            /*mCenterTooltipTitle = builder.comment(
+            mCenterTooltipTitle = builder.comment(
                             "True to center the tooltip title if rendering an item's tooltip.",
                             "Following lines are not affected by this option.")
                     .define("centerTitle", true);
             mTooltipTitleBreak = builder.comment(
                             "True to add a title break below the tooltip title line.",
                             "TitleBreak and CenterTitle will work/appear at the same time.")
-                    .define("titleBreak", true);*/
+                    .define("titleBreak", true);
             mExactTooltipPositioning = builder.comment(
                             "True to exactly position tooltip to pixel grid, smoother movement.")
                     .define("exactPositioning", true);
@@ -555,8 +555,8 @@ public final class Config {
             TooltipRenderer.sBorderColorCycle = mTooltipCycle.get();
             TooltipRenderer.sExactPositioning = mExactTooltipPositioning.get();
             TooltipRenderer.sRoundedShapes = mRoundedTooltip.get();
-            /*TooltipRenderer.sCenterTitle = mCenterTooltipTitle.get();
-            TooltipRenderer.sTitleBreak = mTooltipTitleBreak.get();*/
+            TooltipRenderer.sCenterTitle = mCenterTooltipTitle.get();
+            TooltipRenderer.sTitleBreak = mTooltipTitleBreak.get();
             TooltipRenderer.sBorderWidth = mTooltipWidth.get().floatValue();
             TooltipRenderer.sShadowRadius = mTooltipShadow.get().floatValue();
 
