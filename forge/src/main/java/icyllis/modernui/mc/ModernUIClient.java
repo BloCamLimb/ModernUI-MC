@@ -156,6 +156,7 @@ public abstract class ModernUIClient extends ModernUI {
                                  @Nonnull Consumer<FontFamily> firstSetter,
                                  boolean firstLoad) {
         if (firstLoad) {
+            var fontManager = FontResourceManager.getInstance();
             var directory = Minecraft.getInstance().getResourcePackDirectory();
             try (var paths = Files.newDirectoryStream(directory)) {
                 for (var p : paths) {
@@ -167,6 +168,7 @@ public abstract class ModernUIClient extends ModernUI {
                         p = p.toAbsolutePath();
                         try {
                             FontFamily f = FontFamily.createFamily(p.toFile(), /*register*/true);
+                            fontManager.onFontRegistered(f);
                             LOGGER.info(MARKER, "Registered font '{}', path '{}'",
                                     f.getFamilyName(), p);
                         } catch (Exception e) {
@@ -193,6 +195,7 @@ public abstract class ModernUIClient extends ModernUI {
                 for (var resource : entry.getValue()) {
                     try (var inputStream = resource.open()) {
                         FontFamily f = FontFamily.createFamily(inputStream, /*register*/true);
+                        fontManager.onFontRegistered(f);
                         LOGGER.info(MARKER, "Registered font '{}', location '{}' in pack: '{}'",
                                 f.getFamilyName(), entry.getKey(), resource.sourcePackId());
                     } catch (Exception e) {

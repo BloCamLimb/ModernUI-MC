@@ -188,8 +188,7 @@ public class FontResourceManager implements PreparableReloadListener {
                         continue CYCLE;
                     }
                     boolean ec = Emoji.isEmoji(c);
-                    boolean ecc = isEmoji_Unicode15_workaround(c);
-                    if (i == 0 && !ec && !ecc) {
+                    if (i == 0 && !ec) {
                         continue CYCLE;
                     }
                     cps[n++] = c;
@@ -225,21 +224,6 @@ public class FontResourceManager implements PreparableReloadListener {
         }
     }
 
-    //FIXME Minecraft 1.20.1 still uses ICU-71.1, but Unicode 15 CLDR was added in ICU-72
-    // remove once Minecraft's ICU updated
-    static boolean isEmoji_Unicode15_workaround(int codePoint) {
-        return codePoint == 0x1f6dc ||
-                (0x1fa75 <= codePoint && codePoint <= 0x1fa77) ||
-                codePoint == 0x1fa87 || codePoint == 0x1fa88 ||
-                (0x1faad <= codePoint && codePoint <= 0x1faaf) ||
-                (0x1fabb <= codePoint && codePoint <= 0x1fabd) ||
-                codePoint == 0x1fabf ||
-                codePoint == 0x1face || codePoint == 0x1facf ||
-                codePoint == 0x1fada || codePoint == 0x1fadb ||
-                codePoint == 0x1fae8 ||
-                codePoint == 0x1faf7 || codePoint == 0x1faf8;
-    }
-
     /**
      * @see EmojiDataGen
      */
@@ -266,6 +250,9 @@ public class FontResourceManager implements PreparableReloadListener {
         LOGGER.info(GlyphManager.MARKER, "Scanned emoji shortcodes: {}",
                 map.size());
         results.mEmojiShortcodes = map;
+    }
+
+    public void onFontRegistered(FontFamily f) {
     }
 
     @Nullable
