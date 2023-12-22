@@ -296,10 +296,10 @@ public final class Config {
 
             mTooltip = builder.comment(
                             "Whether to enable Modern UI enhanced tooltip, or back to vanilla default.")
-                    .define("enable", !ModernUIMod.isSodiumLoaded() && !ModernUIMod.isLegendaryTooltipsLoaded());
+                    .define("enable", !ModernUIMod.isLegendaryTooltipsLoaded());
             mRoundedTooltip = builder.comment(
-                            "Whether to use rounded tooltip shapes, or to use rectangular shapes.")
-                    .define("roundedShape", true);
+                            "Whether to use rounded tooltip shapes, or to use vanilla style.")
+                    .define("roundedShape", !ModernUIMod.isSodiumLoaded());
             mCenterTooltipTitle = builder.comment(
                             "True to center the tooltip title if rendering an item's tooltip.",
                             "Following lines are not affected by this option.")
