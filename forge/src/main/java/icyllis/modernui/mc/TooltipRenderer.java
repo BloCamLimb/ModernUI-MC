@@ -53,9 +53,9 @@ public final class TooltipRenderer {
     public static volatile float sShadowRadius = 10;
 
     // space between mouse and tooltip
-    private static final int TOOLTIP_SPACE = 12;
-    private static final int H_BORDER = 4;
-    private static final int V_BORDER = 4;
+    public static final int TOOLTIP_SPACE = 12;
+    public static final int H_BORDER = 4;
+    public static final int V_BORDER = 4;
     //public static final int LINE_HEIGHT = 10;
     // extra space after first line
     private static final int TITLE_GAP = 2;

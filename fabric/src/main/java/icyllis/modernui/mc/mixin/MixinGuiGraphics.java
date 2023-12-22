@@ -21,8 +21,9 @@ package icyllis.modernui.mc.mixin;
 import icyllis.modernui.mc.*;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
-import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
+import net.minecraft.client.gui.screens.inventory.tooltip.*;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,13 +31,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nonnull;
-import java.util.List;
+import java.util.*;
 
 @Mixin(GuiGraphics.class)
 public abstract class MixinGuiGraphics implements IModernGuiGraphics {
 
+    // equivalent to Forge
     @Unique
-    private ItemStack tooltipStack = ItemStack.EMPTY;
+    private ItemStack modernUI_MC$tooltipStack = ItemStack.EMPTY;
 
     @Shadow
     public abstract int guiWidth();
@@ -47,13 +49,74 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
     @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V",
             at = @At("HEAD"))
     private void preRenderTooltip(Font font, ItemStack stack, int x, int y, CallbackInfo ci) {
-        tooltipStack = stack;
+        modernUI_MC$tooltipStack = stack;
     }
 
     @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V",
             at = @At("TAIL"))
     private void postRenderTooltip(Font font, ItemStack stack, int x, int y, CallbackInfo ci) {
-        tooltipStack = ItemStack.EMPTY;
+        modernUI_MC$tooltipStack = ItemStack.EMPTY;
+    }
+
+    @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Ljava/util/List;Ljava/util/Optional;II)V",
+            at = @At("HEAD"), cancellable = true)
+    private void onRenderTooltip(Font font, List<Component> components, Optional<TooltipComponent> tooltipComponent,
+                                 int x, int y, CallbackInfo ci) {
+        if (TooltipRenderer.sTooltip) {
+            if (!components.isEmpty()) {
+                var transformedComponents = modernUI_MC$transformComponents(
+                        font, components, tooltipComponent, x
+                );
+                UIManager.getInstance().drawExtTooltip(modernUI_MC$tooltipStack,
+                        (GuiGraphics) (Object) this,
+                        transformedComponents, x, y, font,
+                        guiWidth(), guiHeight(), DefaultTooltipPositioner.INSTANCE);
+            }
+            ci.cancel();
+        }
+    }
+
+    // equivalent to Forge
+    @Unique
+    private List<ClientTooltipComponent> modernUI_MC$transformComponents(
+            Font font, List<Component> components, Optional<TooltipComponent> tooltipComponent,
+            int x) {
+        List<ClientTooltipComponent> result = new ArrayList<>(components.size());
+
+        int screenWidth = guiWidth();
+        int tooltipWidth = 0;
+        int[] widths = new int[components.size()];
+        for (int i = 0; i < components.size(); i++) {
+            widths[i] = font.width(components.get(i));
+            tooltipWidth = Math.max(tooltipWidth, widths[i]);
+        }
+
+        int tooltipX = x + TooltipRenderer.TOOLTIP_SPACE;
+        if (tooltipX + tooltipWidth + TooltipRenderer.H_BORDER > screenWidth) {
+            tooltipX = x - TooltipRenderer.TOOLTIP_SPACE - TooltipRenderer.H_BORDER - tooltipWidth;
+            if (tooltipX < TooltipRenderer.H_BORDER) {
+                if (x > screenWidth / 2)
+                    tooltipWidth = x - TooltipRenderer.TOOLTIP_SPACE - TooltipRenderer.H_BORDER * 2;
+                else
+                    tooltipWidth = screenWidth - TooltipRenderer.TOOLTIP_SPACE - TooltipRenderer.H_BORDER - x;
+            }
+        }
+
+        for (int i = 0; i < components.size(); i++) {
+            var component = components.get(i);
+            if (widths[i] > tooltipWidth) {
+                for (var line : font.split(component, tooltipWidth)) {
+                    result.add(ClientTooltipComponent.create(line));
+                }
+            } else {
+                result.add(ClientTooltipComponent.create(component.getVisualOrderText()));
+            }
+            if (i == 0 && tooltipComponent.isPresent()) {
+                result.add(ClientTooltipComponent.create(tooltipComponent.get()));
+            }
+        }
+
+        return result;
     }
 
     @Inject(method = "renderTooltipInternal", at = @At("HEAD"), cancellable = true)
@@ -62,7 +125,7 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
                                  CallbackInfo ci) {
         if (TooltipRenderer.sTooltip) {
             if (!components.isEmpty()) {
-                UIManager.getInstance().drawExtTooltip(tooltipStack,
+                UIManager.getInstance().drawExtTooltip(modernUI_MC$tooltipStack,
                         (GuiGraphics) (Object) this,
                         components, x, y, font,
                         guiWidth(), guiHeight(), positioner);
@@ -73,6 +136,6 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
 
     @Override
     public void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack) {
-        tooltipStack = stack;
+        modernUI_MC$tooltipStack = stack;
     }
 }
