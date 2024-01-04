@@ -104,6 +104,7 @@ public class CenterFragment2 extends Fragment {
             if (ModernUIMod.isDeveloperMode()) {
                 buttonGroup.addView(createNavButton(1005, "Dev"));
             }
+            buttonGroup.addView(createNavButton(1006, "Markdown"));
 
             buttonGroup.check(1001);
 
@@ -130,6 +131,10 @@ public class CenterFragment2 extends Fragment {
                     case 1005 -> {
                         ft = fm.beginTransaction()
                                 .replace(id_tab_container, TestFragment.class, null, "dev");
+                    }
+                    case 1006 -> {
+                        ft = fm.beginTransaction()
+                                .replace(id_tab_container, MarkdownFragment.class, null, "markdown");
                     }
                 }
                 if (ft != null) {
