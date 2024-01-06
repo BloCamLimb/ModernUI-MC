@@ -16,16 +16,19 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc;
+package icyllis.modernui.mc.mixin;
 
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.gui.Font;
+import org.joml.Vector3f;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-import javax.annotation.Nonnull;
+@Deprecated
+@Mixin(Font.class)
+public interface AccessFontRenderer {
 
-/**
- * Fabric only.
- */
-public interface IModernGuiGraphics {
-
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
+    @Accessor("SHADOW_OFFSET")
+    static Vector3f shadowLifting() {
+        throw new IllegalStateException();
+    }
 }

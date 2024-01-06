@@ -18,14 +18,30 @@
 
 package icyllis.modernui.mc;
 
-import net.minecraft.world.item.ItemStack;
+import icyllis.modernui.fragment.Fragment;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
- * Fabric only.
+ * Common interface between MenuScreen and SimpleScreen
  */
-public interface IModernGuiGraphics {
+public interface MuiScreen {
 
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
+    /**
+     * @return the main fragment
+     */
+    @Nonnull
+    Fragment getFragment();
+
+    /**
+     * @return a callback describes the screen properties
+     */
+    @Nullable
+    ScreenCallback getCallback();
+
+    /**
+     * @return true for MenuScreen, false for SimpleScreen
+     */
+    boolean isMenuScreen();
 }

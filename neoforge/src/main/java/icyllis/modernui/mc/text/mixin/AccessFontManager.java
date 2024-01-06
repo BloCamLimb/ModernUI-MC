@@ -16,16 +16,19 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc;
+package icyllis.modernui.mc.text.mixin;
 
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.gui.font.FontManager;
+import net.minecraft.client.gui.font.FontSet;
+import net.minecraft.resources.ResourceLocation;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-import javax.annotation.Nonnull;
+import java.util.Map;
 
-/**
- * Fabric only.
- */
-public interface IModernGuiGraphics {
+@Mixin(FontManager.class)
+public interface AccessFontManager {
 
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
+    @Accessor("fontSets")
+    Map<ResourceLocation, FontSet> getFontSets();
 }

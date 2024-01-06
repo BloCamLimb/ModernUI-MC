@@ -16,16 +16,25 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc;
+package icyllis.modernui.mc.mixin;
 
-import net.minecraft.world.item.ItemStack;
+import icyllis.modernui.mc.MuiModApi;
+import net.minecraft.ChatFormatting;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Overwrite;
 
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-/**
- * Fabric only.
- */
-public interface IModernGuiGraphics {
+@Mixin(ChatFormatting.class)
+public class MixinChatFormatting {
 
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
+    /**
+     * @author BloCamLimb
+     * @reason Optimization
+     */
+    @Overwrite
+    @Nullable
+    public static ChatFormatting getByCode(char formattingCode) {
+        return MuiModApi.getFormattingByCode(formattingCode);
+    }
 }

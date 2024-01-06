@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,16 +16,17 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc;
+package icyllis.modernui.mc.neoforge;
 
+import icyllis.modernui.graphics.Canvas;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 
-/**
- * Fabric only.
- */
-public interface IModernGuiGraphics {
+public class ContainerDrawHelper {
 
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
+    public static void drawItem(@Nonnull Canvas canvas, @Nonnull ItemStack item,
+                                float x, float y, float z, float size, int seed) {
+        icyllis.modernui.mc.ContainerDrawHelper.drawItem(canvas, item, x, y, z, size, seed);
+    }
 }

@@ -18,14 +18,9 @@
 
 package icyllis.modernui.mc;
 
-import net.minecraft.world.item.ItemStack;
+import icyllis.modernui.core.UndoManager;
 
-import javax.annotation.Nonnull;
+public interface IModernEditBox {
 
-/**
- * Fabric only.
- */
-public interface IModernGuiGraphics {
-
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
+    UndoManager modernUI_MC$getUndoManager();
 }

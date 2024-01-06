@@ -16,16 +16,19 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc;
+package icyllis.modernui.mc.mixin;
 
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.food.FoodData;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-import javax.annotation.Nonnull;
+@Deprecated
+@Mixin(FoodData.class)
+public interface AccessFoodData {
 
-/**
- * Fabric only.
- */
-public interface IModernGuiGraphics {
+    @Accessor("exhaustionLevel")
+    float getExhaustionLevel();
 
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
+    @Accessor("exhaustionLevel")
+    void setExhaustionLevel(float exhaustionLevel);
 }

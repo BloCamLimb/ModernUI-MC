@@ -16,16 +16,21 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc;
+package icyllis.modernui.mc.mixin;
 
-import net.minecraft.world.item.ItemStack;
+import icyllis.modernui.mc.MuiModApi;
+import net.minecraft.client.KeyboardHandler;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import javax.annotation.Nonnull;
+@Mixin(KeyboardHandler.class)
+public class MixinKeyboardHandler {
 
-/**
- * Fabric only.
- */
-public interface IModernGuiGraphics {
-
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
+    @Inject(method = "keyPress", at = @At("HEAD"))
+    private void onKeyInputPost(long window, int keyCode, int scanCode, int action, int mods,
+                                CallbackInfo ci) {
+        MuiModApi.dispatchOnPreKeyInput(window, keyCode, scanCode, action, mods);
+    }
 }

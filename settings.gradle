@@ -4,6 +4,9 @@ pluginManagement {
             url 'https://maven.minecraftforge.net/'
         }
         maven {
+            url 'https://maven.neoforged.net/releases/'
+        }
+        maven {
             url 'https://maven.fabricmc.net/'
         }
         maven {
@@ -22,5 +25,7 @@ if (file('../Arc3D').exists() && file('../ModernUI').exists()) {
 
 include 'forge'
 project(':forge').name = "ModernUI-Forge"
+include 'neoforge'
+project(':neoforge').name = "ModernUI-NeoForge"
 include 'fabric'
 project(':fabric').name = "ModernUI-Fabric"

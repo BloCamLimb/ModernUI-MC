@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2021 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,16 +16,9 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc;
-
-import net.minecraft.world.item.ItemStack;
-
-import javax.annotation.Nonnull;
-
 /**
- * Fabric only.
+ * Extended text engine for Minecraft Vanilla, compatible with Minecraft
+ * text styles and components, also providing extra optimizations.
+ * Includes text layout and rendering pipeline.
  */
-public interface IModernGuiGraphics {
-
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
-}
+package icyllis.modernui.mc.text;

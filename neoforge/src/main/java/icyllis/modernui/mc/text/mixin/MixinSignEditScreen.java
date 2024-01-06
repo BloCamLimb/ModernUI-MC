@@ -16,16 +16,21 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc;
+package icyllis.modernui.mc.text.mixin;
 
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import javax.annotation.Nonnull;
+@Mixin(AbstractSignEditScreen.class)
+public class MixinSignEditScreen {
 
-/**
- * Fabric only.
- */
-public interface IModernGuiGraphics {
-
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
+    @Inject(method = "renderSignText", at = @At("HEAD"))
+    private void onRenderSignText(GuiGraphics gr, CallbackInfo ci) {
+        // prevent sorting
+        gr.flush();
+    }
 }

@@ -16,16 +16,18 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc;
+package icyllis.modernui.mc.mixin;
 
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.renderer.PostChain;
+import net.minecraft.client.renderer.PostPass;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-import javax.annotation.Nonnull;
+import java.util.List;
 
-/**
- * Fabric only.
- */
-public interface IModernGuiGraphics {
+@Mixin(PostChain.class)
+public interface AccessPostChain {
 
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
+    @Accessor("passes")
+    List<PostPass> getPasses();
 }

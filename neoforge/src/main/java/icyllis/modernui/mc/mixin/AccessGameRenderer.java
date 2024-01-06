@@ -16,16 +16,17 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc;
+package icyllis.modernui.mc.mixin;
 
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.resources.ResourceLocation;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Invoker;
 
-import javax.annotation.Nonnull;
+@Deprecated
+@Mixin(GameRenderer.class)
+public interface AccessGameRenderer {
 
-/**
- * Fabric only.
- */
-public interface IModernGuiGraphics {
-
-    void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);
+    @Invoker
+    void callLoadEffect(ResourceLocation location);
 }
