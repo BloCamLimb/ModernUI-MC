@@ -67,6 +67,7 @@ public class MarkdownFragment extends Fragment {
             EditText input = mInput = new EditText(requireContext());
             int dp6 = input.dp(6);
             input.setPadding(dp6, dp6, dp6, dp6);
+            input.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_LTR);
             input.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
 
             var params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -78,6 +79,7 @@ public class MarkdownFragment extends Fragment {
             TextView preview = mPreview = new TextView(requireContext());
             int dp6 = preview.dp(6);
             preview.setPadding(dp6, dp6, dp6, dp6);
+            preview.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_LTR);
             preview.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
             preview.setTextIsSelectable(true);
 
