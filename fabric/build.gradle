@@ -48,7 +48,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:0.14.24"
     modApi "net.fabricmc.fabric-api:fabric-api:0.90.7+1.20.2"
 
-    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:9.0.0"
+    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:9.1.2"
 
     if (rootProject.file('../Arc3D').exists() && rootProject.file('../ModernUI').exists()) {
         implementation("icyllis.arc3d:Arc3D")

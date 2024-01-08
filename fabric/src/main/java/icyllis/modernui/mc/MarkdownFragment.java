@@ -111,6 +111,7 @@ public class MarkdownFragment extends Fragment {
                 * One
                   * ```java
                     public static void main(String[] args) {
+                        System.out.println("Hello, Modern UI!");
                     }
                     ```
                   * Three
