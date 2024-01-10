@@ -149,7 +149,7 @@ public class TestBenchmark {
 
     public static void compoundTagInflation() {
         try {
-            NbtIo.readCompressed(new FileInputStream("F:/testdata_tag1.dat"));
+            NbtIo.readCompressed(new FileInputStream("F:/testdata_tag1.dat"), NbtAccounter.unlimitedHeap());
         } catch (IOException e) {
             e.printStackTrace();
         }

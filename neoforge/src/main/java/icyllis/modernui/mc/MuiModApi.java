@@ -33,7 +33,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
-import net.neoforged.neoforge.common.capabilities.ICapabilityProvider;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -138,11 +137,10 @@ public abstract class MuiModApi {
      * <p>
      * This is served as a local interaction model, the server will not intersect with this before.
      * Otherwise, initiate this with a network model via
-     * {@link net.neoforged.neoforge.network.NetworkHooks#openScreen(ServerPlayer, MenuProvider, Consumer)}.
+     * {@link ServerPlayer#openMenu(MenuProvider, Consumer)}.
      * <p>
-     * Specially, the main {@link Fragment} subclass can implement {@link ICapabilityProvider}
-     * to provide capabilities, some of which may be internally handled by the framework.
-     * For example, {@link ScreenCallback} to describe the screen properties.
+     * Specially, the main {@link Fragment} subclass can implement {@link ScreenCallback} to
+     * describe the screen properties.
      *
      * @param fragment the main fragment
      */

@@ -51,7 +51,6 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import org.apache.commons.io.output.StringBuilderWriter;
@@ -196,10 +195,10 @@ final class Registration {
             event.register(UIManagerForge.ZOOM_KEY);
         }
 
-        @SubscribeEvent
+        /*@SubscribeEvent
         static void registerCapabilities(@Nonnull RegisterCapabilitiesEvent event) {
             event.register(ScreenCallback.class);
-        }
+        }*/
 
         @SubscribeEvent
         static void setupClient(@Nonnull FMLClientSetupEvent event) {

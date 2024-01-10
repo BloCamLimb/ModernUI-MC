@@ -1,0 +1,127 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net' }
+        maven {
+            url = 'https://repo.spongepowered.org/repository/maven-public/'
+            content { includeGroup "org.spongepowered" }
+        }
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+    }
+}
+
+plugins {
+    id 'idea'
+    id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
+}
+
+apply plugin: 'org.spongepowered.mixin'
+
+version = "${minecraft_version}-${mod_version}" as String
+
+configurations {
+    shadow
+}
+
+mixin {
+    add sourceSets.main, "ModernUI-Forge-ModernUI-Forge-refmap.json"
+
+    config "mixins.modernui-forge.json"
+    config "mixins.modernui-textmc.json"
+}
+
+repositories {
+
+}
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory rootProject.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+        }
+
+        client {
+            property 'forge.enabledGameTestNamespaces', 'modernui'
+        }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    if (rootProject.file('../Arc3D').exists() && rootProject.file('../ModernUI').exists()) {
+        minecraftLibrary("icyllis.arc3d:Arc3D")
+        shadow("icyllis.arc3d:Arc3D") {
+            transitive = false
+        }
+        minecraftLibrary("icyllis.modernui:ModernUI-Core")
+        shadow("icyllis.modernui:ModernUI-Core") {
+            transitive = false
+        }
+        minecraftLibrary("icyllis.modernui:ModernUI-Markdown")
+        shadow("icyllis.modernui:ModernUI-Markdown") {
+            transitive = false
+        }
+    }
+
+    testImplementation 'org.openjdk.jmh:jmh-core:1.35'
+    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.35'
+
+    testImplementation "io.github.stephankoelle:jamm:0.4.1"
+
+    minecraftLibrary("com.github.ben-manes.caffeine:caffeine:${caffeine_version}")
+    minecraftLibrary("com.vladsch.flexmark:flexmark:${flexmark_version}")
+
+    //implementation(forgeDependencies("io.reactivex.rxjava3:rxjava:${rxjava_version}"))
+
+    jarJar "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
+    jarJar "com.vladsch.flexmark:flexmark:${flexmark_version}"
+    jarJar "com.vladsch.flexmark:flexmark-util-ast:${flexmark_version}"
+    jarJar "com.vladsch.flexmark:flexmark-util-builder:${flexmark_version}"
+    jarJar "com.vladsch.flexmark:flexmark-util-collection:${flexmark_version}"
+    jarJar "com.vladsch.flexmark:flexmark-util-data:${flexmark_version}"
+    jarJar "com.vladsch.flexmark:flexmark-util-dependency:${flexmark_version}"
+    jarJar "com.vladsch.flexmark:flexmark-util-format:${flexmark_version}"
+    jarJar "com.vladsch.flexmark:flexmark-util-html:${flexmark_version}"
+    jarJar "com.vladsch.flexmark:flexmark-util-misc:${flexmark_version}"
+    jarJar "com.vladsch.flexmark:flexmark-util-sequence:${flexmark_version}"
+    jarJar "com.vladsch.flexmark:flexmark-util-visitor:${flexmark_version}"
+}
+
+processResources {
+    inputs.property 'version', mod_version
+
+    filesMatching("META-INF/mods.toml") {
+        expand 'version': mod_version
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+                "Specification-Title"     : project.name,
+                "Specification-Vendor"    : "BloCamLimb",
+                "Specification-Version"   : "2",
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.version,
+                "Implementation-Vendor"   : "BloCamLimb",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        )
+    }
+}
+
+sourceSets.each {
+    def dir = layout.buildDirectory.dir("sourcesSets/$it.name")
+    it.output.resourcesDir = dir
+    it.java.destinationDirectory = dir
+}

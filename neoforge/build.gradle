@@ -44,15 +44,15 @@ dependencies {
     neoForge "net.neoforged:neoforge:${neoforge_version}"
 
     if (rootProject.file('../Arc3D').exists() && rootProject.file('../ModernUI').exists()) {
-        implementation(forgeDependencies("icyllis.arc3d:Arc3D"))
+        implementation(forgeRuntimeLibrary("icyllis.arc3d:Arc3D"))
         shadow("icyllis.arc3d:Arc3D") {
             transitive = false
         }
-        implementation(forgeDependencies("icyllis.modernui:ModernUI-Core"))
+        implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Core"))
         shadow("icyllis.modernui:ModernUI-Core") {
             transitive = false
         }
-        implementation(forgeDependencies("icyllis.modernui:ModernUI-Markdown"))
+        implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Markdown"))
         shadow("icyllis.modernui:ModernUI-Markdown") {
             transitive = false
         }

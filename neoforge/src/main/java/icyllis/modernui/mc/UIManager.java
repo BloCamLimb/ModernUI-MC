@@ -229,8 +229,7 @@ public abstract class UIManager implements LifecycleOwner {
                     continue;
                 } else {
                     minecraft.tell(this::dump);
-                    minecraft.tell(() -> Minecraft.crash(
-                            CrashReport.forThrowable(e, "Exception on UI thread")));
+                    minecraft.delayCrashRaw(CrashReport.forThrowable(e, "Exception on UI thread"));
                 }
             }
             break;

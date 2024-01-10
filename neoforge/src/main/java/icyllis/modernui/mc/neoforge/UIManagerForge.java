@@ -43,7 +43,6 @@ import net.neoforged.neoforge.client.gui.overlay.VanillaGuiOverlay;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.client.settings.KeyModifier;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.common.capabilities.*;
 import net.neoforged.neoforge.event.TickEvent;
 import org.jetbrains.annotations.*;
 
@@ -85,12 +84,6 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             ObfuscationReflectionHelper.findField(NativeImage.class, "f_84964_");*/
     public static final Field TEXTURE_ID =
             ObfuscationReflectionHelper.findField(AbstractTexture.class, "id");
-
-    /**
-     * Built-in capability, DO NOT USE.
-     */
-    public static final Capability<ScreenCallback> SCREEN_CALLBACK = CapabilityManager.get(new CapabilityToken<>() {
-    });
 
     private UIManagerForge() {
         super();

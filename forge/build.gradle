@@ -63,28 +63,28 @@ dependencies {
     }*/
     forge "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
 
-    modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
-    modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"
+    /*modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"*/
 
     if (rootProject.file('../Arc3D').exists() && rootProject.file('../ModernUI').exists()) {
-        implementation(forgeDependencies("icyllis.arc3d:Arc3D"))
+        implementation(forgeRuntimeLibrary("icyllis.arc3d:Arc3D"))
         shadow("icyllis.arc3d:Arc3D") {
             transitive = false
         }
-        implementation(forgeDependencies("icyllis.modernui:ModernUI-Core"))
+        implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Core"))
         shadow("icyllis.modernui:ModernUI-Core") {
             transitive = false
         }
-        implementation(forgeDependencies("icyllis.modernui:ModernUI-Markdown"))
+        implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Markdown"))
         shadow("icyllis.modernui:ModernUI-Markdown") {
             transitive = false
         }
     } else {
-        implementation(forgeDependencies("icyllis.modernui:ModernUI-Core:${core_version}"))
+        implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Core:${core_version}"))
         shadow("icyllis.modernui:ModernUI-Core:${core_version}") {
             transitive = false
         }
-        implementation(forgeDependencies("icyllis.modernui:ModernUI-Markdown:${core_version}"))
+        implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Markdown:${core_version}"))
         shadow("icyllis.modernui:ModernUI-Markdown:${core_version}") {
             transitive = false
         }

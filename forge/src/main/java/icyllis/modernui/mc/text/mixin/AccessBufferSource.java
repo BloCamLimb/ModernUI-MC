@@ -19,19 +19,19 @@
 package icyllis.modernui.mc.text.mixin;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import net.minecraft.client.renderer.RenderBuffers;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-import java.util.SortedMap;
+import java.util.Map;
 
 /**
  * Handle deferred rendering and transparency sorting (painter's algorithm).
  */
-@Mixin(RenderBuffers.class)
-public interface AccessRenderBuffers {
+@Mixin(MultiBufferSource.BufferSource.class)
+public interface AccessBufferSource {
 
     @Accessor("fixedBuffers")
-    SortedMap<RenderType, BufferBuilder> getFixedBuffers();
+    Map<RenderType, BufferBuilder> getFixedBuffers();
 }

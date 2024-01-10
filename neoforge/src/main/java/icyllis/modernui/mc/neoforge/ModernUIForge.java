@@ -25,15 +25,15 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.*;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
-import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.neoforged.fml.loading.FMLEnvironment;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.Locale;
 import java.util.function.Consumer;
 
 import static icyllis.modernui.ModernUI.*;
@@ -54,7 +54,7 @@ public final class ModernUIForge extends ModernUIMod {
     //public static boolean sSecureProfilePublicKey;
 
     // mod-loading thread
-    public ModernUIForge() {
+    public ModernUIForge(IEventBus modEventBus) {
         if (!FMLEnvironment.production) {
             ModernUIMod.sDevelopment = true;
             LOGGER.debug(MARKER, "Auto detected in FML development environment");
@@ -80,13 +80,13 @@ public final class ModernUIForge extends ModernUIMod {
                 spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, spec,
                         ModernUI.NAME_CPT + "/common.toml")
         );
-        FMLJavaModLoadingContext.get().getModEventBus().addListener(
+        modEventBus.addListener(
                 (Consumer<ModConfigEvent>) event -> Config.reloadCommon(event.getConfig())
         );
         LocalStorage.init();
 
         if (FMLEnvironment.dist.isClient()) {
-            Loader.init();
+            Loader.init(modEventBus);
         }
 
         /*if ((getBootstrapLevel() & BOOTSTRAP_ENABLE_DEBUG_INJECTORS) != 0) {
@@ -104,8 +104,8 @@ public final class ModernUIForge extends ModernUIMod {
     private static class Loader {
 
         @SuppressWarnings("resource")
-        public static void init() {
-            new Client();
+        public static void init(IEventBus modEventBus) {
+            new Client(modEventBus);
         }
     }
 
@@ -116,7 +116,7 @@ public final class ModernUIForge extends ModernUIMod {
             assert FMLEnvironment.dist.isClient();
         }
 
-        private Client() {
+        private Client(IEventBus modEventBus) {
             super();
             Config.initClientConfig(
                     spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
@@ -128,14 +128,14 @@ public final class ModernUIForge extends ModernUIMod {
             );
             FontResourceManager.getInstance();
             if (isTextEngineEnabled()) {
-                ModernUIText.init();
+                ModernUIText.init(modEventBus);
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
-            FMLJavaModLoadingContext.get().getModEventBus().addListener(
+            modEventBus.addListener(
                     (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())
             );
             if (ModernUIMod.sDevelopment) {
-                FMLJavaModLoadingContext.get().getModEventBus().register(Registration.ModClientDev.class);
+                modEventBus.register(Registration.ModClientDev.class);
             }
             LOGGER.info(MARKER, "Initialized Modern UI client");
         }

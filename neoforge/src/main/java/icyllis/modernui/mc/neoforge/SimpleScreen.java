@@ -23,13 +23,9 @@ import icyllis.modernui.mc.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.CommonComponents;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.common.capabilities.Capability;
-import net.neoforged.neoforge.common.capabilities.ICapabilityProvider;
-import net.neoforged.neoforge.common.util.LazyOptional;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -40,19 +36,17 @@ import javax.annotation.Nullable;
  *
  * @see MenuScreen
  */
-final class SimpleScreen extends Screen implements MuiScreen, ICapabilityProvider {
+final class SimpleScreen extends Screen implements MuiScreen {
 
     private final UIManager mHost;
     private final Fragment mFragment;
     private final ScreenCallback mCallback;
-    private final ICapabilityProvider mProvider;
 
     SimpleScreen(UIManager host, Fragment fragment) {
         super(CommonComponents.EMPTY);
         mHost = host;
         mFragment = fragment;
         mCallback = fragment instanceof ScreenCallback callback ? callback : null;
-        mProvider = fragment instanceof ICapabilityProvider provider ? provider : null;
     }
 
     /*@Override
@@ -107,20 +101,13 @@ final class SimpleScreen extends Screen implements MuiScreen, ICapabilityProvide
 
     @Nullable
     @Override
-    @SuppressWarnings("ConstantConditions")
     public ScreenCallback getCallback() {
-        return mCallback != null ? mCallback : getCapability(UIManagerForge.SCREEN_CALLBACK).orElse(null);
+        return mCallback;
     }
 
     @Override
     public boolean isMenuScreen() {
         return false;
-    }
-
-    @Nonnull
-    @Override
-    public <C> LazyOptional<C> getCapability(@Nonnull Capability<C> cap, @Nullable Direction side) {
-        return mProvider != null ? mProvider.getCapability(cap, side) : LazyOptional.empty();
     }
 
     // IMPL - GuiEventListener

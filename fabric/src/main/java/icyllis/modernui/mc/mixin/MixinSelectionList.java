@@ -74,7 +74,7 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
         return false;
     }
 
-    @Inject(method = "render", at = @At("HEAD"))
+    @Inject(method = "renderWidget", at = @At("HEAD"))
     private void preRender(GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         if (modernUI_MC$mScrollController == null) {
             modernUI_MC$mScrollController = new ScrollController(this);
@@ -83,7 +83,7 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
         modernUI_MC$mScrollController.update(MuiModApi.getElapsedTime());
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client" +
+    @Inject(method = "renderWidget", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client" +
             "/gui/components/AbstractSelectionList;renderHeader(Lnet/minecraft/client/gui/GuiGraphics;II)V"))
     private void preRenderHeader(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         gr.pose().pushPose();
@@ -91,14 +91,14 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
                 ((int) (((int) getScrollAmount() - getScrollAmount()) * minecraft.getWindow().getGuiScale())) / minecraft.getWindow().getGuiScale(), 0);
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client" +
+    @Inject(method = "renderWidget", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client" +
             "/gui/components/AbstractSelectionList;renderHeader(Lnet/minecraft/client/gui/GuiGraphics;II)V"))
     private void postRenderHeader(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks,
                                   CallbackInfo ci) {
         gr.pose().popPose();
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client" +
+    @Inject(method = "renderWidget", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client" +
             "/gui/components/AbstractSelectionList;renderList(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
     private void preRenderList(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         gr.pose().pushPose();
@@ -106,7 +106,7 @@ public abstract class MixinSelectionList implements ScrollController.IListener {
                 ((int) (((int) getScrollAmount() - getScrollAmount()) * minecraft.getWindow().getGuiScale())) / minecraft.getWindow().getGuiScale(), 0);
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client" +
+    @Inject(method = "renderWidget", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client" +
             "/gui/components/AbstractSelectionList;renderList(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
     private void postRenderList(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         gr.pose().popPose();

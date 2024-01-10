@@ -1,7 +1,7 @@
 Changelogs
 ===
-### Modern UI 3.10.0.5
-#### Forge Extension 1.20.2
+### Modern UI 3.10.0.6
+#### Forge Extension 1.20.4
 * Add Markdown preview
 * Use vanilla border style for modern tooltip (when rounded = false)
 * Add font names for registered fonts, add JetBrains Mono
@@ -15,15 +15,16 @@ Changelogs
 * Move destroy() method so that the game won't crash in forced tick after the window closes
 * Handle glowing sign where text color is black
 * Update Traditional Chinese - notlin4
-#### NeoForge Extension 1.20.2
+#### NeoForge Extension 1.20.4
 * Port to NeoForge
+* Remove ScreenCallback capability
 * Others are equivalent to Forge version
-#### Fabric Extension 1.20.2
+#### Fabric Extension 1.20.4
 * Enhance tooltip compatibility with Sodium (when rounded = false)
 * Add tooltip line wrapping for Fabric
 * Add tooltip center title and title break for Fabric
 * Others are functionally equivalent to Forge version
-#### Modern Text Engine 1.20.2
+#### Modern Text Engine 1.20.4
 * Fix force unicode font not working after game restart
 * Fix line breaker SIOOBE for illegal string (this fixed crash with Better Statistics Screen)
 

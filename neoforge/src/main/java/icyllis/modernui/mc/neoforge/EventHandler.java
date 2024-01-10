@@ -24,7 +24,6 @@ import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.StillAlive;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -36,7 +35,6 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import net.neoforged.neoforge.network.NetworkHooks;
 
 import javax.annotation.Nonnull;
 
@@ -53,7 +51,7 @@ final class EventHandler {
             if (event.getSide().isServer() && ((diamond = event.getItemStack().is(Items.DIAMOND))
                     || event.getItemStack().is(Items.EMERALD))) {
                 if (event.getEntity().isShiftKeyDown()) {
-                    NetworkHooks.openScreen((ServerPlayer) event.getEntity(), new MenuProvider() {
+                    event.getEntity().openMenu(new MenuProvider() {
                         @Nonnull
                         @Override
                         public Component getDisplayName() {

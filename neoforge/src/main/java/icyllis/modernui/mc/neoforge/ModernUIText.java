@@ -21,9 +21,9 @@ package icyllis.modernui.mc.neoforge;
 import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.common.NeoForge;
@@ -45,8 +45,8 @@ public final class ModernUIText {
     private ModernUIText() {
     }
 
-    public static void init() {
-        FMLJavaModLoadingContext.get().getModEventBus().register(ModernUIText.class);
+    public static void init(IEventBus modEventBus) {
+        modEventBus.register(ModernUIText.class);
     }
 
     /*@SubscribeEvent

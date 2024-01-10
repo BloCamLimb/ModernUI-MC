@@ -28,7 +28,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.neoforged.neoforge.common.capabilities.ICapabilityProvider;
 import net.neoforged.neoforge.network.IContainerFactory;
 
 import javax.annotation.Nonnull;
@@ -53,7 +52,7 @@ import java.util.function.Consumer;
  * Use {@link net.neoforged.neoforge.common.extensions.IMenuTypeExtension#create(IContainerFactory)}
  * to create your registry entries when the register event is fired.
  *
- * @see net.neoforged.neoforge.network.NetworkHooks#openScreen(ServerPlayer, MenuProvider, Consumer)
+ * @see ServerPlayer#openMenu(MenuProvider, Consumer)
  */
 @FunctionalInterface
 public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
@@ -85,9 +84,8 @@ public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
     /**
      * Creates a new {@link Fragment} for the given menu. This method is called on the main thread.
      * <p>
-     * Specially, the main {@link Fragment} subclass can implement {@link ICapabilityProvider}
-     * to provide capabilities, some of which may be internally handled by the framework.
-     * For example, {@link ScreenCallback} to describe the screen properties.
+     * Specially, the main {@link Fragment} subclass can implement {@link ScreenCallback} to
+     * describe the screen properties.
      * <p>
      * Note: You should not interact player inventory or block container via the Fragment.
      * Instead, use {@link T ContainerMenu} and {@link ContainerMenuView}.

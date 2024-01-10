@@ -23,13 +23,9 @@ import icyllis.modernui.mc.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.neoforged.neoforge.common.capabilities.Capability;
-import net.neoforged.neoforge.common.capabilities.ICapabilityProvider;
-import net.neoforged.neoforge.common.util.LazyOptional;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -47,19 +43,17 @@ import javax.annotation.Nullable;
  */
 final class MenuScreen<T extends AbstractContainerMenu>
         extends AbstractContainerScreen<T>
-        implements MuiScreen, ICapabilityProvider {
+        implements MuiScreen {
 
     private final UIManager mHost;
     private final Fragment mFragment;
     private final ScreenCallback mCallback;
-    private final ICapabilityProvider mProvider;
 
     MenuScreen(UIManager host, Fragment fragment, T menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         mHost = host;
         mFragment = fragment;
         mCallback = fragment instanceof ScreenCallback callback ? callback : null;
-        mProvider = fragment instanceof ICapabilityProvider provider ? provider : null;
     }
 
     /*@Override
@@ -116,20 +110,13 @@ final class MenuScreen<T extends AbstractContainerMenu>
 
     @Nullable
     @Override
-    @SuppressWarnings("ConstantConditions")
     public ScreenCallback getCallback() {
-        return mCallback != null ? mCallback : getCapability(UIManagerForge.SCREEN_CALLBACK).orElse(null);
+        return mCallback;
     }
 
     @Override
     public boolean isMenuScreen() {
         return true;
-    }
-
-    @Nonnull
-    @Override
-    public <C> LazyOptional<C> getCapability(@Nonnull Capability<C> cap, @Nullable Direction side) {
-        return mProvider != null ? mProvider.getCapability(cap, side) : LazyOptional.empty();
     }
 
     // IMPL - GuiEventListener
