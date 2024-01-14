@@ -25,6 +25,8 @@ Changelogs
 * Add tooltip center title and title break for Fabric
 * Others are functionally equivalent to Forge version
 #### Modern Text Engine 1.20.4
+* Add Untranslated Items integration
+* Fix useComponentCache not working at all
 * Fix force unicode font not working after game restart
 * Fix line breaker SIOOBE for illegal string (this fixed crash with Better Statistics Screen)
 

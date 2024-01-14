@@ -885,7 +885,7 @@ public final class Config {
                             "If you find that Modern UI text rendering is not compatible with some mods,",
                             "you can disable this option for compatibility, but this will decrease performance a bit.",
                             "Modern UI will use another cache strategy if this is disabled.")
-                    .define("useComponentCache", true);
+                    .define("useComponentCache", !ModernUIMod.isUntranslatedItemsLoaded());
             mAllowAsyncLayout = builder.comment(
                             "Allow text layout to be computed from background threads, which may lead to " +
                                     "inconsistency issues.",
