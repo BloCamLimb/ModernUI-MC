@@ -983,6 +983,7 @@ public final class Config {
                 TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
                 reload = true;
             }
+            TextLayoutEngine.sUseComponentCache = mUseComponentCache.get();
             TextLayoutEngine.sAllowAsyncLayout = mAllowAsyncLayout.get();
             if (TextLayoutProcessor.sLbStyle != mLineBreakStyle.get().key) {
                 TextLayoutProcessor.sLbStyle = mLineBreakStyle.get().key;
