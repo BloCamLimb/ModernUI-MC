@@ -261,6 +261,8 @@ public class TextLayoutEngine extends FontResourceManager
 
     private FontCollection mDefaultFontCollection;
 
+    private final HashMap<ResourceLocation, FontCollection> mRegisteredFonts = new HashMap<>();
+
     public static final int MIN_PIXEL_DENSITY_FOR_SDF = 4;
 
     /*
@@ -409,6 +411,11 @@ public class TextLayoutEngine extends FontResourceManager
             }*/
             mResLevel = Math.min(scale, MuiModApi.MAX_GUI_SCALE);
         }
+        var opts = Minecraft.getInstance().options;
+        //noinspection ConstantValue
+        if (opts != null) { // this can be null on Fabric, because this class loads too early
+            mForceUnicodeFont = opts.forceUnicodeFont().get();
+        }
 
         Locale locale = ModernUI.getSelectedLocale();
         boolean layoutRtl = TextUtils.getLayoutDirectionFromLocale(locale) == View.LAYOUT_DIRECTION_RTL;
@@ -484,11 +491,15 @@ public class TextLayoutEngine extends FontResourceManager
 
     @Override
     public void onWindowResize(int width, int height, int newScale, int oldScale) {
-        Boolean forceUnicodeFont = Minecraft.getInstance().options.forceUnicodeFont().get();
-        if (Core.getRenderThread() != null &&
-                (newScale != oldScale || !Objects.equals(mForceUnicodeFont, forceUnicodeFont))) {
-            reload();
-            mForceUnicodeFont = forceUnicodeFont;
+        if (Core.getRenderThread() != null) {
+            boolean reload = (newScale != oldScale);
+            if (!reload) {
+                Boolean forceUnicodeFont = Minecraft.getInstance().options.forceUnicodeFont().get();
+                reload = !Objects.equals(mForceUnicodeFont, forceUnicodeFont);
+            }
+            if (reload) {
+                reload();
+            }
         }
     }
 
@@ -585,6 +596,7 @@ public class TextLayoutEngine extends FontResourceManager
         close();
         // reload fonts
         mFontCollections.clear();
+        mFontCollections.putAll(mRegisteredFonts);
         mFontCollections.putAll(results.mFontCollections);
         mDefaultFontCollection = mFontCollections.get(Minecraft.DEFAULT_FONT);
         // vanilla compatibility
@@ -630,6 +642,24 @@ public class TextLayoutEngine extends FontResourceManager
             }
         }
         TextRenderType.clear();
+    }
+
+    @Override
+    public void onFontRegistered(FontFamily f) {
+        super.onFontRegistered(f);
+        String name = f.getFamilyName();
+        try {
+            String newName = name.toLowerCase(Locale.ROOT)
+                    .replaceAll(" ", "-");
+            var fc = new FontCollection(f);
+            var location = ModernUIMod.location(newName);
+            mRegisteredFonts.putIfAbsent(location, fc);
+            LOGGER.info(MARKER, "Redirect registered font '{}' to '{}'", name, location);
+            // also register in minecraft namespace
+            mRegisteredFonts.putIfAbsent(new ResourceLocation(newName), fc);
+        } catch (Exception e) {
+            LOGGER.warn(MARKER, "Failed to redirect registered font '{}'", name);
+        }
     }
 
     private static boolean isUnicodeFont(@Nonnull ResourceLocation name) {

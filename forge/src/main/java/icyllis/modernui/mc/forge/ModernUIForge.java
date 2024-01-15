@@ -82,6 +82,7 @@ public final class ModernUIForge extends ModernUIMod {
                     "and Modern UI has better performance than it");
         }
         sLegendaryTooltipsLoaded = ModList.get().isLoaded("legendarytooltips");
+        sUntranslatedItemsLoaded = ModList.get().isLoaded("untranslateditems");
 
         Config.initCommonConfig(
                 spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, spec,

@@ -20,15 +20,36 @@ package icyllis.modernui.mc.fabric;
 
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
+import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
 
+/**
+ * The factory interface is used to create menu screens with a main {@link Fragment}.
+ * The factory is invoked when the server requires the client to open an application
+ * screen to interact with a container menu. The menu instance is created on the
+ * client with {@link ExtendedScreenHandlerType.ExtendedFactory#create(int, Inventory, FriendlyByteBuf)},
+ * which contains custom network data from server. For example:
+ * <pre>{@code
+ * @Override
+ * public void onInitializeClient() {
+ *     MenuScreens.register(MyRegistry.MY_MENU, MenuScreenFactory.create(menu -> new MyFragment()));
+ * }
+ * }</pre>
+ *
+ * @see ServerPlayer#openMenu(MenuProvider)
+ * @see ExtendedScreenHandlerFactory
+ */
 @FunctionalInterface
 public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
         MenuScreens.ScreenConstructor<T, AbstractContainerScreen<T>> {
@@ -59,9 +80,8 @@ public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
     /**
      * Creates a new {@link Fragment} for the given menu. This method is called on the main thread.
      * <p>
-     * Specially, the main {@link Fragment} subclass can implement {@link ICapabilityProvider}
-     * to provide capabilities, some of which may be internally handled by the framework.
-     * For example, {@link ScreenCallback} to describe the screen properties.
+     * Specially, the main {@link Fragment} subclass can implement {@link ScreenCallback} to
+     * describe the screen properties.
      * <p>
      * Note: You should not interact player inventory or block container via the Fragment.
      * Instead, use {@link T ContainerMenu} and {@link ContainerMenuView}.
