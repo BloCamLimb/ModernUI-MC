@@ -885,7 +885,7 @@ public final class Config {
                             "If you find that Modern UI text rendering is not compatible with some mods,",
                             "you can disable this option for compatibility, but this will decrease performance a bit.",
                             "Modern UI will use another cache strategy if this is disabled.")
-                    .define("useComponentCache", true);
+                    .define("useComponentCache", !ModernUIMod.isUntranslatedItemsLoaded());
             mAllowAsyncLayout = builder.comment(
                             "Allow text layout to be computed from background threads, which may lead to " +
                                     "inconsistency issues.",
@@ -981,6 +981,7 @@ public final class Config {
                 TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
                 reload = true;
             }
+            TextLayoutEngine.sUseComponentCache = mUseComponentCache.get();
             TextLayoutEngine.sAllowAsyncLayout = mAllowAsyncLayout.get();
             if (TextLayoutProcessor.sLbStyle != mLineBreakStyle.get().key) {
                 TextLayoutProcessor.sLbStyle = mLineBreakStyle.get().key;

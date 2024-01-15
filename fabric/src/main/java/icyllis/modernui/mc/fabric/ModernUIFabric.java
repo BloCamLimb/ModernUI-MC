@@ -42,6 +42,7 @@ public class ModernUIFabric extends ModernUIMod implements ModInitializer {
         }
 
         sLegendaryTooltipsLoaded = FabricLoader.getInstance().isModLoaded("legendarytooltips");
+        sUntranslatedItemsLoaded = FabricLoader.getInstance().isModLoaded("untranslateditems");
         sSodiumLoaded = FabricLoader.getInstance().isModLoaded("sodium");
 
         ModConfigEvents.loading(ID).register(Config::reloadCommon);

@@ -56,6 +56,7 @@ public abstract class ModernUIMod {
     protected static boolean sOptiFineLoaded;
     protected static boolean sIrisApiLoaded;
     protected static volatile boolean sLegendaryTooltipsLoaded;
+    protected static volatile boolean sUntranslatedItemsLoaded;
     protected static volatile boolean sSodiumLoaded;
 
     static {
@@ -93,6 +94,10 @@ public abstract class ModernUIMod {
 
     public static boolean isLegendaryTooltipsLoaded() {
         return sLegendaryTooltipsLoaded;
+    }
+
+    public static boolean isUntranslatedItemsLoaded() {
+        return sUntranslatedItemsLoaded;
     }
 
     public static boolean isSodiumLoaded() {
