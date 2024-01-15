@@ -18,59 +18,49 @@
 
 package icyllis.modernui.mc.text;
 
-import com.google.gson.*;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.ibm.icu.text.Bidi;
-import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.engine.Engine;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
-import icyllis.modernui.graphics.font.*;
+import icyllis.modernui.graphics.font.BakedGlyph;
+import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
 import icyllis.modernui.mc.forge.*;
-import icyllis.modernui.mc.forge.mixin.MixinChatFormatting;
 import icyllis.modernui.mc.text.mixin.AccessFontManager;
 import icyllis.modernui.mc.text.mixin.MixinClientLanguage;
 import icyllis.modernui.text.*;
 import icyllis.modernui.util.Pools;
 import icyllis.modernui.view.View;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.font.FontManager;
 import net.minecraft.client.gui.font.FontSet;
-import net.minecraft.client.renderer.texture.MipmapGenerator;
 import net.minecraft.network.chat.*;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
-import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.awt.font.GlyphVector;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static icyllis.modernui.ModernUI.*;
+import static icyllis.modernui.ModernUI.LOGGER;
 
 /**
  * Modern UI text engine for Minecraft. This class performs Unicode text layout (and measurement),
@@ -270,6 +260,8 @@ public class TextLayoutEngine extends FontResourceManager
 
     private FontCollection mDefaultFontCollection;
 
+    private final HashMap<ResourceLocation, FontCollection> mRegisteredFonts = new HashMap<>();
+
     public static final int MIN_PIXEL_DENSITY_FOR_SDF = 4;
 
     /*
@@ -420,6 +412,11 @@ public class TextLayoutEngine extends FontResourceManager
             }*/
             mResLevel = Math.min(scale, MuiForgeApi.MAX_GUI_SCALE);
         }
+        var opts = Minecraft.getInstance().options;
+        //noinspection ConstantValue
+        if (opts != null) {
+            mForceUnicodeFont = opts.forceUnicodeFont().get();
+        }
 
         Locale locale = ModernUI.getSelectedLocale();
         boolean layoutRtl = TextUtils.getLayoutDirectionFromLocale(locale) == View.LAYOUT_DIRECTION_RTL;
@@ -495,11 +492,15 @@ public class TextLayoutEngine extends FontResourceManager
 
     @Override
     public void onWindowResize(int width, int height, int newScale, int oldScale) {
-        Boolean forceUnicodeFont = Minecraft.getInstance().options.forceUnicodeFont().get();
-        if (Core.getRenderThread() != null &&
-                (newScale != oldScale || !Objects.equals(mForceUnicodeFont, forceUnicodeFont))) {
-            reload();
-            mForceUnicodeFont = forceUnicodeFont;
+        if (Core.getRenderThread() != null) {
+            boolean reload = (newScale != oldScale);
+            if (!reload) {
+                Boolean forceUnicodeFont = Minecraft.getInstance().options.forceUnicodeFont().get();
+                reload = !Objects.equals(mForceUnicodeFont, forceUnicodeFont);
+            }
+            if (reload) {
+                reload();
+            }
         }
     }
 
@@ -596,6 +597,7 @@ public class TextLayoutEngine extends FontResourceManager
         close();
         // reload fonts
         mFontCollections.clear();
+        mFontCollections.putAll(mRegisteredFonts);
         mFontCollections.putAll(results.mFontCollections);
         mDefaultFontCollection = mFontCollections.get(Minecraft.DEFAULT_FONT);
         // vanilla compatibility
@@ -641,6 +643,24 @@ public class TextLayoutEngine extends FontResourceManager
             }
         }
         TextRenderType.clear();
+    }
+
+    @Override
+    public void onFontRegistered(FontFamily f) {
+        super.onFontRegistered(f);
+        String name = f.getFamilyName();
+        try {
+            String newName = name.toLowerCase(Locale.ROOT)
+                    .replaceAll(" ", "-");
+            var fc = new FontCollection(f);
+            var location = ModernUIForge.location(newName);
+            mRegisteredFonts.putIfAbsent(location, fc);
+            LOGGER.info(MARKER, "Redirect registered font '{}' to '{}'", name, location);
+            // also register in minecraft namespace
+            mRegisteredFonts.putIfAbsent(new ResourceLocation(newName), fc);
+        } catch (Exception e) {
+            LOGGER.warn(MARKER, "Failed to redirect registered font '{}'", name);
+        }
     }
 
     private static boolean isUnicodeFont(@Nonnull ResourceLocation name) {

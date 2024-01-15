@@ -19,8 +19,7 @@
 package icyllis.modernui.mc.forge.mixin;
 
 import com.mojang.blaze3d.platform.Window;
-import icyllis.modernui.mc.forge.BlurHandler;
-import icyllis.modernui.mc.forge.ModernUIForge;
+import icyllis.modernui.mc.forge.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import org.lwjgl.glfw.GLFW;
@@ -84,5 +83,10 @@ public abstract class MixinMinecraft {
                 ));
             }
         }
+    }
+
+    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lnet/minecraft/Util;shutdownExecutors()V"))
+    private void onClose(CallbackInfo ci) {
+        UIManager.destroy();
     }
 }
