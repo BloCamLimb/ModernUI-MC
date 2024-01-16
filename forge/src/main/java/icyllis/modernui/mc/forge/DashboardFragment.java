@@ -38,7 +38,7 @@ import javax.annotation.Nonnull;
 public class DashboardFragment extends Fragment {
 
     public static final String CREDIT_TEXT = """
-            Modern UI 3.9
+            Modern UI 3.10
             by
             BloCamLimb
             (Icyllis Milica)
@@ -96,13 +96,13 @@ public class DashboardFragment extends Fragment {
                         .setBufferType(TextView.BufferType.SPANNABLE)
                         .build()
                         .setMarkdown(tv, """
-                                What's New in Modern UI 3.9
+                                What's New in Modern UI 3.10
                                 ----
                                 * Enhanced Text Layout
                                 * Better Mod Compatibility
                                 * Rendering Optimization
                                 * Basic Markdown Support
-                                * Unicode 15.0 Emoji List
+                                * Unicode 15.1 Emoji List
                                 * New UI Components
                                 * And More…
                                                                 

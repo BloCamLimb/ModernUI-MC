@@ -552,10 +552,12 @@ public final class ModernStringSplitter extends StringSplitter {
             char c = text.charAt(i);
             if (c == ChatFormatting.PREFIX_CODE) {
                 i++;
-                ChatFormatting formatting = MuiForgeApi.getFormattingByCode(text.charAt(i));
-                if (formatting != null) {
-                    currStyle = formatting == ChatFormatting.RESET ? base :
-                            currStyle.applyLegacyFormat(formatting);
+                if (i < e) {
+                    ChatFormatting formatting = MuiForgeApi.getFormattingByCode(text.charAt(i));
+                    if (formatting != null) {
+                        currStyle = formatting == ChatFormatting.RESET ? base :
+                                currStyle.applyLegacyFormat(formatting);
+                    }
                 }
                 continue;
             }
@@ -651,10 +653,12 @@ public final class ModernStringSplitter extends StringSplitter {
                     char c = aText.charAt(i);
                     if (c == ChatFormatting.PREFIX_CODE) {
                         i++;
-                        ChatFormatting formatting = MuiForgeApi.getFormattingByCode(aText.charAt(i));
-                        if (formatting != null) {
-                            currStyle = formatting == ChatFormatting.RESET ? aStyle :
-                                    currStyle.applyLegacyFormat(formatting);
+                        if (i < e) {
+                            ChatFormatting formatting = MuiForgeApi.getFormattingByCode(aText.charAt(i));
+                            if (formatting != null) {
+                                currStyle = formatting == ChatFormatting.RESET ? aStyle :
+                                        currStyle.applyLegacyFormat(formatting);
+                            }
                         }
                         continue;
                     }
