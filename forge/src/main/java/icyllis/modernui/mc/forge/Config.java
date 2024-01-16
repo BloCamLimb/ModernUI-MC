@@ -178,6 +178,8 @@ public final class Config {
         public static final int TOOLTIP_BORDER_COLOR_ANIM_MAX = 5000;
         public static final float TOOLTIP_BORDER_WIDTH_MIN = 0.5f;
         public static final float TOOLTIP_BORDER_WIDTH_MAX = 2.5f;
+        public static final float TOOLTIP_SHADOW_RADIUS_MIN = 0;
+        public static final float TOOLTIP_SHADOW_RADIUS_MAX = 32;
 
         public final ForgeConfigSpec.BooleanValue mBlurEffect;
         public final ForgeConfigSpec.IntValue mBackgroundDuration;
@@ -193,6 +195,7 @@ public final class Config {
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
         public final ForgeConfigSpec.IntValue mTooltipCycle;
         public final ForgeConfigSpec.DoubleValue mTooltipWidth;
+        public final ForgeConfigSpec.DoubleValue mTooltipShadow;
         public final ForgeConfigSpec.IntValue mTooltipDuration;
         public final ForgeConfigSpec.BooleanValue mDing;
         public final ForgeConfigSpec.BooleanValue mZoom;
@@ -291,9 +294,9 @@ public final class Config {
 
             mTooltip = builder.comment(
                             "Whether to enable Modern UI rounded tooltip style, or back to vanilla style.")
-                    .define("enable", true);
+                    .define("enable", !ModernUIForge.isLegendaryTooltipsLoaded());
             mRoundedTooltip = builder.comment(
-                            "Whether to use rounded tooltip shapes, or to use rectangular shapes.")
+                            "Whether to use rounded tooltip shapes, or to use vanilla style.")
                     .define("roundedShape", true);
             mCenterTooltipTitle = builder.comment(
                             "True to center the tooltip title if rendering an item's tooltip.",
@@ -341,6 +344,10 @@ public final class Config {
             mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
                     .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);
+            mTooltipShadow = builder.comment(
+                            "The shadow radius of tooltip, in GUI Scale Independent Pixels.",
+                            "Only works for values >= 2 and rounded corners. No impact on performance.")
+                    .defineInRange("shadowRadius", 10.0, TOOLTIP_SHADOW_RADIUS_MIN, TOOLTIP_SHADOW_RADIUS_MAX);
 
             builder.pop();
 
@@ -426,12 +433,15 @@ public final class Config {
                     .define("firstFontFamily", "Source Han Sans CN Medium");
             mFallbackFontFamilyList = builder.comment(
                             "A set of fallback font families to determine the typeface to use.",
-                            "TrueType & OpenType are supported. Each element can be one of the following two cases.",
-                            "1) Font family English name that registered to Modern UI, for instance: Segoe UI",
-                            "2) File path for external fonts on your PC, for instance: /usr/shared/fonts/x.otf",
-                            "Fonts under 'modernui:font' in resource packs and OS builtin fonts will be registered.",
-                            "Using bitmap fonts should consider other text settings, default glyph size should be 16x.",
-                            "This list is only read once when the game is loaded, or reloaded via in-game GUI.")
+                            "The order is first > fallbacks. TrueType & OpenType are supported.",
+                            "Each element can be one of the following two cases:",
+                            "1) Name of registered font family, for instance: Segoe UI",
+                            "2) Path of font files on your PC, for instance: /usr/shared/fonts/x.otf",
+                            "Registered font families include:",
+                            "1) OS builtin fonts.",
+                            "2) Font files in '/resourcepacks' directory.",
+                            "3) Font files under 'modernui:font' in resource packs.",
+                            "This is only read once when the game is loaded, you can reload via in-game GUI.")
                     .defineList("fallbackFontFamilyList", () -> {
                         List<String> list = new ArrayList<>();
                         list.add("Noto Sans");
@@ -534,6 +544,7 @@ public final class Config {
             TooltipRenderer.sCenterTitle = mCenterTooltipTitle.get();
             TooltipRenderer.sTitleBreak = mTooltipTitleBreak.get();
             TooltipRenderer.sBorderWidth = mTooltipWidth.get().floatValue();
+            TooltipRenderer.sShadowRadius = mTooltipShadow.get().floatValue();
 
             UIManager.sDingEnabled = mDing.get();
             UIManager.sZoomEnabled = mZoom.get() && !ModernUIForge.isOptiFineLoaded();
@@ -670,7 +681,7 @@ public final class Config {
     // they are independent and do not sync with each other
     public static class Common {
 
-        private final ForgeConfigSpec.BooleanValue developerMode;
+        public final ForgeConfigSpec.BooleanValue developerMode;
         final ForgeConfigSpec.IntValue oneTimeEvents;
 
         final ForgeConfigSpec.BooleanValue autoShutdown;
@@ -704,6 +715,13 @@ public final class Config {
                     }, s -> true);
 
             builder.pop();
+        }
+
+        public void saveAndReloadAsync() {
+            Util.ioPool().execute(() -> {
+                COMMON_SPEC.save();
+                reload();
+            });
         }
 
         private void reload() {
@@ -854,10 +872,11 @@ public final class Config {
                             "If you find that Modern UI text rendering is not compatible with some mods,",
                             "you can disable this option for compatibility, but this will decrease performance a bit.",
                             "Modern UI will use another cache strategy if this is disabled.")
-                    .define("useComponentCache", true);
+                    .define("useComponentCache", !ModernUIForge.isUntranslatedItemsLoaded());
             mAllowAsyncLayout = builder.comment(
-                            "Allow text layout to be computed from non-main threads.",
-                            "Otherwise, block on current thread.")
+                            "Allow text layout to be computed from background threads, which may lead to " +
+                                    "inconsistency issues.",
+                            "Otherwise, block the current thread and wait for main thread.")
                     .define("allowAsyncLayout", true);
             mLineBreakStyle = builder.comment(
                             "See CSS line-break property, https://developer.mozilla.org/en-US/docs/Web/CSS/line-break")
@@ -949,6 +968,7 @@ public final class Config {
                 TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
                 reload = true;
             }
+            TextLayoutEngine.sUseComponentCache = mUseComponentCache.get();
             TextLayoutEngine.sAllowAsyncLayout = mAllowAsyncLayout.get();
             if (TextLayoutProcessor.sLbStyle != mLineBreakStyle.get().key) {
                 TextLayoutProcessor.sLbStyle = mLineBreakStyle.get().key;

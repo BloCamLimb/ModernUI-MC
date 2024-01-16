@@ -72,6 +72,8 @@ public final class ModernUIForge {
 
     private static boolean sOptiFineLoaded;
     private static boolean sIrisApiLoaded;
+    private static boolean sLegendaryTooltipsLoaded;
+    private static boolean sUntranslatedItemsLoaded;
 
     static volatile boolean sInterceptTipTheScales;
 
@@ -117,6 +119,8 @@ public final class ModernUIForge {
             sInterceptTipTheScales = true;
             LOGGER.info(MARKER, "Disabled TipTheScales");
         }
+        sLegendaryTooltipsLoaded = ModList.get().isLoaded("legendarytooltips");
+        sUntranslatedItemsLoaded = ModList.get().isLoaded("untranslateditems");
 
         Config.initCommonConfig(
                 spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, spec,
@@ -180,6 +184,14 @@ public final class ModernUIForge {
 
     public static boolean isIrisApiLoaded() {
         return sIrisApiLoaded;
+    }
+
+    public static boolean isLegendaryTooltipsLoaded() {
+        return sLegendaryTooltipsLoaded;
+    }
+
+    public static boolean isUntranslatedItemsLoaded() {
+        return sUntranslatedItemsLoaded;
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -340,6 +352,30 @@ public final class ModernUIForge {
                                      @Nonnull Consumer<FontFamily> firstSetter,
                                      boolean firstLoad) {
             if (firstLoad) {
+                var fontManager = FontResourceManager.getInstance();
+                var directory = Minecraft.getInstance().getResourcePackDirectory().toPath();
+                try (var paths = Files.newDirectoryStream(directory)) {
+                    for (var p : paths) {
+                        String name = p.getFileName().toString();
+                        if (name.endsWith(".ttf") ||
+                                name.endsWith(".otf") ||
+                                name.endsWith(".ttc") ||
+                                name.endsWith(".otc")) {
+                            p = p.toAbsolutePath();
+                            try {
+                                FontFamily f = FontFamily.createFamily(p.toFile(), /*register*/true);
+                                fontManager.onFontRegistered(f);
+                                LOGGER.info(MARKER, "Registered font '{}', path '{}'",
+                                        f.getFamilyName(), p);
+                            } catch (Exception e) {
+                                LOGGER.error(MARKER, "Failed to register font '{}'",
+                                        p, e);
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    LOGGER.error(MARKER, "Failed to open resource pack directory", e);
+                }
                 var resources = Minecraft.getInstance().getResourceManager();
                 for (var location : resources.listResources("font",
                         res -> res.endsWith(".ttf") ||
@@ -353,11 +389,12 @@ public final class ModernUIForge {
                         for (var resource : resources.getResources(location)) {
                             try (var inputStream = resource.getInputStream()) {
                                 FontFamily f = FontFamily.createFamily(inputStream, /*register*/true);
+                                fontManager.onFontRegistered(f);
                                 LOGGER.debug(MARKER, "Registered font '{}', location '{}'",
                                         f.getFamilyName(), location);
                             } catch (Exception e) {
-                                LOGGER.error(MARKER, "Failed to load font '{}'",
-                                        location);
+                                LOGGER.error(MARKER, "Failed to register font '{}'",
+                                        location, e);
                             }
                         }
                     } catch (Exception e) {
@@ -371,8 +408,8 @@ public final class ModernUIForge {
                 hasFail |= loadSingleFont(fallback, selected, null);
             }
             if (hasFail && isDeveloperMode()) {
-                LOGGER.debug(MARKER, "Available system font families: {}",
-                        String.join(",", FontFamily.getSystemFontMap().keySet()));
+                LOGGER.debug(MARKER, "Available system font families:\n{}",
+                        String.join("\n", FontFamily.getSystemFontMap().keySet()));
             }
         }
 
@@ -382,17 +419,17 @@ public final class ModernUIForge {
             if (StringUtils.isEmpty(value)) {
                 return true;
             }
-            if (firstSetter != null) {
-                try {
-                    FontFamily f = FontFamily.createFamily(new File(
-                            value.replaceAll("\\\\", "/")), /*register*/false);
-                    selected.add(f);
-                    LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as LOCAL FILE",
-                            f.getFamilyName(), value);
-                    firstSetter.accept(f);
-                    return true;
-                } catch (Exception ignored) {
+            try {
+                File f = new File(value.replaceAll("\\\\", "/"));
+                FontFamily family = FontFamily.createFamily(f, /*register*/false);
+                selected.add(family);
+                LOGGER.debug(MARKER, "Font '{}' was loaded with config value '{}' as LOCAL FILE",
+                        family.getFamilyName(), value);
+                if (firstSetter != null) {
+                    firstSetter.accept(family);
                 }
+                return true;
+            } catch (Exception ignored) {
             }
             FontFamily family = FontFamily.getSystemFontWithAlias(value);
             if (family == null) {

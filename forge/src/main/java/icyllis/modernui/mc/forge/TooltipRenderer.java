@@ -20,14 +20,14 @@ package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Matrix4f;
 import icyllis.arc3d.core.Matrix4;
 import icyllis.modernui.graphics.*;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTextTooltip;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.world.item.ItemStack;
@@ -57,6 +57,7 @@ public final class TooltipRenderer {
     static int[] sFillColor = new int[4];
     static int[] sStrokeColor = new int[4];
     public static volatile float sBorderWidth = 4 / 3f;
+    public static volatile float sShadowRadius = 10;
 
     // space between mouse and tooltip
     private static final int TOOLTIP_SPACE = 12;
@@ -86,49 +87,63 @@ public final class TooltipRenderer {
     private boolean mDraw;
     public static float sAlpha = 1;
 
+    private float mScroll;
+    // 0 = off, 1 = down, -1 = up
+    private int mMarqueeDir;
+    // the time point when marquee is at top or bottom
+    private long mMarqueeEndMillis;
+
+    private static final long MARQUEE_DELAY_MILLIS = 1200;
+
+    private boolean mFrameGap;
+    private long mCurrTimeMillis;
+    private long mCurrDeltaMillis;
+
     TooltipRenderer() {
     }
 
     void update(long deltaMillis, long timeMillis) {
+        boolean draw = mDraw;
+        mDraw = false;
         if (sAnimationDuration <= 0) {
             sAlpha = 1;
-        } else if (mDraw) {
+        } else if (draw) {
             if (sAlpha < 1) {
                 sAlpha = Math.min(sAlpha + deltaMillis / sAnimationDuration, 1);
             }
-            mDraw = false;
         } else if (sAlpha > 0) {
             sAlpha = Math.max(sAlpha - deltaMillis / sAnimationDuration, 0);
         }
-        for (int i = 0; i < 4; i++) {
-            int color = sFillColor[i];
-            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
-            mActiveFillColor[i] = (color & 0xFFFFFF) | (alpha << 24);
-        }
-        if (sAlpha > 0) {
-            if (sBorderColorCycle > 0) {
-                float p = (timeMillis % sBorderColorCycle) / (float) sBorderColorCycle;
-                if (mLayoutRTL) {
-                    int pos = (int) ((timeMillis / sBorderColorCycle) & 3);
-                    for (int i = 0; i < 4; i++) {
-                        mActiveStrokeColor[i] = lerpInLinearSpace(p,
-                                sStrokeColor[(i + pos) & 3],
-                                sStrokeColor[(i + pos + 1) & 3]);
-                    }
-                } else {
-                    int pos = 3 - (int) ((timeMillis / sBorderColorCycle) & 3);
-                    for (int i = 0; i < 4; i++) {
-                        mActiveStrokeColor[i] = lerpInLinearSpace(p,
-                                sStrokeColor[(i + pos) & 3],
-                                sStrokeColor[(i + pos + 3) & 3]);
-                    }
-                }
+        if (draw) {
+            if (mFrameGap) {
+                mMarqueeEndMillis = timeMillis;
+                mMarqueeDir = 1;
+                mScroll = 0;
             }
+            mFrameGap = false;
+        } else {
+            mFrameGap = true;
         }
-        for (int i = 0; i < 4; i++) {
-            int color = sBorderColorCycle > 0 ? mActiveStrokeColor[i] : sStrokeColor[i];
-            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
-            mActiveStrokeColor[i] = (color & 0xFFFFFF) | (alpha << 24);
+        mCurrTimeMillis = timeMillis;
+        mCurrDeltaMillis = deltaMillis;
+    }
+
+    void updateBorderColor() {
+        float p = (mCurrTimeMillis % sBorderColorCycle) / (float) sBorderColorCycle;
+        if (mLayoutRTL) {
+            int pos = (int) ((mCurrTimeMillis / sBorderColorCycle) & 3);
+            for (int i = 0; i < 4; i++) {
+                mActiveStrokeColor[i] = lerpInLinearSpace(p,
+                        sStrokeColor[(i + pos) & 3],
+                        sStrokeColor[(i + pos + 1) & 3]);
+            }
+        } else {
+            int pos = 3 - (int) ((mCurrTimeMillis / sBorderColorCycle) & 3);
+            for (int i = 0; i < 4; i++) {
+                mActiveStrokeColor[i] = lerpInLinearSpace(p,
+                        sStrokeColor[(i + pos) & 3],
+                        sStrokeColor[(i + pos + 3) & 3]);
+            }
         }
     }
 
@@ -372,96 +387,66 @@ public final class TooltipRenderer {
         if (tooltipY + tooltipHeight + 6 > screenHeight) {
             tooltipY = screenHeight - tooltipHeight - 6;
         }
+        if (tooltipY < 6) {
+            tooltipY = 6;
+        }
         partialY = (tooltipY - (int) tooltipY);
+
+        float maxScroll = 6 + tooltipHeight + 6 - screenHeight;
+        if (maxScroll > 0) {
+            mScroll = MathUtil.clamp(mScroll, 0, maxScroll);
+
+            if (mMarqueeDir != 0 && mCurrTimeMillis - mMarqueeEndMillis >= MARQUEE_DELAY_MILLIS) {
+                mScroll += mMarqueeDir * mCurrDeltaMillis * 0.018f;
+                if (mMarqueeDir > 0) {
+                    if (mScroll >= maxScroll) {
+                        mMarqueeDir = -1;
+                        mMarqueeEndMillis = mCurrTimeMillis;
+                    }
+                } else {
+                    if (mScroll <= 0) {
+                        mMarqueeDir = 1;
+                        mMarqueeEndMillis = mCurrTimeMillis;
+                    }
+                }
+            }
+        } else {
+            mScroll = 0;
+        }
+
+        if (sBorderColorCycle > 0) {
+            updateBorderColor();
+        }
+
+        for (int i = 0; i < 4; i++) {
+            int color = sFillColor[i];
+            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
+            mActiveFillColor[i] = (color & 0xFFFFFF) | (alpha << 24);
+        }
+        for (int i = 0; i < 4; i++) {
+            int color = sBorderColorCycle > 0 ? mActiveStrokeColor[i] : sStrokeColor[i];
+            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
+            mActiveStrokeColor[i] = (color & 0xFFFFFF) | (alpha << 24);
+        }
+
+        poseStack.pushPose();
+        // because of the order of draw calls, we actually don't need z-shifting
+        poseStack.translate(0, -mScroll, 400);
+        final Matrix4f pose = poseStack.last().pose();
 
         // we should disable depth test, because texts may be translucent
         // for compatibility reasons, we keep this enabled, and it doesn't seem to be a big problem
         RenderSystem.enableDepthTest();
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-        poseStack.pushPose();
-        // because of the order of draw calls, we actually don't need z-shifting
-        poseStack.translate(0, 0, 400);
-        final Matrix4f mat = poseStack.last().pose();
-
-        final int oldVertexArray = glGetInteger(GL_VERTEX_ARRAY_BINDING);
-        final int oldProgram = glGetInteger(GL_CURRENT_PROGRAM);
-
-        // give some points to the original framebuffer, not gui scaled
-        canvas.reset(window.getWidth(), window.getHeight());
-
-        // swap matrices
-        RenderSystem.getProjectionMatrix().store(sMatBuf.rewind());
-        sMyMat.set(sMatBuf.rewind());
-        canvas.setProjection(sMyMat);
-
-        canvas.save();
-        RenderSystem.getModelViewMatrix().store(sMatBuf.rewind());
-        sMyMat.set(sMatBuf.rewind());
-        canvas.concat(sMyMat);
-
-        // Sodium check the remaining
-        mat.store(sMatBuf.rewind());
-        sMyMat.set(sMatBuf.rewind());
-        // RenderSystem.getModelViewMatrix() has Z translation normalized to -1
-        // We have to offset against our canvas Z translation, see restore matrix in GLCanvas
-        sMyMat.preTranslate(0, 0, 3000);
-        canvas.concat(sMyMat);
-
-        Paint paint = Paint.obtain();
-
-        paint.setStyle(Paint.FILL);
         if (sRoundedShapes) {
-            canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
-                    tooltipX + tooltipWidth + H_BORDER,
-                    tooltipY + tooltipHeight + V_BORDER,
-                    mActiveFillColor[0], mActiveFillColor[1],
-                    mActiveFillColor[2], mActiveFillColor[3],
-                    3, paint);
+            drawRoundBackground(canvas, window, pose,
+                    tooltipX, tooltipY, tooltipWidth, tooltipHeight,
+                    titleGap, titleBreakHeight);
         } else {
-            canvas.drawRectGradient(tooltipX - H_BORDER + 1, tooltipY - V_BORDER + 1,
-                    tooltipX + tooltipWidth + H_BORDER - 1,
-                    tooltipY + tooltipHeight + V_BORDER - 1,
-                    mActiveFillColor[0], mActiveFillColor[1],
-                    mActiveFillColor[2], mActiveFillColor[3],
-                    paint);
+            drawVanillaBackground(pose,
+                    tooltipX, tooltipY, tooltipWidth, tooltipHeight,
+                    titleGap, titleBreakHeight);
         }
-
-        if (titleGap && sTitleBreak) {
-            paint.setColor(0xE0C8C8C8);
-            paint.setAlphaF(0xE0 * sAlpha);
-            paint.setStrokeWidth(1f);
-            canvas.drawLine(tooltipX, tooltipY + titleBreakHeight,
-                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight,
-                    paint);
-        }
-
-        paint.setStyle(Paint.STROKE);
-        paint.setStrokeWidth(sBorderWidth);
-        if (sRoundedShapes) {
-            canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
-                    tooltipX + tooltipWidth + H_BORDER,
-                    tooltipY + tooltipHeight + V_BORDER,
-                    mActiveStrokeColor[0], mActiveStrokeColor[1],
-                    mActiveStrokeColor[2], mActiveStrokeColor[3],
-                    3, paint);
-        } else {
-            canvas.drawRectGradient(tooltipX - H_BORDER + 1, tooltipY - V_BORDER + 1,
-                    tooltipX + tooltipWidth + H_BORDER - 1,
-                    tooltipY + tooltipHeight + V_BORDER - 1,
-                    mActiveStrokeColor[0], mActiveStrokeColor[1],
-                    mActiveStrokeColor[2], mActiveStrokeColor[3],
-                    paint);
-        }
-
-        paint.recycle();
-
-        canvas.restore();
-        canvas.executeRenderPass(null);
-
-        glBindVertexArray(oldVertexArray);
-        glUseProgram(oldProgram);
 
         final int drawX = (int) tooltipX;
         int drawY = (int) tooltipY;
@@ -477,11 +462,11 @@ public final class TooltipRenderer {
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
             if (titleGap && i == 0 && sCenterTitle) {
-                component.renderText(font, drawX + (tooltipWidth - component.getWidth(font)) / 2, drawY, mat, source);
+                component.renderText(font, drawX + (tooltipWidth - component.getWidth(font)) / 2, drawY, pose, source);
             } else if (mLayoutRTL) {
-                component.renderText(font, drawX + tooltipWidth - component.getWidth(font), drawY, mat, source);
+                component.renderText(font, drawX + tooltipWidth - component.getWidth(font), drawY, pose, source);
             } else {
-                component.renderText(font, drawX, drawY, mat, source);
+                component.renderText(font, drawX, drawY, pose, source);
             }
             if (titleGap && i == 0) {
                 drawY += TITLE_GAP;
@@ -510,5 +495,188 @@ public final class TooltipRenderer {
         }
         itemRenderer.blitOffset = blitOffset;
         poseStack.popPose();
+    }
+
+    private void drawRoundBackground(@Nonnull GLSurfaceCanvas canvas,
+                                     @Nonnull Window window, Matrix4f pose,
+                                     float tooltipX, float tooltipY,
+                                     int tooltipWidth, int tooltipHeight,
+                                     boolean titleGap, int titleBreakHeight) {
+        RenderSystem.enableBlend();
+        RenderSystem.blendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
+        final int oldVertexArray = glGetInteger(GL_VERTEX_ARRAY_BINDING);
+        final int oldProgram = glGetInteger(GL_CURRENT_PROGRAM);
+
+        // give some points to the original framebuffer, not gui scaled
+        canvas.reset(window.getWidth(), window.getHeight());
+
+        // swap matrices
+        RenderSystem.getProjectionMatrix().store(sMatBuf.rewind());
+        sMyMat.set(sMatBuf.rewind());
+        canvas.setProjection(sMyMat);
+
+        canvas.save();
+        RenderSystem.getModelViewMatrix().store(sMatBuf.rewind());
+        sMyMat.set(sMatBuf.rewind());
+        canvas.concat(sMyMat);
+
+        // Sodium check the remaining
+        pose.store(sMatBuf.rewind());
+        sMyMat.set(sMatBuf.rewind());
+        // RenderSystem.getModelViewMatrix() has Z translation normalized to -1
+        // We have to offset against our canvas Z translation, see restore matrix in GLCanvas
+        sMyMat.preTranslate(0, 0, 3000);
+        canvas.concat(sMyMat);
+
+        Paint paint = Paint.obtain();
+
+        paint.setStyle(Paint.FILL);
+        {
+            float spread = 0;
+            if (sShadowRadius >= 2) {
+                spread = sShadowRadius * 0.5f - 1f;
+                paint.setSmoothWidth(sShadowRadius);
+            }
+            canvas.drawRoundRectGradient(tooltipX - H_BORDER - spread, tooltipY - V_BORDER - spread,
+                    tooltipX + tooltipWidth + H_BORDER + spread,
+                    tooltipY + tooltipHeight + V_BORDER + spread,
+                    mActiveFillColor[0], mActiveFillColor[1],
+                    mActiveFillColor[2], mActiveFillColor[3],
+                    3 + spread, paint);
+            paint.setSmoothWidth(0);
+        }
+
+        if (titleGap && sTitleBreak) {
+            paint.setColor(0xE0C8C8C8);
+            paint.setAlphaF(224 / 255f * sAlpha);
+            paint.setStrokeWidth(1f);
+            canvas.drawLine(tooltipX, tooltipY + titleBreakHeight,
+                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight,
+                    paint);
+        }
+
+        paint.setStyle(Paint.STROKE);
+        paint.setStrokeWidth(sBorderWidth);
+        canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
+                tooltipX + tooltipWidth + H_BORDER,
+                tooltipY + tooltipHeight + V_BORDER,
+                mActiveStrokeColor[0], mActiveStrokeColor[1],
+                mActiveStrokeColor[2], mActiveStrokeColor[3],
+                3, paint);
+
+        paint.recycle();
+
+        canvas.restore();
+        canvas.executeRenderPass(null);
+
+        glBindVertexArray(oldVertexArray);
+        glUseProgram(oldProgram);
+    }
+
+    private void drawVanillaBackground(Matrix4f pose,
+                                       float tooltipX, float tooltipY,
+                                       int tooltipWidth, int tooltipHeight,
+                                       boolean titleGap, int titleBreakHeight) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+        float left = tooltipX - H_BORDER;
+        float top = tooltipY - V_BORDER;
+        float right = tooltipX + tooltipWidth + H_BORDER;
+        float bottom = tooltipY + tooltipHeight + V_BORDER;
+
+        // top
+        fillGrad(pose, left, top - 1, right, top,
+                mActiveFillColor[0], mActiveFillColor[1], mActiveFillColor[1], mActiveFillColor[0]);
+        // bottom
+        fillGrad(pose, left, bottom, right, bottom + 1,
+                mActiveFillColor[3], mActiveFillColor[2], mActiveFillColor[2], mActiveFillColor[3]);
+        // center
+        fillGrad(pose, left, top, right, bottom,
+                mActiveFillColor[0], mActiveFillColor[1], mActiveFillColor[2], mActiveFillColor[3]);
+        // left
+        fillGrad(pose, left - 1, top, left, bottom,
+                mActiveFillColor[0], mActiveFillColor[0], mActiveFillColor[3], mActiveFillColor[3]);
+        // right
+        fillGrad(pose, right, top, right + 1, bottom,
+                mActiveFillColor[1], mActiveFillColor[1], mActiveFillColor[2], mActiveFillColor[2]);
+
+        if (titleGap && sTitleBreak) {
+            int color = 0xC8C8C8;
+            color |= (int) (224 * sAlpha) << 24;
+            fillGrad(pose,
+                    tooltipX, tooltipY + titleBreakHeight - 0.5f,
+                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f,
+                    color, color, color, color);
+        }
+
+        // top
+        fillGrad(pose,
+                left, top, right, top + 1,
+                mActiveStrokeColor[0], mActiveStrokeColor[1],
+                mActiveStrokeColor[1], mActiveStrokeColor[0]);
+        // right
+        fillGrad(pose,
+                right - 1, top, right, bottom,
+                mActiveStrokeColor[1], mActiveStrokeColor[1],
+                mActiveStrokeColor[2], mActiveStrokeColor[2]);
+        // bottom
+        fillGrad(pose,
+                left, bottom - 1, right, bottom,
+                mActiveStrokeColor[3], mActiveStrokeColor[2],
+                mActiveStrokeColor[2], mActiveStrokeColor[3]);
+        // left
+        fillGrad(pose, left, top, left + 1, bottom,
+                mActiveStrokeColor[0], mActiveStrokeColor[0],
+                mActiveStrokeColor[3], mActiveStrokeColor[3]);
+    }
+
+    private static void fillGrad(Matrix4f pose,
+                                 float left, float top, float right, float bottom,
+                                 int colorUL, int colorUR, int colorLR, int colorLL) {
+        RenderSystem.enableBlend();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+
+        var buffer = Tesselator.getInstance().getBuilder();
+        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+
+        // CCW
+        int color = colorLR;
+        int a = (color >>> 24);
+        int r = ((color >> 16) & 0xff);
+        int g = ((color >> 8) & 0xff);
+        int b = (color & 0xff);
+        buffer.vertex(pose, right, bottom, 0)
+                .color(r, g, b, a).endVertex();
+
+        color = colorUR;
+        a = (color >>> 24);
+        r = ((color >> 16) & 0xff);
+        g = ((color >> 8) & 0xff);
+        b = (color & 0xff);
+        buffer.vertex(pose, right, top, 0)
+                .color(r, g, b, a).endVertex();
+
+        color = colorUL;
+        a = (color >>> 24);
+        r = ((color >> 16) & 0xff);
+        g = ((color >> 8) & 0xff);
+        b = (color & 0xff);
+        buffer.vertex(pose, left, top, 0)
+                .color(r, g, b, a).endVertex();
+
+        color = colorLL;
+        a = (color >>> 24);
+        r = ((color >> 16) & 0xff);
+        g = ((color >> 8) & 0xff);
+        b = (color & 0xff);
+        buffer.vertex(pose, left, bottom, 0)
+                .color(r, g, b, a).endVertex();
+
+        buffer.end();
+        BufferUploader.end(buffer);
+
+        RenderSystem.disableBlend();
     }
 }

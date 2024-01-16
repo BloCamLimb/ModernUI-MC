@@ -20,11 +20,13 @@ package icyllis.modernui.mc.forge.mixin;
 
 import com.mojang.blaze3d.platform.Window;
 import icyllis.modernui.mc.forge.BlurHandler;
+import icyllis.modernui.mc.forge.UIManager;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Minecraft.class)
@@ -56,5 +58,10 @@ public abstract class MixinMinecraft {
                 ));
             }
         }
+    }
+
+    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lnet/minecraft/Util;shutdownExecutors()V"))
+    private void onClose(CallbackInfo ci) {
+        UIManager.destroy();
     }
 }

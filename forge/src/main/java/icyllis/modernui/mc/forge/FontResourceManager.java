@@ -276,6 +276,9 @@ public class FontResourceManager implements PreparableReloadListener {
         results.mEmojiShortcodes = map;
     }
 
+    public void onFontRegistered(FontFamily f) {
+    }
+
     @Nullable
     public EmojiFont getEmojiFont() {
         return mEmojiFont;

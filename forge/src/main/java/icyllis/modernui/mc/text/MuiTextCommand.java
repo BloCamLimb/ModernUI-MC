@@ -22,13 +22,17 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.text.Font;
+import icyllis.modernui.mc.forge.ModernUIForge;
 import net.minecraft.Util;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.ComponentArgument;
 import net.minecraft.network.chat.*;
+import net.minecraft.resources.ResourceLocation;
 
 public class MuiTextCommand {
+
+    public static final ResourceLocation JB_MONO = ModernUIForge.location("jetbrains-mono-medium");
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal(ModernUI.ID)
@@ -176,7 +180,7 @@ public class MuiTextCommand {
         source.sendSuccess(component, false);
         source.sendSuccess(
                 new TextComponent(result)
-                        .setStyle(Style.EMPTY.withFont(TextLayoutEngine.MONOSPACED)),
+                        .setStyle(Style.EMPTY.withFont(JB_MONO)),
                 false
         );
         Util.ioPool().execute(() -> ModernUI.LOGGER.info(TextLayoutEngine.MARKER, result));
