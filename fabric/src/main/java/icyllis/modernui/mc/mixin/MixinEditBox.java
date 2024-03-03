@@ -159,16 +159,16 @@ public abstract class MixinEditBox implements IModernEditBox {
     }
 
     @Inject(
-            method = "deleteChars",
+            method = "deleteCharsToPos",
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/components/EditBox;value:Ljava/lang/String;",
                     opcode = Opcodes.PUTFIELD),
             locals = LocalCapture.CAPTURE_FAILSOFT)
     public void onDeleteChars(int i, CallbackInfo ci,
-                              int j, int k, int l, String string) {
+                              int j, int k, String string) {
         if (modernUI_MC$undoManager.isInUndo()) {
             return;
         }
-        String oldText = value.substring(k, l);
+        String oldText = value.substring(j, k);
         if (oldText.isEmpty()) {
             return;
         }
@@ -176,7 +176,7 @@ public abstract class MixinEditBox implements IModernEditBox {
                 modernUI_MC$undoOwner(),
                 /*cursorPos*/ cursorPos,
                 oldText,
-                k,
+                j,
                 ""
         );
         modernUI_MC$addEdit(edit, false);

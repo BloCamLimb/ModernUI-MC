@@ -368,8 +368,8 @@ public class TextRenderType extends RenderType {
         if (smart) {
             if (!sSmartShadersLoaded) {
                 sSmartShadersLoaded = true;
-                if (Core.requireDirectContext()
-                        .getCaps().shaderCaps().mGLSLVersion >= 400) {
+                if (((GLCaps) Core.requireDirectContext()
+                        .getCaps()).getGLSLVersion() >= 400) {
                     var provider = obtainResourceProvider();
                     try {
                         sShaderSDFFillSmart = new ShaderInstance(provider,
