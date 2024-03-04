@@ -43,7 +43,7 @@ dependencies {
     mappings loom.officialMojangMappings()
     neoForge "net.neoforged:neoforge:${neoforge_version}"
 
-    if (rootProject.file('../Arc3D').exists() && rootProject.file('../ModernUI').exists()) {
+    if (rootProject.file('../ModernUI').exists()) {
         implementation(forgeRuntimeLibrary("icyllis.arc3d:Arc3D"))
         shadow("icyllis.arc3d:Arc3D") {
             transitive = false

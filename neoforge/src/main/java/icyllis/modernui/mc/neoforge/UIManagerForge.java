@@ -123,7 +123,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                     );
                 }
                 if (ModernUIMod.isOptiFineLoaded() &&
-                        ModernUIClient.isTextEngineEnabled()) {
+                        ModernUIMod.isTextEngineEnabled()) {
                     OptiFineIntegration.setFastRender(false);
                     LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
                 }

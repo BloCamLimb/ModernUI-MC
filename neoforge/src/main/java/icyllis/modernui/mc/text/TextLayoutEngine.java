@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -279,7 +279,7 @@ public class TextLayoutEngine extends FontResourceManager
     /**
      * Determine font size. Integer.
      */
-    private volatile int mResLevel;
+    private volatile int mResLevel = 2;
     /**
      * Text direction.
      */
@@ -322,13 +322,13 @@ public class TextLayoutEngine extends FontResourceManager
                 reload();
             }
         });
-        // init
-        reload();
 
         mTextRenderer = new ModernTextRenderer(this);
         mStringSplitter = new ModernStringSplitter(this, (int ch, Style style) -> {
             throw new UnsupportedOperationException("Modern Text Engine");
         });
+
+        LOGGER.info(ModernUI.MARKER, "Created TextLayoutEngine");
     }
 
     /**
@@ -430,53 +430,48 @@ public class TextLayoutEngine extends FontResourceManager
                     TextDirectionHeuristics.FIRSTSTRONG_LTR;
         };
 
-        if (oldLevel == 0) {
-            LOGGER.info(MARKER, "Loaded text layout engine, res level: {}, locale: {}, layout RTL: {}",
-                    mResLevel, locale, layoutRtl);
+        // register logical fonts
+        mFontCollections.putIfAbsent(SANS_SERIF,
+                Typeface.SANS_SERIF);
+        mFontCollections.putIfAbsent(SERIF,
+                Typeface.SERIF);
+        mFontCollections.putIfAbsent(MONOSPACED,
+                Typeface.MONOSPACED);
+        // register logical fonts in default namespace
+        mFontCollections.putIfAbsent(new ResourceLocation(SANS_SERIF.getPath()),
+                Typeface.SANS_SERIF);
+        mFontCollections.putIfAbsent(new ResourceLocation(SERIF.getPath()),
+                Typeface.SERIF);
+        mFontCollections.putIfAbsent(new ResourceLocation(MONOSPACED.getPath()),
+                Typeface.MONOSPACED);
+
+        if (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL) {
+            mFontCollections.put(Minecraft.DEFAULT_FONT, ModernUI.getSelectedTypeface());
         } else {
-            // register logical fonts
-            mFontCollections.putIfAbsent(SANS_SERIF,
-                    Typeface.SANS_SERIF);
-            mFontCollections.putIfAbsent(SERIF,
-                    Typeface.SERIF);
-            mFontCollections.putIfAbsent(MONOSPACED,
-                    Typeface.MONOSPACED);
-            // register logical fonts in default namespace
-            mFontCollections.putIfAbsent(new ResourceLocation(SANS_SERIF.getPath()),
-                    Typeface.SANS_SERIF);
-            mFontCollections.putIfAbsent(new ResourceLocation(SERIF.getPath()),
-                    Typeface.SERIF);
-            mFontCollections.putIfAbsent(new ResourceLocation(MONOSPACED.getPath()),
-                    Typeface.MONOSPACED);
-
-            if (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL) {
-                mFontCollections.put(Minecraft.DEFAULT_FONT, ModernUI.getSelectedTypeface());
-            } else {
-                LinkedHashSet<FontFamily> defaultFonts = new LinkedHashSet<>();
-                populateDefaultFonts(defaultFonts, sDefaultFontBehavior);
-                defaultFonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
-                mFontCollections.put(Minecraft.DEFAULT_FONT,
-                        new FontCollection(defaultFonts.toArray(new FontFamily[0])));
-            }
-
-            if (mVanillaFontManager != null) {
-                var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
-                if (fontSets.get(Minecraft.DEFAULT_FONT) instanceof StandardFontSet standardFontSet) {
-                    standardFontSet.reload(mFontCollections.get(Minecraft.DEFAULT_FONT), mResLevel);
-                }
-                for (var e : fontSets.entrySet()) {
-                    if (e.getKey().equals(Minecraft.DEFAULT_FONT)) {
-                        continue;
-                    }
-                    if (e.getValue() instanceof StandardFontSet standardFontSet) {
-                        standardFontSet.invalidateCache(mResLevel);
-                    }
-                }
-            }
-
-            LOGGER.info(MARKER, "Reloaded text layout engine, res level: {} to {}, locale: {}, layout RTL: {}",
-                    oldLevel, mResLevel, locale, layoutRtl);
+            LinkedHashSet<FontFamily> defaultFonts = new LinkedHashSet<>();
+            populateDefaultFonts(defaultFonts, sDefaultFontBehavior);
+            defaultFonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
+            mFontCollections.put(Minecraft.DEFAULT_FONT,
+                    new FontCollection(defaultFonts.toArray(new FontFamily[0])));
         }
+
+        if (mVanillaFontManager != null) {
+            var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
+            if (fontSets.get(Minecraft.DEFAULT_FONT) instanceof StandardFontSet standardFontSet) {
+                standardFontSet.reload(mFontCollections.get(Minecraft.DEFAULT_FONT), mResLevel);
+            }
+            for (var e : fontSets.entrySet()) {
+                if (e.getKey().equals(Minecraft.DEFAULT_FONT)) {
+                    continue;
+                }
+                if (e.getValue() instanceof StandardFontSet standardFontSet) {
+                    standardFontSet.invalidateCache(mResLevel);
+                }
+            }
+        }
+
+        LOGGER.info(MARKER, "Reloaded text layout engine, res level: {} to {}, locale: {}, layout RTL: {}",
+                oldLevel, mResLevel, locale, layoutRtl);
     }
 
     /**

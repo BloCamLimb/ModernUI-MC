@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,6 +25,8 @@ import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
@@ -37,6 +39,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.function.Consumer;
 
+@OnlyIn(Dist.CLIENT)
 public abstract class ModernUIClient extends ModernUI {
 
     private static volatile ModernUIClient sInstance;
@@ -83,12 +86,6 @@ public abstract class ModernUIClient extends ModernUI {
         return sInstance;
     }
 
-    public static boolean isTextEngineEnabled() {
-        return !Boolean.parseBoolean(
-                getBootstrapProperty(ModernUIMod.BOOTSTRAP_DISABLE_TEXT_ENGINE)
-        );
-    }
-
     public static boolean areShadersEnabled() {
         if (ModernUIMod.isOptiFineLoaded()) {
             if (OptiFineIntegration.isShaderPackLoaded()) {
@@ -131,9 +128,13 @@ public abstract class ModernUIClient extends ModernUI {
             props.forEach((k, v) -> {
                 if (k instanceof String key && v instanceof String value) {
                     Boolean state;
-                    if ("true".equalsIgnoreCase(value)) {
+                    if ("true".equalsIgnoreCase(value) ||
+                            "yes".equalsIgnoreCase(value) ||
+                            "enable".equalsIgnoreCase(value)) {
                         state = Boolean.TRUE;
-                    } else if ("false".equalsIgnoreCase(value)) {
+                    } else if ("false".equalsIgnoreCase(value) ||
+                            "no".equalsIgnoreCase(value) ||
+                            "disable".equalsIgnoreCase(value)) {
                         state = Boolean.FALSE;
                     } else {
                         return;

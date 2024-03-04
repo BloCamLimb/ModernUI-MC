@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -193,7 +193,7 @@ final class Registration {
                     handler.post(() -> UIManager.getInstance().updateLayoutDir(Config.CLIENT.mForceRtl.get()));
                 }
             });
-            if (!ModernUIClient.isTextEngineEnabled()) {
+            if (!ModernUIMod.isTextEngineEnabled()) {
                 event.registerReloadListener(FontResourceManager.getInstance());
             }
             // else injected by MixinFontManager

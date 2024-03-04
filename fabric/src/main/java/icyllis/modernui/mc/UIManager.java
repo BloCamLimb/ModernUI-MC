@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -565,7 +565,7 @@ public abstract class UIManager implements LifecycleOwner {
                         .getJavaLocale()).isRightToLeft()));*/
                         GlyphManager.getInstance().debug();
                 case GLFW_KEY_V -> {
-                    if (ModernUIClient.isTextEngineEnabled()) {
+                    if (ModernUIMod.isTextEngineEnabled()) {
                         //TextLayoutEngine.getInstance().dumpEmojiAtlas();
                         TextLayoutEngine.getInstance().dumpBitmapFonts();
                     }

@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -148,7 +148,7 @@ public class AdvancedOptionsFragment extends Fragment {
                         Core.executeOnMainThread(() -> GlyphManager.getInstance().debug()));
                 category.addView(button);
             }
-            if (ModernUIClient.isTextEngineEnabled()) {
+            if (ModernUIMod.isTextEngineEnabled()) {
                 {
                     var button = createDebugButton(context, "Dump bitmap fonts (V)");
                     button.setOnClickListener((__) ->

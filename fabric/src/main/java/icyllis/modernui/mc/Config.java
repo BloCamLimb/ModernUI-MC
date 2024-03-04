@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1001,7 +1001,7 @@ public final class Config {
             if (reloadStrike) {
                 Minecraft.getInstance().submit(
                         () -> FontResourceManager.getInstance().reloadAll());
-            } else if (reload && ModernUIClient.isTextEngineEnabled()) {
+            } else if (reload && ModernUIMod.isTextEngineEnabled()) {
                 Minecraft.getInstance().submit(
                         () -> {
                             try {

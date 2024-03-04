@@ -50,7 +50,7 @@ dependencies {
 
     modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:20.4.0"
 
-    if (rootProject.file('../Arc3D').exists() && rootProject.file('../ModernUI').exists()) {
+    if (rootProject.file('../ModernUI').exists()) {
         implementation("icyllis.arc3d:Arc3D")
         shadow("icyllis.arc3d:Arc3D") {
             transitive = false

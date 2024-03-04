@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -390,6 +390,9 @@ public class PreferencesFragment extends Fragment {
             content.addView(list);
         }
 
+        boolean rawTextEngineEnabled = !Boolean.parseBoolean(
+                ModernUIClient.getBootstrapProperty(ModernUIMod.BOOTSTRAP_DISABLE_TEXT_ENGINE));
+
         {
             var list = createCategoryList(context, "modernui.center.category.extension");
 
@@ -479,7 +482,7 @@ public class PreferencesFragment extends Fragment {
                 var option = createSwitchLayout(context, "modernui.center.text.textEngine");
                 option.setTooltipText(I18n.get("modernui.center.text.textEngine_desc"));
                 var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(ModernUIClient.isTextEngineEnabled());
+                button.setChecked(rawTextEngineEnabled);
                 button.setOnCheckedChangeListener((view, checked) -> {
                     ModernUIClient.setBootstrapProperty(
                             ModernUIMod.BOOTSTRAP_DISABLE_TEXT_ENGINE,
@@ -519,7 +522,7 @@ public class PreferencesFragment extends Fragment {
             content.addView(mTooltipCategory);
         }
 
-        if (ModernUIClient.isTextEngineEnabled()) {
+        if (rawTextEngineEnabled) {
             mTextLayoutCategory = createTextLayoutCategory(context);
             content.addView(mTextLayoutCategory);
 

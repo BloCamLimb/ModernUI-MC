@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,6 +45,8 @@ public abstract class ModernUIMod {
     protected static volatile boolean sLegendaryTooltipsLoaded;
     protected static volatile boolean sUntranslatedItemsLoaded;
 
+    private static volatile Boolean sTextEngineEnabled;
+
     static {
         try {
             Class<?> clazz = Class.forName("optifine.Installer");
@@ -88,5 +90,31 @@ public abstract class ModernUIMod {
 
     public static boolean isDeveloperMode() {
         return sDeveloperMode || sDevelopment;
+    }
+
+    // check if it is on client side before calling
+    public static String getBootstrapProperty(String key) {
+        return ModernUIClient.getBootstrapProperty(key);
+    }
+
+    /**
+     * Returns true is text engine is or will be enabled this game run.
+     * Return value won't alter even if bootstrap property is changed at runtime.
+     * This method is thread-safe, check if it is on client side before calling.
+     *
+     * @since 3.10.1
+     */
+    public static boolean isTextEngineEnabled() {
+        // this method should be first called from MixinConfigPlugin
+        if (sTextEngineEnabled == null) {
+            synchronized (ModernUIMod.class) {
+                if (sTextEngineEnabled == null) {
+                    sTextEngineEnabled = !Boolean.parseBoolean(
+                            getBootstrapProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
+                    );
+                }
+            }
+        }
+        return sTextEngineEnabled;
     }
 }

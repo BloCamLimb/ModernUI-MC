@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,7 +18,9 @@
 
 package icyllis.modernui.mc.text;
 
-import icyllis.modernui.mc.ModernUIClient;
+import icyllis.modernui.mc.ModernUIMod;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -32,7 +34,9 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage) {
-        mEnable = ModernUIClient.isTextEngineEnabled();
+        if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
+            mEnable = ModernUIMod.isTextEngineEnabled();
+        }
     }
 
     @Override

@@ -128,7 +128,7 @@ public final class ModernUIForge extends ModernUIMod {
                             ModernUI.NAME_CPT + "/text.toml")
             );
             FontResourceManager.getInstance();
-            if (isTextEngineEnabled()) {
+            if (ModernUIMod.isTextEngineEnabled()) {
                 ModernUIText.init(modEventBus);
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
