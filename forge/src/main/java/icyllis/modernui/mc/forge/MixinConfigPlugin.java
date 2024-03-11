@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.forge;
 
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -33,12 +34,14 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage) {
-        mDisableSmoothScrolling = Boolean.parseBoolean(
-                ModernUIForge.Client.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
-        );
-        mDisableEnhancedTextField = Boolean.parseBoolean(
-                ModernUIForge.Client.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD)
-        );
+        if (FMLEnvironment.dist.isClient()) {
+            mDisableSmoothScrolling = Boolean.parseBoolean(
+                    ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
+            );
+            mDisableEnhancedTextField = Boolean.parseBoolean(
+                    ModernUIForge.getBootstrapProperty(ModernUIForge.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD)
+            );
+        }
     }
 
     @Override

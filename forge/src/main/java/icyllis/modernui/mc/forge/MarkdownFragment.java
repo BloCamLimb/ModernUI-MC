@@ -43,12 +43,12 @@ public class MarkdownFragment extends Fragment {
         super.onCreate(savedInstanceState);
         var builder = Markdown.builder(requireContext())
                 .usePlugin(CorePlugin.create());
-        FontFamily monoFont = FontFamily.getSystemFontWithAlias("JetBrains Mono Medium");
-        if (monoFont != null) {
+        Typeface monoFont = Typeface.getSystemFont("JetBrains Mono Medium");
+        if (monoFont != Typeface.SANS_SERIF) {
             builder.usePlugin(new MarkdownPlugin() {
                 @Override
                 public void configureTheme(@NonNull MarkdownTheme.Builder builder) {
-                    builder.setCodeTypeface(Typeface.createTypeface(monoFont));
+                    builder.setCodeTypeface(monoFont);
                 }
             });
         }
@@ -122,8 +122,8 @@ public class MarkdownFragment extends Fragment {
                 2. Two
                 3. Three
                 # Heading 1
-                ## Heading 2
-                ### Heading 3
+                ## Heading 2 👋
+                ### Heading 3 🤔
                                         
                 AAA AAA
                 ******

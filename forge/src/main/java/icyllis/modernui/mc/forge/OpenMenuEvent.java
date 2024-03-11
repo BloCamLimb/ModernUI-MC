@@ -30,6 +30,7 @@ import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.network.IContainerFactory;
+import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -59,7 +60,10 @@ import java.util.function.Consumer;
  * to create your registry entries when the registry event is triggered.
  *
  * @see MuiForgeApi#openMenu(Player, MenuConstructor, Consumer)
+ * @deprecated use {@link MenuScreenFactory}
  */
+@ApiStatus.Internal
+@Deprecated
 @Cancelable
 @OnlyIn(Dist.CLIENT)
 public final class OpenMenuEvent extends Event implements IModBusEvent {

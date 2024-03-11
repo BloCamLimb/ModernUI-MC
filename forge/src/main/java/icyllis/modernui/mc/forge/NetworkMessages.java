@@ -18,12 +18,15 @@
 
 package icyllis.modernui.mc.forge;
 
+import icyllis.modernui.fragment.Fragment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.Registry;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.TextComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -105,7 +108,21 @@ public final class NetworkMessages {
             Minecraft.getInstance().execute(() -> {
                 final LocalPlayer p = player.get();
                 if (p != null) {
-                    UIManager.getInstance().open(p, type.create(containerId, p.getInventory(), payload), key);
+                    final AbstractContainerMenu menu = type.create(containerId, p.getInventory(), payload);
+                    final OpenMenuEvent event = new OpenMenuEvent(menu);
+                    ModernUIForge.post(key.getNamespace(), event);
+                    final Fragment fragment = event.getFragment();
+                    if (fragment == null) {
+                        p.closeContainer(); // close server menu whatever it is
+                    } else {
+                        p.containerMenu = menu;
+                        Minecraft.getInstance().setScreen(new MenuScreen<>(UIManager.getInstance(),
+                                fragment,
+                                event.getCallback(),
+                                menu,
+                                p.getInventory(),
+                                TextComponent.EMPTY));
+                    }
                 }
                 payload.release();
             });

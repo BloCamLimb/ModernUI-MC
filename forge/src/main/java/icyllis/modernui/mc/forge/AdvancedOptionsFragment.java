@@ -109,7 +109,14 @@ public class AdvancedOptionsFragment extends Fragment {
                     category.addView(option);
                 }
             }
-
+            {
+                var layout = createSwitchLayout(context, "Show Layout Bounds");
+                var button = layout.<SwitchButton>requireViewById(R.id.button1);
+                button.setChecked(UIManager.getInstance().isShowingLayoutBounds());
+                button.setOnCheckedChangeListener((__, checked) ->
+                        UIManager.getInstance().setShowingLayoutBounds(checked));
+                category.addView(layout);
+            }
             {
                 var button = createDebugButton(context, "Take UI screenshot (Y)");
                 button.setOnClickListener((__) ->
@@ -128,7 +135,7 @@ public class AdvancedOptionsFragment extends Fragment {
                         Core.executeOnMainThread(() -> GlyphManager.getInstance().debug()));
                 category.addView(button);
             }
-            if (ModernUIForge.Client.isTextEngineEnabled()) {
+            if (ModernUIForge.isTextEngineEnabled()) {
                 {
                     var button = createDebugButton(context, "Dump bitmap fonts (V)");
                     button.setOnClickListener((__) ->

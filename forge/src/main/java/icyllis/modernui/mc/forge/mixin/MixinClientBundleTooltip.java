@@ -28,7 +28,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(ClientBundleTooltip.class)
 public class MixinClientBundleTooltip {
 
-    @Redirect(method = "blit",
+    /*@Redirect(method = "blit",
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V"))
     private void setColor(float f, float g, float h, float i) {
         if (TooltipRenderer.sTooltip) {
@@ -37,5 +37,5 @@ public class MixinClientBundleTooltip {
         } else {
             RenderSystem.setShaderColor(f, g, h, i);
         }
-    }
+    }*/
 }

@@ -23,12 +23,14 @@ import icyllis.arc3d.engine.DriverBugWorkarounds;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.text.*;
 import icyllis.modernui.text.Typeface;
+import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.ConfigGuiHandler;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.*;
@@ -74,6 +76,8 @@ public final class ModernUIForge {
     private static boolean sIrisApiLoaded;
     private static boolean sLegendaryTooltipsLoaded;
     private static boolean sUntranslatedItemsLoaded;
+
+    private static volatile Boolean sTextEngineEnabled;
 
     static volatile boolean sInterceptTipTheScales;
 
@@ -129,6 +133,8 @@ public final class ModernUIForge {
         FMLJavaModLoadingContext.get().getModEventBus().addListener(
                 (Consumer<ModConfigEvent>) event -> Config.reloadCommon(event.getConfig())
         );
+        ModLoadingContext.get().registerExtensionPoint(IExtensionPoint.DisplayTest.class,
+                () -> new IExtensionPoint.DisplayTest(() -> "", (remoteVersion, isFromServer) -> true));
         LocalStorage.init();
 
         // the 'new' method is in another class, so it's class-loading-safe
@@ -192,6 +198,32 @@ public final class ModernUIForge {
 
     public static boolean isUntranslatedItemsLoaded() {
         return sUntranslatedItemsLoaded;
+    }
+
+    // check if it is on client side before calling
+    public static String getBootstrapProperty(String key) {
+        return Client.getBootstrapProperty(key);
+    }
+
+    /**
+     * Returns true is text engine is or will be enabled this game run.
+     * Return value won't alter even if bootstrap property is changed at runtime.
+     * This method is thread-safe, check if it is on client side before calling.
+     *
+     * @since 3.10.1
+     */
+    public static boolean isTextEngineEnabled() {
+        // this method should be first called from MixinConfigPlugin
+        if (sTextEngineEnabled == null) {
+            synchronized (ModernUIForge.class) {
+                if (sTextEngineEnabled == null) {
+                    sTextEngineEnabled = !Boolean.parseBoolean(
+                            getBootstrapProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
+                    );
+                }
+            }
+        }
+        return sTextEngineEnabled;
     }
 
     @SuppressWarnings("UnusedReturnValue")
@@ -262,13 +294,23 @@ public final class ModernUIForge {
                             ModernUI.NAME_CPT + "/text.toml")
             );
             FontResourceManager.getInstance();
-            if (isTextEngineEnabled()) {
+            if (ModernUIForge.isTextEngineEnabled()) {
                 ModernUIText.init();
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
             FMLJavaModLoadingContext.get().getModEventBus().addListener(
                     (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())
             );
+            ModLoadingContext.get().registerExtensionPoint(ConfigGuiHandler.ConfigGuiFactory.class,
+                    () -> new ConfigGuiHandler.ConfigGuiFactory(
+                            (mc, modsScreen) -> {
+                                var args = new DataSet();
+                                args.putBoolean("navigateToPreferences", true);
+                                var fragment = new CenterFragment2();
+                                fragment.setArguments(args);
+                                return MuiForgeApi.createScreen(fragment, null, modsScreen);
+                            }
+                    ));
             if (sDevelopment) {
                 FMLJavaModLoadingContext.get().getModEventBus().register(Registration.ModClientDev.class);
             }
@@ -277,12 +319,6 @@ public final class ModernUIForge {
 
         public static Client getInstance() {
             return sInstance;
-        }
-
-        public static boolean isTextEngineEnabled() {
-            return !Boolean.parseBoolean(
-                    getBootstrapProperty(BOOTSTRAP_DISABLE_TEXT_ENGINE)
-            );
         }
 
         public static boolean areShadersEnabled() {
@@ -327,9 +363,13 @@ public final class ModernUIForge {
                 props.forEach((k, v) -> {
                     if (k instanceof String key && v instanceof String value) {
                         Boolean state;
-                        if ("true".equalsIgnoreCase(value)) {
+                        if ("true".equalsIgnoreCase(value) ||
+                                "yes".equalsIgnoreCase(value) ||
+                                "enable".equalsIgnoreCase(value)) {
                             state = Boolean.TRUE;
-                        } else if ("false".equalsIgnoreCase(value)) {
+                        } else if ("false".equalsIgnoreCase(value) ||
+                                "no".equalsIgnoreCase(value) ||
+                                "disable".equalsIgnoreCase(value)) {
                             state = Boolean.FALSE;
                         } else {
                             return;
@@ -353,6 +393,37 @@ public final class ModernUIForge {
                                      boolean firstLoad) {
             if (firstLoad) {
                 var fontManager = FontResourceManager.getInstance();
+                var registrationList = Config.CLIENT.mFontRegistrationList.get();
+                if (registrationList != null) {
+                    for (var value : new LinkedHashSet<>(registrationList)) {
+                        File file = new File(value.replaceAll("\\\\", "/"));
+                        final File[] entries;
+                        if (file.isDirectory()) {
+                            entries = file.listFiles((dir, name) -> name.endsWith(".ttf") ||
+                                    name.endsWith(".otf") ||
+                                    name.endsWith(".ttc") ||
+                                    name.endsWith(".otc"));
+                            if (entries == null) {
+                                continue;
+                            }
+                        } else {
+                            entries = new File[]{file};
+                        }
+                        for (File entry : entries) {
+                            try {
+                                FontFamily[] families = FontFamily.createFamilies(entry, /*register*/true);
+                                for (var f : families) {
+                                    fontManager.onFontRegistered(f);
+                                    LOGGER.info(MARKER, "Registered font '{}', path '{}'",
+                                            f.getFamilyName(), entry);
+                                }
+                            } catch (Exception e) {
+                                LOGGER.error(MARKER, "Failed to register font '{}'",
+                                        entry, e);
+                            }
+                        }
+                    }
+                }
                 var directory = Minecraft.getInstance().getResourcePackDirectory().toPath();
                 try (var paths = Files.newDirectoryStream(directory)) {
                     for (var p : paths) {
@@ -363,10 +434,12 @@ public final class ModernUIForge {
                                 name.endsWith(".otc")) {
                             p = p.toAbsolutePath();
                             try {
-                                FontFamily f = FontFamily.createFamily(p.toFile(), /*register*/true);
-                                fontManager.onFontRegistered(f);
-                                LOGGER.info(MARKER, "Registered font '{}', path '{}'",
-                                        f.getFamilyName(), p);
+                                FontFamily[] families = FontFamily.createFamilies(p.toFile(), /*register*/true);
+                                for (var f : families) {
+                                    fontManager.onFontRegistered(f);
+                                    LOGGER.info(MARKER, "Registered font '{}', path '{}'",
+                                            f.getFamilyName(), p);
+                                }
                             } catch (Exception e) {
                                 LOGGER.error(MARKER, "Failed to register font '{}'",
                                         p, e);
@@ -388,10 +461,12 @@ public final class ModernUIForge {
                     try {
                         for (var resource : resources.getResources(location)) {
                             try (var inputStream = resource.getInputStream()) {
-                                FontFamily f = FontFamily.createFamily(inputStream, /*register*/true);
-                                fontManager.onFontRegistered(f);
-                                LOGGER.debug(MARKER, "Registered font '{}', location '{}'",
-                                        f.getFamilyName(), location);
+                                FontFamily[] families = FontFamily.createFamilies(inputStream, /*register*/true);
+                                for (var f : families) {
+                                    fontManager.onFontRegistered(f);
+                                    LOGGER.info(MARKER, "Registered font '{}', location '{}'",
+                                            f.getFamilyName(), location);
+                                }
                             } catch (Exception e) {
                                 LOGGER.error(MARKER, "Failed to register font '{}'",
                                         location, e);

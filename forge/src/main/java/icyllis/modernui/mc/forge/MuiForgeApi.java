@@ -30,10 +30,14 @@ import icyllis.modernui.mc.forge.mixin.MixinChatFormatting;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuConstructor;
@@ -41,6 +45,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerContainerEvent;
+import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -82,6 +87,8 @@ public final class MuiForgeApi {
      *
      * @return {@code true} if server started
      */
+    @ApiStatus.Internal
+    @Deprecated
     public static boolean isServerStarted() {
         return ServerHandler.INSTANCE.mStarted;
     }
@@ -100,6 +107,8 @@ public final class MuiForgeApi {
      * @see net.minecraftforge.common.extensions.IForgeMenuType#create(net.minecraftforge.network.IContainerFactory)
      * @see OpenMenuEvent
      */
+    @ApiStatus.Internal
+    @Deprecated
     public static void openMenu(@Nonnull Player player, @Nonnull MenuConstructor provider) {
         openMenu(player, provider, (Consumer<FriendlyByteBuf>) null);
     }
@@ -120,6 +129,8 @@ public final class MuiForgeApi {
      * @see net.minecraftforge.common.extensions.IForgeMenuType#create(net.minecraftforge.network.IContainerFactory)
      * @see OpenMenuEvent
      */
+    @ApiStatus.Internal
+    @Deprecated
     public static void openMenu(@Nonnull Player player, @Nonnull MenuConstructor provider, @Nonnull BlockPos pos) {
         openMenu(player, provider, buf -> buf.writeBlockPos(pos));
     }
@@ -139,7 +150,8 @@ public final class MuiForgeApi {
      * @see net.minecraftforge.common.extensions.IForgeMenuType#create(net.minecraftforge.network.IContainerFactory)
      * @see OpenMenuEvent
      */
-    @SuppressWarnings("deprecation")
+    @ApiStatus.Internal
+    @Deprecated
     public static void openMenu(@Nonnull Player player, @Nonnull MenuConstructor provider,
                                 @Nullable Consumer<FriendlyByteBuf> writer) {
         if (!(player instanceof ServerPlayer p)) {
@@ -198,6 +210,92 @@ public final class MuiForgeApi {
     }
 
     /**
+     * Call {@link #createScreen(Fragment, UICallback, Screen, CharSequence)}
+     * with the default callback, no previous screen and title.
+     */
+    @OnlyIn(Dist.CLIENT)
+    @Nonnull
+    public static <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment) {
+        return createScreen(fragment, null, null, null);
+    }
+
+    /**
+     * Call {@link #createScreen(Fragment, UICallback, Screen, CharSequence)}
+     * with no previous screen and title.
+     */
+    @OnlyIn(Dist.CLIENT)
+    @Nonnull
+    public static <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
+                                                                @Nullable UICallback callback) {
+        return createScreen(fragment, callback, null, null);
+    }
+
+    /**
+     * Call {@link #createScreen(Fragment, UICallback, Screen, CharSequence)}
+     * with no title.
+     */
+    @OnlyIn(Dist.CLIENT)
+    @Nonnull
+    public static <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
+                                                                @Nullable UICallback callback,
+                                                                @Nullable Screen previousScreen) {
+        return createScreen(fragment, callback, previousScreen, null);
+    }
+
+    /**
+     * Creates a Modern UI screen with the given Fragment instance and optional callback.
+     * To start the lifecycle of the fragment, use {@link Minecraft#setScreen(Screen)}.
+     * The method must be called from client main thread.
+     * <p>
+     * This is served as a local interaction model, the server will not intersect with this before.
+     * Otherwise, initiate this with a network model via:<p>
+     * Forge:<br>
+     * ServerPlayer#openMenu(MenuProvider, Consumer)<p>
+     * Fabric:<br>
+     * ServerPlayer#openMenu(ExtendedScreenHandlerFactory)
+     * <p>
+     * The {@link UICallback} is used to describe the screen properties.
+     * <p>
+     * <var>previousScreen</var> specifies the screen instance that will return back
+     * to on back pressed.
+     * <p>
+     * The return value is an intersection type, use var statement.
+     *
+     * @param fragment       the main fragment
+     * @param callback       the callback or null to use defaults
+     * @param previousScreen the last screen or null
+     * @param title          the title for the virtual window, may be {@link icyllis.modernui.text.Spanned}
+     */
+    @OnlyIn(Dist.CLIENT)
+    @SuppressWarnings("unchecked")
+    @Nonnull
+    public static <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
+                                                                @Nullable UICallback callback,
+                                                                @Nullable Screen previousScreen,
+                                                                @Nullable CharSequence title) {
+        return (T) new SimpleScreen(UIManager.getInstance(),
+                fragment, callback, previousScreen, title);
+    }
+
+    /**
+     * Creates a Modern UI menu screen. In most cases, just use {@link MenuScreenFactory}.
+     * <p>
+     * The return value is an intersection type, use var statement.
+     */
+    @OnlyIn(Dist.CLIENT)
+    @SuppressWarnings("unchecked")
+    @Nonnull
+    public static <T extends AbstractContainerMenu, U extends Screen & MenuAccess<T> & MuiScreen>
+    U createMenuScreen(@Nonnull Fragment fragment,
+                       @Nullable UICallback callback,
+                       @Nonnull T menu,
+                       @Nonnull Inventory inventory,
+                       @Nonnull Component title) {
+        return (U) new MenuScreen<>(UIManager.getInstance(),
+                fragment, callback, menu, inventory, title);
+    }
+
+    /**
      * Get the elapsed time since the current screen is set, updated every frame on Render thread.
      * Ignoring game paused.
      *
@@ -243,15 +341,18 @@ public final class MuiForgeApi {
         Core.getUiHandlerAsync().post(r);
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static int calcGuiScales() {
         return calcGuiScales(Minecraft.getInstance().getWindow());
     }
 
+    @OnlyIn(Dist.CLIENT)
     public static int calcGuiScales(@Nonnull Window window) {
         return calcGuiScales(window.getWidth(), window.getHeight());
     }
 
     // V4, this matches vanilla, screen size is 640x480 dp at least
+    @OnlyIn(Dist.CLIENT)
     public static int calcGuiScales(int framebufferWidth, int framebufferHeight) {
         double w = framebufferWidth / 16.;
         double h = framebufferHeight / 9.;
@@ -285,6 +386,7 @@ public final class MuiForgeApi {
     }
 
     // move a grapheme cluster at least
+    @OnlyIn(Dist.CLIENT)
     public static int offsetByGrapheme(String value, int cursor, int dir) {
         int op;
         if (dir < 0) {

@@ -178,10 +178,13 @@ public final class Config {
         public static final int TOOLTIP_BORDER_COLOR_ANIM_MAX = 5000;
         public static final float TOOLTIP_BORDER_WIDTH_MIN = 0.5f;
         public static final float TOOLTIP_BORDER_WIDTH_MAX = 2.5f;
+        public static final float TOOLTIP_CORNER_RADIUS_MIN = 0;
+        public static final float TOOLTIP_CORNER_RADIUS_MAX = 8;
         public static final float TOOLTIP_SHADOW_RADIUS_MIN = 0;
         public static final float TOOLTIP_SHADOW_RADIUS_MAX = 32;
 
         public final ForgeConfigSpec.BooleanValue mBlurEffect;
+        public final ForgeConfigSpec.BooleanValue mBlurWithBackground;
         public final ForgeConfigSpec.IntValue mBackgroundDuration;
         public final ForgeConfigSpec.IntValue mBlurRadius;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mBackgroundColor;
@@ -195,8 +198,11 @@ public final class Config {
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
         public final ForgeConfigSpec.IntValue mTooltipCycle;
         public final ForgeConfigSpec.DoubleValue mTooltipWidth;
-        public final ForgeConfigSpec.DoubleValue mTooltipShadow;
-        public final ForgeConfigSpec.IntValue mTooltipDuration;
+        public final ForgeConfigSpec.DoubleValue mTooltipRadius;
+        public final ForgeConfigSpec.DoubleValue mTooltipShadowRadius;
+        public final ForgeConfigSpec.DoubleValue mTooltipShadowAlpha;
+        public final ForgeConfigSpec.BooleanValue mAdaptiveTooltipColors;
+        //public final ForgeConfigSpec.IntValue mTooltipDuration;
         public final ForgeConfigSpec.BooleanValue mDing;
         public final ForgeConfigSpec.BooleanValue mZoom;
         //private final ForgeConfigSpec.BooleanValue hudBars;
@@ -225,6 +231,7 @@ public final class Config {
         //public final ForgeConfigSpec.BooleanValue mLinearSampling;
         public final ForgeConfigSpec.ConfigValue<String> mFirstFontFamily;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFallbackFontFamilyList;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFontRegistrationList;
         public final ForgeConfigSpec.BooleanValue mUseColorEmoji;
         public final ForgeConfigSpec.BooleanValue mEmojiShortcodes;
 
@@ -258,6 +265,10 @@ public final class Config {
                                     "shader and some mods.",
                             "Disable this if you run into a problem or are on low-end PCs")
                     .define("blurEffect", true);
+            mBlurWithBackground = builder.comment(
+                            "This option means that blur effect only applies for GUI screens with a background",
+                            "This is only meaningful when blur effect is enabled.")
+                    .define("blurWithBackground", true);
             mBlurRadius = builder.comment(
                             "The strength for two-pass gaussian convolution blur effect.",
                             "samples/pixel = ((radius * 2) + 1) * 2, sigma = radius / 2.")
@@ -339,15 +350,24 @@ public final class Config {
                     .defineInRange("borderCycleTime", 1000, TOOLTIP_BORDER_COLOR_ANIM_MIN,
                             TOOLTIP_BORDER_COLOR_ANIM_MAX);
             mTooltipWidth = builder.comment(
-                            "The width of tooltip border, in GUI Scale Independent Pixels.")
+                            "The width of tooltip border, if rounded, in GUI Scale Independent Pixels.")
                     .defineInRange("borderWidth", 4 / 3f, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
-            mTooltipDuration = builder.comment(
+            mTooltipRadius = builder.comment(
+                            "The corner radius of tooltip border, if rounded, in GUI Scale Independent Pixels.")
+                    .defineInRange("cornerRadius", 3f, TOOLTIP_CORNER_RADIUS_MIN, TOOLTIP_CORNER_RADIUS_MAX);
+            /*mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
-                    .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);
-            mTooltipShadow = builder.comment(
-                            "The shadow radius of tooltip, in GUI Scale Independent Pixels.",
-                            "Only works for values >= 2 and rounded corners. No impact on performance.")
+                    .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);*/
+            mTooltipShadowRadius = builder.comment(
+                            "The shadow radius of tooltip, if rounded, in GUI Scale Independent Pixels.",
+                            "No impact on performance.")
                     .defineInRange("shadowRadius", 10.0, TOOLTIP_SHADOW_RADIUS_MIN, TOOLTIP_SHADOW_RADIUS_MAX);
+            mTooltipShadowAlpha = builder.comment(
+                            "The shadow opacity of tooltip, if rounded. No impact on performance.")
+                    .defineInRange("shadowOpacity", 0.35f, 0f, 1f);
+            mAdaptiveTooltipColors = builder.comment(
+                            "When true, tooltip border colors adapt to item's name and rarity.")
+                    .define("adaptiveColors", true);
 
             builder.pop();
 
@@ -439,21 +459,33 @@ public final class Config {
                             "2) Path of font files on your PC, for instance: /usr/shared/fonts/x.otf",
                             "Registered font families include:",
                             "1) OS builtin fonts.",
-                            "2) Font files in '/resourcepacks' directory.",
-                            "3) Font files under 'modernui:font' in resource packs.",
+                            "2) Font files in fontRegistrationList.",
+                            "3) Font files in '/resourcepacks' directory.",
+                            "4) Font files under 'modernui:font' in resource packs.",
+                            "Note that for TTC/OTC font, you should register it and select one of font families.",
+                            "Otherwise, only the first font family from the TrueType/OpenType Collection will be used.",
                             "This is only read once when the game is loaded, you can reload via in-game GUI.")
                     .defineList("fallbackFontFamilyList", () -> {
                         List<String> list = new ArrayList<>();
                         list.add("Noto Sans");
+                        list.add("Segoe UI Variable");
                         list.add("Segoe UI");
                         list.add("San Francisco");
                         list.add("Open Sans");
                         list.add("SimHei");
                         list.add("STHeiti");
-                        list.add("Segoe UI Variable");
+                        list.add("Segoe UI Symbol");
                         list.add("mui-i18n-compat");
                         return list;
                     }, s -> true);
+            mFontRegistrationList = builder.comment(
+                            "A set of additional font files (or directories) to register.",
+                            "For TrueType/OpenType Collections, all contained font families will be registered.",
+                            "Registered fonts can be referenced in Modern UI and Minecraft (Modern Text Engine).",
+                            "For example, \"E:/Fonts\" means all font files in that directory will be registered.",
+                            "System requires random access to these files, you should not remove them while running.",
+                            "This is only read once when the game is loaded, i.e. registration.")
+                    .defineList("fontRegistrationList", ArrayList::new, s -> true);
             mUseColorEmoji = builder.comment(
                             "Whether to use Google Noto Color Emoji, otherwise grayscale emoji (faster).",
                             "See Unicode 15.0 specification for details on how this affects text layout.")
@@ -467,14 +499,13 @@ public final class Config {
         }
 
         public void saveAndReloadAsync() {
-            Util.ioPool().execute(() -> {
-                CLIENT_SPEC.save();
-                reload();
-            });
+            Util.ioPool().execute(() -> CLIENT_SPEC.save());
+            reload();
         }
 
         private void reload() {
             BlurHandler.sBlurEffect = mBlurEffect.get();
+            BlurHandler.sBlurWithBackground = mBlurWithBackground.get();
             BlurHandler.sBackgroundDuration = mBackgroundDuration.get();
             BlurHandler.sBlurRadius = mBlurRadius.get();
 
@@ -537,14 +568,17 @@ public final class Config {
                 }
                 TooltipRenderer.sStrokeColor[i] = color;
             }
-            TooltipRenderer.sAnimationDuration = mTooltipDuration.get();
+            //TooltipRenderer.sAnimationDuration = mTooltipDuration.get();
             TooltipRenderer.sBorderColorCycle = mTooltipCycle.get();
             TooltipRenderer.sExactPositioning = mExactTooltipPositioning.get();
             TooltipRenderer.sRoundedShapes = mRoundedTooltip.get();
             TooltipRenderer.sCenterTitle = mCenterTooltipTitle.get();
             TooltipRenderer.sTitleBreak = mTooltipTitleBreak.get();
             TooltipRenderer.sBorderWidth = mTooltipWidth.get().floatValue();
-            TooltipRenderer.sShadowRadius = mTooltipShadow.get().floatValue();
+            TooltipRenderer.sCornerRadius = mTooltipRadius.get().floatValue();
+            TooltipRenderer.sShadowRadius = mTooltipShadowRadius.get().floatValue();
+            TooltipRenderer.sShadowAlpha = mTooltipShadowAlpha.get().floatValue();
+            TooltipRenderer.sAdaptiveColors = mAdaptiveTooltipColors.get();
 
             UIManager.sDingEnabled = mDing.get();
             UIManager.sZoomEnabled = mZoom.get() && !ModernUIForge.isOptiFineLoaded();
@@ -552,9 +586,7 @@ public final class Config {
             WindowMode windowMode = mWindowMode.get();
             if (mLastWindowMode != windowMode) {
                 mLastWindowMode = windowMode;
-                if (windowMode != WindowMode.NORMAL) {
-                    Minecraft.getInstance().tell(windowMode::apply);
-                }
+                Minecraft.getInstance().tell(() -> mLastWindowMode.apply());
             }
 
             //TestHUD.sBars = hudBars.get();
@@ -605,6 +637,9 @@ public final class Config {
             WINDOWED_BORDERLESS;
 
             public void apply() {
+                if (this == NORMAL) {
+                    return;
+                }
                 Window window = Minecraft.getInstance().getWindow();
                 switch (this) {
                     case FULLSCREEN -> {
@@ -718,10 +753,8 @@ public final class Config {
         }
 
         public void saveAndReloadAsync() {
-            Util.ioPool().execute(() -> {
-                COMMON_SPEC.save();
-                reload();
-            });
+            Util.ioPool().execute(() -> COMMON_SPEC.save());
+            reload();
         }
 
         private void reload() {
@@ -775,6 +808,7 @@ public final class Config {
         //public final ForgeConfigSpec.BooleanValue mUseVanillaFont;
         public final ForgeConfigSpec.BooleanValue mUseTextShadersInWorld;
         public final ForgeConfigSpec.EnumValue<DefaultFontBehavior> mDefaultFontBehavior;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mDefaultFontRuleSet;
         public final ForgeConfigSpec.BooleanValue mUseComponentCache;
         public final ForgeConfigSpec.BooleanValue mAllowAsyncLayout;
         public final ForgeConfigSpec.EnumValue<LineBreakStyle> mLineBreakStyle;
@@ -858,15 +892,32 @@ public final class Config {
                             "It improves performance with deferred rendering and sharpens when doing 3D transform.")
                     .define("useDistanceField", true);*/
             mDefaultFontBehavior = builder.comment(
-                            "For DEFAULT_FONT and UNIFORM_FONT, should we keep some bitmap providers of them?",
-                            "Ignore All: Equivalent to Force Unicode Font.",
+                            "For \"minecraft:default\" font, should we keep some glyph providers of them?",
+                            "Ignore All: Only use Modern UI typeface list.",
                             "Keep ASCII: Include minecraft:font/ascii.png, minecraft:font/accented.png, " +
                                     "minecraft:font/nonlatin_european.png",
-                            "Keep Other: Include providers in minecraft:font/default.json other than Keep ASCII and " +
-                                    "Unicode font.",
-                            "Keep All: Include all except Unicode font.")
-                    .defineEnum("defaultFontBehavior", DefaultFontBehavior.KEEP_OTHER);
-            // there's no SpaceFont, then keep_other by default in 1.18
+                            "Keep Other: Include providers other than ASCII and Unicode font.",
+                            "Keep All: Include all except Unicode font.",
+                            "Only Include: Only include providers that specified by defaultFontRuleSet.",
+                            "Only Exclude: Only exclude providers that specified by defaultFontRuleSet.")
+                    .defineEnum("defaultFontBehavior", DefaultFontBehavior.ONLY_EXCLUDE);
+            mDefaultFontRuleSet = builder.comment(
+                            "Used when defaultFontBehavior is either ONLY_INCLUDE or ONLY_EXCLUDE.",
+                            "This specifies a set of regular expressions to match the glyph provider name.",
+                            "For bitmap providers, this is the texture path without 'textures/'.",
+                            "For TTF providers, this is the TTF file path without 'font/'.",
+                            "For space providers, this is \"font_name / minecraft:space\",",
+                            "where font_name is font definition path without 'font/'.")
+                    .defineList("defaultFontRuleSet", () -> {
+                        List<String> rules = new ArrayList<>();
+                        // three vanilla fonts
+                        rules.add("^minecraft:font\\/(nonlatin_european|accented|ascii|" +
+                                // four added by CFPA Minecraft-Mod-Language-Package
+                                "element_ideographs|cjk_punctuations|ellipsis|2em_dash)\\.png$");
+                        // the vanilla space
+                        rules.add("^minecraft:default \\/ minecraft:space$");
+                        return rules;
+                    }, s -> true);
             mUseComponentCache = builder.comment(
                             "Whether to use text component object as hash key to lookup in layout cache.",
                             "If you find that Modern UI text rendering is not compatible with some mods,",
@@ -933,10 +984,8 @@ public final class Config {
         }
 
         public void saveAndReloadAsync() {
-            Util.ioPool().execute(() -> {
-                TEXT_SPEC.save();
-                reload();
-            });
+            Util.ioPool().execute(() -> TEXT_SPEC.save());
+            reload();
         }
 
         void reload() {
@@ -968,6 +1017,11 @@ public final class Config {
                 TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
                 reload = true;
             }
+            List<? extends String> defaultFontRuleSet = mDefaultFontRuleSet.get();
+            if (!Objects.equals(TextLayoutEngine.sDefaultFontRuleSet, defaultFontRuleSet)) {
+                TextLayoutEngine.sDefaultFontRuleSet = defaultFontRuleSet;
+                reload = true;
+            }
             TextLayoutEngine.sUseComponentCache = mUseComponentCache.get();
             TextLayoutEngine.sAllowAsyncLayout = mAllowAsyncLayout.get();
             if (TextLayoutProcessor.sLbStyle != mLineBreakStyle.get().key) {
@@ -988,7 +1042,7 @@ public final class Config {
             if (reloadStrike) {
                 Minecraft.getInstance().submit(
                         () -> FontResourceManager.getInstance().reloadAll());
-            } else if (reload && ModernUIForge.Client.isTextEngineEnabled()) {
+            } else if (reload && ModernUIForge.isTextEngineEnabled()) {
                 Minecraft.getInstance().submit(
                         () -> {
                             try {
@@ -1033,7 +1087,9 @@ public final class Config {
             IGNORE_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_IGNORE_ALL),
             KEEP_ASCII(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ASCII),
             KEEP_OTHER(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_OTHER),
-            KEEP_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ALL);
+            KEEP_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ALL),
+            ONLY_INCLUDE(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_ONLY_INCLUDE),
+            ONLY_EXCLUDE(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_ONLY_EXCLUDE);
 
             private final int key;
 

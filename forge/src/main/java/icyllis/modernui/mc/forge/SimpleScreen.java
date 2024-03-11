@@ -30,6 +30,7 @@ import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * Represents the GUI screen that receives events from Minecraft.
@@ -41,14 +42,21 @@ import javax.annotation.Nullable;
 final class SimpleScreen extends Screen implements MuiScreen {
 
     private final UIManager mHost;
+    @Nullable
+    private final Screen mPrevious;
     private final Fragment mFragment;
     @Nullable
     private final UICallback mCallback;
 
-    SimpleScreen(UIManager host, Fragment fragment, @Nullable UICallback callback) {
-        super(TextComponent.EMPTY);
+    SimpleScreen(UIManager host, Fragment fragment,
+                 @Nullable UICallback callback, @Nullable Screen previous,
+                 @Nullable CharSequence title) {
+        super(title == null || title.isEmpty()
+                ? TextComponent.EMPTY
+                : new TextComponent(title.toString()));
         mHost = host;
-        mFragment = fragment;
+        mPrevious = previous;
+        mFragment = Objects.requireNonNull(fragment);
         mCallback = callback;
     }
 
@@ -95,6 +103,12 @@ final class SimpleScreen extends Screen implements MuiScreen {
 
     @Nonnull
     @Override
+    public Screen self() {
+        return this;
+    }
+
+    @Nonnull
+    @Override
     public Fragment getFragment() {
         return mFragment;
     }
@@ -103,6 +117,22 @@ final class SimpleScreen extends Screen implements MuiScreen {
     @Override
     public UICallback getCallback() {
         return mCallback;
+    }
+
+    @Nullable
+    @Override
+    public Screen getPreviousScreen() {
+        return mPrevious;
+    }
+
+    @Override
+    public boolean isMenuScreen() {
+        return false;
+    }
+
+    @Override
+    public void onBackPressed() {
+        mHost.getOnBackPressedDispatcher().onBackPressed();
     }
 
     // IMPL - GuiEventListener

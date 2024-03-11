@@ -21,8 +21,9 @@ package icyllis.modernui.mc.forge;
 import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.modernui.fragment.Fragment;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraftforge.api.distmarker.Dist;
@@ -30,6 +31,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * ContainerScreen holds a container menu for item stack interaction and
@@ -43,16 +45,20 @@ import javax.annotation.Nullable;
  * @see SimpleScreen
  */
 @OnlyIn(Dist.CLIENT)
-final class MenuScreen<T extends AbstractContainerMenu> extends AbstractContainerScreen<T> implements MuiScreen {
+final class MenuScreen<T extends AbstractContainerMenu>
+        extends AbstractContainerScreen<T>
+        implements MuiScreen {
 
     private final UIManager mHost;
     private final Fragment mFragment;
+    @Nullable
     private final UICallback mCallback;
 
-    MenuScreen(@Nonnull T menu, Inventory inventory, UIManager host, Fragment fragment, UICallback callback) {
-        super(menu, inventory, TextComponent.EMPTY);
+    MenuScreen(UIManager host, Fragment fragment, @Nullable UICallback callback,
+               T menu, Inventory inventory, Component title) {
+        super(menu, inventory, title);
         mHost = host;
-        mFragment = fragment;
+        mFragment = Objects.requireNonNull(fragment);
         mCallback = callback;
     }
 
@@ -103,6 +109,12 @@ final class MenuScreen<T extends AbstractContainerMenu> extends AbstractContaine
 
     @Nonnull
     @Override
+    public Screen self() {
+        return this;
+    }
+
+    @Nonnull
+    @Override
     public Fragment getFragment() {
         return mFragment;
     }
@@ -111,6 +123,22 @@ final class MenuScreen<T extends AbstractContainerMenu> extends AbstractContaine
     @Override
     public UICallback getCallback() {
         return mCallback;
+    }
+
+    @Nullable
+    @Override
+    public Screen getPreviousScreen() {
+        return null;
+    }
+
+    @Override
+    public boolean isMenuScreen() {
+        return true;
+    }
+
+    @Override
+    public void onBackPressed() {
+        mHost.getOnBackPressedDispatcher().onBackPressed();
     }
 
     // IMPL - GuiEventListener

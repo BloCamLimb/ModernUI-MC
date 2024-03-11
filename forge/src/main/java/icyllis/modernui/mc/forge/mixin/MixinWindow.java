@@ -26,9 +26,11 @@ import icyllis.modernui.mc.forge.MuiForgeApi;
 import icyllis.modernui.util.DisplayMetrics;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
-import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
 
@@ -54,10 +56,10 @@ public abstract class MixinWindow {
      * @author BloCamLimb
      * @reason Make GUI scale more suitable, and not limited to even numbers when forceUnicode = true
      */
-    @Overwrite
-    public int calculateScale(int guiScaleIn, boolean forceUnicode) {
+    @Inject(method = "calculateScale", at = @At("HEAD"), cancellable = true)
+    public void onCalculateScale(int guiScaleIn, boolean forceUnicode, CallbackInfoReturnable<Integer> ci) {
         int r = MuiForgeApi.calcGuiScales((Window) (Object) this);
-        return guiScaleIn > 0 ? MathUtil.clamp(guiScaleIn, r >> 8 & 0xf, r & 0xf) : r >> 4 & 0xf;
+        ci.setReturnValue(guiScaleIn > 0 ? MathUtil.clamp(guiScaleIn, r >> 8 & 0xf, r & 0xf) : r >> 4 & 0xf);
     }
 
     @Inject(method = "setGuiScale", at = @At("HEAD"))
