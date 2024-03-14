@@ -316,7 +316,7 @@ public class TextLayoutEngine extends FontResourceManager
             if (invalidationInfo.resize()) {
                 // When OpenGL texture ID changed (atlas resized), we want to use the new first atlas
                 // for batch rendering, we need to clear any existing TextRenderType instances
-                TextRenderType.clear();
+                TextRenderType.clear(false);
             } else {
                 // called by compact(), need to lookupGlyph() and cacheGlyph() again
                 reload();
@@ -374,7 +374,7 @@ public class TextLayoutEngine extends FontResourceManager
         // Metrics change with resolution level
         mFastCharMap.clear();
         // Just clear TextRenderType instances, font textures are remained
-        TextRenderType.clear();
+        TextRenderType.clear(false);
         if (count > 0) {
             LOGGER.debug(MARKER, "Cleanup {} text layout entries", count);
         }
@@ -588,7 +588,7 @@ public class TextLayoutEngine extends FontResourceManager
 
     // SYNC
     private void applyResources(@Nonnull LoadResults results) {
-        close();
+        closeFonts();
         // reload fonts
         mFontCollections.clear();
         mFontCollections.putAll(mRegisteredFonts);
@@ -621,6 +621,12 @@ public class TextLayoutEngine extends FontResourceManager
 
     @Override
     public void close() {
+        closeFonts();
+        // do final cleanup
+        TextRenderType.clear(true);
+    }
+
+    private void closeFonts() {
         // close bitmaps if never baked
         for (var fontCollection : mFontCollections.values()) {
             for (var family : fontCollection.getFamilies()) {
@@ -636,7 +642,6 @@ public class TextLayoutEngine extends FontResourceManager
                 }
             }
         }
-        TextRenderType.clear();
     }
 
     @Override
