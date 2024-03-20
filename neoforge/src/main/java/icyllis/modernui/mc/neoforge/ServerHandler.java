@@ -19,7 +19,6 @@
 package icyllis.modernui.mc.neoforge;
 
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.mc.Config;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;

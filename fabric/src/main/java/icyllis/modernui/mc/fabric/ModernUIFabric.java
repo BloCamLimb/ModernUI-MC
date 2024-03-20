@@ -21,7 +21,6 @@ package icyllis.modernui.mc.fabric;
 import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
 import fuzs.forgeconfigapiport.api.config.v2.ModConfigEvents;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.mc.Config;
 import icyllis.modernui.mc.ModernUIMod;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;

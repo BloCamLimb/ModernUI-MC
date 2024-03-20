@@ -50,6 +50,8 @@ dependencies {
 
     modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:20.4.0"
 
+    implementation project(':common')
+
     if (rootProject.file('../ModernUI').exists()) {
         implementation("icyllis.arc3d:Arc3D")
         shadow("icyllis.arc3d:Arc3D") {
@@ -91,6 +93,22 @@ dependencies {
     include "com.vladsch.flexmark:flexmark-util-visitor:${flexmark_version}"
 
     shadow ':ModernUI-Fonts-3.0'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    source(project(":common").sourceSets.main.allSource)
+}
+
+tasks.withType(Javadoc).configureEach {
+    source(project(":common").sourceSets.main.allJava)
+}
+
+sourcesJar {
+    from project(":common").sourceSets.main.allSource
+}
+
+tasks.withType(ProcessResources).configureEach {
+    from project(":common").sourceSets.main.resources
 }
 
 shadowJar {

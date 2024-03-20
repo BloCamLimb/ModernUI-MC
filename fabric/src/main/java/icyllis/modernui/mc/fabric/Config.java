@@ -1,0 +1,1121 @@
+/*
+ * Modern UI.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ *
+ * Modern UI is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * Modern UI is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package icyllis.modernui.mc.fabric;
+
+import com.ibm.icu.lang.UScript;
+import com.mojang.blaze3d.platform.*;
+import icyllis.modernui.ModernUI;
+import icyllis.modernui.core.Core;
+import icyllis.modernui.core.Handler;
+import icyllis.modernui.graphics.Color;
+import icyllis.modernui.graphics.font.GlyphManager;
+import icyllis.modernui.graphics.text.LineBreakConfig;
+import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.text.*;
+import icyllis.modernui.resources.Resources;
+import icyllis.modernui.util.DisplayMetrics;
+import icyllis.modernui.view.View;
+import icyllis.modernui.view.ViewConfiguration;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.fml.config.IConfigSpec;
+import net.minecraftforge.fml.config.ModConfig;
+import org.jetbrains.annotations.ApiStatus;
+import org.lwjgl.glfw.GLFW;
+import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Platform;
+
+import javax.annotation.Nonnull;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+
+import static icyllis.modernui.ModernUI.*;
+
+@ApiStatus.Internal
+public final class Config {
+
+    public static Client CLIENT;
+
+    private static ForgeConfigSpec CLIENT_SPEC;
+
+    public static Common COMMON;
+    private static ForgeConfigSpec COMMON_SPEC;
+
+    public static Text TEXT;
+    public static ForgeConfigSpec TEXT_SPEC;
+
+    /*static final Server SERVER;
+    private static final ForgeConfigSpec SERVER_SPEC;*/
+
+    private static void init(boolean isClient,
+                             BiConsumer<ModConfig.Type, ForgeConfigSpec> registerConfig) {
+        /*builder = new ForgeConfigSpec.Builder();
+        SERVER = new Server(builder);
+        SERVER_SPEC = builder.build();*/
+
+        /*container.addConfig(new ModConfig(ModConfig.Type.SERVER, SERVER_SPEC, container,
+                    ModernUI.NAME_CPT + "/server.toml")); // sync to client (network)*/
+    }
+
+    public static void initClientConfig(Consumer<ForgeConfigSpec> registerConfig) {
+        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        CLIENT = new Client(builder);
+        CLIENT_SPEC = builder.build();
+        registerConfig.accept(CLIENT_SPEC);
+    }
+
+    public static void initCommonConfig(Consumer<ForgeConfigSpec> registerConfig) {
+        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        COMMON = new Common(builder);
+        COMMON_SPEC = builder.build();
+        registerConfig.accept(COMMON_SPEC);
+    }
+
+    public static void initTextConfig(Consumer<ForgeConfigSpec> registerConfig) {
+        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        TEXT = new Text(builder);
+        TEXT_SPEC = builder.build();
+        registerConfig.accept(TEXT_SPEC);
+    }
+
+    /*public static void reload(@Nonnull ModConfig config) {
+        final IConfigSpec<?> spec = config.getSpec();
+        *//* else if (spec == SERVER_SPEC) {
+            SERVER.reload();
+            LOGGER.debug(MARKER, "Server config reloaded with {}", event.getClass().getSimpleName());
+        }*//*
+    }*/
+
+    public static void reloadCommon(@Nonnull ModConfig config) {
+        final IConfigSpec<?> spec = config.getSpec();
+        if (spec == COMMON_SPEC) {
+            COMMON.reload();
+            LOGGER.info(MARKER, "Modern UI common config loaded/reloaded");
+        }
+    }
+
+    public static void reloadAnyClient(@Nonnull ModConfig config) {
+        final IConfigSpec<?> spec = config.getSpec();
+        if (spec == CLIENT_SPEC) {
+            CLIENT.reload();
+            LOGGER.info(MARKER, "Modern UI client config loaded/reloaded");
+        } else if (spec == TEXT_SPEC) {
+            TEXT.reload();
+            LOGGER.info(MARKER, "Modern UI text config loaded/reloaded");
+        }
+    }
+
+    /*private static class C extends ModConfig {
+
+        private static final Toml _TOML = new Toml();
+
+        public C(Type type, ForgeConfigSpec spec, ModContainer container, String name) {
+            super(type, spec, container, ModernUI.NAME_CPT + "/" + name + ".toml");
+        }
+
+        @Override
+        public ConfigFileTypeHandler getHandler() {
+            return _TOML;
+        }
+    }
+
+    private static class Toml extends ConfigFileTypeHandler {
+
+        private Toml() {
+        }
+
+        // reroute it to the global config directory
+        // see ServerLifecycleHooks, ModConfig.Type.SERVER
+        private static Path reroute(@Nonnull Path configBasePath) {
+            //noinspection SpellCheckingInspection
+            if (configBasePath.endsWith("serverconfig")) {
+                return FMLPaths.CONFIGDIR.get();
+            }
+            return configBasePath;
+        }
+
+        @Override
+        public Function<ModConfig, CommentedFileConfig> reader(Path configBasePath) {
+            return super.reader(reroute(configBasePath));
+        }
+
+        @Override
+        public void unload(Path configBasePath, ModConfig config) {
+            super.unload(reroute(configBasePath), config);
+        }
+    }*/
+
+    public static class Client {
+
+        public static final int ANIM_DURATION_MIN = 0;
+        public static final int ANIM_DURATION_MAX = 800;
+        public static final int BLUR_RADIUS_MIN = 2;
+        public static final int BLUR_RADIUS_MAX = 18;
+        public static final float FONT_SCALE_MIN = 0.5f;
+        public static final float FONT_SCALE_MAX = 2.0f;
+        public static final int TOOLTIP_BORDER_COLOR_ANIM_MIN = 0;
+        public static final int TOOLTIP_BORDER_COLOR_ANIM_MAX = 5000;
+        public static final float TOOLTIP_BORDER_WIDTH_MIN = 0.5f;
+        public static final float TOOLTIP_BORDER_WIDTH_MAX = 2.5f;
+        public static final float TOOLTIP_SHADOW_RADIUS_MIN = 0;
+        public static final float TOOLTIP_SHADOW_RADIUS_MAX = 32;
+
+        public final ForgeConfigSpec.BooleanValue mBlurEffect;
+        public final ForgeConfigSpec.IntValue mBackgroundDuration;
+        public final ForgeConfigSpec.IntValue mBlurRadius;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mBackgroundColor;
+        public final ForgeConfigSpec.BooleanValue mInventoryPause;
+        public final ForgeConfigSpec.BooleanValue mTooltip;
+        public final ForgeConfigSpec.BooleanValue mRoundedTooltip;
+        public final ForgeConfigSpec.BooleanValue mCenterTooltipTitle;
+        public final ForgeConfigSpec.BooleanValue mTooltipTitleBreak;
+        public final ForgeConfigSpec.BooleanValue mExactTooltipPositioning;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipFill;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
+        public final ForgeConfigSpec.IntValue mTooltipCycle;
+        public final ForgeConfigSpec.DoubleValue mTooltipWidth;
+        public final ForgeConfigSpec.DoubleValue mTooltipShadow;
+        //public final ForgeConfigSpec.IntValue mTooltipDuration;
+        public final ForgeConfigSpec.BooleanValue mDing;
+        //public final ForgeConfigSpec.BooleanValue mZoom;
+        //private final ForgeConfigSpec.BooleanValue hudBars;
+        public final ForgeConfigSpec.BooleanValue mForceRtl;
+        public final ForgeConfigSpec.DoubleValue mFontScale;
+        public final ForgeConfigSpec.EnumValue<WindowMode> mWindowMode;
+        public final ForgeConfigSpec.BooleanValue mUseNewGuiScale;
+        //public final ForgeConfigSpec.BooleanValue mRemoveSignature;
+        public final ForgeConfigSpec.BooleanValue mRemoveTelemetry;
+        //public final ForgeConfigSpec.BooleanValue mSecurePublicKey;
+        public final ForgeConfigSpec.IntValue mFramerateInactive;
+        public final ForgeConfigSpec.IntValue mFramerateMinimized;
+        public final ForgeConfigSpec.DoubleValue mMasterVolumeInactive;
+        public final ForgeConfigSpec.DoubleValue mMasterVolumeMinimized;
+
+        public final ForgeConfigSpec.IntValue mScrollbarSize;
+        public final ForgeConfigSpec.IntValue mTouchSlop;
+        public final ForgeConfigSpec.IntValue mMinScrollbarTouchTarget;
+        public final ForgeConfigSpec.IntValue mMinimumFlingVelocity;
+        public final ForgeConfigSpec.IntValue mMaximumFlingVelocity;
+        public final ForgeConfigSpec.IntValue mOverscrollDistance;
+        public final ForgeConfigSpec.IntValue mOverflingDistance;
+        public final ForgeConfigSpec.DoubleValue mVerticalScrollFactor;
+        public final ForgeConfigSpec.DoubleValue mHorizontalScrollFactor;
+
+        private final ForgeConfigSpec.ConfigValue<List<? extends String>> mBlurBlacklist;
+
+        public final ForgeConfigSpec.BooleanValue mAntiAliasing;
+        public final ForgeConfigSpec.BooleanValue mAutoHinting;
+        //public final ForgeConfigSpec.BooleanValue mLinearSampling;
+        public final ForgeConfigSpec.ConfigValue<String> mFirstFontFamily;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFallbackFontFamilyList;
+        public final ForgeConfigSpec.BooleanValue mUseColorEmoji;
+        public final ForgeConfigSpec.BooleanValue mEmojiShortcodes;
+
+        /*public final ForgeConfigSpec.BooleanValue mSkipGLCapsError;
+        public final ForgeConfigSpec.BooleanValue mShowGLCapsError;*/
+
+        public WindowMode mLastWindowMode = WindowMode.NORMAL;
+
+        private Client(@Nonnull ForgeConfigSpec.Builder builder) {
+            builder.comment("Screen Config")
+                    .push("screen");
+
+            mBackgroundDuration = builder.comment(
+                            "The duration of GUI background color and blur radius animation in milliseconds. (0 = OFF)")
+                    .defineInRange("animationDuration", 200, ANIM_DURATION_MIN, ANIM_DURATION_MAX);
+            mBackgroundColor = builder.comment(
+                            "The GUI background color in #RRGGBB or #AARRGGBB format. Default value: #66000000",
+                            "Can be one to four values representing top left, top right, bottom right and bottom left" +
+                                    " color.",
+                            "Multiple values produce a gradient effect, whereas one value produce a solid color.",
+                            "When values is less than 4, the rest of the corner color will be replaced by the last " +
+                                    "value.")
+                    .defineList("backgroundColor", () -> {
+                        List<String> list = new ArrayList<>();
+                        list.add("#99000000");
+                        return list;
+                    }, o -> true);
+
+            mBlurEffect = builder.comment(
+                            "Add blur effect to GUI background when opened, it is incompatible with OptiFine's FXAA " +
+                                    "shader and some mods.",
+                            "Disable this if you run into a problem or are on low-end PCs")
+                    .define("blurEffect", true);
+            mBlurRadius = builder.comment(
+                            "The strength for two-pass gaussian convolution blur effect.",
+                            "samples/pixel = ((radius * 2) + 1) * 2, sigma = radius / 2.")
+                    .defineInRange("blurRadius", 7, BLUR_RADIUS_MIN, BLUR_RADIUS_MAX);
+            mBlurBlacklist = builder.comment(
+                            "A list of GUI screen superclasses that won't activate blur effect when opened.")
+                    .defineList("blurBlacklist", () -> {
+                        List<String> list = new ArrayList<>();
+                        list.add(ChatScreen.class.getName());
+                        return list;
+                    }, o -> true);
+            mInventoryPause = builder.comment(
+                            "(Beta) Pause the game when inventory (also includes creative mode) opened.")
+                    .define("inventoryPause", false);
+            mFramerateInactive = builder.comment(
+                            "Framerate limit on window inactive (out of focus or minimized), 0 = no change.")
+                    .defineInRange("framerateInactive", 30, 0, 255);
+            mFramerateMinimized = builder.comment(
+                            "Framerate limit on window minimized, 0 = same as framerate inactive.",
+                            "This value will be no greater than framerate inactive.")
+                    .defineInRange("framerateMinimized", 0, 0, 255);
+            mMasterVolumeInactive = builder.comment(
+                            "Master volume multiplier on window inactive (out of focus or minimized), 1 = no change.")
+                    .defineInRange("masterVolumeInactive", 0.5, 0, 1);
+            mMasterVolumeMinimized = builder.comment(
+                            "Master volume multiplier on window minimized, 1 = same as master volume inactive.",
+                            "This value will be no greater than master volume inactive.")
+                    .defineInRange("masterVolumeMinimized", 0.25, 0, 1);
+
+            builder.pop();
+
+            builder.comment("Tooltip Config")
+                    .push("tooltip");
+
+            mTooltip = builder.comment(
+                            "Whether to enable Modern UI enhanced tooltip, or back to vanilla default.")
+                    .define("enable", !ModernUIMod.isLegendaryTooltipsLoaded());
+            mRoundedTooltip = builder.comment(
+                            "Whether to use rounded tooltip shapes, or to use vanilla style.")
+                    .define("roundedShape", !ModernUIMod.isSodiumLoaded());
+            mCenterTooltipTitle = builder.comment(
+                            "True to center the tooltip title if rendering an item's tooltip.",
+                            "Following lines are not affected by this option.")
+                    .define("centerTitle", true);
+            mTooltipTitleBreak = builder.comment(
+                            "True to add a title break below the tooltip title line.",
+                            "TitleBreak and CenterTitle will work/appear at the same time.")
+                    .define("titleBreak", true);
+            mExactTooltipPositioning = builder.comment(
+                            "True to exactly position tooltip to pixel grid, smoother movement.")
+                    .define("exactPositioning", true);
+            mTooltipFill = builder.comment(
+                            "The tooltip background color in #RRGGBB or #AARRGGBB format. Default: #E0000000",
+                            "Can be one to four values representing top left, top right, bottom right and bottom left" +
+                                    " color.",
+                            "Multiple values produce a gradient effect, whereas one value produces a solid color.",
+                            "If less than 4 are provided, repeat the last value.")
+                    .defineList("colorFill", () -> {
+                        List<String> list = new ArrayList<>();
+                        list.add("#E0000000");
+                        return list;
+                    }, $ -> true);
+            mTooltipStroke = builder.comment(
+                            "The tooltip border color in #RRGGBB or #AARRGGBB format. Default: #F0AADCF0, #F0DAD0F4, " +
+                                    "#F0FFC3F7 and #F0DAD0F4",
+                            "Can be one to four values representing top left, top right, bottom right and bottom left" +
+                                    " color.",
+                            "Multiple values produce a gradient effect, whereas one value produces a solid color.",
+                            "If less than 4 are provided, repeat the last value.")
+                    .defineList("colorStroke", () -> {
+                        List<String> list = new ArrayList<>();
+                        list.add("#F0AADCF0");
+                        list.add("#F0FFC3F7");
+                        list.add("#F0BFF2B2");
+                        list.add("#F0D27F3D");
+                        return list;
+                    }, $ -> true);
+            mTooltipCycle = builder.comment(
+                            "The cycle time of tooltip border color in milliseconds. (0 = OFF)")
+                    .defineInRange("borderCycleTime", 1000, TOOLTIP_BORDER_COLOR_ANIM_MIN,
+                            TOOLTIP_BORDER_COLOR_ANIM_MAX);
+            mTooltipWidth = builder.comment(
+                            "The width of tooltip border, in GUI Scale Independent Pixels.")
+                    .defineInRange("borderWidth", 4 / 3f, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
+            /*mTooltipDuration = builder.comment(
+                            "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
+                    .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);*/
+            mTooltipShadow = builder.comment(
+                            "The shadow radius of tooltip, in GUI Scale Independent Pixels.",
+                            "Only works for values >= 2 and rounded corners. No impact on performance.")
+                    .defineInRange("shadowRadius", 10.0, TOOLTIP_SHADOW_RADIUS_MIN, TOOLTIP_SHADOW_RADIUS_MAX);
+
+            builder.pop();
+
+            builder.comment("General Config")
+                    .push("general");
+
+            mDing = builder.comment("Play a sound effect when the game is loaded.")
+                    .define("ding", true);
+            /*mZoom = builder.comment(
+                            "Press 'C' key (by default) to zoom 4x, the same as OptiFine's.",
+                            "This is auto disabled when OptiFine is installed.")
+                    .define("zoom", true);*/
+
+            /*hudBars = builder.comment(
+                    "Show additional HUD bars added by ModernUI on the bottom-left of the screen.")
+                    .define("hudBars", false);*/
+
+            mWindowMode = builder.comment("Control the window mode, normal mode does nothing.")
+                    .defineEnum("windowMode", WindowMode.NORMAL);
+            mUseNewGuiScale = builder.comment("Whether to replace vanilla GUI scale button to slider with tips.")
+                    .define("useNewGuiScale", true);
+
+            /*mSkipGLCapsError = builder.comment("UI renderer is disabled when the OpenGL capability test fails.",
+                            "Sometimes the driver reports wrong values, you can enable this to ignore it.")
+                    .define("skipGLCapsError", false);
+            mShowGLCapsError = builder.comment("A dialog popup is displayed when the OpenGL capability test fails.",
+                            "Set to false to not show it. This is ignored when skipGLCapsError=true")
+                    .define("showGLCapsError", true);*/
+
+            /*mRemoveSignature = builder.comment("Remove signature of chat messages and commands.")
+                    .define("removeSignature", false);*/
+            mRemoveTelemetry = builder.comment("Remove telemetry event of client behaviors.")
+                    .define("removeTelemetry", false);
+            /*mSecurePublicKey = builder.comment("Don't report profile's public key to server.")
+                    .define("securePublicKey", false);*/
+            mEmojiShortcodes = builder.comment(
+                            "Allow Slack or Discord shortcodes to replace Unicode Emoji Sequences in chat.")
+                    .define("emojiShortcodes", true);
+
+            builder.pop();
+
+            builder.comment("View system config, currently not working.")
+                    .push("view");
+
+            mForceRtl = builder.comment("Force layout direction to RTL, otherwise, the current Locale setting.")
+                    .define("forceRtl", false);
+            mFontScale = builder.comment("The global font scale used with sp units.")
+                    .defineInRange("fontScale", 1.0f, FONT_SCALE_MIN, FONT_SCALE_MAX);
+            mScrollbarSize = builder.comment("Default scrollbar size in dips.")
+                    .defineInRange("scrollbarSize", ViewConfiguration.SCROLL_BAR_SIZE, 0, 1024);
+            mTouchSlop = builder.comment("Distance a touch can wander before we think the user is scrolling in dips.")
+                    .defineInRange("touchSlop", ViewConfiguration.TOUCH_SLOP, 0, 1024);
+            mMinScrollbarTouchTarget = builder.comment("Minimum size of the touch target for a scrollbar in dips.")
+                    .defineInRange("minScrollbarTouchTarget", ViewConfiguration.MIN_SCROLLBAR_TOUCH_TARGET, 0, 1024);
+            mMinimumFlingVelocity = builder.comment("Minimum velocity to initiate a fling in dips per second.")
+                    .defineInRange("minimumFlingVelocity", ViewConfiguration.MINIMUM_FLING_VELOCITY, 0, 32767);
+            mMaximumFlingVelocity = builder.comment("Maximum velocity to initiate a fling in dips per second.")
+                    .defineInRange("maximumFlingVelocity", ViewConfiguration.MAXIMUM_FLING_VELOCITY, 0, 32767);
+            mOverscrollDistance = builder.comment("Max distance in dips to overscroll for edge effects.")
+                    .defineInRange("overscrollDistance", ViewConfiguration.OVERSCROLL_DISTANCE, 0, 1024);
+            mOverflingDistance = builder.comment("Max distance in dips to overfling for edge effects.")
+                    .defineInRange("overflingDistance", ViewConfiguration.OVERFLING_DISTANCE, 0, 1024);
+            mVerticalScrollFactor = builder.comment("Amount to scroll in response to a vertical scroll event, in dips" +
+                            " per axis value.")
+                    .defineInRange("verticalScrollFactor", ViewConfiguration.VERTICAL_SCROLL_FACTOR, 0, 1024);
+            mHorizontalScrollFactor = builder.comment("Amount to scroll in response to a horizontal scroll event, in " +
+                            "dips per axis value.")
+                    .defineInRange("horizontalScrollFactor", ViewConfiguration.HORIZONTAL_SCROLL_FACTOR, 0, 1024);
+
+            builder.pop();
+
+
+            builder.comment("Font Config")
+                    .push("font");
+
+            mAntiAliasing = builder.comment(
+                            "Control the anti-aliasing of raw glyph rasterization.")
+                    .define("antiAliasing", true);
+            mAutoHinting = builder.comment(
+                            "Control the FreeType font hinting of raw glyph metrics.",
+                            "Enable if on low-res monitor; disable for linear texts.")
+                    .define("autoHinting", Platform.get() != Platform.MACOSX);
+            /*mLinearSampling = builder.comment(
+                            "Enable linear sampling for font atlases with mipmaps, mag filter will be always NEAREST.",
+                            "If your fonts are not bitmap fonts, then you should keep this setting true.")
+                    .define("linearSampling", true);*/
+            // Segoe UI, Source Han Sans CN Medium, Noto Sans, Open Sans, San Francisco, Calibri,
+            // Microsoft YaHei UI, STHeiti, SimHei, SansSerif
+            mFirstFontFamily = builder.comment(
+                            "The first font family to use. See fallbackFontFamilyList")
+                    .define("firstFontFamily", "Source Han Sans CN Medium");
+            mFallbackFontFamilyList = builder.comment(
+                            "A set of fallback font families to determine the typeface to use.",
+                            "The order is first > fallbacks. TrueType & OpenType are supported.",
+                            "Each element can be one of the following two cases:",
+                            "1) Name of registered font family, for instance: Segoe UI",
+                            "2) Path of font files on your PC, for instance: /usr/shared/fonts/x.otf",
+                            "Registered font families include:",
+                            "1) OS builtin fonts.",
+                            "2) Font files in '/resourcepacks' directory.",
+                            "3) Font files under 'modernui:font' in resource packs.",
+                            "This is only read once when the game is loaded, you can reload via in-game GUI.")
+                    .defineList("fallbackFontFamilyList", () -> {
+                        List<String> list = new ArrayList<>();
+                        list.add("Noto Sans");
+                        list.add("Segoe UI");
+                        list.add("San Francisco");
+                        list.add("Open Sans");
+                        list.add("SimHei");
+                        list.add("STHeiti");
+                        list.add("Segoe UI Variable");
+                        list.add("mui-i18n-compat");
+                        return list;
+                    }, s -> true);
+            mUseColorEmoji = builder.comment(
+                            "Whether to use Google Noto Color Emoji, otherwise grayscale emoji (faster).",
+                            "See Unicode 15.0 specification for details on how this affects text layout.")
+                    .define("useColorEmoji", true);
+
+            builder.pop();
+        }
+
+        public void saveAsync() {
+            Util.ioPool().execute(() -> CLIENT_SPEC.save());
+        }
+
+        public void saveAndReloadAsync() {
+            Util.ioPool().execute(() -> {
+                CLIENT_SPEC.save();
+                reload();
+            });
+        }
+
+        private void reload() {
+            BlurHandler.sBlurEffect = mBlurEffect.get();
+            BlurHandler.sBackgroundDuration = mBackgroundDuration.get();
+            BlurHandler.sBlurRadius = mBlurRadius.get();
+
+            BlurHandler.sFramerateInactive = mFramerateInactive.get();
+            BlurHandler.sFramerateMinimized = Math.min(
+                    mFramerateMinimized.get(),
+                    BlurHandler.sFramerateInactive
+            );
+            BlurHandler.sMasterVolumeInactive = mMasterVolumeInactive.get().floatValue();
+            BlurHandler.sMasterVolumeMinimized = Math.min(
+                    mMasterVolumeMinimized.get().floatValue(),
+                    BlurHandler.sMasterVolumeInactive
+            );
+
+            List<? extends String> inColors = mBackgroundColor.get();
+            int[] resultColors = new int[4];
+            int color = 0x99000000;
+            for (int i = 0; i < 4; i++) {
+                if (inColors != null && i < inColors.size()) {
+                    String s = inColors.get(i);
+                    try {
+                        color = Color.parseColor(s);
+                    } catch (Exception e) {
+                        LOGGER.error(MARKER, "Wrong color format for screen background, index: {}", i, e);
+                    }
+                }
+                resultColors[i] = color;
+            }
+            BlurHandler.sBackgroundColor = resultColors;
+
+            BlurHandler.INSTANCE.loadBlacklist(mBlurBlacklist.get());
+
+            ModernUIClient.sInventoryPause = mInventoryPause.get();
+            //ModernUIForge.sRemoveMessageSignature = mRemoveSignature.get();
+            ModernUIClient.sRemoveTelemetrySession = mRemoveTelemetry.get();
+            //ModernUIForge.sSecureProfilePublicKey = mSecurePublicKey.get();
+
+            TooltipRenderer.sTooltip = mTooltip.get();
+
+            inColors = mTooltipFill.get();
+            color = 0xFFFFFFFF;
+            for (int i = 0; i < 4; i++) {
+                if (inColors != null && i < inColors.size()) {
+                    String s = inColors.get(i);
+                    try {
+                        color = Color.parseColor(s);
+                    } catch (Exception e) {
+                        LOGGER.error(MARKER, "Wrong color format for tooltip background, index: {}", i, e);
+                    }
+                }
+                TooltipRenderer.sFillColor[i] = color;
+            }
+            inColors = mTooltipStroke.get();
+            color = 0xFFFFFFFF;
+            for (int i = 0; i < 4; i++) {
+                if (inColors != null && i < inColors.size()) {
+                    String s = inColors.get(i);
+                    try {
+                        color = Color.parseColor(s);
+                    } catch (Exception e) {
+                        LOGGER.error(MARKER, "Wrong color format for tooltip border, index: {}", i, e);
+                    }
+                }
+                TooltipRenderer.sStrokeColor[i] = color;
+            }
+            //TooltipRenderer.sAnimationDuration = mTooltipDuration.get();
+            TooltipRenderer.sBorderColorCycle = mTooltipCycle.get();
+            TooltipRenderer.sExactPositioning = mExactTooltipPositioning.get();
+            TooltipRenderer.sRoundedShapes = mRoundedTooltip.get();
+            TooltipRenderer.sCenterTitle = mCenterTooltipTitle.get();
+            TooltipRenderer.sTitleBreak = mTooltipTitleBreak.get();
+            TooltipRenderer.sBorderWidth = mTooltipWidth.get().floatValue();
+            TooltipRenderer.sShadowRadius = mTooltipShadow.get().floatValue();
+
+            UIManager.sDingEnabled = mDing.get();
+            //UIManager.sZoomEnabled = mZoom.get() && !ModernUIMod.isOptiFineLoaded();
+
+            WindowMode windowMode = mWindowMode.get();
+            if (mLastWindowMode != windowMode) {
+                mLastWindowMode = windowMode;
+                if (windowMode != WindowMode.NORMAL) {
+                    Minecraft.getInstance().tell(windowMode::apply);
+                }
+            }
+
+            //TestHUD.sBars = hudBars.get();
+            Handler handler = Core.getUiHandlerAsync();
+            if (handler != null) {
+                handler.post(() -> {
+                    UIManager.getInstance().updateLayoutDir(mForceRtl.get());
+                    ModernUIClient.sFontScale = (mFontScale.get().floatValue());
+                    var ctx = ModernUI.getInstance();
+                    if (ctx != null) {
+                        Resources res = ctx.getResources();
+                        DisplayMetrics metrics = new DisplayMetrics();
+                        metrics.setTo(res.getDisplayMetrics());
+                        metrics.scaledDensity = ModernUIClient.sFontScale * metrics.density;
+                        res.updateMetrics(metrics);
+                    }
+                });
+            }
+
+            boolean reloadStrike = false;
+            if (GlyphManager.sAntiAliasing != mAntiAliasing.get()) {
+                GlyphManager.sAntiAliasing = mAntiAliasing.get();
+                reloadStrike = true;
+            }
+            if (GlyphManager.sFractionalMetrics == mAutoHinting.get()) {
+                GlyphManager.sFractionalMetrics = !mAutoHinting.get();
+                reloadStrike = true;
+            }
+            /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
+                GLFontAtlas.sLinearSampling = mLinearSampling.get();
+                reload = true;
+            }*/
+            ModernUIClient.sUseColorEmoji = mUseColorEmoji.get();
+            ModernUIClient.sEmojiShortcodes = mEmojiShortcodes.get();
+            ModernUIClient.sFirstFontFamily = mFirstFontFamily.get();
+            ModernUIClient.sFallbackFontFamilyList = mFallbackFontFamilyList.get();
+            if (reloadStrike) {
+                Minecraft.getInstance().submit(
+                        () -> FontResourceManager.getInstance().reloadAll());
+            }
+
+            //ModernUI.getSelectedTypeface();
+        }
+
+        public enum WindowMode {
+            NORMAL,
+            FULLSCREEN,
+            FULLSCREEN_BORDERLESS,
+            MAXIMIZED,
+            MAXIMIZED_BORDERLESS,
+            WINDOWED,
+            WINDOWED_BORDERLESS;
+
+            public void apply() {
+                Window window = Minecraft.getInstance().getWindow();
+                switch (this) {
+                    case FULLSCREEN -> {
+                        if (!window.isFullscreen()) {
+                            window.toggleFullScreen();
+                        }
+                    }
+                    case FULLSCREEN_BORDERLESS -> {
+                        if (window.isFullscreen()) {
+                            window.toggleFullScreen();
+                        }
+                        GLFW.glfwRestoreWindow(window.getWindow());
+                        GLFW.glfwSetWindowAttrib(window.getWindow(),
+                                GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
+                        Monitor monitor = window.findBestMonitor();
+                        if (monitor != null) {
+                            VideoMode videoMode = monitor.getCurrentMode();
+                            int x = monitor.getX();
+                            int y = monitor.getY();
+                            int width = videoMode.getWidth();
+                            int height = videoMode.getHeight();
+                            GLFW.glfwSetWindowMonitor(window.getWindow(), MemoryUtil.NULL,
+                                    x, y, width, height, GLFW.GLFW_DONT_CARE);
+                        } else {
+                            GLFW.glfwMaximizeWindow(window.getWindow());
+                        }
+                    }
+                    case MAXIMIZED -> {
+                        if (window.isFullscreen()) {
+                            window.toggleFullScreen();
+                        }
+                        GLFW.glfwRestoreWindow(window.getWindow());
+                        GLFW.glfwSetWindowAttrib(window.getWindow(),
+                                GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
+                        GLFW.glfwMaximizeWindow(window.getWindow());
+                    }
+                    case MAXIMIZED_BORDERLESS -> {
+                        if (window.isFullscreen()) {
+                            window.toggleFullScreen();
+                        }
+                        GLFW.glfwRestoreWindow(window.getWindow());
+                        GLFW.glfwSetWindowAttrib(window.getWindow(),
+                                GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
+                        GLFW.glfwMaximizeWindow(window.getWindow());
+                    }
+                    case WINDOWED -> {
+                        if (window.isFullscreen()) {
+                            window.toggleFullScreen();
+                        }
+                        GLFW.glfwSetWindowAttrib(window.getWindow(),
+                                GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
+                        GLFW.glfwRestoreWindow(window.getWindow());
+                    }
+                    case WINDOWED_BORDERLESS -> {
+                        if (window.isFullscreen()) {
+                            window.toggleFullScreen();
+                        }
+                        GLFW.glfwSetWindowAttrib(window.getWindow(),
+                                GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
+                        GLFW.glfwRestoreWindow(window.getWindow());
+                    }
+                }
+            }
+
+            @Nonnull
+            @Override
+            public String toString() {
+                return I18n.get("modernui.windowMode." + name().toLowerCase(Locale.ROOT));
+            }
+        }
+    }
+
+    /**
+     * Common config exists on physical client and physical server once game loaded.
+     * They are independent and do not sync with each other.
+     */
+    public static class Common {
+
+        public final ForgeConfigSpec.BooleanValue developerMode;
+        public final ForgeConfigSpec.IntValue oneTimeEvents;
+
+        //public final ForgeConfigSpec.BooleanValue autoShutdown;
+
+        //public final ForgeConfigSpec.ConfigValue<List<? extends String>> shutdownTimes;
+
+        private Common(@Nonnull ForgeConfigSpec.Builder builder) {
+            builder.comment("Developer Config")
+                    .push("developer");
+
+            developerMode = builder.comment("Whether to enable developer mode.")
+                    .define("enableDeveloperMode", false);
+            oneTimeEvents = builder
+                    .defineInRange("oneTimeEvents", 0, Integer.MIN_VALUE, Integer.MAX_VALUE);
+
+            builder.pop();
+
+            /*builder.comment("Auto Shutdown Config")
+                    .push("autoShutdown");
+
+            autoShutdown = builder.comment(
+                            "Enable auto-shutdown for server.")
+                    .define("enable", false);
+            shutdownTimes = builder.comment(
+                            "The time points of when server will auto-shutdown. Format: HH:mm.")
+                    .defineList("times", () -> {
+                        List<String> list = new ArrayList<>();
+                        list.add("04:00");
+                        list.add("16:00");
+                        return list;
+                    }, s -> true);
+
+            builder.pop();*/
+        }
+
+        public void saveAndReloadAsync() {
+            Util.ioPool().execute(() -> {
+                COMMON_SPEC.save();
+                reload();
+            });
+        }
+
+        private void reload() {
+            ModernUIMod.sDeveloperMode = developerMode.get();
+            //ServerHandler.INSTANCE.determineShutdownTime();
+        }
+    }
+
+    public static class Text {
+
+        public static final float BASE_FONT_SIZE_MIN = 6.5f;
+        public static final float BASE_FONT_SIZE_MAX = 9.5f;
+        public static final float BASELINE_MIN = 4;
+        public static final float BASELINE_MAX = 10;
+        public static final float SHADOW_OFFSET_MIN = 0.2f;
+        public static final float SHADOW_OFFSET_MAX = 2;
+        public static final float OUTLINE_OFFSET_MIN = 0.2f;
+        public static final float OUTLINE_OFFSET_MAX = 2;
+        public static final int LIFESPAN_MIN = 2;
+        public static final int LIFESPAN_MAX = 15;
+        /*public static final int REHASH_MIN = 0;
+        public static final int REHASH_MAX = 2000;*/
+
+        //final ForgeConfigSpec.BooleanValue globalRenderer;
+        public final ForgeConfigSpec.BooleanValue mAllowShadow;
+        public final ForgeConfigSpec.BooleanValue mFixedResolution;
+        public final ForgeConfigSpec.DoubleValue mBaseFontSize;
+        public final ForgeConfigSpec.DoubleValue mBaselineShift;
+        public final ForgeConfigSpec.DoubleValue mShadowOffset;
+        public final ForgeConfigSpec.DoubleValue mOutlineOffset;
+        //public final ForgeConfigSpec.BooleanValue mSuperSampling;
+        //public final ForgeConfigSpec.BooleanValue mAlignPixels;
+        public final ForgeConfigSpec.IntValue mCacheLifespan;
+        //public final ForgeConfigSpec.IntValue mRehashThreshold;
+        public final ForgeConfigSpec.EnumValue<TextDirection> mTextDirection;
+        //public final ForgeConfigSpec.BooleanValue mBitmapReplacement;
+        //public final ForgeConfigSpec.BooleanValue mUseDistanceField;
+        //public final ForgeConfigSpec.BooleanValue mUseVanillaFont;
+        public final ForgeConfigSpec.BooleanValue mUseTextShadersInWorld;
+        public final ForgeConfigSpec.EnumValue<DefaultFontBehavior> mDefaultFontBehavior;
+        public final ForgeConfigSpec.BooleanValue mUseComponentCache;
+        public final ForgeConfigSpec.BooleanValue mAllowAsyncLayout;
+        public final ForgeConfigSpec.EnumValue<LineBreakStyle> mLineBreakStyle;
+        public final ForgeConfigSpec.EnumValue<LineBreakWordStyle> mLineBreakWordStyle;
+        public final ForgeConfigSpec.BooleanValue mSmartSDFShaders;
+        public final ForgeConfigSpec.BooleanValue mComputeDeviceFontSize;
+        public final ForgeConfigSpec.BooleanValue mAllowSDFTextIn2D;
+
+        //private final ForgeConfigSpec.BooleanValue antiAliasing;
+        //private final ForgeConfigSpec.BooleanValue highPrecision;
+        //private final ForgeConfigSpec.BooleanValue enableMipmap;
+        //private final ForgeConfigSpec.IntValue mipmapLevel;
+        //private final ForgeConfigSpec.IntValue resolutionLevel;
+        //private final ForgeConfigSpec.IntValue defaultFontSize;
+
+        private Text(@Nonnull ForgeConfigSpec.Builder builder) {
+            builder.comment("Text Engine Config")
+                    .push("text");
+
+            /*globalRenderer = builder.comment(
+                    "Apply Modern UI font renderer (including text layouts) to the entire game rather than only " +
+                            "Modern UI itself.")
+                    .define("globalRenderer", true);*/
+            mAllowShadow = builder.comment(
+                            "Allow text renderer to drop shadow, setting to false can improve performance.")
+                    .define("allowShadow", true);
+            mFixedResolution = builder.comment(
+                            "Fix resolution level at 2. When the GUI scale increases, the resolution level remains.",
+                            "Then GUI scale should be even numbers (2, 4, 6...), based on Minecraft GUI system.",
+                            "If your fonts are not bitmap fonts, then you should keep this setting false.")
+                    .define("fixedResolution", false);
+            mBaseFontSize = builder.comment(
+                            "Control base font size, in GUI scaled pixels. The default and vanilla value is 8.",
+                            "For bitmap fonts, 8 represents a glyph size of 8x or 16x if fixed resolution.",
+                            "This option only applies to TrueType fonts.")
+                    .defineInRange("baseFontSize", TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE,
+                            BASE_FONT_SIZE_MIN, BASE_FONT_SIZE_MAX);
+            mBaselineShift = builder.comment(
+                            "Control vertical baseline for vanilla text layout, in GUI scaled pixels.",
+                            "The vanilla default value is 7.")
+                    .defineInRange("baselineShift", TextLayout.STANDARD_BASELINE_OFFSET,
+                            BASELINE_MIN, BASELINE_MAX);
+            mShadowOffset = builder.comment(
+                            "Control the text shadow offset for vanilla text rendering, in GUI scaled pixels.")
+                    .defineInRange("shadowOffset", 0.8, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
+            mOutlineOffset = builder.comment(
+                            "Control the text outline offset for vanilla text rendering, in GUI scaled pixels.")
+                    .defineInRange("outlineOffset", 0.5, OUTLINE_OFFSET_MIN, OUTLINE_OFFSET_MAX);
+            /*mSuperSampling = builder.comment(
+                            "Super sampling can make the text more smooth with large font size or in the 3D world.",
+                            "But it makes the glyph edge too blurry and difficult to read.")
+                    .define("superSampling", false);*/
+            /*mAlignPixels = builder.comment(
+                            "Enable to make each glyph pixel-aligned in text layout in screen-space.",
+                            "Text rendering may be better with bitmap fonts / fixed resolution / linear sampling.")
+                    .define("alignPixels", false);*/
+            mCacheLifespan = builder.comment(
+                            "Set the recycle time of layout cache in seconds, using least recently used algorithm.")
+                    .defineInRange("cacheLifespan", 6, LIFESPAN_MIN, LIFESPAN_MAX);
+            /*mRehashThreshold = builder.comment("Set the rehash threshold of layout cache")
+                    .defineInRange("rehashThreshold", 100, REHASH_MIN, REHASH_MAX);*/
+            mTextDirection = builder.comment(
+                            "The bidirectional text heuristic algorithm.",
+                            "This will affect which BiDi algorithm to use during text layout.")
+                    .defineEnum("textDirection", TextDirection.FIRST_STRONG);
+            /*mBitmapReplacement = builder.comment(
+                            "Whether to use bitmap replacement for non-Emoji character sequences. Restart is required.")
+                    .define("bitmapReplacement", false);*/
+            /*mUseVanillaFont = builder.comment(
+                            "Whether to use Minecraft default bitmap font for basic Latin letters.")
+                    .define("useVanillaFont", false);*/
+            mUseTextShadersInWorld = builder.comment(
+                            "Whether to use Modern UI text rendering pipeline in 3D world.",
+                            "Disabling this means that SDF text and rendering optimization are no longer effective.",
+                            "But text rendering can be compatible with OptiFine Shaders and Iris Shaders.",
+                            "This does not affect text rendering in GUI.",
+                            "This option only applies to TrueType fonts.")
+                    .define("useTextShadersInWorld", true);
+            /*mUseDistanceField = builder.comment(
+                            "Enable to use distance field for text rendering in 3D world.",
+                            "It improves performance with deferred rendering and sharpens when doing 3D transform.")
+                    .define("useDistanceField", true);*/
+            boolean nonLatin = false;
+            {
+                int[] scripts = UScript.getCode(ModernUI.getSelectedLocale());
+                for (int script : scripts) {
+                    if (script > UScript.INHERITED && script != UScript.LATIN) {
+                        nonLatin = true;
+                        break;
+                    }
+                }
+            }
+            mDefaultFontBehavior = builder.comment(
+                            "For \"minecraft:default\" font, should we keep some bitmap providers of them?",
+                            "Ignore All: Equivalent to Force Unicode Font.",
+                            "Keep ASCII: Include minecraft:font/ascii.png, minecraft:font/accented.png, " +
+                                    "minecraft:font/nonlatin_european.png",
+                            "Keep Other: Include providers other than ASCII and Unicode font.",
+                            "Keep All: Include all except Unicode font.",
+                            "The default value depends on OS language and region.")
+                    .defineEnum("defaultFontBehavior",
+                            nonLatin ? DefaultFontBehavior.KEEP_OTHER : DefaultFontBehavior.KEEP_ALL);
+            mUseComponentCache = builder.comment(
+                            "Whether to use text component object as hash key to lookup in layout cache.",
+                            "If you find that Modern UI text rendering is not compatible with some mods,",
+                            "you can disable this option for compatibility, but this will decrease performance a bit.",
+                            "Modern UI will use another cache strategy if this is disabled.")
+                    .define("useComponentCache", !ModernUIMod.isUntranslatedItemsLoaded());
+            mAllowAsyncLayout = builder.comment(
+                            "Allow text layout to be computed from background threads, which may lead to " +
+                                    "inconsistency issues.",
+                            "Otherwise, block the current thread and wait for main thread.")
+                    .define("allowAsyncLayout", true);
+            mLineBreakStyle = builder.comment(
+                            "See CSS line-break property, https://developer.mozilla.org/en-US/docs/Web/CSS/line-break")
+                    .defineEnum("lineBreakStyle", LineBreakStyle.AUTO);
+            mLineBreakWordStyle = builder
+                    .defineEnum("lineBreakWordStyle", LineBreakWordStyle.AUTO);
+            mSmartSDFShaders = builder.comment(
+                            "When enabled, Modern UI will compute texel density in device-space to determine whether " +
+                                    "to use SDF text or bilinear sampling.",
+                            "This feature requires GLSL 400 or has no effect.",
+                            "This generally decreases performance but provides better rendering quality.",
+                            "This option only applies to TrueType fonts. May not be compatible with OptiFine.")
+                    .define("smartSDFShaders", !ModernUIMod.isOptiFineLoaded());
+            // OK, this doesn't work well with OptiFine
+            mComputeDeviceFontSize = builder.comment(
+                            "When rendering in 2D, this option allows Modern UI to exactly compute font size in " +
+                                    "device-space from the current coordinate transform matrix.",
+                            "This provides perfect text rendering for scaling-down texts in vanilla, but may increase" +
+                                    " GPU memory usage.",
+                            "When disabled, Modern UI will use SDF text rendering if appropriate.",
+                            "This option only applies to TrueType fonts.")
+                    .define("computeDeviceFontSize", true);
+            mAllowSDFTextIn2D = builder.comment(
+                            "When enabled, Modern UI will use SDF text rendering if appropriate.",
+                            "Otherwise, it uses nearest-neighbor or bilinear sampling based on texel density.",
+                            "This option only applies to TrueType fonts.")
+                    .define("allowSDFTextIn2D", true);
+            /*antiAliasing = builder.comment(
+                    "Enable font anti-aliasing.")
+                    .define("antiAliasing", true);
+            highPrecision = builder.comment(
+                    "Enable high precision rendering, this is very useful especially when the font is very small.")
+                    .define("highPrecision", true);
+            enableMipmap = builder.comment(
+                    "Enable mipmap for font textures, this makes font will not be blurred when scaling down.")
+                    .define("enableMipmap", true);
+            mipmapLevel = builder.comment(
+                    "The mipmap level for font textures.")
+                    .defineInRange("mipmapLevel", 4, 0, 4);*/
+            /*resolutionLevel = builder.comment(
+                    "The resolution level of font, higher levels would better work with high resolution monitors.",
+                    "Reference: 1 (Standard, 1.5K Fullscreen), 2 (High, 2K~3K Fullscreen), 3 (Ultra, 4K Fullscreen)",
+                    "This should match your GUI scale. Scale -> Level: [1,2] -> 1; [3,4] -> 2; [5,) -> 3")
+                    .defineInRange("resolutionLevel", 2, 1, 3);*/
+            /*defaultFontSize = builder.comment(
+                    "The default font size for texts with no size specified. (deprecated, to be removed)")
+                    .defineInRange("defaultFontSize", 16, 12, 20);*/
+
+            builder.pop();
+        }
+
+        public void saveAsync() {
+            Util.ioPool().execute(() -> TEXT_SPEC.save());
+        }
+
+        public void saveAndReloadAsync() {
+            Util.ioPool().execute(() -> {
+                TEXT_SPEC.save();
+                reload();
+            });
+        }
+
+        void reload() {
+            boolean reload = false;
+            boolean reloadStrike = false;
+            ModernTextRenderer.sAllowShadow = mAllowShadow.get();
+            if (TextLayoutEngine.sFixedResolution != mFixedResolution.get()) {
+                TextLayoutEngine.sFixedResolution = mFixedResolution.get();
+                reload = true;
+            }
+            if (TextLayoutProcessor.sBaseFontSize != mBaseFontSize.get()) {
+                TextLayoutProcessor.sBaseFontSize = mBaseFontSize.get().floatValue();
+                reloadStrike = true;
+            }
+            TextLayout.sBaselineOffset = mBaselineShift.get().floatValue();
+            ModernTextRenderer.sShadowOffset = mShadowOffset.get().floatValue();
+            ModernTextRenderer.sOutlineOffset = mOutlineOffset.get().floatValue();
+            /*if (TextLayoutProcessor.sAlignPixels != mAlignPixels.get()) {
+                TextLayoutProcessor.sAlignPixels = mAlignPixels.get();
+                reload = true;
+            }*/
+            TextLayoutEngine.sCacheLifespan = mCacheLifespan.get();
+            /*TextLayoutEngine.sRehashThreshold = mRehashThreshold.get();*/
+            if (TextLayoutEngine.sTextDirection != mTextDirection.get().key) {
+                TextLayoutEngine.sTextDirection = mTextDirection.get().key;
+                reload = true;
+            }
+            if (TextLayoutEngine.sDefaultFontBehavior != mDefaultFontBehavior.get().key) {
+                TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
+                reload = true;
+            }
+            TextLayoutEngine.sRawUseTextShadersInWorld = mUseTextShadersInWorld.get();
+            TextLayoutEngine.sUseComponentCache = mUseComponentCache.get();
+            TextLayoutEngine.sAllowAsyncLayout = mAllowAsyncLayout.get();
+            if (TextLayoutProcessor.sLbStyle != mLineBreakStyle.get().key) {
+                TextLayoutProcessor.sLbStyle = mLineBreakStyle.get().key;
+                reload = true;
+            }
+            if (TextLayoutProcessor.sLbWordStyle != mLineBreakWordStyle.get().key) {
+                TextLayoutProcessor.sLbWordStyle = mLineBreakWordStyle.get().key;
+                reload = true;
+            }
+
+            final boolean smartShaders = mSmartSDFShaders.get();
+            Minecraft.getInstance().submit(() -> TextRenderType.toggleSDFShaders(smartShaders));
+
+            ModernTextRenderer.sComputeDeviceFontSize = mComputeDeviceFontSize.get();
+            ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();
+
+            if (reloadStrike) {
+                Minecraft.getInstance().submit(
+                        () -> FontResourceManager.getInstance().reloadAll());
+            } else if (reload && ModernUIMod.isTextEngineEnabled()) {
+                Minecraft.getInstance().submit(
+                        () -> {
+                            try {
+                                TextLayoutEngine.getInstance().reload();
+                            } catch (Exception ignored) {
+                            }
+                        });
+            }
+            /*GlyphManagerForge.sPreferredFont = preferredFont.get();
+            GlyphManagerForge.sAntiAliasing = antiAliasing.get();
+            GlyphManagerForge.sHighPrecision = highPrecision.get();
+            GlyphManagerForge.sEnableMipmap = enableMipmap.get();
+            GlyphManagerForge.sMipmapLevel = mipmapLevel.get();*/
+            //GlyphManager.sResolutionLevel = resolutionLevel.get();
+            //TextLayoutEngine.sDefaultFontSize = defaultFontSize.get();
+        }
+
+        public enum TextDirection {
+            FIRST_STRONG(View.TEXT_DIRECTION_FIRST_STRONG, "FirstStrong"),
+            ANY_RTL(View.TEXT_DIRECTION_ANY_RTL, "AnyRTL-LTR"),
+            LTR(View.TEXT_DIRECTION_LTR, "LTR"),
+            RTL(View.TEXT_DIRECTION_RTL, "RTL"),
+            LOCALE(View.TEXT_DIRECTION_LOCALE, "Locale"),
+            FIRST_STRONG_LTR(View.TEXT_DIRECTION_FIRST_STRONG_LTR, "FirstStrong-LTR"),
+            FIRST_STRONG_RTL(View.TEXT_DIRECTION_FIRST_STRONG_RTL, "FirstStrong-RTL");
+
+            private final int key;
+            private final String text;
+
+            TextDirection(int key, String text) {
+                this.key = key;
+                this.text = text;
+            }
+
+            @Override
+            public String toString() {
+                return text;
+            }
+        }
+
+        public enum DefaultFontBehavior {
+            IGNORE_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_IGNORE_ALL),
+            KEEP_ASCII(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ASCII),
+            KEEP_OTHER(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_OTHER),
+            KEEP_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ALL);
+
+            private final int key;
+
+            DefaultFontBehavior(int key) {
+                this.key = key;
+            }
+
+            @Nonnull
+            @Override
+            public String toString() {
+                return I18n.get("modernui.defaultFontBehavior." + name().toLowerCase(Locale.ROOT));
+            }
+        }
+
+        public enum LineBreakStyle {
+            AUTO(LineBreakConfig.LINE_BREAK_STYLE_NONE, "Auto"),
+            LOOSE(LineBreakConfig.LINE_BREAK_STYLE_LOOSE, "Loose"),
+            NORMAL(LineBreakConfig.LINE_BREAK_STYLE_NORMAL, "Normal"),
+            STRICT(LineBreakConfig.LINE_BREAK_STYLE_STRICT, "Strict");
+
+            private final int key;
+            private final String text;
+
+            LineBreakStyle(int key, String text) {
+                this.key = key;
+                this.text = text;
+            }
+
+            @Override
+            public String toString() {
+                return text;
+            }
+        }
+
+        public enum LineBreakWordStyle {
+            AUTO(LineBreakConfig.LINE_BREAK_WORD_STYLE_NONE, "Auto"),
+            PHRASE(LineBreakConfig.LINE_BREAK_WORD_STYLE_PHRASE, "Phrase-based");
+
+            private final int key;
+            private final String text;
+
+            LineBreakWordStyle(int key, String text) {
+                this.key = key;
+                this.text = text;
+            }
+
+            @Override
+            public String toString() {
+                return text;
+            }
+        }
+    }
+
+    // server config is available when integrated server or dedicated server started
+    // if on dedicated server, all config data will sync to remote client via network
+    /*public static class Server {
+
+        private Server(@Nonnull ForgeConfigSpec.Builder builder) {
+
+        }
+
+        private void reload() {
+
+        }
+    }*/
+}

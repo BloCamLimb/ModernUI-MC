@@ -1,0 +1,21 @@
+plugins {
+    id 'org.spongepowered.gradle.vanilla' version '0.2.1-SNAPSHOT'
+}
+
+minecraft {
+    version(minecraft_version)
+}
+
+dependencies {
+    compileOnly 'org.spongepowered:mixin:0.8.5'
+    compileOnly 'org.ow2.asm:asm-tree:9.5'
+
+    if (rootProject.file('../ModernUI').exists()) {
+        implementation("icyllis.arc3d:Arc3D")
+        implementation("icyllis.modernui:ModernUI-Core")
+        implementation("icyllis.modernui:ModernUI-Markdown")
+    } else {
+        implementation("icyllis.modernui:ModernUI-Core:${core_version}")
+        implementation("icyllis.modernui:ModernUI-Markdown:${core_version}")
+    }
+}

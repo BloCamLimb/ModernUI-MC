@@ -66,6 +66,8 @@ dependencies {
     /*modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
     modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"*/
 
+    implementation project(':common')
+
     if (rootProject.file('../ModernUI').exists()) {
         implementation(forgeRuntimeLibrary("icyllis.arc3d:Arc3D"))
         shadow("icyllis.arc3d:Arc3D") {
@@ -129,6 +131,22 @@ dependencies {
     /*shadow(project(":ModernUI-Core")) {
         transitive = false
     }*/
+}
+
+tasks.withType(JavaCompile).configureEach {
+    source(project(":common").sourceSets.main.allSource)
+}
+
+tasks.withType(Javadoc).configureEach {
+    source(project(":common").sourceSets.main.allJava)
+}
+
+sourcesJar {
+    from project(":common").sourceSets.main.allSource
+}
+
+tasks.withType(ProcessResources).configureEach {
+    from project(":common").sourceSets.main.resources
 }
 
 shadowJar {

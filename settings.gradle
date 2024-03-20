@@ -12,6 +12,9 @@ pluginManagement {
         maven {
             url 'https://maven.architectury.dev/'
         }
+        maven {
+            url 'https://repo.spongepowered.org/repository/maven-public/'
+        }
         gradlePluginPortal()
     }
 }
@@ -21,6 +24,8 @@ rootProject.name = 'ModernUI-MC'
 if (file('../ModernUI').exists()) {
     includeBuild '../ModernUI'
 }
+
+include 'common'
 
 include 'forge'
 project(':forge').name = "ModernUI-Forge"

@@ -26,7 +26,6 @@ import icyllis.modernui.fragment.FragmentTransaction;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
 import icyllis.modernui.graphics.drawable.StateListDrawable;
-import icyllis.modernui.mc.Config;
 import icyllis.modernui.mc.ScreenCallback;
 import icyllis.modernui.mc.ui.RectangleDrawable;
 import icyllis.modernui.text.InputFilter;

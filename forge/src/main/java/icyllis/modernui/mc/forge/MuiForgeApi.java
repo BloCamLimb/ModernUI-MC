@@ -18,21 +18,29 @@
 
 package icyllis.modernui.mc.forge;
 
+import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.mc.ScreenCallback;
 import icyllis.modernui.mc.*;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuConstructor;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.event.entity.player.PlayerContainerEvent;
@@ -40,6 +48,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.function.Consumer;
 
 /**
@@ -47,9 +56,11 @@ import java.util.function.Consumer;
  *
  * @since 3.3
  */
+@OnlyIn(Dist.CLIENT)
 public final class MuiForgeApi extends MuiModApi {
 
-    private MuiForgeApi() {
+    public MuiForgeApi() {
+        ModernUI.LOGGER.info(ModernUI.MARKER, "Created MuiForgeAPI");
     }
 
     /**
@@ -111,6 +122,37 @@ public final class MuiForgeApi extends MuiModApi {
      */
     public static void postToUiThread(@Nonnull Runnable r) {
         MuiModApi.postToUiThread(r);
+    }
+
+    @Override
+    public boolean isGLVersionPromoted() {
+        try {
+            String version = net.minecraftforge.fml.loading.ImmediateWindowHandler.getGLVersion();
+            if (!"3.2".equals(version)) {
+                ModernUI.LOGGER.info(ModernUI.MARKER, "Detected OpenGL {} Core Profile from FML Early Window",
+                        version);
+                return true;
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    @Override
+    public void loadEffect(GameRenderer gr, ResourceLocation effect) {
+        gr.loadEffect(effect);
+    }
+
+    @Override
+    public ShaderInstance makeShaderInstance(ResourceProvider resourceProvider,
+                                             ResourceLocation resourceLocation,
+                                             VertexFormat vertexFormat) throws IOException {
+        return new ShaderInstance(resourceProvider, resourceLocation, vertexFormat);
+    }
+
+    @Override
+    public boolean isKeyBindingMatches(KeyMapping keyMapping, InputConstants.Key key) {
+        return keyMapping.isActiveAndMatches(key);
     }
 
     /**
