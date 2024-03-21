@@ -638,7 +638,7 @@ public abstract class UIManager implements LifecycleOwner {
             } else {
                 effect = new ResourceLocation("shaders/post/radial_blur.json");
             }
-            MuiModApi.get().loadEffect( minecraft.gameRenderer, effect);
+            MuiModApi.get().loadEffect(minecraft.gameRenderer, effect);
         } else {
             LOGGER.info(MARKER, "Stop post-processing effect");
             minecraft.gameRenderer.shutdownEffect();

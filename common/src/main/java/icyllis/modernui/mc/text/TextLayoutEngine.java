@@ -1325,7 +1325,7 @@ public class TextLayoutEngine extends FontResourceManager
         }
 
         // initial table
-        BakedGlyph[] glyphs = new BakedGlyph[94]; // 126 - 33 + 1
+        BakedGlyph[] glyphs = new BakedGlyph[189]; // 126 - 33 + 1 + 255 - 161 + 1
         // normalized offsets
         float[] offsets = new float[glyphs.length];
 
@@ -1373,75 +1373,45 @@ public class TextLayoutEngine extends FontResourceManager
             n++;
         }
 
-        // 33 to 47, cache only narrow chars
-        for (int i = 0; i < 15; i++) {
-            chars[0] = (char) (33 + i);
-            float advance;
-            BakedGlyph glyph;
-            // no text shaping
-            if (awtFont != null) {
-                GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
-                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
-                // too wide
-                if (advance + 1f > offsets[0]) {
-                    continue;
+        char[][] ranges = {{33, 48}, {58, 127}, {161, 256}};
+
+        // cache only narrow chars
+        for (char[] range : ranges) {
+            for (char c = range[0], e = range[1]; c < e; c++) {
+                chars[0] = c;
+                float advance;
+                BakedGlyph glyph;
+                // no text shaping
+                if (awtFont != null) {
+                    GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
+                    advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
+                    // too wide
+                    if (advance + 1f > offsets[0]) {
+                        continue;
+                    }
+                    glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
+                } else {
+                    var gl = bitmapFont.getGlyph(chars[0]);
+                    // allow empty
+                    if (gl == null) {
+                        continue;
+                    }
+                    advance = gl.advance;
+                    // too wide
+                    if (advance + 1f > offsets[0]) {
+                        continue;
+                    }
+                    glyph = gl;
                 }
-                glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
-            } else {
-                var gl = bitmapFont.getGlyph(chars[0]);
                 // allow empty
-                if (gl == null) {
-                    continue;
+                if (glyph != null) {
+                    glyphs[n] = glyph;
+                    offsets[n] = (offsets[0] - advance) / 2f;
+                    n++;
                 }
-                advance = gl.advance;
-                // too wide
-                if (advance + 1f > offsets[0]) {
-                    continue;
-                }
-                glyph = gl;
-            }
-            // allow empty
-            if (glyph != null) {
-                glyphs[n] = glyph;
-                offsets[n] = (offsets[0] - advance) / 2f;
-                n++;
             }
         }
 
-        // 58 to 126, cache only narrow chars
-        for (int i = 0; i < 69; i++) {
-            chars[0] = (char) (58 + i);
-            float advance;
-            BakedGlyph glyph;
-            // no text shaping
-            if (awtFont != null) {
-                GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
-                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
-                // too wide
-                if (advance + 1 > offsets[0]) {
-                    continue;
-                }
-                glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
-            } else {
-                var gl = bitmapFont.getGlyph(chars[0]);
-                // allow empty
-                if (gl == null) {
-                    continue;
-                }
-                advance = gl.advance;
-                // too wide
-                if (advance + 1 > offsets[0]) {
-                    continue;
-                }
-                glyph = gl;
-            }
-            // allow empty
-            if (glyph != null) {
-                glyphs[n] = glyph;
-                offsets[n] = (offsets[0] - advance) / 2f;
-                n++;
-            }
-        }
         if (n < glyphs.length) {
             glyphs = Arrays.copyOf(glyphs, n);
             offsets = Arrays.copyOf(offsets, n);
