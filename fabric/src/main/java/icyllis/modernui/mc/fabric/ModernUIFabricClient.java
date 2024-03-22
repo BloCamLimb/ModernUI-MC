@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.fabric;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
@@ -35,12 +36,14 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.CoreShaderRegistrationCallback;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.resource.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -53,6 +56,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraftforge.fml.config.ModConfig;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -110,6 +114,17 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                     // Call in lambda, not in creating the lambda
                     handler.post(() -> UIManager.getInstance().updateLayoutDir(Config.CLIENT.mForceRtl.get()));
                 }
+            }
+        });
+
+        CoreShaderRegistrationCallback.EVENT.register(context -> {
+            try {
+                context.register(
+                        ModernUIMod.location("rendertype_modern_tooltip"),
+                        DefaultVertexFormat.POSITION,
+                        TooltipRenderType::setShaderTooltip);
+            } catch (IOException e) {
+                LOGGER.error(MARKER, "Bad tooltip shader", e);
             }
         });
 

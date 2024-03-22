@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.neoforge;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import icyllis.modernui.ModernUI;
@@ -30,6 +31,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.registries.Registries;
@@ -56,6 +58,7 @@ import net.neoforged.neoforge.registries.RegisterEvent;
 import org.apache.commons.io.output.StringBuilderWriter;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -397,6 +400,19 @@ final class Registration {
                 }
             }
         }*/
+
+        @SubscribeEvent
+        static void onRegisterShaders(@Nonnull RegisterShadersEvent event) {
+            try {
+                event.registerShader(
+                        new ShaderInstance(event.getResourceProvider(),
+                                ModernUIMod.location("rendertype_modern_tooltip"),
+                                DefaultVertexFormat.POSITION),
+                        TooltipRenderType::setShaderTooltip);
+            } catch (IOException e) {
+                LOGGER.error(MARKER, "Bad tooltip shader", e);
+            }
+        }
     }
 
     static class ModClientDev {

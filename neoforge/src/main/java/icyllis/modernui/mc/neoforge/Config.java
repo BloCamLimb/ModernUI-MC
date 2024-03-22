@@ -27,7 +27,6 @@ import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.LineBreakConfig;
 import icyllis.modernui.mc.*;
-import icyllis.modernui.mc.neoforge.ServerHandler;
 import icyllis.modernui.mc.text.*;
 import icyllis.modernui.resources.Resources;
 import icyllis.modernui.util.DisplayMetrics;
@@ -178,6 +177,8 @@ public final class Config {
         public static final int TOOLTIP_BORDER_COLOR_ANIM_MAX = 5000;
         public static final float TOOLTIP_BORDER_WIDTH_MIN = 0.5f;
         public static final float TOOLTIP_BORDER_WIDTH_MAX = 2.5f;
+        public static final float TOOLTIP_CORNER_RADIUS_MIN = 0;
+        public static final float TOOLTIP_CORNER_RADIUS_MAX = 6;
         public static final float TOOLTIP_SHADOW_RADIUS_MIN = 0;
         public static final float TOOLTIP_SHADOW_RADIUS_MAX = 32;
 
@@ -195,7 +196,9 @@ public final class Config {
         public final ModConfigSpec.ConfigValue<List<? extends String>> mTooltipStroke;
         public final ModConfigSpec.IntValue mTooltipCycle;
         public final ModConfigSpec.DoubleValue mTooltipWidth;
-        public final ModConfigSpec.DoubleValue mTooltipShadow;
+        public final ModConfigSpec.DoubleValue mTooltipRadius;
+        public final ModConfigSpec.DoubleValue mTooltipShadowRadius;
+        public final ModConfigSpec.DoubleValue mTooltipShadowAlpha;
         //public final ModConfigSpec.IntValue mTooltipDuration;
         public final ModConfigSpec.BooleanValue mDing;
         public final ModConfigSpec.BooleanValue mZoom;
@@ -344,15 +347,21 @@ public final class Config {
                     .defineInRange("borderCycleTime", 1000, TOOLTIP_BORDER_COLOR_ANIM_MIN,
                             TOOLTIP_BORDER_COLOR_ANIM_MAX);
             mTooltipWidth = builder.comment(
-                            "The width of tooltip border, in GUI Scale Independent Pixels.")
+                            "The width of tooltip border, if rounded, in GUI Scale Independent Pixels.")
                     .defineInRange("borderWidth", 4 / 3f, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
+            mTooltipRadius = builder.comment(
+                            "The corner radius of tooltip border, if rounded, in GUI Scale Independent Pixels.")
+                    .defineInRange("cornerRadius", 3f, TOOLTIP_CORNER_RADIUS_MIN, TOOLTIP_CORNER_RADIUS_MAX);
             /*mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
                     .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);*/
-            mTooltipShadow = builder.comment(
-                            "The shadow radius of tooltip, in GUI Scale Independent Pixels.",
-                            "Only works for values >= 2 and rounded corners. No impact on performance.")
+            mTooltipShadowRadius = builder.comment(
+                            "The shadow radius of tooltip, if rounded, in GUI Scale Independent Pixels.",
+                            "No impact on performance.")
                     .defineInRange("shadowRadius", 10.0, TOOLTIP_SHADOW_RADIUS_MIN, TOOLTIP_SHADOW_RADIUS_MAX);
+            mTooltipShadowAlpha = builder.comment(
+                            "The shadow opacity of tooltip, if rounded. No impact on performance.")
+                    .defineInRange("shadowOpacity", 0.35f, 0f, 1f);
 
             builder.pop();
 
@@ -560,7 +569,9 @@ public final class Config {
             TooltipRenderer.sCenterTitle = mCenterTooltipTitle.get();
             TooltipRenderer.sTitleBreak = mTooltipTitleBreak.get();
             TooltipRenderer.sBorderWidth = mTooltipWidth.get().floatValue();
-            TooltipRenderer.sShadowRadius = mTooltipShadow.get().floatValue();
+            TooltipRenderer.sCornerRadius = mTooltipRadius.get().floatValue();
+            TooltipRenderer.sShadowRadius = mTooltipShadowRadius.get().floatValue();
+            TooltipRenderer.sShadowAlpha = mTooltipShadowAlpha.get().floatValue();
 
             UIManager.sDingEnabled = mDing.get();
             UIManager.sZoomEnabled = mZoom.get() && !ModernUIMod.isOptiFineLoaded();

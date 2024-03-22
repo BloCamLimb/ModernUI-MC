@@ -18,26 +18,21 @@
 
 package icyllis.modernui.mc;
 
-import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.shaders.AbstractUniform;
 import com.mojang.blaze3d.systems.RenderSystem;
-import icyllis.arc3d.core.Matrix4;
-import icyllis.modernui.graphics.*;
+import icyllis.arc3d.core.MathUtil;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.*;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.*;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
-import org.lwjgl.BufferUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.nio.FloatBuffer;
 import java.util.List;
-
-import static icyllis.arc3d.opengl.GLCore.*;
 
 /**
  * An extension that replaces vanilla tooltip style.
@@ -51,7 +46,9 @@ public final class TooltipRenderer {
     public static final int[] sFillColor = new int[4];
     public static final int[] sStrokeColor = new int[4];
     public static volatile float sBorderWidth = 4 / 3f;
+    public static volatile float sCornerRadius = 3;
     public static volatile float sShadowRadius = 10;
+    public static volatile float sShadowAlpha = 0.35f;
 
     // space between mouse and tooltip
     public static final int TOOLTIP_SPACE = 12;
@@ -62,9 +59,6 @@ public final class TooltipRenderer {
     private static final int TITLE_GAP = 2;
 
     //private static final List<FormattedText> sTempTexts = new ArrayList<>();
-
-    private final FloatBuffer mMatBuf = BufferUtils.createFloatBuffer(16);
-    private final Matrix4 mCoreMat = new Matrix4();
 
     //private static final int[] sActiveFillColor = new int[4];
     private final int[] mActiveStrokeColor = new int[4];
@@ -330,8 +324,16 @@ public final class TooltipRenderer {
         }
     }
 
-    public void drawTooltip(@Nonnull GLSurfaceCanvas canvas, @Nonnull Window window,
-                            @Nonnull ItemStack itemStack, @Nonnull GuiGraphics gr,
+    void chooseBorderColor(int corner, AbstractUniform uniform) {
+        int color = chooseBorderColor(corner);
+        int a = (color >>> 24);
+        int r = ((color >> 16) & 0xff);
+        int g = ((color >> 8) & 0xff);
+        int b = (color & 0xff);
+        uniform.set(r / 255f, g / 255f, b / 255f, a / 255f);
+    }
+
+    public void drawTooltip(@Nonnull ItemStack itemStack, @Nonnull GuiGraphics gr,
                             @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
                             @Nonnull Font font, int screenWidth, int screenHeight,
                             float partialX, float partialY, @Nullable ClientTooltipPositioner positioner) {
@@ -366,12 +368,14 @@ public final class TooltipRenderer {
 
         float tooltipX;
         float tooltipY;
+        final float maxScroll;
         if (positioner != null) {
             var pos = positioner.positionTooltip(screenWidth, screenHeight,
                     mouseX, mouseY,
                     tooltipWidth, tooltipHeight);
             tooltipX = pos.x();
             tooltipY = pos.y();
+            maxScroll = 0;
         } else {
             if (mLayoutRTL) {
                 tooltipX = mouseX + TOOLTIP_SPACE + partialX - 24 - tooltipWidth;
@@ -394,14 +398,18 @@ public final class TooltipRenderer {
                 tooltipY = 6;
             }
             partialY = (tooltipY - (int) tooltipY);
+
+            maxScroll = 6 + tooltipHeight + 6 - screenHeight;
         }
 
-        float maxScroll = 6 + tooltipHeight + 6 - screenHeight;
         if (maxScroll > 0) {
             mScroll = MathUtil.clamp(mScroll, 0, maxScroll);
 
             if (mMarqueeDir != 0 && mCurrTimeMillis - mMarqueeEndMillis >= MARQUEE_DELAY_MILLIS) {
-                mScroll += mMarqueeDir * mCurrDeltaMillis * 0.018f;
+                float t = MathUtil.clamp(0.5f * tooltipWidth / screenWidth, 0.0f, 0.5f);
+                float baseMultiplier = (1.5f - t) * 0.01f;
+                mScroll += mMarqueeDir * mCurrDeltaMillis *
+                        (baseMultiplier + baseMultiplier * Math.min(maxScroll / screenHeight, 1.5f));
                 if (mMarqueeDir > 0) {
                     if (mScroll >= maxScroll) {
                         mMarqueeDir = -1;
@@ -422,6 +430,7 @@ public final class TooltipRenderer {
             updateBorderColor();
         }
 
+        gr.flush();
         gr.pose().pushPose();
         // because of the order of draw calls, we actually don't need z-shifting
         gr.pose().translate(0, -mScroll, 400);
@@ -430,9 +439,10 @@ public final class TooltipRenderer {
         // we should disable depth test, because texts may be translucent
         // for compatibility reasons, we keep this enabled, and it doesn't seem to be a big problem
         RenderSystem.enableDepthTest();
-
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         if (sRoundedShapes) {
-            drawRoundBackground(canvas, window, pose,
+            drawRoundedBackground(gr, pose,
                     tooltipX, tooltipY, tooltipWidth, tooltipHeight,
                     titleGap, titleBreakHeight);
         } else {
@@ -483,98 +493,59 @@ public final class TooltipRenderer {
         gr.pose().popPose();
     }
 
-    private void drawRoundBackground(@Nonnull GLSurfaceCanvas canvas,
-                                     @Nonnull Window window, Matrix4f pose,
-                                     float tooltipX, float tooltipY,
-                                     int tooltipWidth, int tooltipHeight,
-                                     boolean titleGap, int titleBreakHeight) {
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    private void drawRoundedBackground(@Nonnull GuiGraphics gr, Matrix4f pose,
+                                       float tooltipX, float tooltipY,
+                                       int tooltipWidth, int tooltipHeight,
+                                       boolean titleGap, int titleBreakHeight) {
+        float halfWidth = tooltipWidth / 2f;
+        float halfHeight = tooltipHeight / 2f;
+        float centerX = tooltipX + halfWidth;
+        float centerY = tooltipY + halfHeight;
+        float sizeX = halfWidth + H_BORDER;
+        float sizeY = halfHeight + V_BORDER;
+        float shadowRadius = Math.max(sShadowRadius, 0.00001f);
 
-        final int oldVertexArray = glGetInteger(GL_VERTEX_ARRAY_BINDING);
-        final int oldProgram = glGetInteger(GL_CURRENT_PROGRAM);
+        ShaderInstance shader = TooltipRenderType.getShaderTooltip();
+        shader.safeGetUniform("u_PushData0")
+                .set(sizeX, sizeY, sCornerRadius, sBorderWidth / 2f);
+        shader.safeGetUniform("u_PushData1")
+                .set(sShadowAlpha, 4f / shadowRadius, (sFillColor[0] >>> 24) / 255f, 0);
+        chooseBorderColor(0, shader.safeGetUniform("u_PushData2"));
+        chooseBorderColor(1, shader.safeGetUniform("u_PushData3"));
+        chooseBorderColor(3, shader.safeGetUniform("u_PushData4"));
+        chooseBorderColor(2, shader.safeGetUniform("u_PushData5"));
 
-        // give some points to the original framebuffer, not gui scaled
-        canvas.reset(window.getWidth(), window.getHeight());
+        var buffer = gr.bufferSource().getBuffer(TooltipRenderType.tooltip());
 
-        // swap matrices
-        RenderSystem.getProjectionMatrix().get(mMatBuf.rewind());
-        mCoreMat.set(mMatBuf.rewind());
-        canvas.setProjection(mCoreMat);
+        // we expect local coordinates, concat pose with model view
+        RenderSystem.getModelViewStack().pushPose();
+        RenderSystem.getModelViewStack().mulPoseMatrix(pose);
+        RenderSystem.getModelViewStack().translate(centerX, centerY, 0);
+        RenderSystem.applyModelViewMatrix();
+        // estimate the draw bounds
+        float extentX = sizeX + shadowRadius * 1.2f;
+        float extentY = sizeY + shadowRadius * 1.2f;
+        buffer.vertex(extentX, extentY, 0).endVertex();
+        buffer.vertex(extentX, -extentY, 0).endVertex();
+        buffer.vertex(-extentX, -extentY, 0).endVertex();
+        buffer.vertex(-extentX, extentY, 0).endVertex();
 
-        canvas.save();
-        RenderSystem.getModelViewMatrix().get(mMatBuf.rewind());
-        mCoreMat.set(mMatBuf.rewind());
-        canvas.concat(mCoreMat);
-
-        pose.get(mMatBuf.rewind());
-        mCoreMat.set(mMatBuf.rewind());
-        // RenderSystem.getModelViewMatrix() has Z translation normalized to -1
-        // We have to offset against our canvas Z translation, see restore matrix in GLCanvas
-        mCoreMat.preTranslate(0, 0, 3000);
-        canvas.concat(mCoreMat);
-
-        Paint paint = Paint.obtain();
-
-        /*for (int i = 0; i < 4; i++) {
-            int color = sFillColor[i];
-            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
-            sActiveFillColor[i] = (color & 0xFFFFFF) | (alpha << 24);
-        }*/
-        paint.setStyle(Paint.FILL);
-        {
-            float spread = 0;
-            if (sShadowRadius >= 2) {
-                spread = sShadowRadius * 0.5f - 1f;
-                paint.setSmoothWidth(sShadowRadius);
-            }
-            canvas.drawRoundRectGradient(tooltipX - H_BORDER - spread, tooltipY - V_BORDER - spread,
-                    tooltipX + tooltipWidth + H_BORDER + spread,
-                    tooltipY + tooltipHeight + V_BORDER + spread,
-                    sFillColor[0], sFillColor[1],
-                    sFillColor[2], sFillColor[3],
-                    3 + spread, paint);
-            paint.setSmoothWidth(0);
-        }
+        gr.flush();
+        RenderSystem.getModelViewStack().popPose();
+        RenderSystem.applyModelViewMatrix();
 
         if (titleGap && sTitleBreak) {
-            paint.setColor(0xE0C8C8C8);
-            paint.setStrokeWidth(1f);
-            canvas.drawLine(tooltipX, tooltipY + titleBreakHeight,
-                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight,
-                    paint);
+            fillGrad(gr, pose,
+                    tooltipX, tooltipY + titleBreakHeight - 0.5f,
+                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f,
+                    0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8);
         }
-
-        /*for (int i = 0; i < 4; i++) {
-            int color = sStrokeColor[i];
-            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
-            sActiveStrokeColor[i] = (color & 0xFFFFFF) | (alpha << 24);
-        }*/
-        paint.setStyle(Paint.STROKE);
-        paint.setStrokeWidth(sBorderWidth);
-        canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
-                tooltipX + tooltipWidth + H_BORDER,
-                tooltipY + tooltipHeight + V_BORDER,
-                chooseBorderColor(0), chooseBorderColor(1),
-                chooseBorderColor(2), chooseBorderColor(3),
-                3, paint);
-
-        paint.recycle();
-
-        canvas.restore();
-        canvas.executeRenderPass(null);
-
-        glBindVertexArray(oldVertexArray);
-        glUseProgram(oldProgram);
     }
 
     private void drawVanillaBackground(@Nonnull GuiGraphics gr, Matrix4f pose,
                                        float tooltipX, float tooltipY,
                                        int tooltipWidth, int tooltipHeight,
                                        boolean titleGap, int titleBreakHeight) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-
         float left = tooltipX - H_BORDER;
         float top = tooltipY - V_BORDER;
         float right = tooltipX + tooltipWidth + H_BORDER;

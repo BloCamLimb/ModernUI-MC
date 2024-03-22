@@ -41,7 +41,6 @@ public abstract class ModernUIMod {
     protected static boolean sIrisApiLoaded;
     protected static volatile boolean sLegendaryTooltipsLoaded;
     protected static volatile boolean sUntranslatedItemsLoaded;
-    protected static volatile boolean sSodiumLoaded;
 
     private static volatile Boolean sTextEngineEnabled;
 
@@ -84,10 +83,6 @@ public abstract class ModernUIMod {
 
     public static boolean isUntranslatedItemsLoaded() {
         return sUntranslatedItemsLoaded;
-    }
-
-    public static boolean isSodiumLoaded() {
-        return sSodiumLoaded;
     }
 
     public static boolean isDeveloperMode() {

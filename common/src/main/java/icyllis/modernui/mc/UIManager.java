@@ -62,6 +62,7 @@ import org.apache.commons.io.output.StringBuilderWriter;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.jetbrains.annotations.ApiStatus;
+import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
@@ -861,7 +862,8 @@ public abstract class UIManager implements LifecycleOwner {
                 positioner instanceof DefaultTooltipPositioner) {
             positioner = null;
         }
-        if (x == mouseX && y == mouseY && positioner == null) {
+        if (x == mouseX && y == mouseY && positioner == null &&
+                isIdentity(graphics.pose().last().pose())) {
             // use our exact pixel positioning
             partialX = (float) (cursorX - mouseX);
             partialY = (float) (cursorY - mouseY);
@@ -870,11 +872,33 @@ public abstract class UIManager implements LifecycleOwner {
             partialY = 0;
         }
 
-        mRoot.drawExtTooltipLocked(itemStack, graphics,
+        mTooltipRenderer.drawTooltip(itemStack, graphics,
                 components,
                 x, y, font,
                 screenWidth, screenHeight,
-                partialX, partialY, positioner); // need a lock
+                partialX, partialY, positioner);
+    }
+
+    private static boolean isIdentity(Matrix4f ctm) {
+        if ((ctm.properties() & Matrix4f.PROPERTY_IDENTITY) != 0) {
+            return true;
+        }
+        return MathUtil.isApproxEqual(ctm.m00(), 1) &&
+                MathUtil.isApproxZero(ctm.m01()) &&
+                MathUtil.isApproxZero(ctm.m02()) &&
+                MathUtil.isApproxZero(ctm.m03()) &&
+                MathUtil.isApproxZero(ctm.m10()) &&
+                MathUtil.isApproxEqual(ctm.m11(), 1) &&
+                MathUtil.isApproxZero(ctm.m12()) &&
+                MathUtil.isApproxZero(ctm.m13()) &&
+                MathUtil.isApproxZero(ctm.m20()) &&
+                MathUtil.isApproxZero(ctm.m21()) &&
+                MathUtil.isApproxEqual(ctm.m22(), 1) &&
+                MathUtil.isApproxZero(ctm.m23()) &&
+                MathUtil.isApproxZero(ctm.m30()) &&
+                MathUtil.isApproxZero(ctm.m31()) &&
+                MathUtil.isApproxZero(ctm.m32()) &&
+                MathUtil.isApproxEqual(ctm.m33(), 1);
     }
 
     protected void onRenderTick(boolean isEnd) {
@@ -1059,25 +1083,6 @@ public abstract class UIManager implements LifecycleOwner {
                     //float alpha = (int) Math.min(300, mElapsedTimeMillis) / 300f;
                     canvas.drawLayer(layer, width, height, 1, true);
                     canvas.executeRenderPass(null);
-                }
-            }
-        }
-
-        public void drawExtTooltipLocked(@Nonnull ItemStack itemStack, @Nonnull GuiGraphics gr,
-                                         @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
-                                         @Nonnull Font font, int screenWidth, int screenHeight,
-                                         float partialX, float partialY,
-                                         @Nullable ClientTooltipPositioner positioner) {
-            if (mCanvas == null) {
-                return;
-            }
-            synchronized (mRenderLock) {
-                if (!mPendingDraw) {
-                    mTooltipRenderer.drawTooltip(mCanvas, mWindow,
-                            itemStack, gr, list,
-                            mouseX, mouseY, font,
-                            screenWidth, screenHeight,
-                            partialX, partialY, positioner);
                 }
             }
         }

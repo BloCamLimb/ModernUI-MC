@@ -1150,7 +1150,9 @@ public class PreferencesFragment extends Fragment {
         FourColorPicker mColorPicker;
 
         ViewGroup mBorderWidth;
+        ViewGroup mCornerRadius;
         ViewGroup mShadowRadius;
+        ViewGroup mShadowAlpha;
 
         // this callback is registered on a child view of 'parent'
         // so no weak ref
@@ -1179,7 +1181,9 @@ public class PreferencesFragment extends Fragment {
                     Config.CLIENT.mRoundedTooltip.set(checked);
                     int visibility = checked ? View.VISIBLE : View.GONE;
                     mBorderWidth.setVisibility(visibility);
+                    mCornerRadius.setVisibility(visibility);
                     mShadowRadius.setVisibility(visibility);
+                    mShadowAlpha.setVisibility(visibility);
                     mSaveFn.run();
                 });
                 mContent.addView(option);
@@ -1200,13 +1204,33 @@ public class PreferencesFragment extends Fragment {
                 mContent.addView(option);
             }
             {
+                var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.cornerRadius",
+                        Config.Client.TOOLTIP_CORNER_RADIUS_MIN, Config.Client.TOOLTIP_CORNER_RADIUS_MAX,
+                        3, Config.CLIENT.mTooltipRadius, 10, mSaveFn);
+                if (!rounded) {
+                    option.setVisibility(View.GONE);
+                }
+                mCornerRadius = option;
+                mContent.addView(option);
+            }
+            {
                 var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.shadowRadius",
                         Config.Client.TOOLTIP_SHADOW_RADIUS_MIN, Config.Client.TOOLTIP_SHADOW_RADIUS_MAX,
-                        4, Config.CLIENT.mTooltipShadow, 10, mSaveFn);
+                        4, Config.CLIENT.mTooltipShadowRadius, 10, mSaveFn);
                 if (!rounded) {
                     option.setVisibility(View.GONE);
                 }
                 mShadowRadius = option;
+                mContent.addView(option);
+            }
+            {
+                var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.shadowOpacity",
+                        0F, 1F,
+                        4, Config.CLIENT.mTooltipShadowAlpha, 100, mSaveFn);
+                if (!rounded) {
+                    option.setVisibility(View.GONE);
+                }
+                mShadowAlpha = option;
                 mContent.addView(option);
             }
             {
