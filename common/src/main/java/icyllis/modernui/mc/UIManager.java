@@ -116,6 +116,8 @@ public abstract class UIManager implements LifecycleOwner {
     protected WindowGroup mDecor;
     private FragmentContainerView mFragmentContainerView;
 
+    private volatile boolean mDebugLayout = false;
+
 
     /// Task Handling \\\
 
@@ -293,6 +295,15 @@ public abstract class UIManager implements LifecycleOwner {
 
     public FragmentController getFragmentController() {
         return mFragmentController;
+    }
+
+    public void setShowingLayoutBounds(boolean debugLayout) {
+        mDebugLayout = debugLayout;
+        mRoot.loadSystemProperties(() -> mDebugLayout);
+    }
+
+    public boolean isShowingLayoutBounds() {
+        return mDebugLayout;
     }
 
     @Nonnull
@@ -473,8 +484,15 @@ public abstract class UIManager implements LifecycleOwner {
                     window.getWidth() / window.getScreenWidth());
             float y = (float) (mouseHandler.ypos() *
                     window.getHeight() / window.getScreenHeight());
+            int mods = 0;
+            if (Screen.hasControlDown()) {
+                mods |= KeyEvent.META_CTRL_ON;
+            }
+            if (Screen.hasShiftDown()) {
+                mods |= KeyEvent.META_SHIFT_ON;
+            }
             MotionEvent event = MotionEvent.obtain(now, MotionEvent.ACTION_SCROLL,
-                    x, y, 0);
+                    x, y, mods);
             event.setAxisValue(MotionEvent.AXIS_HSCROLL, (float) scrollX);
             event.setAxisValue(MotionEvent.AXIS_VSCROLL, (float) scrollY);
             mRoot.enqueueInputEvent(event);

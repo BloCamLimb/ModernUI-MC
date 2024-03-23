@@ -25,8 +25,10 @@ import icyllis.modernui.mc.MuiModApi;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceProvider;
+import net.minecraft.world.item.Rarity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
@@ -68,5 +70,10 @@ public final class MuiForgeApi extends MuiModApi {
     @Override
     public boolean isKeyBindingMatches(KeyMapping keyMapping, InputConstants.Key key) {
         return keyMapping.isActiveAndMatches(key);
+    }
+
+    @Override
+    public Style applyRarityTo(Rarity rarity, Style baseStyle) {
+        return rarity.getStyleModifier().apply(baseStyle);
     }
 }

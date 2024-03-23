@@ -38,7 +38,7 @@ import javax.annotation.Nonnull;
 public class DashboardFragment extends Fragment {
 
     public static final String CREDIT_TEXT = """
-            Modern UI 3.10
+            Modern UI 3.10.1
             by
             BloCamLimb
             (Icyllis Milica)
@@ -96,7 +96,7 @@ public class DashboardFragment extends Fragment {
                         .setBufferType(TextView.BufferType.SPANNABLE)
                         .build()
                         .setMarkdown(tv, """
-                                What's New in Modern UI 3.10
+                                What's New in Modern UI 3.10.1
                                 ----
                                 * Enhanced Text Layout
                                 * Better Mod Compatibility
@@ -124,7 +124,7 @@ public class DashboardFragment extends Fragment {
         {
             var tv = new TextView(getContext());
             tv.setTextSize(12);
-            tv.setText("Copyright © 2019-2023 BloCamLimb. All rights reserved.");
+            tv.setText("Copyright © 2019-2024 BloCamLimb. All rights reserved.");
             var params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT);
             params.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;

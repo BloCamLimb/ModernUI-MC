@@ -27,8 +27,10 @@ import net.fabricmc.fabric.impl.client.rendering.FabricShaderProgram;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceProvider;
+import net.minecraft.world.item.Rarity;
 
 import java.io.IOException;
 
@@ -61,5 +63,10 @@ public final class MuiFabricApi extends MuiModApi {
         return key.getType() == InputConstants.Type.KEYSYM
                 ? keyMapping.matches(key.getValue(), InputConstants.UNKNOWN.getValue())
                 : keyMapping.matches(InputConstants.UNKNOWN.getValue(), key.getValue());
+    }
+
+    @Override
+    public Style applyRarityTo(Rarity rarity, Style baseStyle) {
+        return baseStyle.withColor(rarity.color);
     }
 }

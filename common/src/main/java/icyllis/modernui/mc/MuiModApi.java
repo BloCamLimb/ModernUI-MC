@@ -36,10 +36,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.world.MenuProvider;
+import net.minecraft.world.item.Rarity;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -314,6 +316,8 @@ public abstract class MuiModApi {
                                                       VertexFormat vertexFormat) throws IOException;
 
     public abstract boolean isKeyBindingMatches(KeyMapping keyMapping, InputConstants.Key key);
+
+    public abstract Style applyRarityTo(Rarity rarity, Style baseStyle);
 
     /*
      * Registers a callback to be called when {@link org.lwjgl.glfw.GLFWScrollCallback} is called.

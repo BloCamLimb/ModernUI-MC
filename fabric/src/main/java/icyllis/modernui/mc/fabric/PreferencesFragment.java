@@ -142,47 +142,12 @@ public class PreferencesFragment extends Fragment {
     public static LinearLayout createSecondPage(Context context) {
         var content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
-
-        {
-            var list = createCategoryList(context, "modernui.center.category.system");
-
-            list.addView(createBooleanOption(context, "modernui.center.system.forceRtlLayout",
-                    Config.CLIENT.mForceRtl, Config.CLIENT::saveAndReloadAsync));
-
-            list.addView(createFloatOption(context, "modernui.center.system.globalFontScale",
-                    Config.Client.FONT_SCALE_MIN, Config.Client.FONT_SCALE_MAX,
-                    4, Config.CLIENT.mFontScale, 10, Config.CLIENT::saveAndReloadAsync));
-
-            {
-                var option = createInputBox(context, "modernui.center.system.globalAnimationScale");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(Float.toString(ValueAnimator.sDurationScale));
-                input.setFilters(DigitsInputFilter.getInstance(null, false, true),
-                        new InputFilter.LengthFilter(4));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        double scale = Math.max(Math.min(Double.parseDouble(v.getText().toString()), 10), 0.1);
-                        v.setText(Double.toString(scale));
-                        if (scale != ValueAnimator.sDurationScale) {
-                            ValueAnimator.sDurationScale = (float) scale;
-                        }
-                    }
-                });
-                list.addView(option);
-            }
-
-            list.addView(createBooleanOption(context, "modernui.center.system.developerMode",
-                    Config.COMMON.developerMode, Config.COMMON::saveAndReloadAsync));
-
-            content.addView(list);
-        }
+        var transition = new LayoutTransition();
+        transition.enableTransitionType(LayoutTransition.CHANGING);
+        content.setLayoutTransition(transition);
 
         {
             var category = createCategoryList(context, "modernui.center.category.font");
-            var transition = new LayoutTransition();
-            transition.enableTransitionType(LayoutTransition.CHANGING);
-            category.setLayoutTransition(transition);
 
             {
                 var layout = new LinearLayout(context);
@@ -321,6 +286,41 @@ public class PreferencesFragment extends Fragment {
                     Config.CLIENT.mAutoHinting, Config.CLIENT::saveAndReloadAsync));
 
             content.addView(category);
+        }
+
+        {
+            var list = createCategoryList(context, "modernui.center.category.system");
+
+            list.addView(createBooleanOption(context, "modernui.center.system.forceRtlLayout",
+                    Config.CLIENT.mForceRtl, Config.CLIENT::saveAndReloadAsync));
+
+            list.addView(createFloatOption(context, "modernui.center.system.globalFontScale",
+                    Config.Client.FONT_SCALE_MIN, Config.Client.FONT_SCALE_MAX,
+                    4, Config.CLIENT.mFontScale, 10, Config.CLIENT::saveAndReloadAsync));
+
+            {
+                var option = createInputBox(context, "modernui.center.system.globalAnimationScale");
+                var input = option.<EditText>requireViewById(R.id.input);
+                input.setText(Float.toString(ValueAnimator.sDurationScale));
+                input.setFilters(DigitsInputFilter.getInstance(null, false, true),
+                        new InputFilter.LengthFilter(4));
+                input.setOnFocusChangeListener((view, hasFocus) -> {
+                    if (!hasFocus) {
+                        EditText v = (EditText) view;
+                        double scale = Math.max(Math.min(Double.parseDouble(v.getText().toString()), 10), 0.1);
+                        v.setText(Double.toString(scale));
+                        if (scale != ValueAnimator.sDurationScale) {
+                            ValueAnimator.sDurationScale = (float) scale;
+                        }
+                    }
+                });
+                list.addView(option);
+            }
+
+            list.addView(createBooleanOption(context, "modernui.center.system.developerMode",
+                    Config.COMMON.developerMode, Config.COMMON::saveAndReloadAsync));
+
+            content.addView(list);
         }
 
         content.setDividerDrawable(ThemeControl.makeDivider(content));
@@ -1139,7 +1139,7 @@ public class PreferencesFragment extends Fragment {
                 {"#F0AADCF0", "#F0FFC3F7", "#F0BFF2B2", "#F0D27F3D"},
                 {"#F0AADCF0", "#F0DAD0F4", "#F0FFC3F7", "#F0DAD0F4"},
                 {"#F028007F", "#F028007F", "#F014003F", "#F014003F"},
-                {"#F0606060", "#F0101010", "#F0FFFFFF", "#F0B0B0B0"}
+                {"#F0E0E0E0", "#F0B0B0B0", "#F0FFFFFF", "#F0B0B0B0"}
         };
 
         final ViewGroup mParent;
@@ -1233,6 +1233,8 @@ public class PreferencesFragment extends Fragment {
                 mShadowAlpha = option;
                 mContent.addView(option);
             }
+            mContent.addView(createBooleanOption(mParent.getContext(), "modernui.center.tooltip.adaptiveColors",
+                    Config.CLIENT.mAdaptiveTooltipColors, mSaveFn));
             {
                 var option = createIntegerOption(mParent.getContext(), "modernui.center.tooltip.borderCycle",
                         Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MIN, Config.Client.TOOLTIP_BORDER_COLOR_ANIM_MAX,

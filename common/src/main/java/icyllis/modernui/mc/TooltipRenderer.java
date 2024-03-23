@@ -21,18 +21,22 @@ package icyllis.modernui.mc;
 import com.mojang.blaze3d.shaders.AbstractUniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.core.MathUtil;
+import icyllis.modernui.graphics.Color;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.*;
 import net.minecraft.client.renderer.*;
-import net.minecraft.util.Mth;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.util.StringDecomposer;
+import net.minecraft.world.item.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.List;
+import java.util.*;
 
 /**
  * An extension that replaces vanilla tooltip style.
@@ -49,6 +53,7 @@ public final class TooltipRenderer {
     public static volatile float sCornerRadius = 3;
     public static volatile float sShadowRadius = 10;
     public static volatile float sShadowAlpha = 0.35f;
+    public static volatile boolean sAdaptiveColors = true;
 
     // space between mouse and tooltip
     public static final int TOOLTIP_SPACE = 12;
@@ -61,6 +66,7 @@ public final class TooltipRenderer {
     //private static final List<FormattedText> sTempTexts = new ArrayList<>();
 
     //private static final int[] sActiveFillColor = new int[4];
+    private final int[] mWorkStrokeColor = new int[4];
     private final int[] mActiveStrokeColor = new int[4];
     //static volatile float sAnimationDuration; // milliseconds
     public static volatile int sBorderColorCycle = 1000; // milliseconds
@@ -87,6 +93,12 @@ public final class TooltipRenderer {
     private long mCurrTimeMillis;
     private long mCurrDeltaMillis;
 
+    // no weak ref, clear on frame gap
+    private ItemStack mLastSeenItem;
+
+    // true to use spectrum colors
+    private boolean mUseSpectrum;
+
     public TooltipRenderer() {
     }
 
@@ -111,9 +123,131 @@ public final class TooltipRenderer {
             mFrameGap = false;
         } else {
             mFrameGap = true;
+            mLastSeenItem = null;
         }
         mCurrTimeMillis = timeMillis;
         mCurrDeltaMillis = deltaMillis;
+    }
+
+    // compute a gradient for the given item
+    void computeWorkingColor(@Nonnull ItemStack item) {
+        if (sAdaptiveColors && !item.isEmpty()) {
+            if (sRoundedShapes && (item.is(Items.DRAGON_EGG) ||
+                    item.is(Items.MOJANG_BANNER_PATTERN))) {
+                mUseSpectrum = true;
+                return;
+            }
+            Style baseStyle = Style.EMPTY;
+            Rarity rarity = item.getRarity();
+            if (rarity != Rarity.COMMON) {
+                baseStyle = MuiModApi.get().applyRarityTo(rarity, baseStyle);
+            }
+            IntOpenHashSet colors = new IntOpenHashSet(16);
+            // consider formatting codes
+            StringDecomposer.iterateFormatted(
+                    item.getHoverName(),
+                    baseStyle,
+                    (i, style, ch) -> {
+                        TextColor textColor = style.getColor();
+                        if (textColor != null) {
+                            return colors.add(textColor.getValue() & 0xFFFFFF) &&
+                                    colors.size() >= 16;
+                        }
+                        return false;
+                    }
+            );
+            if (!colors.isEmpty()) {
+                ArrayList<float[]> hsvColors = new ArrayList<>(16);
+                for (var it = colors.iterator(); it.hasNext(); ) {
+                    int c = it.nextInt();
+                    float[] hsv = new float[3];
+                    Color.RGBToHSV(c, hsv);
+                    // discard colors with low saturation or brightness
+                    if (hsv[1] >= 0.3f && hsv[2] >= 0.4f) {
+                        // reduce saturation and brightness
+                        hsv[1] = Math.min(hsv[1], 0.9f);
+                        hsv[2] = Math.min(hsv[2], 0.85f);
+                        hsvColors.add(hsv);
+                    }
+                }
+                if (!hsvColors.isEmpty()) {
+                    int size = hsvColors.size();
+                    if (size > 4) {
+                        if (sRoundedShapes) {
+                            mUseSpectrum = true;
+                            return;
+                        }
+                        Collections.shuffle(hsvColors);
+                    }
+                    int c1 = Color.HSVToColor(hsvColors.get(0));
+                    int c2, c3, c4;
+                    if (size > 2) {
+                        // we have 3 or 4 colors
+                        c2 = Color.HSVToColor(hsvColors.get(1));
+                        c3 = Color.HSVToColor(hsvColors.get(2));
+                        if (size == 4) {
+                            c4 = Color.HSVToColor(hsvColors.get(3));
+                        } else {
+                            // invert hue of c2
+                            float[] hsv = hsvColors.get(1);
+                            hsv[0] = (hsv[0] + 180f) % 360f;
+                            c4 = Color.HSVToColor(hsv);
+                        }
+                    } else if (size == 2) {
+                        // we have two colors, make diagonal
+                        c3 = Color.HSVToColor(hsvColors.get(1));
+                        c2 = lerpInLinearSpace(0.5f, c1, c3);
+                        float[] hsv = new float[3];
+                        Color.RGBToHSV(c2, hsv);
+                        c4 = adjustColor(hsv, false, true, false, item.isEnchanted());
+                    } else {
+                        // we have one color...
+                        float[] hsv = hsvColors.get(0);
+                        boolean mag = item.isEnchanted();
+                        c2 = adjustColor(hsv, false, true, false, mag);
+                        c3 = adjustColor(hsv, true, true, true, mag);
+                        c4 = adjustColor(hsv, true, false, true, mag);
+                    }
+                    mWorkStrokeColor[0] = (sStrokeColor[0] & 0xFF000000) | c1;
+                    mWorkStrokeColor[1] = (sStrokeColor[1] & 0xFF000000) | c2;
+                    mWorkStrokeColor[2] = (sStrokeColor[2] & 0xFF000000) | c3;
+                    mWorkStrokeColor[3] = (sStrokeColor[3] & 0xFF000000) | c4;
+                    mUseSpectrum = false;
+                    return;
+                }
+            }
+        }
+        System.arraycopy(sStrokeColor, 0, mWorkStrokeColor, 0, 4);
+        mUseSpectrum = false;
+    }
+
+    static int adjustColor(float[] hsv, boolean hue, boolean sat, boolean val, boolean magnified) {
+        float h = hsv[0];
+        float s = hsv[1];
+        float v = hsv[2];
+        if (hue) {
+            if (h >= 60f && h <= 240f) {
+                h += magnified ? 18f : 10f;
+            } else {
+                h -= magnified ? 12f : 7f;
+            }
+            h = (h + 360f) % 360f;
+        }
+        if (sat) {
+            if (s < 0.6f) {
+                s += magnified ? 0.15f : 0.10f;
+            } else {
+                s -= magnified ? 0.10f : 0.05f;
+            }
+        }
+        if (val) {
+            if (v < 0.6f) {
+                v += magnified ? 0.12f : 0.08f;
+            } else {
+                v -= magnified ? 0.08f : 0.04f;
+            }
+        }
+        return Color.HSVToColor(h, s, v);
     }
 
     void updateBorderColor() {
@@ -122,15 +256,15 @@ public final class TooltipRenderer {
             int pos = (int) ((mCurrTimeMillis / sBorderColorCycle) & 3);
             for (int i = 0; i < 4; i++) {
                 mActiveStrokeColor[i] = lerpInLinearSpace(p,
-                        sStrokeColor[(i + pos) & 3],
-                        sStrokeColor[(i + pos + 1) & 3]);
+                        mWorkStrokeColor[(i + pos) & 3],
+                        mWorkStrokeColor[(i + pos + 1) & 3]);
             }
         } else {
             int pos = 3 - (int) ((mCurrTimeMillis / sBorderColorCycle) & 3);
             for (int i = 0; i < 4; i++) {
                 mActiveStrokeColor[i] = lerpInLinearSpace(p,
-                        sStrokeColor[(i + pos) & 3],
-                        sStrokeColor[(i + pos + 3) & 3]);
+                        mWorkStrokeColor[(i + pos) & 3],
+                        mWorkStrokeColor[(i + pos + 3) & 3]);
             }
         }
     }
@@ -320,7 +454,7 @@ public final class TooltipRenderer {
         if (sBorderColorCycle > 0) {
             return mActiveStrokeColor[corner];
         } else {
-            return sStrokeColor[corner];
+            return mWorkStrokeColor[corner];
         }
     }
 
@@ -338,6 +472,11 @@ public final class TooltipRenderer {
                             @Nonnull Font font, int screenWidth, int screenHeight,
                             float partialX, float partialY, @Nullable ClientTooltipPositioner positioner) {
         mDraw = true;
+
+        if (itemStack != mLastSeenItem) {
+            mLastSeenItem = itemStack;
+            computeWorkingColor(itemStack);
+        }
 
         int tooltipWidth;
         int tooltipHeight;
@@ -508,12 +647,25 @@ public final class TooltipRenderer {
         ShaderInstance shader = TooltipRenderType.getShaderTooltip();
         shader.safeGetUniform("u_PushData0")
                 .set(sizeX, sizeY, sCornerRadius, sBorderWidth / 2f);
+        float rainbowOffset = 0;
+        if (mUseSpectrum) {
+            rainbowOffset = 1;
+            if (sBorderColorCycle > 0) {
+                long overallCycle = sBorderColorCycle * 4L;
+                rainbowOffset += (float) (mCurrTimeMillis % overallCycle) / overallCycle;
+            }
+            if (!mLayoutRTL) {
+                rainbowOffset = -rainbowOffset;
+            }
+        }
         shader.safeGetUniform("u_PushData1")
-                .set(sShadowAlpha, 4f / shadowRadius, (sFillColor[0] >>> 24) / 255f, 0);
-        chooseBorderColor(0, shader.safeGetUniform("u_PushData2"));
-        chooseBorderColor(1, shader.safeGetUniform("u_PushData3"));
-        chooseBorderColor(3, shader.safeGetUniform("u_PushData4"));
-        chooseBorderColor(2, shader.safeGetUniform("u_PushData5"));
+                .set(sShadowAlpha, 4f / shadowRadius, (sFillColor[0] >>> 24) / 255f, rainbowOffset);
+        if (rainbowOffset == 0) {
+            chooseBorderColor(0, shader.safeGetUniform("u_PushData2"));
+            chooseBorderColor(1, shader.safeGetUniform("u_PushData3"));
+            chooseBorderColor(3, shader.safeGetUniform("u_PushData4"));
+            chooseBorderColor(2, shader.safeGetUniform("u_PushData5"));
+        }
 
         var buffer = gr.bufferSource().getBuffer(TooltipRenderType.tooltip());
 

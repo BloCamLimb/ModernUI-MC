@@ -49,14 +49,12 @@ Releases for Minecraft Mod are available on [CurseForge](https://www.curseforge.
 For historical reasons, issues should go to Core Repo's [Issue Tracker](https://github.com/BloCamLimb/ModernUI/issues). 
 If you have any questions, feel free to join our [Discord](https://discord.gg/kmyGKt2) server.
 ### License
-* Modern UI
-  - Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+* Modern UI for Minecraft
+  - Copyright (C) 2019-2024 BloCamLimb et al.
   - [![License](https://img.shields.io/badge/License-LGPL--3.0--or--later-blue.svg?style=flat-square)](https://www.gnu.org/licenses/lgpl-3.0.en.html)
-* Modern UI Assets ─ UI layouts, textures, shaders, models, documents and so on
-  - Copyright (C) 2019-2023 BloCamLimb et al.
-  - [![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-yellow.svg?style=flat-square)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 * Additional Assets
   - [source-han-sans](https://github.com/adobe-fonts/source-han-sans) by Adobe, licensed under the OFL-1.1
+  - [jetbrains-mono](https://www.jetbrains.com/lp/mono/) by JetBrains, licensed under the OFL-1.1
 
 #### Gradle configuration
 ```

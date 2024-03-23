@@ -75,6 +75,7 @@
   "modernui.center.tooltip.cornerRadius": "Corner Radius",
   "modernui.center.tooltip.shadowRadius": "Shadow Radius",
   "modernui.center.tooltip.shadowOpacity": "Shadow Opacity",
+  "modernui.center.tooltip.adaptiveColors": "Adaptive Colors",
   "modernui.center.tooltip.borderCycle": "Border Color Cycle Time",
   "modernui.center.tooltip.borderCycle_desc": "When not zero, this value (in milliseconds) sets the duration of transition from the color of a vertex to the color of the next vertex.",
   "modernui.center.text.textEngine": "Modern Text Engine",

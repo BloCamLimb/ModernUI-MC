@@ -120,7 +120,14 @@ public class AdvancedOptionsFragment extends Fragment {
                 /*category.addView(createBooleanOption(context, "Secure Profile Public Key",
                         Config.CLIENT.mSecurePublicKey, Config.CLIENT::saveAndReloadAsync));*/
             }
-
+            {
+                var layout = createSwitchLayout(context, "Show Layout Bounds");
+                var button = layout.<SwitchButton>requireViewById(R.id.button1);
+                button.setChecked(UIManager.getInstance().isShowingLayoutBounds());
+                button.setOnCheckedChangeListener((__, checked) ->
+                        UIManager.getInstance().setShowingLayoutBounds(checked));
+                category.addView(layout);
+            }
             {
                 var button = createDebugButton(context, "Take UI screenshot (Y)");
                 button.setOnClickListener((__) ->

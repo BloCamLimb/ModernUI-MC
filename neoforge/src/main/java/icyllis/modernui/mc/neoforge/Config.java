@@ -178,7 +178,7 @@ public final class Config {
         public static final float TOOLTIP_BORDER_WIDTH_MIN = 0.5f;
         public static final float TOOLTIP_BORDER_WIDTH_MAX = 2.5f;
         public static final float TOOLTIP_CORNER_RADIUS_MIN = 0;
-        public static final float TOOLTIP_CORNER_RADIUS_MAX = 6;
+        public static final float TOOLTIP_CORNER_RADIUS_MAX = 8;
         public static final float TOOLTIP_SHADOW_RADIUS_MIN = 0;
         public static final float TOOLTIP_SHADOW_RADIUS_MAX = 32;
 
@@ -199,6 +199,7 @@ public final class Config {
         public final ModConfigSpec.DoubleValue mTooltipRadius;
         public final ModConfigSpec.DoubleValue mTooltipShadowRadius;
         public final ModConfigSpec.DoubleValue mTooltipShadowAlpha;
+        public final ModConfigSpec.BooleanValue mAdaptiveTooltipColors;
         //public final ModConfigSpec.IntValue mTooltipDuration;
         public final ModConfigSpec.BooleanValue mDing;
         public final ModConfigSpec.BooleanValue mZoom;
@@ -362,6 +363,9 @@ public final class Config {
             mTooltipShadowAlpha = builder.comment(
                             "The shadow opacity of tooltip, if rounded. No impact on performance.")
                     .defineInRange("shadowOpacity", 0.35f, 0f, 1f);
+            mAdaptiveTooltipColors = builder.comment(
+                            "When true, tooltip border colors adapt to item's name and rarity.")
+                    .define("adaptiveColors", true);
 
             builder.pop();
 
@@ -572,6 +576,7 @@ public final class Config {
             TooltipRenderer.sCornerRadius = mTooltipRadius.get().floatValue();
             TooltipRenderer.sShadowRadius = mTooltipShadowRadius.get().floatValue();
             TooltipRenderer.sShadowAlpha = mTooltipShadowAlpha.get().floatValue();
+            TooltipRenderer.sAdaptiveColors = mAdaptiveTooltipColors.get();
 
             UIManager.sDingEnabled = mDing.get();
             UIManager.sZoomEnabled = mZoom.get() && !ModernUIMod.isOptiFineLoaded();
