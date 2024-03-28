@@ -109,7 +109,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         if (!minecraft.isSameThread()) {
             throw new IllegalStateException("Not called from main thread");
         }
-        minecraft.setScreen(new SimpleScreen(this, fragment));
+        minecraft.setScreen(new SimpleScreen(this, fragment, null, null, null));
     }
 
     @Override

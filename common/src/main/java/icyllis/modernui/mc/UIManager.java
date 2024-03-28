@@ -261,7 +261,7 @@ public abstract class UIManager implements LifecycleOwner {
                 minecraft.player.closeContainer();
             }
         } else {
-            minecraft.setScreen(null);
+            minecraft.setScreen(screen.getPreviousScreen());
         }
     }
 
@@ -304,6 +304,10 @@ public abstract class UIManager implements LifecycleOwner {
 
     public boolean isShowingLayoutBounds() {
         return mDebugLayout;
+    }
+
+    public OnBackPressedDispatcher getOnBackPressedDispatcher() {
+        return mOnBackPressedDispatcher;
     }
 
     @Nonnull

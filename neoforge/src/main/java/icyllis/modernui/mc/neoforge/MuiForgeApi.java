@@ -22,20 +22,24 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.mc.MuiModApi;
-import icyllis.modernui.mc.UIManager;
+import icyllis.modernui.mc.*;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
 
 @OnlyIn(Dist.CLIENT)
@@ -45,10 +49,28 @@ public final class MuiForgeApi extends MuiModApi {
         ModernUI.LOGGER.info(ModernUI.MARKER, "Created MuiForgeAPI");
     }
 
+    @SuppressWarnings("unchecked")
     @Nonnull
     @Override
-    public Screen createScreen(@Nonnull Fragment fragment) {
-        return new SimpleScreen(UIManager.getInstance(), fragment);
+    public <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
+                                                         @Nullable ScreenCallback callback,
+                                                         @Nullable Screen previousScreen,
+                                                         @Nullable CharSequence title) {
+        return (T) new SimpleScreen(UIManager.getInstance(),
+                fragment, callback, previousScreen, title);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nonnull
+    @Override
+    public <T extends AbstractContainerMenu, U extends Screen & MenuAccess<T> & MuiScreen>
+    U createMenuScreen(@Nonnull Fragment fragment,
+                       @Nullable ScreenCallback callback,
+                       @Nonnull T menu,
+                       @Nonnull Inventory inventory,
+                       @Nonnull Component title) {
+        return (U) new MenuScreen<>(UIManager.getInstance(),
+                fragment, callback, menu, inventory, title);
     }
 
     @Override

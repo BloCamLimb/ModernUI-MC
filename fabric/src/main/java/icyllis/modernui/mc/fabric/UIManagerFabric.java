@@ -74,7 +74,7 @@ public final class UIManagerFabric extends UIManager {
         if (!minecraft.isSameThread()) {
             throw new IllegalStateException("Not called from main thread");
         }
-        minecraft.setScreen(new SimpleScreen(this, fragment));
+        minecraft.setScreen(new SimpleScreen(this, fragment, null, null, null));
     }
 
     @Override

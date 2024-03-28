@@ -21,10 +21,12 @@ package icyllis.modernui.mc.forge;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.*;
+import icyllis.modernui.util.DataSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.*;
@@ -165,6 +167,16 @@ public final class ModernUIForge extends ModernUIMod {
             FMLJavaModLoadingContext.get().getModEventBus().addListener(
                     (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())
             );
+            ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
+                    () -> new ConfigScreenHandler.ConfigScreenFactory(
+                            (mc, modsScreen) -> {
+                                var args = new DataSet();
+                                args.putBoolean("navigateToPreferences", true);
+                                var fragment = new CenterFragment2();
+                                fragment.setArguments(args);
+                                return MuiForgeApi.get().createScreen(fragment, null, modsScreen);
+                            }
+                    ));
             if (ModernUIMod.sDevelopment) {
                 FMLJavaModLoadingContext.get().getModEventBus().register(Registration.ModClientDev.class);
             }

@@ -27,6 +27,12 @@ repositories {
         }
     }
     maven {
+        url 'https://maven.terraformersmc.com/releases/'
+        content {
+            includeGroup 'com.terraformersmc'
+        }
+    }
+    maven {
         url 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/'
         content {
             includeGroup 'fuzs.forgeconfigapiport'
@@ -48,6 +54,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:0.15.3"
     modApi "net.fabricmc.fabric-api:fabric-api:0.92.1+1.20.4"
 
+    modImplementation "com.terraformersmc:modmenu:9.0.0"
     modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:20.4.0"
 
     implementation project(':common')

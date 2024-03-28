@@ -32,6 +32,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Objects;
 
 /**
@@ -72,6 +73,7 @@ public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
                                               @Nonnull Component title) {
         return new MenuScreen<>(UIManager.getInstance(),
                 Objects.requireNonNullElseGet(createFragment(menu), Fragment::new),
+                createCallback(menu),
                 menu,
                 inventory,
                 title);
@@ -80,8 +82,9 @@ public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
     /**
      * Creates a new {@link Fragment} for the given menu. This method is called on the main thread.
      * <p>
-     * Specially, the main {@link Fragment} subclass can implement {@link ScreenCallback} to
-     * describe the screen properties.
+     * Specially, the main {@link Fragment} subclass can implement {@link ScreenCallback}
+     * or return it by {@link #createCallback(AbstractContainerMenu)} to describe the screen
+     * properties.
      * <p>
      * Note: You should not interact player inventory or block container via the Fragment.
      * Instead, use {@link T ContainerMenu} and {@link ContainerMenuView}.
@@ -91,4 +94,9 @@ public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
      */
     @Nonnull
     Fragment createFragment(T menu);
+
+    @Nullable
+    default ScreenCallback createCallback(T menu) {
+        return null;
+    }
 }

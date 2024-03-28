@@ -40,7 +40,6 @@ import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.capabilities.*;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -86,12 +85,6 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     public static final Field TEXTURE_ID =
             ObfuscationReflectionHelper.findField(AbstractTexture.class, "f_117950_");
 
-    /**
-     * Built-in capability, DO NOT USE.
-     */
-    public static final Capability<ScreenCallback> SCREEN_CALLBACK = CapabilityManager.get(new CapabilityToken<>() {
-    });
-
     private UIManagerForge() {
         super();
         // events
@@ -116,7 +109,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         if (!minecraft.isSameThread()) {
             throw new IllegalStateException("Not called from main thread");
         }
-        minecraft.setScreen(new SimpleScreen(this, fragment));
+        minecraft.setScreen(new SimpleScreen(this, fragment, null, null, null));
     }
 
     @Override

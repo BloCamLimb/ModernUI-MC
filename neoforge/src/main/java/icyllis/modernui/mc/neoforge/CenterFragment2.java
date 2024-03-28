@@ -60,9 +60,14 @@ public class CenterFragment2 extends Fragment {
     @Override
     public void onCreate(@Nullable DataSet savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getChildFragmentManager().beginTransaction()
-                .replace(id_tab_container, DashboardFragment.class, null, "dashboard")
-                .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+        var ft = getChildFragmentManager().beginTransaction();
+        var args = getArguments();
+        if (args != null && args.getBoolean("navigateToPreferences")) {
+            ft.replace(id_tab_container, PreferencesFragment.class, null, "preferences");
+        } else {
+            ft.replace(id_tab_container, DashboardFragment.class, null, "dashboard");
+        }
+        ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
                 .setReorderingAllowed(true)
                 .commit();
     }
@@ -107,7 +112,8 @@ public class CenterFragment2 extends Fragment {
             }
             buttonGroup.addView(createNavButton(1006, "Markdown"));
 
-            buttonGroup.check(1001);
+            var args = getArguments();
+            buttonGroup.check(args != null && args.getBoolean("navigateToPreferences") ? 1002 : 1001);
 
             buttonGroup.setOnCheckedChangeListener((group, checkedId) -> {
                 var fm = getChildFragmentManager();

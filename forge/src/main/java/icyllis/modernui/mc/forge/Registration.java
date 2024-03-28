@@ -47,7 +47,6 @@ import net.minecraft.world.item.Item;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.*;
@@ -209,10 +208,10 @@ final class Registration {
             event.register(UIManagerForge.ZOOM_KEY);
         }
 
-        @SubscribeEvent
+        /*@SubscribeEvent
         static void registerCapabilities(@Nonnull RegisterCapabilitiesEvent event) {
             event.register(ScreenCallback.class);
-        }
+        }*/
 
         @SubscribeEvent
         static void setupClient(@Nonnull FMLClientSetupEvent event) {

@@ -22,6 +22,7 @@ import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
@@ -29,6 +30,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * ContainerScreen holds a container menu for item stack interaction and
@@ -47,13 +49,16 @@ final class MenuScreen<T extends AbstractContainerMenu>
 
     private final UIManager mHost;
     private final Fragment mFragment;
+    @Nullable
     private final ScreenCallback mCallback;
 
-    MenuScreen(UIManager host, Fragment fragment, T menu, Inventory inventory, Component title) {
+    MenuScreen(UIManager host, Fragment fragment, @Nullable ScreenCallback callback,
+               T menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         mHost = host;
-        mFragment = fragment;
-        mCallback = fragment instanceof ScreenCallback callback ? callback : null;
+        mFragment = Objects.requireNonNull(fragment);
+        mCallback = callback != null ? callback :
+                fragment instanceof ScreenCallback cbk ? cbk : null;
     }
 
     /*@Override
@@ -104,6 +109,12 @@ final class MenuScreen<T extends AbstractContainerMenu>
 
     @Nonnull
     @Override
+    public Screen self() {
+        return this;
+    }
+
+    @Nonnull
+    @Override
     public Fragment getFragment() {
         return mFragment;
     }
@@ -114,9 +125,20 @@ final class MenuScreen<T extends AbstractContainerMenu>
         return mCallback;
     }
 
+    @Nullable
+    @Override
+    public Screen getPreviousScreen() {
+        return null;
+    }
+
     @Override
     public boolean isMenuScreen() {
         return true;
+    }
+
+    @Override
+    public void onBackPressed() {
+        mHost.getOnBackPressedDispatcher().onBackPressed();
     }
 
     // IMPL - GuiEventListener

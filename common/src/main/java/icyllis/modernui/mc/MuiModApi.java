@@ -34,13 +34,15 @@ import net.minecraft.Util;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.resources.ResourceProvider;
-import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Rarity;
 
 import javax.annotation.Nonnull;
@@ -49,7 +51,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ServiceLoader;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 /**
@@ -159,12 +160,17 @@ public abstract class MuiModApi {
      * This method must be called from client side main thread.
      * <p>
      * This is served as a local interaction model, the server will not intersect with this before.
-     * Otherwise, initiate this with a network model via
-     * {@link ServerPlayer#openMenu(MenuProvider, Consumer)}.
+     * Otherwise, initiate this with a network model via:<p>
+     * Forge & NeoForge:<br>
+     * ServerPlayer#openMenu(MenuProvider, Consumer)<p>
+     * Fabric:<br>
+     * ServerPlayer#openMenu(ExtendedScreenHandlerFactory)
      * <p>
-     * Specially, the main {@link Fragment} subclass can implement {@link ICapabilityProvider}
-     * to provide capabilities, some of which may be internally handled by the framework.
-     * For example, {@link ScreenCallback} to describe the screen properties.
+     * Specially, the main {@link Fragment} subclass may implement {@link ScreenCallback}
+     * to describe the screen properties.
+     * <p>
+     * This method is deprecated, use {@link #createScreen}
+     * and {@link Minecraft#setScreen(Screen)}.
      *
      * @param fragment the main fragment
      */
@@ -173,8 +179,79 @@ public abstract class MuiModApi {
         UIManager.getInstance().open(fragment);
     }
 
+    /**
+     * Call {@link #createScreen(Fragment, ScreenCallback, Screen, CharSequence)}
+     * with the default callback, no previous screen and title.
+     */
     @Nonnull
-    public abstract Screen createScreen(@Nonnull Fragment fragment);
+    public final <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment) {
+        return createScreen(fragment, null, null, null);
+    }
+
+    /**
+     * Call {@link #createScreen(Fragment, ScreenCallback, Screen, CharSequence)}
+     * with no previous screen and title.
+     */
+    @Nonnull
+    public final <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
+                                                               @Nullable ScreenCallback callback) {
+        return createScreen(fragment, callback, null, null);
+    }
+
+    /**
+     * Call {@link #createScreen(Fragment, ScreenCallback, Screen, CharSequence)}
+     * with no title.
+     */
+    @Nonnull
+    public final <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
+                                                               @Nullable ScreenCallback callback,
+                                                               @Nullable Screen previousScreen) {
+        return createScreen(fragment, callback, previousScreen, null);
+    }
+
+    /**
+     * Creates a Modern UI screen with the given Fragment instance and optional callback.
+     * To start the lifecycle of the fragment, use {@link Minecraft#setScreen(Screen)}.
+     * The method must be called from client main thread.
+     * <p>
+     * This is served as a local interaction model, the server will not intersect with this before.
+     * Otherwise, initiate this with a network model via:<p>
+     * Forge:<br>
+     * ServerPlayer#openMenu(MenuProvider, Consumer)<p>
+     * Fabric:<br>
+     * ServerPlayer#openMenu(ExtendedScreenHandlerFactory)
+     * <p>
+     * The {@link ScreenCallback} is used to describe the screen properties. Specially,
+     * the main {@link Fragment} subclass may implement {@link ScreenCallback} directly.
+     * <p>
+     * <var>previousScreen</var> specifies the screen instance that will return back
+     * to on back pressed.
+     * <p>
+     * The return value is an intersection type, use var statement.
+     *
+     * @param fragment       the main fragment
+     * @param callback       the callback or null to use defaults
+     * @param previousScreen the last screen or null
+     * @param title          the title for the virtual window, may be {@link icyllis.modernui.text.Spanned}
+     */
+    @Nonnull
+    public abstract <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
+                                                                  @Nullable ScreenCallback callback,
+                                                                  @Nullable Screen previousScreen,
+                                                                  @Nullable CharSequence title);
+
+    /**
+     * Creates a Modern UI menu screen. In most cases, just use MenuScreenFactory.
+     * <p>
+     * The return value is an intersection type, use var statement.
+     */
+    @Nonnull
+    public abstract <T extends AbstractContainerMenu, U extends Screen & MenuAccess<T> & MuiScreen>
+    U createMenuScreen(@Nonnull Fragment fragment,
+                       @Nullable ScreenCallback callback,
+                       @Nonnull T menu,
+                       @Nonnull Inventory inventory,
+                       @Nonnull Component title);
 
     /**
      * Get the elapsed time since the current screen is set, updated every frame on Render thread.

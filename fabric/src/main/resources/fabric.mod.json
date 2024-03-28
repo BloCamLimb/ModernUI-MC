@@ -21,6 +21,9 @@
     ],
     "client": [
       "icyllis.modernui.mc.fabric.ModernUIFabricClient"
+    ],
+    "modmenu": [
+      "icyllis.modernui.mc.fabric.MuiModMenuApi"
     ]
   },
   "mixins": [

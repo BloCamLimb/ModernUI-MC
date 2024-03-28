@@ -21,6 +21,7 @@ package icyllis.modernui.mc.neoforge;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.*;
+import icyllis.modernui.util.DataSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.neoforged.api.distmarker.Dist;
@@ -31,6 +32,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.client.ConfigScreenHandler;
 
 import javax.annotation.Nonnull;
 import java.util.Locale;
@@ -135,6 +137,16 @@ public final class ModernUIForge extends ModernUIMod {
             modEventBus.addListener(
                     (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())
             );
+            ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
+                    () -> new ConfigScreenHandler.ConfigScreenFactory(
+                            (mc, modsScreen) -> {
+                                var args = new DataSet();
+                                args.putBoolean("navigateToPreferences", true);
+                                var fragment = new CenterFragment2();
+                                fragment.setArguments(args);
+                                return MuiForgeApi.get().createScreen(fragment, null, modsScreen);
+                            }
+                    ));
             if (ModernUIMod.sDevelopment) {
                 modEventBus.register(Registration.ModClientDev.class);
             }
