@@ -209,7 +209,7 @@ public abstract class UIManager implements LifecycleOwner {
         // Do not push into stack, since it's lazily init
         if (sInstance == null)
             throw new IllegalStateException("UI manager was never initialized. " +
-                    "Please check whether FML threw an exception before.");
+                    "Please check whether mod loader threw an exception before.");
         return sInstance;
     }
 
@@ -792,7 +792,6 @@ public abstract class UIManager implements LifecycleOwner {
         int height = mWindow.getHeight();
 
         mDevice.markContextDirty(Engine.GLBackendState.kPixelStore);
-        // TODO need multiple canvas instances, tooltip shares this now, but different thread; remove Z transform
         mCanvas.setProjection(mProjectionMatrix.setOrthographic(
                 width, height, 0, icyllis.modernui.core.Window.LAST_SYSTEM_WINDOW * 2 + 1,
                 true));

@@ -21,8 +21,11 @@ package icyllis.modernui.mc.neoforge;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.UIManager;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.network.chat.Style;
@@ -32,6 +35,7 @@ import net.minecraft.world.item.Rarity;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 
 @OnlyIn(Dist.CLIENT)
@@ -39,6 +43,12 @@ public final class MuiForgeApi extends MuiModApi {
 
     public MuiForgeApi() {
         ModernUI.LOGGER.info(ModernUI.MARKER, "Created MuiForgeAPI");
+    }
+
+    @Nonnull
+    @Override
+    public Screen createScreen(@Nonnull Fragment fragment) {
+        return new SimpleScreen(UIManager.getInstance(), fragment);
     }
 
     @Override

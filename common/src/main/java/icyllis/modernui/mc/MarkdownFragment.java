@@ -21,7 +21,6 @@ package icyllis.modernui.mc;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.markdown.*;
 import icyllis.modernui.markdown.core.CorePlugin;
 import icyllis.modernui.text.*;
@@ -43,12 +42,12 @@ public class MarkdownFragment extends Fragment {
         super.onCreate(savedInstanceState);
         var builder = Markdown.builder(requireContext())
                 .usePlugin(CorePlugin.create());
-        FontFamily monoFont = FontFamily.getSystemFontWithAlias("JetBrains Mono Medium");
-        if (monoFont != null) {
+        Typeface monoFont = Typeface.getSystemFont("JetBrains Mono Medium");
+        if (monoFont != Typeface.SANS_SERIF) {
             builder.usePlugin(new MarkdownPlugin() {
                 @Override
                 public void configureTheme(@NonNull MarkdownTheme.Builder builder) {
-                    builder.setCodeTypeface(Typeface.createTypeface(monoFont));
+                    builder.setCodeTypeface(monoFont);
                 }
             });
         }
@@ -117,13 +116,12 @@ public class MarkdownFragment extends Fragment {
                   * Three
                     * Four
                                         
-                [Modern UI](https://github.com/BloCamLimb/ModernUI)
                 1. One
                 2. Two
                 3. Three
                 # Heading 1
-                ## Heading 2
-                ### Heading 3
+                ## Heading 2 👋
+                ### Heading 3 🤔
                                         
                 AAA AAA
                 ******

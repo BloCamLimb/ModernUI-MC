@@ -27,6 +27,7 @@ import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.core.BlockPos;
@@ -82,6 +83,12 @@ public final class MuiForgeApi extends MuiModApi {
     @MainThread
     public static void openScreen(@Nonnull Fragment fragment) {
         MuiModApi.openScreen(fragment);
+    }
+
+    @Nonnull
+    @Override
+    public Screen createScreen(@Nonnull Fragment fragment) {
+        return new SimpleScreen(UIManager.getInstance(), fragment);
     }
 
     /**

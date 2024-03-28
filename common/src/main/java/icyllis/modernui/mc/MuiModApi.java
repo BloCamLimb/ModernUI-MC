@@ -173,6 +173,9 @@ public abstract class MuiModApi {
         UIManager.getInstance().open(fragment);
     }
 
+    @Nonnull
+    public abstract Screen createScreen(@Nonnull Fragment fragment);
+
     /**
      * Get the elapsed time since the current screen is set, updated every frame on Render thread.
      * Ignoring game paused.

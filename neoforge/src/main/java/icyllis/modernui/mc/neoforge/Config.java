@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.neoforge;
 
-import com.ibm.icu.lang.UScript;
 import com.mojang.blaze3d.platform.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
@@ -233,6 +232,7 @@ public final class Config {
         //public final ModConfigSpec.BooleanValue mLinearSampling;
         public final ModConfigSpec.ConfigValue<String> mFirstFontFamily;
         public final ModConfigSpec.ConfigValue<List<? extends String>> mFallbackFontFamilyList;
+        public final ModConfigSpec.ConfigValue<List<? extends String>> mFontRegistrationList;
         public final ModConfigSpec.BooleanValue mUseColorEmoji;
         public final ModConfigSpec.BooleanValue mEmojiShortcodes;
 
@@ -465,21 +465,33 @@ public final class Config {
                             "2) Path of font files on your PC, for instance: /usr/shared/fonts/x.otf",
                             "Registered font families include:",
                             "1) OS builtin fonts.",
-                            "2) Font files in '/resourcepacks' directory.",
-                            "3) Font files under 'modernui:font' in resource packs.",
+                            "2) Font files in fontRegistrationList.",
+                            "3) Font files in '/resourcepacks' directory.",
+                            "4) Font files under 'modernui:font' in resource packs.",
+                            "Note that for TTC/OTC font, you should register it and select one of font families.",
+                            "Otherwise, only the first font family from the TrueType/OpenType Collection will be used.",
                             "This is only read once when the game is loaded, you can reload via in-game GUI.")
                     .defineList("fallbackFontFamilyList", () -> {
                         List<String> list = new ArrayList<>();
                         list.add("Noto Sans");
+                        list.add("Segoe UI Variable");
                         list.add("Segoe UI");
                         list.add("San Francisco");
                         list.add("Open Sans");
                         list.add("SimHei");
                         list.add("STHeiti");
-                        list.add("Segoe UI Variable");
+                        list.add("Segoe UI Symbol");
                         list.add("mui-i18n-compat");
                         return list;
                     }, s -> true);
+            mFontRegistrationList = builder.comment(
+                            "A set of additional font files (or directories) to register.",
+                            "For TrueType/OpenType Collections, all contained font families will be registered.",
+                            "Registered fonts can be referenced in Modern UI and Minecraft (Modern Text Engine).",
+                            "For example, \"E:/Fonts\" means all font files in that directory will be registered.",
+                            "System requires random access to these files, you should not remove them while running.",
+                            "This is only read once when the game is loaded, i.e. registration.")
+                    .defineList("fontRegistrationList", ArrayList::new, s -> true);
             mUseColorEmoji = builder.comment(
                             "Whether to use Google Noto Color Emoji, otherwise grayscale emoji (faster).",
                             "See Unicode 15.0 specification for details on how this affects text layout.")
@@ -623,6 +635,7 @@ public final class Config {
             ModernUIClient.sEmojiShortcodes = mEmojiShortcodes.get();
             ModernUIClient.sFirstFontFamily = mFirstFontFamily.get();
             ModernUIClient.sFallbackFontFamilyList = mFallbackFontFamilyList.get();
+            ModernUIClient.sFontRegistrationList = mFontRegistrationList.get();
             if (reloadStrike) {
                 Minecraft.getInstance().submit(
                         () -> FontResourceManager.getInstance().reloadAll());
@@ -801,6 +814,7 @@ public final class Config {
         //public final ModConfigSpec.BooleanValue mUseVanillaFont;
         public final ModConfigSpec.BooleanValue mUseTextShadersInWorld;
         public final ModConfigSpec.EnumValue<DefaultFontBehavior> mDefaultFontBehavior;
+        public final ModConfigSpec.ConfigValue<List<? extends String>> mDefaultFontRuleSet;
         public final ModConfigSpec.BooleanValue mUseComponentCache;
         public final ModConfigSpec.BooleanValue mAllowAsyncLayout;
         public final ModConfigSpec.EnumValue<LineBreakStyle> mLineBreakStyle;
@@ -883,26 +897,33 @@ public final class Config {
                             "Enable to use distance field for text rendering in 3D world.",
                             "It improves performance with deferred rendering and sharpens when doing 3D transform.")
                     .define("useDistanceField", true);*/
-            boolean nonLatin = false;
-            {
-                int[] scripts = UScript.getCode(ModernUI.getSelectedLocale());
-                for (int script : scripts) {
-                    if (script > UScript.INHERITED && script != UScript.LATIN) {
-                        nonLatin = true;
-                        break;
-                    }
-                }
-            }
             mDefaultFontBehavior = builder.comment(
-                            "For \"minecraft:default\" font, should we keep some bitmap providers of them?",
-                            "Ignore All: Equivalent to Force Unicode Font.",
+                            "For \"minecraft:default\" font, should we keep some glyph providers of them?",
+                            "Ignore All: Only use Modern UI typeface list.",
                             "Keep ASCII: Include minecraft:font/ascii.png, minecraft:font/accented.png, " +
                                     "minecraft:font/nonlatin_european.png",
                             "Keep Other: Include providers other than ASCII and Unicode font.",
                             "Keep All: Include all except Unicode font.",
-                            "The default value depends on OS language and region.")
-                    .defineEnum("defaultFontBehavior",
-                            nonLatin ? DefaultFontBehavior.KEEP_OTHER : DefaultFontBehavior.KEEP_ALL);
+                            "Only Include: Only include providers that specified by defaultFontRuleSet.",
+                            "Only Exclude: Only exclude providers that specified by defaultFontRuleSet.")
+                    .defineEnum("defaultFontBehavior", DefaultFontBehavior.ONLY_EXCLUDE);
+            mDefaultFontRuleSet = builder.comment(
+                            "Used when defaultFontBehavior is either ONLY_INCLUDE or ONLY_EXCLUDE.",
+                            "This specifies a set of regular expressions to match the glyph provider name.",
+                            "For bitmap providers, this is the texture path without 'textures/'.",
+                            "For TTF providers, this is the TTF file path without 'font/'.",
+                            "For space providers, this is \"font_name / minecraft:space\",",
+                            "where font_name is font definition path without 'font/'.")
+                    .defineList("defaultFontRuleSet", () -> {
+                        List<String> rules = new ArrayList<>();
+                        // three vanilla fonts
+                        rules.add("^minecraft:font\\/(nonlatin_european|accented|ascii|" +
+                                // four added by CFPA Minecraft-Mod-Language-Package
+                                "element_ideographs|cjk_punctuations|ellipsis|2em_dash)\\.png$");
+                        // the vanilla space
+                        rules.add("^minecraft:include\\/space \\/ minecraft:space$");
+                        return rules;
+                    }, s -> true);
             mUseComponentCache = builder.comment(
                             "Whether to use text component object as hash key to lookup in layout cache.",
                             "If you find that Modern UI text rendering is not compatible with some mods,",
@@ -1004,6 +1025,11 @@ public final class Config {
                 TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
                 reload = true;
             }
+            List<? extends String> defaultFontRuleSet = mDefaultFontRuleSet.get();
+            if (!Objects.equals(TextLayoutEngine.sDefaultFontRuleSet, defaultFontRuleSet)) {
+                TextLayoutEngine.sDefaultFontRuleSet = defaultFontRuleSet;
+                reload = true;
+            }
             TextLayoutEngine.sRawUseTextShadersInWorld = mUseTextShadersInWorld.get();
             TextLayoutEngine.sUseComponentCache = mUseComponentCache.get();
             TextLayoutEngine.sAllowAsyncLayout = mAllowAsyncLayout.get();
@@ -1070,7 +1096,9 @@ public final class Config {
             IGNORE_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_IGNORE_ALL),
             KEEP_ASCII(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ASCII),
             KEEP_OTHER(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_OTHER),
-            KEEP_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ALL);
+            KEEP_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ALL),
+            ONLY_INCLUDE(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_ONLY_INCLUDE),
+            ONLY_EXCLUDE(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_ONLY_EXCLUDE);
 
             private final int key;
 

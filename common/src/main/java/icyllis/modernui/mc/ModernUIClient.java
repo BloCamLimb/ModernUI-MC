@@ -74,6 +74,8 @@ public abstract class ModernUIClient extends ModernUI {
     public static volatile boolean sEmojiShortcodes = true;
     public static volatile String sFirstFontFamily;
     public static volatile List<? extends String> sFallbackFontFamilyList;
+    // font dir/paths to register
+    public static volatile List<? extends String> sFontRegistrationList;
 
     protected volatile Typeface mTypeface;
     protected volatile FontFamily mFirstFontFamily;
@@ -159,6 +161,37 @@ public abstract class ModernUIClient extends ModernUI {
                                  boolean firstLoad) {
         if (firstLoad) {
             var fontManager = FontResourceManager.getInstance();
+            var registrationList = sFontRegistrationList;
+            if (registrationList != null) {
+                for (var value : new LinkedHashSet<>(registrationList)) {
+                    File file = new File(value.replaceAll("\\\\", "/"));
+                    final File[] entries;
+                    if (file.isDirectory()) {
+                        entries = file.listFiles((dir, name) -> name.endsWith(".ttf") ||
+                                name.endsWith(".otf") ||
+                                name.endsWith(".ttc") ||
+                                name.endsWith(".otc"));
+                        if (entries == null) {
+                            continue;
+                        }
+                    } else {
+                        entries = new File[]{file};
+                    }
+                    for (File entry : entries) {
+                        try {
+                            FontFamily[] families = FontFamily.createFamilies(entry, /*register*/true);
+                            for (var f : families) {
+                                fontManager.onFontRegistered(f);
+                                LOGGER.info(MARKER, "Registered font '{}', path '{}'",
+                                        f.getFamilyName(), entry);
+                            }
+                        } catch (Exception e) {
+                            LOGGER.error(MARKER, "Failed to register font '{}'",
+                                    entry, e);
+                        }
+                    }
+                }
+            }
             var directory = Minecraft.getInstance().getResourcePackDirectory();
             try (var paths = Files.newDirectoryStream(directory)) {
                 for (var p : paths) {
@@ -169,10 +202,12 @@ public abstract class ModernUIClient extends ModernUI {
                             name.endsWith(".otc")) {
                         p = p.toAbsolutePath();
                         try {
-                            FontFamily f = FontFamily.createFamily(p.toFile(), /*register*/true);
-                            fontManager.onFontRegistered(f);
-                            LOGGER.info(MARKER, "Registered font '{}', path '{}'",
-                                    f.getFamilyName(), p);
+                            FontFamily[] families = FontFamily.createFamilies(p.toFile(), /*register*/true);
+                            for (var f : families) {
+                                fontManager.onFontRegistered(f);
+                                LOGGER.info(MARKER, "Registered font '{}', path '{}'",
+                                        f.getFamilyName(), p);
+                            }
                         } catch (Exception e) {
                             LOGGER.error(MARKER, "Failed to register font '{}'",
                                     p, e);
@@ -196,10 +231,12 @@ public abstract class ModernUIClient extends ModernUI {
                     }).entrySet()) {
                 for (var resource : entry.getValue()) {
                     try (var inputStream = resource.open()) {
-                        FontFamily f = FontFamily.createFamily(inputStream, /*register*/true);
-                        fontManager.onFontRegistered(f);
-                        LOGGER.info(MARKER, "Registered font '{}', location '{}' in pack: '{}'",
-                                f.getFamilyName(), entry.getKey(), resource.sourcePackId());
+                        FontFamily[] families = FontFamily.createFamilies(inputStream, /*register*/true);
+                        for (var f : families) {
+                            fontManager.onFontRegistered(f);
+                            LOGGER.info(MARKER, "Registered font '{}', location '{}' in pack: '{}'",
+                                    f.getFamilyName(), entry.getKey(), resource.sourcePackId());
+                        }
                     } catch (Exception e) {
                         LOGGER.error(MARKER, "Failed to register font '{}' in pack: '{}'",
                                 entry.getKey(), resource.sourcePackId(), e);

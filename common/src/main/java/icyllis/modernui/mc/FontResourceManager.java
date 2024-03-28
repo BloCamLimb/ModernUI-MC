@@ -252,7 +252,8 @@ public class FontResourceManager implements PreparableReloadListener {
         results.mEmojiShortcodes = map;
     }
 
-    public void onFontRegistered(FontFamily f) {
+    // ASYNC
+    public void onFontRegistered(@Nonnull FontFamily f) {
     }
 
     @Nullable

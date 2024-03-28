@@ -21,10 +21,13 @@ package icyllis.modernui.mc.fabric;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.UIManager;
 import icyllis.modernui.mc.mixin.AccessGameRenderer;
 import net.fabricmc.fabric.impl.client.rendering.FabricShaderProgram;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.network.chat.Style;
@@ -32,12 +35,19 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.world.item.Rarity;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 
 public final class MuiFabricApi extends MuiModApi {
 
     public MuiFabricApi() {
         ModernUI.LOGGER.info(ModernUI.MARKER, "Created MuiFabricApi");
+    }
+
+    @Nonnull
+    @Override
+    public Screen createScreen(@Nonnull Fragment fragment) {
+        return new SimpleScreen(UIManager.getInstance(), fragment);
     }
 
     @Override

@@ -227,17 +227,17 @@ public final class TooltipRenderer {
         float v = hsv[2];
         if (hue) {
             if (h >= 60f && h <= 240f) {
-                h += magnified ? 18f : 10f;
+                h += magnified ? 27f : 15f;
             } else {
-                h -= magnified ? 12f : 7f;
+                h -= magnified ? 18f : 10f;
             }
             h = (h + 360f) % 360f;
         }
         if (sat) {
             if (s < 0.6f) {
-                s += magnified ? 0.15f : 0.10f;
+                s += magnified ? 0.18f : 0.12f;
             } else {
-                s -= magnified ? 0.10f : 0.05f;
+                s -= magnified ? 0.12f : 0.06f;
             }
         }
         if (val) {
