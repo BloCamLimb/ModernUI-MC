@@ -49,6 +49,7 @@ public enum BlurHandler {
      * Config values
      */
     public static volatile boolean sBlurEffect;
+    public static volatile boolean sBlurWithBackground;
     public static volatile int sBlurRadius;
     public static volatile int sBackgroundDuration; // milliseconds
     public static volatile int[] sBackgroundColor = new int[4];
@@ -129,7 +130,7 @@ public enum BlurHandler {
         if (hasScreen && !mHasScreen) {
             if (!blocked && sBlurEffect && !mBlurring && gr.currentEffect() == null && sBlurRadius >= 1) {
                 mBlurring = true;
-                if (sBackgroundDuration > 0) {
+                if (sBackgroundDuration > 0 && sBlurWithBackground) {
                     updateRadius(1);
                 } else {
                     MuiModApi.get().loadEffect(minecraft.gameRenderer, BLUR_POST_EFFECT);

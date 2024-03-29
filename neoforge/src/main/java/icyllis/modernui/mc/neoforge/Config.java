@@ -182,6 +182,7 @@ public final class Config {
         public static final float TOOLTIP_SHADOW_RADIUS_MAX = 32;
 
         public final ModConfigSpec.BooleanValue mBlurEffect;
+        public final ModConfigSpec.BooleanValue mBlurWithBackground;
         public final ModConfigSpec.IntValue mBackgroundDuration;
         public final ModConfigSpec.IntValue mBlurRadius;
         public final ModConfigSpec.ConfigValue<List<? extends String>> mBackgroundColor;
@@ -266,6 +267,10 @@ public final class Config {
                                     "shader and some mods.",
                             "Disable this if you run into a problem or are on low-end PCs")
                     .define("blurEffect", true);
+            mBlurWithBackground = builder.comment(
+                            "This option means that blur effect only applies for GUI screens with a background",
+                            "This is only meaningful when blur effect is enabled.")
+                    .define("blurWithBackground", true);
             mBlurRadius = builder.comment(
                             "The strength for two-pass gaussian convolution blur effect.",
                             "samples/pixel = ((radius * 2) + 1) * 2, sigma = radius / 2.")
@@ -513,6 +518,7 @@ public final class Config {
 
         private void reload() {
             BlurHandler.sBlurEffect = mBlurEffect.get();
+            BlurHandler.sBlurWithBackground = mBlurWithBackground.get();
             BlurHandler.sBackgroundDuration = mBackgroundDuration.get();
             BlurHandler.sBlurRadius = mBlurRadius.get();
 

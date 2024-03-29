@@ -51,6 +51,8 @@
   "modernui.center.screen.backgroundDuration": "背景淡入时长",
   "modernui.center.screen.blurEffect": "背景虚化效果",
   "modernui.center.screen.blurEffect_desc": "对屏幕背景图像应用高斯模糊。",
+  "modernui.center.screen.blurWithBackground": "自适应虚化效果",
+  "modernui.center.screen.blurWithBackground_desc": "启用时，高斯模糊仅对有半透明黑色背景的界面有效。该选项仅在淡入时长不为0时有意义。",
   "modernui.center.screen.blurRadius": "虚化半径",
   "modernui.center.screen.inventoryPause": "物品栏暂停",
   "modernui.center.screen.inventoryPause_desc": "在打开物品栏时暂停单人游戏。",
