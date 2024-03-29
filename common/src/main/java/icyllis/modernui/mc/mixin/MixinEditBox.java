@@ -82,7 +82,8 @@ public abstract class MixinEditBox implements IModernEditBox {
     @Inject(method = "getWordPosition(IIZ)I", at = @At("HEAD"), cancellable = true)
     public void onGetWordPosition(int dir, int cursor, boolean withEndSpace,
                                   CallbackInfoReturnable<Integer> cir) {
-        if (dir == -1 || dir == 1) {
+        // assume command starts with slash
+        if ((dir == -1 || dir == 1) && !value.startsWith("/")) {
             WordIterator wordIterator = modernUI_MC$wordIterator;
             if (wordIterator == null) {
                 modernUI_MC$wordIterator = wordIterator = new WordIterator();

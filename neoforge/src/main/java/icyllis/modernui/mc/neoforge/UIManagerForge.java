@@ -127,11 +127,8 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                     OptiFineIntegration.setFastRender(false);
                     LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
                 }
-                var windowMode = Config.CLIENT.mLastWindowMode;
-                if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
-                    // ensure it's applied and positioned
-                    windowMode.apply();
-                }
+                // ensure it's applied and positioned
+                Config.CLIENT.mLastWindowMode.apply();
                 mFirstScreenOpened = true;
             }
 

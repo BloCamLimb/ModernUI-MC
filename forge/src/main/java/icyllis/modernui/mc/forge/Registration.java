@@ -221,11 +221,8 @@ final class Registration {
             event.enqueueWork(() -> {
                 //ModernUI.getSelectedTypeface();
                 UIManagerForge.initializeRenderer();
-                var windowMode = Config.CLIENT.mLastWindowMode;
-                if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
-                    // ensure it's applied and positioned
-                    windowMode.apply();
-                }
+                // ensure it's applied and positioned
+                Config.CLIENT.mLastWindowMode.apply();
                 if (ModernUIMod.sDevelopment) {
                     MenuScreens.register(MuiRegistries.TEST_MENU.get(), MenuScreenFactory.create(menu ->
                             new TestPauseFragment()));

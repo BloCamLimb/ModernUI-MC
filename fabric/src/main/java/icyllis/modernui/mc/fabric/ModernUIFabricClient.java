@@ -43,7 +43,6 @@ import net.fabricmc.fabric.api.resource.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.components.CycleButton;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -133,11 +132,8 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
 
         ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
             UIManagerFabric.initializeRenderer();
-            var windowMode = Config.CLIENT.mLastWindowMode;
-            if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
-                // ensure it's applied and positioned
-                windowMode.apply();
-            }
+            // ensure it's applied and positioned
+            Config.CLIENT.mLastWindowMode.apply();
 
             if (Config.CLIENT.mUseNewGuiScale.get()) {
                 final OptionInstance<Integer> newGuiScale = new OptionInstance<>(

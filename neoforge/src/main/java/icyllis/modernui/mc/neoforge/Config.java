@@ -596,9 +596,7 @@ public final class Config {
             WindowMode windowMode = mWindowMode.get();
             if (mLastWindowMode != windowMode) {
                 mLastWindowMode = windowMode;
-                if (windowMode != WindowMode.NORMAL) {
-                    Minecraft.getInstance().tell(windowMode::apply);
-                }
+                Minecraft.getInstance().tell(() -> mLastWindowMode.apply());
             }
 
             //TestHUD.sBars = hudBars.get();
@@ -655,6 +653,9 @@ public final class Config {
             WINDOWED_BORDERLESS;
 
             public void apply() {
+                if (this == NORMAL) {
+                    return;
+                }
                 Window window = Minecraft.getInstance().getWindow();
                 switch (this) {
                     case FULLSCREEN -> {
