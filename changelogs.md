@@ -1,5 +1,45 @@
 Changelogs
 ===
+### Modern UI 3.10.1.5
+#### NeoForge Extension 1.20.4
+* Do not use new word breaker in command mode
+* Add preferences navigation to mods config button
+* Improve PreferencesFragment
+* Add API to allow back to previous screen, allow passing a ScreenCallback
+* Add API to create MuiScreen
+* Add Segoe UI Symbol to default fallback list
+* Fix issue with TrueType Collection registration
+* Add font registration config to register additional fonts
+* Add modifiers to ACTION_SCROLL event
+* Add showing layout bounds
+* Add adaptive tooltip colors
+* Renew tooltip rendering
+  - Create rendertype_modern_tooltip shader
+  - Interpolate color bilinearly in sRGB space
+  - Better shadow effect, add shadow opacity
+  - Add corner radius config
+  - Adjust auto scrolling velocity
+  - Fix bugs on exact positioning with some mods
+* Fix a rare crash on config reloading due to thread-safety
+* Apply blur effect only to screens that have default background (configurable)
+* Do not use Overwrite for calculateScale
+* Fix startup crash on server and datagen
+* Fix EditBox deletion undo not working
+* Refactor project structure and bootstrap
+#### Forge Extension 1.20.4
+* Remove ScreenCallback capability
+* Others are equivalent to NeoForge version
+#### Fabric Extension 1.20.4
+* Fix tooltip compatibility with Sodium
+* Others are functionally equivalent to NeoForge version
+#### Modern Text Engine 1.20.4
+* Change logging level for font loading, enhance onFontRegistered thread-safety
+* Add new default font behaviors and rule set, allowing regexes to match fonts
+* Adjust text renderer alpha threshold from 1 to 2 (0-255)
+* Fix only a very small set of characters can be used for obfuscated rendering
+* Use Latin1 for FastCharSet
+* Fix a rare crash on text engine due to batch rendering and display mode changes
+
 ### Modern UI 3.10.0.6
 #### Forge Extension 1.20.4
 * Add Markdown preview

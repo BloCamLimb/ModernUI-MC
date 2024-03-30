@@ -104,13 +104,21 @@ minecraft {
 You need to regenerate run configurations if you make any changes on this.
 #### Building Modern UI for Minecraft
 Modern UI for Minecraft requires the latest [Modern UI](https://github.com/BloCamLimb/ModernUI) codebase to build.
-You must clone `ModernUI` into the same parent directory of `ModernUI-MC` and ensure they're up-to-date.
-Checkout `ModernUI/dev` branch.
-### Screenshots (outdated, try yourself)
+You should clone `ModernUI` into the same parent directory of `ModernUI-MC` and ensure they're up-to-date.
+Checkout `ModernUI/master` branch or a stable branch.
+### Screenshots (maybe outdated, try yourself)
+![ModernUI-MC-Diagram.png](https://s2.loli.net/2024/03/30/kMTXKdpPLbmctJv.png)  
+New Tooltip  
+![new tooltip.png](https://s2.loli.net/2024/03/30/VhyoFPAD2Js1HWO.png)  
+Center Screen  
+![2024-03-30_16.17.11.png](https://s2.loli.net/2024/03/30/vLBTWNgqZXhE6Vi.png)
+Markdown  
+![markdown](https://cdn.modrinth.com/data/3sjzyvGR/images/989a77ba61c62ff580a30dcf158e391080b949bd.png)  
+Texts  
+![fast text](https://cdn.modrinth.com/data/3sjzyvGR/images/d27f5d77555fd3f45392f5b8eb28efcb80f0b677.png)
+![new4](https://s2.loli.net/2022/03/06/TM5dVKnpqNvDiJH.png)  
 Navigation  
 ![new5](https://s2.loli.net/2022/03/06/hwAoHTgZNWBvEdq.png)  
-Texts  
-![new4](https://s2.loli.net/2022/03/06/TM5dVKnpqNvDiJH.png)  
 Graphics  
 ![new3.gif](https://i.loli.net/2021/09/27/yNsL98XtpKP7UVA.gif)  
 Audio visualization  
