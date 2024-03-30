@@ -1384,22 +1384,29 @@ public class TextLayoutEngine extends FontResourceManager
             // no text shaping
             if (awtFont != null) {
                 GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
+                if (vector.getNumGlyphs() == 0) {
+                    if (i == 0) {
+                        LOGGER.warn(MARKER, awtFont + " does not support ASCII digits");
+                        return null;
+                    }
+                    continue;
+                }
                 advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
                 glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
-                if (glyph == null && i == 0) {
-                    LOGGER.warn(MARKER, awtFont + " does not support ASCII digits");
-                    return null;
-                }
                 if (glyph == null) {
+                    if (i == 0) {
+                        LOGGER.warn(MARKER, awtFont + " does not support ASCII digits");
+                        return null;
+                    }
                     continue;
                 }
             } else {
                 var gl = bitmapFont.getGlyph(chars[0]);
-                if (gl == null && i == 0) {
-                    LOGGER.warn(MARKER, bitmapFont + " does not support ASCII digits");
-                    return null;
-                }
                 if (gl == null) {
+                    if (i == 0) {
+                        LOGGER.warn(MARKER, bitmapFont + " does not support ASCII digits");
+                        return null;
+                    }
                     continue;
                 }
                 advance = gl.advance;
@@ -1428,9 +1435,12 @@ public class TextLayoutEngine extends FontResourceManager
                 // no text shaping
                 if (awtFont != null) {
                     GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
+                    if (vector.getNumGlyphs() == 0) {
+                        continue;
+                    }
                     advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
                     // too wide
-                    if (advance + 1f > offsets[0]) {
+                    if (advance - 1f > offsets[0]) {
                         continue;
                     }
                     glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
@@ -1442,7 +1452,7 @@ public class TextLayoutEngine extends FontResourceManager
                     }
                     advance = gl.advance;
                     // too wide
-                    if (advance + 1f > offsets[0]) {
+                    if (advance - 1f > offsets[0]) {
                         continue;
                     }
                     glyph = gl;

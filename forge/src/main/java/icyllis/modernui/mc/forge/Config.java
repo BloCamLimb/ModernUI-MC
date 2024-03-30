@@ -510,10 +510,8 @@ public final class Config {
         }
 
         public void saveAndReloadAsync() {
-            Util.ioPool().execute(() -> {
-                CLIENT_SPEC.save();
-                reload();
-            });
+            Util.ioPool().execute(() -> CLIENT_SPEC.save());
+            reload();
         }
 
         private void reload() {
@@ -777,10 +775,8 @@ public final class Config {
         }
 
         public void saveAndReloadAsync() {
-            Util.ioPool().execute(() -> {
-                COMMON_SPEC.save();
-                reload();
-            });
+            Util.ioPool().execute(() -> COMMON_SPEC.save());
+            reload();
         }
 
         private void reload() {
@@ -997,10 +993,8 @@ public final class Config {
         }
 
         public void saveAndReloadAsync() {
-            Util.ioPool().execute(() -> {
-                TEXT_SPEC.save();
-                reload();
-            });
+            Util.ioPool().execute(() -> TEXT_SPEC.save());
+            reload();
         }
 
         void reload() {

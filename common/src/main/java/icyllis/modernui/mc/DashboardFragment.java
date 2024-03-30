@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -42,7 +42,7 @@ public class DashboardFragment extends Fragment {
             by
             BloCamLimb
             (Icyllis Milica)
-            _(:з」∠)_""";
+            Ciallo～(∠・ω< )⌒☆""";
 
     private ViewGroup mLayout;
     private TextView mSideBox;
@@ -98,13 +98,15 @@ public class DashboardFragment extends Fragment {
                         .setMarkdown(tv, """
                                 What's New in Modern UI 3.10.1
                                 ----
-                                * Enhanced Text Layout
+                                * Brand-New Tooltip Style
+                                * Better Font Management
                                 * Better Mod Compatibility
                                 * Rendering Optimization
-                                * Basic Markdown Support
+                                * New Shader Compiler
+                                * New UI Components & Text Styles
                                 * Unicode 15.1 Emoji List
-                                * New UI Components
-                                * And More…
+                                * [Full Changelog…](https://github.com/BloCamLimb/ModernUI/blob/master/changelogs.md)
+                                * [Full Changelog…](https://github.com/BloCamLimb/ModernUI-MC/blob/master/changelogs.md)
                                                                 
                                 > Author: BloCamLimb \s
                                   Source Code: [Modern UI](https://github.com/BloCamLimb/ModernUI) \s
