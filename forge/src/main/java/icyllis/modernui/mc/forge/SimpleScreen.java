@@ -22,16 +22,14 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.modernui.fragment.Fragment;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.core.Direction;
 import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.util.LazyOptional;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * Represents the GUI screen that receives events from Minecraft.
@@ -42,16 +40,23 @@ import javax.annotation.Nullable;
 final class SimpleScreen extends Screen implements MuiScreen {
 
     private final UIManager mHost;
+    @Nullable
+    private final Screen mPrevious;
     private final Fragment mFragment;
+    @Nullable
     private final ScreenCallback mCallback;
-    private final ICapabilityProvider mProvider;
 
-    SimpleScreen(UIManager host, Fragment fragment) {
-        super(CommonComponents.EMPTY);
+    SimpleScreen(UIManager host, Fragment fragment,
+                 @Nullable ScreenCallback callback, @Nullable Screen previous,
+                 @Nullable CharSequence title) {
+        super(title == null || title.isEmpty()
+                ? CommonComponents.EMPTY
+                : Component.literal(title.toString()));
         mHost = host;
-        mFragment = fragment;
-        mCallback = fragment instanceof ScreenCallback callback ? callback : null;
-        mProvider = fragment instanceof ICapabilityProvider provider ? provider : null;
+        mPrevious = previous;
+        mFragment = Objects.requireNonNull(fragment);
+        mCallback = callback != null ? callback :
+                fragment instanceof ScreenCallback cbk ? cbk : null;
     }
 
     /*@Override
@@ -100,21 +105,36 @@ final class SimpleScreen extends Screen implements MuiScreen {
 
     @Nonnull
     @Override
+    public Screen self() {
+        return this;
+    }
+
+    @Nonnull
+    @Override
     public Fragment getFragment() {
         return mFragment;
     }
 
     @Nullable
     @Override
-    @SuppressWarnings("ConstantConditions")
     public ScreenCallback getCallback() {
-        return mCallback != null ? mCallback : getCapability(SCREEN_CALLBACK).orElse(null);
+        return mCallback;
     }
 
-    @Nonnull
+    @Nullable
     @Override
-    public <C> LazyOptional<C> getCapability(@Nonnull Capability<C> cap, @Nullable Direction side) {
-        return mProvider != null ? mProvider.getCapability(cap, side) : LazyOptional.empty();
+    public Screen getPreviousScreen() {
+        return mPrevious;
+    }
+
+    @Override
+    public boolean isMenuScreen() {
+        return false;
+    }
+
+    @Override
+    public void onBackPressed() {
+        mHost.getOnBackPressedDispatcher().onBackPressed();
     }
 
     // IMPL - GuiEventListener

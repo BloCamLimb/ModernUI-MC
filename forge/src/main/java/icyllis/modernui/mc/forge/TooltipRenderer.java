@@ -18,18 +18,22 @@
 
 package icyllis.modernui.mc.forge;
 
-import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.shaders.AbstractUniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import icyllis.arc3d.core.Matrix4;
-import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.Color;
+import icyllis.modernui.graphics.MathUtil;
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTextTooltip;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.entity.ItemRenderer;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.util.StringDecomposer;
+import net.minecraft.world.item.*;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
@@ -37,9 +41,7 @@ import org.lwjgl.BufferUtils;
 
 import javax.annotation.Nonnull;
 import java.nio.FloatBuffer;
-import java.util.List;
-
-import static icyllis.arc3d.opengl.GLCore.*;
+import java.util.*;
 
 /**
  * An extension that replaces vanilla tooltip style.
@@ -57,7 +59,10 @@ public final class TooltipRenderer {
     static final int[] sFillColor = new int[4];
     static final int[] sStrokeColor = new int[4];
     public static volatile float sBorderWidth = 4 / 3f;
+    public static volatile float sCornerRadius = 3;
     public static volatile float sShadowRadius = 10;
+    public static volatile float sShadowAlpha = 0.35f;
+    public static volatile boolean sAdaptiveColors = true;
 
     // space between mouse and tooltip
     private static final int TOOLTIP_SPACE = 12;
@@ -73,6 +78,7 @@ public final class TooltipRenderer {
     private final Matrix4 mCoreMat = new Matrix4();
 
     //private static final int[] sActiveFillColor = new int[4];
+    private final int[] mWorkStrokeColor = new int[4];
     private final int[] mActiveStrokeColor = new int[4];
     //static volatile float sAnimationDuration; // milliseconds
     static volatile int sBorderColorCycle = 1000; // milliseconds
@@ -99,6 +105,12 @@ public final class TooltipRenderer {
     private long mCurrTimeMillis;
     private long mCurrDeltaMillis;
 
+    // no weak ref, clear on frame gap
+    private ItemStack mLastSeenItem;
+
+    // true to use spectrum colors
+    private boolean mUseSpectrum;
+
     TooltipRenderer() {
     }
 
@@ -123,9 +135,131 @@ public final class TooltipRenderer {
             mFrameGap = false;
         } else {
             mFrameGap = true;
+            mLastSeenItem = null;
         }
         mCurrTimeMillis = timeMillis;
         mCurrDeltaMillis = deltaMillis;
+    }
+
+    // compute a gradient for the given item
+    void computeWorkingColor(@Nonnull ItemStack item) {
+        if (sAdaptiveColors && !item.isEmpty()) {
+            if (sRoundedShapes && (item.is(Items.DRAGON_EGG) ||
+                    item.is(Items.MOJANG_BANNER_PATTERN))) {
+                mUseSpectrum = true;
+                return;
+            }
+            Style baseStyle = Style.EMPTY;
+            Rarity rarity = item.getRarity();
+            if (rarity != Rarity.COMMON) {
+                baseStyle = rarity.getStyleModifier().apply(baseStyle);
+            }
+            IntOpenHashSet colors = new IntOpenHashSet(16);
+            // consider formatting codes
+            StringDecomposer.iterateFormatted(
+                    item.getHoverName(),
+                    baseStyle,
+                    (i, style, ch) -> {
+                        TextColor textColor = style.getColor();
+                        if (textColor != null) {
+                            return colors.add(textColor.getValue() & 0xFFFFFF) &&
+                                    colors.size() >= 16;
+                        }
+                        return false;
+                    }
+            );
+            if (!colors.isEmpty()) {
+                ArrayList<float[]> hsvColors = new ArrayList<>(16);
+                for (var it = colors.iterator(); it.hasNext(); ) {
+                    int c = it.nextInt();
+                    float[] hsv = new float[3];
+                    Color.RGBToHSV(c, hsv);
+                    // discard colors with low saturation or brightness
+                    if (hsv[1] >= 0.3f && hsv[2] >= 0.4f) {
+                        // reduce saturation and brightness
+                        hsv[1] = Math.min(hsv[1], 0.9f);
+                        hsv[2] = Math.min(hsv[2], 0.85f);
+                        hsvColors.add(hsv);
+                    }
+                }
+                if (!hsvColors.isEmpty()) {
+                    int size = hsvColors.size();
+                    if (size > 4) {
+                        if (sRoundedShapes) {
+                            mUseSpectrum = true;
+                            return;
+                        }
+                        Collections.shuffle(hsvColors);
+                    }
+                    int c1 = Color.HSVToColor(hsvColors.get(0));
+                    int c2, c3, c4;
+                    if (size > 2) {
+                        // we have 3 or 4 colors
+                        c2 = Color.HSVToColor(hsvColors.get(1));
+                        c3 = Color.HSVToColor(hsvColors.get(2));
+                        if (size == 4) {
+                            c4 = Color.HSVToColor(hsvColors.get(3));
+                        } else {
+                            // invert hue of c2
+                            float[] hsv = hsvColors.get(1);
+                            hsv[0] = (hsv[0] + 180f) % 360f;
+                            c4 = Color.HSVToColor(hsv);
+                        }
+                    } else if (size == 2) {
+                        // we have two colors, make diagonal
+                        c3 = Color.HSVToColor(hsvColors.get(1));
+                        c2 = lerpInLinearSpace(0.5f, c1, c3);
+                        float[] hsv = new float[3];
+                        Color.RGBToHSV(c2, hsv);
+                        c4 = adjustColor(hsv, false, true, false, item.isEnchanted());
+                    } else {
+                        // we have one color...
+                        float[] hsv = hsvColors.get(0);
+                        boolean mag = item.isEnchanted();
+                        c2 = adjustColor(hsv, false, true, false, mag);
+                        c3 = adjustColor(hsv, true, true, true, mag);
+                        c4 = adjustColor(hsv, true, false, true, mag);
+                    }
+                    mWorkStrokeColor[0] = (sStrokeColor[0] & 0xFF000000) | c1;
+                    mWorkStrokeColor[1] = (sStrokeColor[1] & 0xFF000000) | c2;
+                    mWorkStrokeColor[2] = (sStrokeColor[2] & 0xFF000000) | c3;
+                    mWorkStrokeColor[3] = (sStrokeColor[3] & 0xFF000000) | c4;
+                    mUseSpectrum = false;
+                    return;
+                }
+            }
+        }
+        System.arraycopy(sStrokeColor, 0, mWorkStrokeColor, 0, 4);
+        mUseSpectrum = false;
+    }
+
+    static int adjustColor(float[] hsv, boolean hue, boolean sat, boolean val, boolean magnified) {
+        float h = hsv[0];
+        float s = hsv[1];
+        float v = hsv[2];
+        if (hue) {
+            if (h >= 60f && h <= 240f) {
+                h += magnified ? 27f : 15f;
+            } else {
+                h -= magnified ? 18f : 10f;
+            }
+            h = (h + 360f) % 360f;
+        }
+        if (sat) {
+            if (s < 0.6f) {
+                s += magnified ? 0.18f : 0.12f;
+            } else {
+                s -= magnified ? 0.12f : 0.06f;
+            }
+        }
+        if (val) {
+            if (v < 0.6f) {
+                v += magnified ? 0.12f : 0.08f;
+            } else {
+                v -= magnified ? 0.08f : 0.04f;
+            }
+        }
+        return Color.HSVToColor(h, s, v);
     }
 
     void updateBorderColor() {
@@ -134,15 +268,15 @@ public final class TooltipRenderer {
             int pos = (int) ((mCurrTimeMillis / sBorderColorCycle) & 3);
             for (int i = 0; i < 4; i++) {
                 mActiveStrokeColor[i] = lerpInLinearSpace(p,
-                        sStrokeColor[(i + pos) & 3],
-                        sStrokeColor[(i + pos + 1) & 3]);
+                        mWorkStrokeColor[(i + pos) & 3],
+                        mWorkStrokeColor[(i + pos + 1) & 3]);
             }
         } else {
             int pos = 3 - (int) ((mCurrTimeMillis / sBorderColorCycle) & 3);
             for (int i = 0; i < 4; i++) {
                 mActiveStrokeColor[i] = lerpInLinearSpace(p,
-                        sStrokeColor[(i + pos) & 3],
-                        sStrokeColor[(i + pos + 3) & 3]);
+                        mWorkStrokeColor[(i + pos) & 3],
+                        mWorkStrokeColor[(i + pos + 3) & 3]);
             }
         }
     }
@@ -332,12 +466,20 @@ public final class TooltipRenderer {
         if (sBorderColorCycle > 0) {
             return mActiveStrokeColor[corner];
         } else {
-            return sStrokeColor[corner];
+            return mWorkStrokeColor[corner];
         }
     }
 
-    void drawTooltip(@Nonnull GLSurfaceCanvas canvas, @Nonnull Window window,
-                     @Nonnull ItemStack itemStack, @Nonnull PoseStack poseStack,
+    void chooseBorderColor(int corner, AbstractUniform uniform) {
+        int color = chooseBorderColor(corner);
+        int a = (color >>> 24);
+        int r = ((color >> 16) & 0xff);
+        int g = ((color >> 8) & 0xff);
+        int b = (color & 0xff);
+        uniform.set(r / 255f, g / 255f, b / 255f, a / 255f);
+    }
+
+    void drawTooltip(@Nonnull ItemStack itemStack, @Nonnull PoseStack poseStack,
                      @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
                      @Nonnull Font font, float screenWidth, float screenHeight,
                      double cursorX, double cursorY, @Nonnull ItemRenderer itemRenderer) {
@@ -348,6 +490,11 @@ public final class TooltipRenderer {
         if (sExactPositioning) {
             partialX = (float) (cursorX - (int) cursorX);
             partialY = (float) (cursorY - (int) cursorY);
+        }
+
+        if (itemStack != mLastSeenItem) {
+            mLastSeenItem = itemStack;
+            computeWorkingColor(itemStack);
         }
 
         int tooltipWidth;
@@ -405,7 +552,10 @@ public final class TooltipRenderer {
             mScroll = MathUtil.clamp(mScroll, 0, maxScroll);
 
             if (mMarqueeDir != 0 && mCurrTimeMillis - mMarqueeEndMillis >= MARQUEE_DELAY_MILLIS) {
-                mScroll += mMarqueeDir * mCurrDeltaMillis * 0.018f;
+                float t = MathUtil.clamp(0.5f * tooltipWidth / screenWidth, 0.0f, 0.5f);
+                float baseMultiplier = (1.5f - t) * 0.01f;
+                mScroll += mMarqueeDir * mCurrDeltaMillis *
+                        (baseMultiplier + baseMultiplier * Math.min(maxScroll / screenHeight, 1.5f));
                 if (mMarqueeDir > 0) {
                     if (mScroll >= maxScroll) {
                         mMarqueeDir = -1;
@@ -434,9 +584,10 @@ public final class TooltipRenderer {
         // we should disable depth test, because texts may be translucent
         // for compatibility reasons, we keep this enabled, and it doesn't seem to be a big problem
         RenderSystem.enableDepthTest();
-
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
         if (sRoundedShapes) {
-            drawRoundBackground(canvas, window, pose,
+            drawRoundedBackground(pose,
                     tooltipX, tooltipY, tooltipWidth, tooltipHeight,
                     titleGap, titleBreakHeight);
         } else {
@@ -489,98 +640,75 @@ public final class TooltipRenderer {
         poseStack.popPose();
     }
 
-    private void drawRoundBackground(@Nonnull GLSurfaceCanvas canvas,
-                                     @Nonnull Window window, Matrix4f pose,
-                                     float tooltipX, float tooltipY,
-                                     int tooltipWidth, int tooltipHeight,
-                                     boolean titleGap, int titleBreakHeight) {
-        RenderSystem.enableBlend();
-        RenderSystem.blendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    private void drawRoundedBackground(Matrix4f pose,
+                                       float tooltipX, float tooltipY,
+                                       int tooltipWidth, int tooltipHeight,
+                                       boolean titleGap, int titleBreakHeight) {
+        float halfWidth = tooltipWidth / 2f;
+        float halfHeight = tooltipHeight / 2f;
+        float centerX = tooltipX + halfWidth;
+        float centerY = tooltipY + halfHeight;
+        float sizeX = halfWidth + H_BORDER;
+        float sizeY = halfHeight + V_BORDER;
+        float shadowRadius = Math.max(sShadowRadius, 0.00001f);
 
-        final int oldVertexArray = glGetInteger(GL_VERTEX_ARRAY_BINDING);
-        final int oldProgram = glGetInteger(GL_CURRENT_PROGRAM);
-
-        // give some points to the original framebuffer, not gui scaled
-        canvas.reset(window.getWidth(), window.getHeight());
-
-        // swap matrices
-        RenderSystem.getProjectionMatrix().get(mMatBuf.rewind());
-        mCoreMat.set(mMatBuf.rewind());
-        canvas.setProjection(mCoreMat);
-
-        canvas.save();
-        RenderSystem.getModelViewMatrix().get(mMatBuf.rewind());
-        mCoreMat.set(mMatBuf.rewind());
-        canvas.concat(mCoreMat);
-
-        pose.get(mMatBuf.rewind());
-        mCoreMat.set(mMatBuf.rewind());
-        // RenderSystem.getModelViewMatrix() has Z translation normalized to -1
-        // We have to offset against our canvas Z translation, see restore matrix in GLCanvas
-        mCoreMat.preTranslate(0, 0, 3000);
-        canvas.concat(mCoreMat);
-
-        Paint paint = Paint.obtain();
-
-        /*for (int i = 0; i < 4; i++) {
-            int color = sFillColor[i];
-            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
-            sActiveFillColor[i] = (color & 0xFFFFFF) | (alpha << 24);
-        }*/
-        paint.setStyle(Paint.FILL);
-        {
-            float spread = 0;
-            if (sShadowRadius >= 2) {
-                spread = sShadowRadius * 0.5f - 1f;
-                paint.setSmoothWidth(sShadowRadius);
+        ShaderInstance shader = TooltipRenderType.getShaderTooltip();
+        shader.safeGetUniform("u_PushData0")
+                .set(sizeX, sizeY, sCornerRadius, sBorderWidth / 2f);
+        float rainbowOffset = 0;
+        if (mUseSpectrum) {
+            rainbowOffset = 1;
+            if (sBorderColorCycle > 0) {
+                long overallCycle = sBorderColorCycle * 4L;
+                rainbowOffset += (float) (mCurrTimeMillis % overallCycle) / overallCycle;
             }
-            canvas.drawRoundRectGradient(tooltipX - H_BORDER - spread, tooltipY - V_BORDER - spread,
-                    tooltipX + tooltipWidth + H_BORDER + spread,
-                    tooltipY + tooltipHeight + V_BORDER + spread,
-                    sFillColor[0], sFillColor[1],
-                    sFillColor[2], sFillColor[3],
-                    3 + spread, paint);
-            paint.setSmoothWidth(0);
+            if (!mLayoutRTL) {
+                rainbowOffset = -rainbowOffset;
+            }
         }
+        shader.safeGetUniform("u_PushData1")
+                .set(sShadowAlpha, 4f / shadowRadius, (sFillColor[0] >>> 24) / 255f, rainbowOffset);
+        if (rainbowOffset == 0) {
+            chooseBorderColor(0, shader.safeGetUniform("u_PushData2"));
+            chooseBorderColor(1, shader.safeGetUniform("u_PushData3"));
+            chooseBorderColor(3, shader.safeGetUniform("u_PushData4"));
+            chooseBorderColor(2, shader.safeGetUniform("u_PushData5"));
+        }
+
+        RenderSystem.setShader(TooltipRenderType::getShaderTooltip);
+        var buffer = Tesselator.getInstance().getBuilder();
+        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION);
+
+        // we expect local coordinates, concat pose with model view
+        RenderSystem.getModelViewStack().pushPose();
+        RenderSystem.getModelViewStack().mulPoseMatrix(pose);
+        RenderSystem.getModelViewStack().translate(centerX, centerY, 0);
+        RenderSystem.applyModelViewMatrix();
+        // estimate the draw bounds, half stroke width + 0.5 AA bloat + shadow spread
+        float extent = sBorderWidth / 2f + 0.5f + shadowRadius * 1.2f;
+        float extentX = sizeX + extent;
+        float extentY = sizeY + extent;
+        buffer.vertex(extentX, extentY, 0).endVertex();
+        buffer.vertex(extentX, -extentY, 0).endVertex();
+        buffer.vertex(-extentX, -extentY, 0).endVertex();
+        buffer.vertex(-extentX, extentY, 0).endVertex();
+
+        BufferUploader.drawWithShader(buffer.end());
+        RenderSystem.getModelViewStack().popPose();
+        RenderSystem.applyModelViewMatrix();
 
         if (titleGap && sTitleBreak) {
-            paint.setColor(0xE0C8C8C8);
-            paint.setStrokeWidth(1f);
-            canvas.drawLine(tooltipX, tooltipY + titleBreakHeight,
-                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight,
-                    paint);
+            fillGrad(pose,
+                    tooltipX, tooltipY + titleBreakHeight - 0.5f,
+                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f,
+                    0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8);
         }
-
-        /*for (int i = 0; i < 4; i++) {
-            int color = sStrokeColor[i];
-            int alpha = (int) ((color >>> 24) * sAlpha + 0.5f);
-            sActiveStrokeColor[i] = (color & 0xFFFFFF) | (alpha << 24);
-        }*/
-        paint.setStyle(Paint.STROKE);
-        paint.setStrokeWidth(sBorderWidth);
-        canvas.drawRoundRectGradient(tooltipX - H_BORDER, tooltipY - V_BORDER,
-                tooltipX + tooltipWidth + H_BORDER,
-                tooltipY + tooltipHeight + V_BORDER,
-                chooseBorderColor(0), chooseBorderColor(1),
-                chooseBorderColor(2), chooseBorderColor(3),
-                3, paint);
-
-        paint.recycle();
-
-        canvas.restore();
-        canvas.executeRenderPass(null);
-
-        glBindVertexArray(oldVertexArray);
-        glUseProgram(oldProgram);
     }
 
     private void drawVanillaBackground(Matrix4f pose,
                                        float tooltipX, float tooltipY,
                                        int tooltipWidth, int tooltipHeight,
                                        boolean titleGap, int titleBreakHeight) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-
         float left = tooltipX - H_BORDER;
         float top = tooltipY - V_BORDER;
         float right = tooltipX + tooltipWidth + H_BORDER;

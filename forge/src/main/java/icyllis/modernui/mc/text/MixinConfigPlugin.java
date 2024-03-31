@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.text;
 
 import icyllis.modernui.mc.forge.ModernUIForge;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -32,7 +33,9 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public void onLoad(String mixinPackage) {
-        mEnable = ModernUIForge.Client.isTextEngineEnabled();
+        if (FMLEnvironment.dist.isClient()) {
+            mEnable = ModernUIForge.isTextEngineEnabled();
+        }
     }
 
     @Override

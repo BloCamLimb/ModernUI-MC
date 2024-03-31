@@ -1,7 +1,7 @@
 import net.fabricmc.loom.task.RemapJarTask
 
 plugins {
-    id 'dev.architectury.loom' version '1.1-SNAPSHOT'
+    id 'dev.architectury.loom' version '1.4-SNAPSHOT'
     //id 'com.matthewprenger.cursegradle' version '1.4.0'
     id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
@@ -66,7 +66,7 @@ dependencies {
     modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
     modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"
 
-    if (rootProject.file('../Arc3D').exists() && rootProject.file('../ModernUI').exists()) {
+    if (rootProject.file('../ModernUI').exists()) {
         implementation(forgeDependencies("icyllis.arc3d:Arc3D"))
         shadow("icyllis.arc3d:Arc3D") {
             transitive = false

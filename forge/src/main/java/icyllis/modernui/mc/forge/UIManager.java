@@ -157,6 +157,8 @@ public final class UIManager implements LifecycleOwner {
     private WindowGroup mDecor;
     private FragmentContainerView mFragmentContainerView;
 
+    private volatile boolean mDebugLayout = false;
+
 
     /// Task Handling \\\
 
@@ -299,7 +301,7 @@ public final class UIManager implements LifecycleOwner {
         if (!minecraft.isSameThread()) {
             throw new IllegalStateException("Not called from main thread");
         }
-        minecraft.setScreen(new SimpleScreen(this, fragment));
+        minecraft.setScreen(new SimpleScreen(this, fragment, null, null, null));
     }
 
     @MainThread
@@ -315,7 +317,7 @@ public final class UIManager implements LifecycleOwner {
                 minecraft.player.closeContainer();
             }
         } else {
-            minecraft.setScreen(null);
+            minecraft.setScreen(screen.getPreviousScreen());
         }
     }
 
@@ -345,6 +347,19 @@ public final class UIManager implements LifecycleOwner {
 
     WindowGroup getDecorView() {
         return mDecor;
+    }
+
+    public void setShowingLayoutBounds(boolean debugLayout) {
+        mDebugLayout = debugLayout;
+        mRoot.loadSystemProperties(() -> mDebugLayout);
+    }
+
+    public boolean isShowingLayoutBounds() {
+        return mDebugLayout;
+    }
+
+    public OnBackPressedDispatcher getOnBackPressedDispatcher() {
+        return mOnBackPressedDispatcher;
     }
 
     @Nonnull
@@ -398,15 +413,12 @@ public final class UIManager implements LifecycleOwner {
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f));
             }
             if (ModernUIForge.isOptiFineLoaded() &&
-                    ModernUIForge.Client.isTextEngineEnabled()) {
+                    ModernUIForge.isTextEngineEnabled()) {
                 OptiFineIntegration.setFastRender(false);
                 LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
             }
-            var windowMode = Config.CLIENT.mLastWindowMode;
-            if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
-                // ensure it's applied and positioned
-                windowMode.apply();
-            }
+            // ensure it's applied and positioned
+            Config.CLIENT.mLastWindowMode.apply();
             mFirstScreenOpened = true;
         }
 
@@ -608,8 +620,15 @@ public final class UIManager implements LifecycleOwner {
                     window.getWidth() / window.getScreenWidth());
             float y = (float) (mouseHandler.ypos() *
                     window.getHeight() / window.getScreenHeight());
+            int mods = 0;
+            if (Screen.hasControlDown()) {
+                mods |= KeyEvent.META_CTRL_ON;
+            }
+            if (Screen.hasShiftDown()) {
+                mods |= KeyEvent.META_SHIFT_ON;
+            }
             MotionEvent event = MotionEvent.obtain(now, MotionEvent.ACTION_SCROLL,
-                    x, y, 0);
+                    x, y, mods);
             event.setAxisValue(MotionEvent.AXIS_HSCROLL, (float) scrollX);
             event.setAxisValue(MotionEvent.AXIS_VSCROLL, (float) scrollY);
             mRoot.enqueueInputEvent(event);
@@ -671,7 +690,7 @@ public final class UIManager implements LifecycleOwner {
                         .getJavaLocale()).isRightToLeft()));*/
                         GlyphManager.getInstance().debug();
                 case GLFW_KEY_V -> {
-                    if (ModernUIForge.Client.isTextEngineEnabled()) {
+                    if (ModernUIForge.isTextEngineEnabled()) {
                         //TextLayoutEngine.getInstance().dumpEmojiAtlas();
                         TextLayoutEngine.getInstance().dumpBitmapFonts();
                     }
@@ -1025,7 +1044,11 @@ public final class UIManager implements LifecycleOwner {
             double cursorY = mouseHandler.ypos() *
                     (double) window.getGuiScaledHeight() / (double) window.getScreenHeight();
             //if (event.getLines().isEmpty()) {
-            mRoot.drawExtTooltipLocked(event, cursorX, cursorY); // need a lock
+            mTooltipRenderer.drawTooltip(event.getItemStack(), event.getPoseStack(),
+                    event.getComponents(),
+                    event.getX(), event.getY(), event.getFont(),
+                    event.getScreenWidth(), event.getScreenHeight(),
+                    cursorX, cursorY, minecraft.getItemRenderer());
             /*} else {
                 TooltipRenderer.drawTooltip(mCanvas, event.getLines(), event.getFontRenderer(), event.getStack(),
                         event.getMatrixStack(), event.getX(), event.getY(), (float) cursorX, (float) cursorY,
@@ -1291,22 +1314,6 @@ public final class UIManager implements LifecycleOwner {
                     //float alpha = (int) Math.min(300, mElapsedTimeMillis) / 300f;
                     canvas.drawLayer(layer, width, height, 1, true);
                     canvas.executeRenderPass(null);
-                }
-            }
-        }
-
-        public void drawExtTooltipLocked(@Nonnull RenderTooltipEvent.Pre event, double cursorX, double cursorY) {
-            if (mCanvas == null) {
-                return;
-            }
-            synchronized (mRenderLock) {
-                if (!mPendingDraw) {
-                    mTooltipRenderer.drawTooltip(mCanvas, mWindow,
-                            event.getItemStack(), event.getPoseStack(),
-                            event.getComponents(),
-                            event.getX(), event.getY(), event.getFont(),
-                            event.getScreenWidth(), event.getScreenHeight(),
-                            cursorX, cursorY, minecraft.getItemRenderer());
                 }
             }
         }

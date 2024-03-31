@@ -1,5 +1,62 @@
 Changelogs
 ===
+### Modern UI 3.10.1.3
+#### Forge Extension 1.19.4
+* Do not use new word breaker in command mode
+* Add preferences navigation to mods config button
+* Improve PreferencesFragment
+* Add API to allow back to previous screen, allow passing a ScreenCallback
+* Add API to create MuiScreen
+* Add Segoe UI Symbol to default fallback list
+* Fix issue with TrueType Collection registration
+* Add font registration config to register additional fonts
+* Add modifiers to ACTION_SCROLL event
+* Add showing layout bounds
+* Add adaptive tooltip colors
+* Renew tooltip rendering
+  - Create rendertype_modern_tooltip shader
+  - Interpolate color bilinearly in sRGB space
+  - Better shadow effect, add shadow opacity
+  - Add corner radius config
+  - Adjust auto scrolling velocity
+* Fix a rare crash on config reloading due to thread-safety
+* Apply blur effect only to screens that have default background (configurable)
+* Do not use Overwrite for calculateScale
+* Fix startup crash on server and datagen
+* Remove ScreenCallback capability
+#### Modern Text Engine 1.19.4
+* Change logging level for font loading, enhance onFontRegistered thread-safety
+* Add new default font behaviors and rule set, allowing regexes to match fonts
+* Adjust text renderer alpha threshold from 1 to 2 (0-255)
+* Fix only a very small set of characters can be used for obfuscated rendering
+* Use Latin1 for FastCharSet
+* Fix a rare crash on text engine due to batch rendering and display mode changes
+#### Core Framework 3.10.1
+* Update typecast checks, add ArrayMap.forEach
+* Make FontFamily.createFamily throw Exception
+* Add FontFamily.createFamilies for TrueType Collection
+* Add HorizontalScrollView, update ScrollView
+* Add debug layout to show layout bounds
+* Optimize Color.parseColor
+* Add Animatable and Animatable2
+* Add some missing javadoc
+* Use UTF-16 for TextUtils read/write
+* Add TextPaint.baselineShift and Subscript/SuperscriptSpan
+* Disable pooling of Message objects
+* Build against a copy of Arc3D, instead of composite build
+* Add Canvas.shear / skew, deprecate Canvas.getMatrix
+* Add TextUtils.concat and TextUtils.join methods
+* Make use of Java 20 float/half convert instruction
+* Add CharBuffer support for TextUtils.getChars()
+#### Core Framework - Kotlin Extension 3.10.1
+* No changes
+#### Markdown 3.10.1
+* No changes
+#### Arc 3D Graphics Engine 3.10.1
+* Add 3D shearing transform methods
+* Improve GL_TEXTURE_SWIZZLE_RGBA compatibility
+* Tons of updates on DSL shader compiler, including new grammar parsing and SPIR-V generation, no detailed information provided
+
 ### Modern UI 3.10.0.3
 #### Forge Extension 1.19.4
 * Add Markdown preview

@@ -54,10 +54,11 @@ import java.awt.font.GlyphVector;
 import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import static icyllis.modernui.ModernUI.LOGGER;
@@ -183,17 +184,25 @@ public class TextLayoutEngine extends FontResourceManager
     /**
      * Include all except Unicode font.
      */
-    public static final int DEFAULT_FONT_BEHAVIOR_KEEP_ALL = 0x3;
+    public static final int DEFAULT_FONT_BEHAVIOR_KEEP_ALL =
+            DEFAULT_FONT_BEHAVIOR_KEEP_ASCII | DEFAULT_FONT_BEHAVIOR_KEEP_OTHER;
+
+    public static final int DEFAULT_FONT_BEHAVIOR_ONLY_INCLUDE = 4;
+    public static final int DEFAULT_FONT_BEHAVIOR_ONLY_EXCLUDE = 5;
 
     /**
-     * For {@link net.minecraft.client.Minecraft#DEFAULT_FONT} and
-     * {@link net.minecraft.client.Minecraft#UNIFORM_FONT},
-     * should we keep some bitmap providers of them?
+     * For {@link net.minecraft.client.Minecraft#DEFAULT_FONT},
+     * should we keep some providers of them?
      *
      * @see StandardFontSet
      */
     public static volatile int sDefaultFontBehavior =
-            DEFAULT_FONT_BEHAVIOR_KEEP_OTHER; // <- bit mask
+            DEFAULT_FONT_BEHAVIOR_IGNORE_ALL; // <- 0-3 is bit mask, 4-5 is enum
+    /**
+     * Used when {@link #sDefaultFontBehavior} is {@link #DEFAULT_FONT_BEHAVIOR_ONLY_INCLUDE}
+     * or {@link #DEFAULT_FONT_BEHAVIOR_ONLY_EXCLUDE}.
+     */
+    public static volatile List<? extends String> sDefaultFontRuleSet;
 
 
     /**
@@ -258,9 +267,9 @@ public class TextLayoutEngine extends FontResourceManager
      */
     private final HashMap<ResourceLocation, FontCollection> mFontCollections = new HashMap<>();
 
-    private FontCollection mDefaultFontCollection;
+    private FontCollection mRawDefaultFontCollection;
 
-    private final HashMap<ResourceLocation, FontCollection> mRegisteredFonts = new HashMap<>();
+    private final ConcurrentHashMap<ResourceLocation, FontCollection> mRegisteredFonts = new ConcurrentHashMap<>();
 
     public static final int MIN_PIXEL_DENSITY_FOR_SDF = 4;
 
@@ -278,7 +287,7 @@ public class TextLayoutEngine extends FontResourceManager
     /**
      * Determine font size. Integer.
      */
-    private volatile int mResLevel;
+    private volatile int mResLevel = 2;
     /**
      * Text direction.
      */
@@ -317,19 +326,19 @@ public class TextLayoutEngine extends FontResourceManager
             if (invalidationInfo.resize()) {
                 // When OpenGL texture ID changed (atlas resized), we want to use the new first atlas
                 // for batch rendering, we need to clear any existing TextRenderType instances
-                TextRenderType.clear();
+                TextRenderType.clear(false);
             } else {
                 // called by compact(), need to lookupGlyph() and cacheGlyph() again
                 reload();
             }
         });
-        // init
-        reload();
 
         mTextRenderer = new ModernTextRenderer(this);
         mStringSplitter = new ModernStringSplitter(this, (int ch, Style style) -> {
             throw new UnsupportedOperationException("Modern Text Engine");
         });
+
+        LOGGER.info(ModernUI.MARKER, "Created TextLayoutEngine");
     }
 
     /**
@@ -360,6 +369,10 @@ public class TextLayoutEngine extends FontResourceManager
         return mStringSplitter;
     }
 
+    public FontCollection getRawDefaultFontCollection() {
+        return mRawDefaultFontCollection;
+    }
+
     /**
      * Cleanup layout cache.
      */
@@ -375,7 +388,7 @@ public class TextLayoutEngine extends FontResourceManager
         // Metrics change with resolution level
         mFastCharMap.clear();
         // Just clear TextRenderType instances, font textures are remained
-        TextRenderType.clear();
+        TextRenderType.clear(false);
         if (count > 0) {
             LOGGER.debug(MARKER, "Cleanup {} text layout entries", count);
         }
@@ -431,53 +444,51 @@ public class TextLayoutEngine extends FontResourceManager
                     TextDirectionHeuristics.FIRSTSTRONG_LTR;
         };
 
-        if (oldLevel == 0) {
-            LOGGER.info(MARKER, "Loaded text layout engine, res level: {}, locale: {}, layout RTL: {}",
-                    mResLevel, locale, layoutRtl);
+        // register logical fonts
+        mFontCollections.putIfAbsent(SANS_SERIF,
+                Typeface.SANS_SERIF);
+        mFontCollections.putIfAbsent(SERIF,
+                Typeface.SERIF);
+        mFontCollections.putIfAbsent(MONOSPACED,
+                Typeface.MONOSPACED);
+        // register logical fonts in default namespace
+        mFontCollections.putIfAbsent(new ResourceLocation(SANS_SERIF.getPath()),
+                Typeface.SANS_SERIF);
+        mFontCollections.putIfAbsent(new ResourceLocation(SERIF.getPath()),
+                Typeface.SERIF);
+        mFontCollections.putIfAbsent(new ResourceLocation(MONOSPACED.getPath()),
+                Typeface.MONOSPACED);
+
+        if (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL || // exclude everything
+                (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_ONLY_INCLUDE && // include nothing
+                        (sDefaultFontRuleSet == null || sDefaultFontRuleSet.isEmpty()))) {
+            // use Modern UI typeface list
+            mFontCollections.put(Minecraft.DEFAULT_FONT, ModernUI.getSelectedTypeface());
         } else {
-            // register logical fonts
-            mFontCollections.putIfAbsent(SANS_SERIF,
-                    Typeface.SANS_SERIF);
-            mFontCollections.putIfAbsent(SERIF,
-                    Typeface.SERIF);
-            mFontCollections.putIfAbsent(MONOSPACED,
-                    Typeface.MONOSPACED);
-            // register logical fonts in default namespace
-            mFontCollections.putIfAbsent(new ResourceLocation(SANS_SERIF.getPath()),
-                    Typeface.SANS_SERIF);
-            mFontCollections.putIfAbsent(new ResourceLocation(SERIF.getPath()),
-                    Typeface.SERIF);
-            mFontCollections.putIfAbsent(new ResourceLocation(MONOSPACED.getPath()),
-                    Typeface.MONOSPACED);
-
-            if (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL) {
-                mFontCollections.put(Minecraft.DEFAULT_FONT, ModernUI.getSelectedTypeface());
-            } else {
-                LinkedHashSet<FontFamily> defaultFonts = new LinkedHashSet<>();
-                populateDefaultFonts(defaultFonts, sDefaultFontBehavior);
-                defaultFonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
-                mFontCollections.put(Minecraft.DEFAULT_FONT,
-                        new FontCollection(defaultFonts.toArray(new FontFamily[0])));
-            }
-
-            if (mVanillaFontManager != null) {
-                var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
-                if (fontSets.get(Minecraft.DEFAULT_FONT) instanceof StandardFontSet standardFontSet) {
-                    standardFontSet.reload(mFontCollections.get(Minecraft.DEFAULT_FONT), mResLevel);
-                }
-                for (var e : fontSets.entrySet()) {
-                    if (e.getKey().equals(Minecraft.DEFAULT_FONT)) {
-                        continue;
-                    }
-                    if (e.getValue() instanceof StandardFontSet standardFontSet) {
-                        standardFontSet.invalidateCache(mResLevel);
-                    }
-                }
-            }
-
-            LOGGER.info(MARKER, "Reloaded text layout engine, res level: {} to {}, locale: {}, layout RTL: {}",
-                    oldLevel, mResLevel, locale, layoutRtl);
+            LinkedHashSet<FontFamily> defaultFonts = new LinkedHashSet<>();
+            populateDefaultFonts(defaultFonts, sDefaultFontBehavior);
+            defaultFonts.addAll(ModernUI.getSelectedTypeface().getFamilies());
+            mFontCollections.put(Minecraft.DEFAULT_FONT,
+                    new FontCollection(defaultFonts.toArray(new FontFamily[0])));
         }
+
+        if (mVanillaFontManager != null) {
+            var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
+            if (fontSets.get(Minecraft.DEFAULT_FONT) instanceof StandardFontSet standardFontSet) {
+                standardFontSet.reload(mFontCollections.get(Minecraft.DEFAULT_FONT), mResLevel);
+            }
+            for (var e : fontSets.entrySet()) {
+                if (e.getKey().equals(Minecraft.DEFAULT_FONT)) {
+                    continue;
+                }
+                if (e.getValue() instanceof StandardFontSet standardFontSet) {
+                    standardFontSet.invalidateCache(mResLevel);
+                }
+            }
+        }
+
+        LOGGER.info(MARKER, "Reloaded text layout engine, res level: {} to {}, locale: {}, layout RTL: {}",
+                oldLevel, mResLevel, locale, layoutRtl);
     }
 
     /**
@@ -524,22 +535,47 @@ public class TextLayoutEngine extends FontResourceManager
     }
 
     private void populateDefaultFonts(Set<FontFamily> set, int behavior) {
-        if (mDefaultFontCollection == null) {
+        if (mRawDefaultFontCollection == null) {
             return;
         }
-        for (FontFamily family : mDefaultFontCollection.getFamilies()) {
-            switch (family.getFamilyName()) {
-                case "minecraft:font/nonlatin_european.png",
-                        "minecraft:font/accented.png",
-                        "minecraft:font/ascii.png",
-                        "minecraft:default / minecraft:space" -> {
-                    if ((behavior & DEFAULT_FONT_BEHAVIOR_KEEP_ASCII) != 0) {
-                        set.add(family);
-                    }
+        if (behavior == DEFAULT_FONT_BEHAVIOR_ONLY_INCLUDE ||
+                behavior == DEFAULT_FONT_BEHAVIOR_ONLY_EXCLUDE) {
+            Pattern pattern = null;
+            var rules = sDefaultFontRuleSet;
+            if (rules != null && !rules.isEmpty()) {
+                try {
+                    pattern = Pattern.compile(
+                            rules.stream().distinct().collect(Collectors.joining("|"))
+                    );
+                } catch (PatternSyntaxException e) {
+                    LOGGER.warn(MARKER, "Illegal default font rules: {}", rules, e);
                 }
-                default -> {
-                    if ((behavior & DEFAULT_FONT_BEHAVIOR_KEEP_OTHER) != 0) {
-                        set.add(family);
+            }
+            boolean exclusive = behavior == DEFAULT_FONT_BEHAVIOR_ONLY_EXCLUDE;
+            for (FontFamily family : mRawDefaultFontCollection.getFamilies()) {
+                String name = family.getFamilyName();
+                boolean matches = pattern != null && pattern.matcher(name).matches();
+                // difference set
+                if (matches ^ exclusive) {
+                    set.add(family);
+                }
+            }
+        } else {
+            // legacy matching, exclude vanilla fonts
+            for (FontFamily family : mRawDefaultFontCollection.getFamilies()) {
+                switch (family.getFamilyName()) {
+                    case "minecraft:font/nonlatin_european.png",
+                            "minecraft:font/accented.png",
+                            "minecraft:font/ascii.png",
+                            "minecraft:default / minecraft:space" -> {
+                        if ((behavior & DEFAULT_FONT_BEHAVIOR_KEEP_ASCII) != 0) {
+                            set.add(family);
+                        }
+                    }
+                    default -> {
+                        if ((behavior & DEFAULT_FONT_BEHAVIOR_KEEP_OTHER) != 0) {
+                            set.add(family);
+                        }
                     }
                 }
             }
@@ -594,12 +630,12 @@ public class TextLayoutEngine extends FontResourceManager
 
     // SYNC
     private void applyResources(@Nonnull LoadResults results) {
-        close();
+        closeFonts();
         // reload fonts
         mFontCollections.clear();
         mFontCollections.putAll(mRegisteredFonts);
         mFontCollections.putAll(results.mFontCollections);
-        mDefaultFontCollection = mFontCollections.get(Minecraft.DEFAULT_FONT);
+        mRawDefaultFontCollection = mFontCollections.get(Minecraft.DEFAULT_FONT);
         // vanilla compatibility
         if (mVanillaFontManager != null) {
             var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
@@ -619,7 +655,7 @@ public class TextLayoutEngine extends FontResourceManager
         } else {
             LOGGER.warn(MARKER, "Where is font manager?");
         }
-        if (mDefaultFontCollection == null) {
+        if (mRawDefaultFontCollection == null) {
             throw new IllegalStateException("Default font failed to load");
         }
         super.applyResources(results);
@@ -627,6 +663,12 @@ public class TextLayoutEngine extends FontResourceManager
 
     @Override
     public void close() {
+        closeFonts();
+        // do final cleanup
+        TextRenderType.clear(true);
+    }
+
+    private void closeFonts() {
         // close bitmaps if never baked
         for (var fontCollection : mFontCollections.values()) {
             for (var family : fontCollection.getFamilies()) {
@@ -635,18 +677,17 @@ public class TextLayoutEngine extends FontResourceManager
                 }
             }
         }
-        if (mDefaultFontCollection != null) {
-            for (var family : mDefaultFontCollection.getFamilies()) {
+        if (mRawDefaultFontCollection != null) {
+            for (var family : mRawDefaultFontCollection.getFamilies()) {
                 if (family.getClosestMatch(FontPaint.NORMAL) instanceof BitmapFont bitmapFont) {
                     bitmapFont.close();
                 }
             }
         }
-        TextRenderType.clear();
     }
 
     @Override
-    public void onFontRegistered(FontFamily f) {
+    public void onFontRegistered(@Nonnull FontFamily f) {
         super.onFontRegistered(f);
         String name = f.getFamilyName();
         try {
@@ -654,10 +695,11 @@ public class TextLayoutEngine extends FontResourceManager
                     .replaceAll(" ", "-");
             var fc = new FontCollection(f);
             var location = ModernUIForge.location(newName);
-            mRegisteredFonts.putIfAbsent(location, fc);
-            LOGGER.info(MARKER, "Redirect registered font '{}' to '{}'", name, location);
-            // also register in minecraft namespace
-            mRegisteredFonts.putIfAbsent(new ResourceLocation(newName), fc);
+            if (mRegisteredFonts.putIfAbsent(location, fc) == null) {
+                LOGGER.info(MARKER, "Redirect registered font '{}' to '{}'", name, location);
+                // also register in minecraft namespace
+                mRegisteredFonts.putIfAbsent(new ResourceLocation(newName), fc);
+            }
         } catch (Exception e) {
             LOGGER.warn(MARKER, "Failed to redirect registered font '{}'", name);
         }
@@ -736,6 +778,8 @@ public class TextLayoutEngine extends FontResourceManager
                                     type, name, resource.sourcePackId());
                         }
                     }
+                    LOGGER.info(MARKER, "Loaded raw font '{}' in pack: '{}'",
+                            name, resource.sourcePackId());
                 } catch (Exception e) {
                     LOGGER.warn(MARKER, "Failed to load font '{}' in pack: '{}'", name, resource.sourcePackId(), e);
                 }
@@ -756,7 +800,7 @@ public class TextLayoutEngine extends FontResourceManager
         var file = new ResourceLocation(GsonHelper.getAsString(metadata, "file"));
         var location = new ResourceLocation(file.getNamespace(), "font/" + file.getPath());
         try (var stream = resources.open(location)) {
-            return FontFamily.createFamily(stream, false);
+            return FontFamily.createFamily(stream, /*register*/false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -768,6 +812,11 @@ public class TextLayoutEngine extends FontResourceManager
     /**
      * Vanilla font size is 8, but SDF text requires at least 32px to be clear enough,
      * then resolution level is adjusted to 4.
+     * <p>
+     * Note that even if SDF is disabled via {@link #sUseTextShadersInWorld}, logically
+     * SDF is still used in the 3D world, so the font size should be at least 32.
+     *
+     * @param resLevel current resolution level
      */
     public static int adjustPixelDensityForSDF(int resLevel) {
         return Math.max(resLevel, MIN_PIXEL_DENSITY_FOR_SDF);
@@ -1236,7 +1285,7 @@ public class TextLayoutEngine extends FontResourceManager
         }
 
         // initial table
-        BakedGlyph[] glyphs = new BakedGlyph[94]; // 126 - 33 + 1
+        BakedGlyph[] glyphs = new BakedGlyph[189]; // 126 - 33 + 1 + 255 - 161 + 1
         // normalized offsets
         float[] offsets = new float[glyphs.length];
 
@@ -1251,22 +1300,29 @@ public class TextLayoutEngine extends FontResourceManager
             // no text shaping
             if (awtFont != null) {
                 GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
+                if (vector.getNumGlyphs() == 0) {
+                    if (i == 0) {
+                        LOGGER.warn(MARKER, awtFont + " does not support ASCII digits");
+                        return null;
+                    }
+                    continue;
+                }
                 advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
                 glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
-                if (glyph == null && i == 0) {
-                    LOGGER.warn(MARKER, awtFont + " does not support ASCII digits");
-                    return null;
-                }
                 if (glyph == null) {
+                    if (i == 0) {
+                        LOGGER.warn(MARKER, awtFont + " does not support ASCII digits");
+                        return null;
+                    }
                     continue;
                 }
             } else {
                 var gl = bitmapFont.getGlyph(chars[0]);
-                if (gl == null && i == 0) {
-                    LOGGER.warn(MARKER, bitmapFont + " does not support ASCII digits");
-                    return null;
-                }
                 if (gl == null) {
+                    if (i == 0) {
+                        LOGGER.warn(MARKER, bitmapFont + " does not support ASCII digits");
+                        return null;
+                    }
                     continue;
                 }
                 advance = gl.advance;
@@ -1284,75 +1340,48 @@ public class TextLayoutEngine extends FontResourceManager
             n++;
         }
 
-        // 33 to 47, cache only narrow chars
-        for (int i = 0; i < 15; i++) {
-            chars[0] = (char) (33 + i);
-            float advance;
-            BakedGlyph glyph;
-            // no text shaping
-            if (awtFont != null) {
-                GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
-                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
-                // too wide
-                if (advance + 1f > offsets[0]) {
-                    continue;
+        char[][] ranges = {{33, 48}, {58, 127}, {161, 256}};
+
+        // cache only narrow chars
+        for (char[] range : ranges) {
+            for (char c = range[0], e = range[1]; c < e; c++) {
+                chars[0] = c;
+                float advance;
+                BakedGlyph glyph;
+                // no text shaping
+                if (awtFont != null) {
+                    GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
+                    if (vector.getNumGlyphs() == 0) {
+                        continue;
+                    }
+                    advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
+                    // too wide
+                    if (advance - 1f > offsets[0]) {
+                        continue;
+                    }
+                    glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
+                } else {
+                    var gl = bitmapFont.getGlyph(chars[0]);
+                    // allow empty
+                    if (gl == null) {
+                        continue;
+                    }
+                    advance = gl.advance;
+                    // too wide
+                    if (advance - 1f > offsets[0]) {
+                        continue;
+                    }
+                    glyph = gl;
                 }
-                glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
-            } else {
-                var gl = bitmapFont.getGlyph(chars[0]);
                 // allow empty
-                if (gl == null) {
-                    continue;
+                if (glyph != null) {
+                    glyphs[n] = glyph;
+                    offsets[n] = (offsets[0] - advance) / 2f;
+                    n++;
                 }
-                advance = gl.advance;
-                // too wide
-                if (advance + 1f > offsets[0]) {
-                    continue;
-                }
-                glyph = gl;
-            }
-            // allow empty
-            if (glyph != null) {
-                glyphs[n] = glyph;
-                offsets[n] = (offsets[0] - advance) / 2f;
-                n++;
             }
         }
 
-        // 58 to 126, cache only narrow chars
-        for (int i = 0; i < 69; i++) {
-            chars[0] = (char) (58 + i);
-            float advance;
-            BakedGlyph glyph;
-            // no text shaping
-            if (awtFont != null) {
-                GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
-                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
-                // too wide
-                if (advance + 1 > offsets[0]) {
-                    continue;
-                }
-                glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
-            } else {
-                var gl = bitmapFont.getGlyph(chars[0]);
-                // allow empty
-                if (gl == null) {
-                    continue;
-                }
-                advance = gl.advance;
-                // too wide
-                if (advance + 1 > offsets[0]) {
-                    continue;
-                }
-                glyph = gl;
-            }
-            // allow empty
-            if (glyph != null) {
-                glyphs[n] = glyph;
-                offsets[n] = (offsets[0] - advance) / 2f;
-                n++;
-            }
-        }
         if (n < glyphs.length) {
             glyphs = Arrays.copyOf(glyphs, n);
             offsets = Arrays.copyOf(offsets, n);
