@@ -59,6 +59,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.*;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import static icyllis.modernui.ModernUI.LOGGER;
@@ -546,9 +547,13 @@ public class TextLayoutEngine extends FontResourceManager
             Pattern pattern = null;
             var rules = sDefaultFontRuleSet;
             if (rules != null && !rules.isEmpty()) {
-                pattern = Pattern.compile(
-                        rules.stream().distinct().collect(Collectors.joining("|"))
-                );
+                try {
+                    pattern = Pattern.compile(
+                            rules.stream().distinct().collect(Collectors.joining("|"))
+                    );
+                } catch (PatternSyntaxException e) {
+                    LOGGER.warn(MARKER, "Illegal default font rules: {}", rules, e);
+                }
             }
             boolean exclusive = behavior == DEFAULT_FONT_BEHAVIOR_ONLY_EXCLUDE;
             for (FontFamily family : mRawDefaultFontCollection.getFamilies()) {

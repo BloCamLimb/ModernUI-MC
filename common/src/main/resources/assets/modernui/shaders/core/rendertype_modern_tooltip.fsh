@@ -31,12 +31,12 @@ void main() {
     if (!bool(u_RainbowOffset)) {
         // clamp01 for AA bloat
         vec2 t = clamp(0.5*pos/(u_Size+u_Thickness)+0.5,0.0,1.0);
-        vec4 q11 = vec4(pow(u_PushData2.rgb,vec3(2.2)),u_PushData2.a);
-        vec4 q21 = vec4(pow(u_PushData3.rgb,vec3(2.2)),u_PushData3.a);
-        vec4 q12 = vec4(pow(u_PushData4.rgb,vec3(2.2)),u_PushData4.a);
-        vec4 q22 = vec4(pow(u_PushData5.rgb,vec3(2.2)),u_PushData5.a);
-        vec4 col = mix(mix(q11,q21,t.x),mix(q12,q22,t.x),t.y);
-        border = vec4(pow(col.rgb,vec3(1.0/2.2)),col.a);
+        vec3 q11 = pow(u_PushData2.rgb,vec3(2.2));
+        vec3 q21 = pow(u_PushData3.rgb,vec3(2.2));
+        vec3 q12 = pow(u_PushData4.rgb,vec3(2.2));
+        vec3 q22 = pow(u_PushData5.rgb,vec3(2.2));
+        vec3 col = mix(mix(q11,q21,t.x),mix(q12,q22,t.x),t.y);
+        border = vec4(pow(col,vec3(1.0/2.2)),1.0);
     } else {
         float t = atan(-pos.y, -pos.x) * 0.1591549430918;
         float hue = mod(t+u_RainbowOffset,1.0);

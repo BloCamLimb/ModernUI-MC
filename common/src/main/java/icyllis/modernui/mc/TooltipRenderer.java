@@ -674,9 +674,10 @@ public final class TooltipRenderer {
         RenderSystem.getModelViewStack().mulPoseMatrix(pose);
         RenderSystem.getModelViewStack().translate(centerX, centerY, 0);
         RenderSystem.applyModelViewMatrix();
-        // estimate the draw bounds
-        float extentX = sizeX + shadowRadius * 1.2f;
-        float extentY = sizeY + shadowRadius * 1.2f;
+        // estimate the draw bounds, half stroke width + 0.5 AA bloat + shadow spread
+        float extent = sBorderWidth / 2f + 0.5f + shadowRadius * 1.2f;
+        float extentX = sizeX + extent;
+        float extentY = sizeY + extent;
         buffer.vertex(extentX, extentY, 0).endVertex();
         buffer.vertex(extentX, -extentY, 0).endVertex();
         buffer.vertex(-extentX, -extentY, 0).endVertex();

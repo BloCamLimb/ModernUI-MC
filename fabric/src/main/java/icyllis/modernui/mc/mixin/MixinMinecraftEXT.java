@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.mixin;
 
-import icyllis.modernui.mc.UIManager;
 import icyllis.modernui.mc.fabric.ModernUIFabricClient;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
@@ -39,10 +38,5 @@ public abstract class MixinMinecraftEXT {
             "render(FJZ)V", shift = At.Shift.AFTER))
     private void onEndRenderTick(boolean hasMemory, CallbackInfo ci) {
         ModernUIFabricClient.END_RENDER_TICK.invoker().run();
-    }
-
-    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lnet/minecraft/Util;shutdownExecutors()V"))
-    private void onClose(CallbackInfo ci) {
-        UIManager.destroy();
     }
 }
