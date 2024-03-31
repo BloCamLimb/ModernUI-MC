@@ -126,11 +126,6 @@ final class Registration {
         }
 
         MinecraftForge.EVENT_BUS.register(ServerHandler.INSTANCE);
-
-        // give it a probe
-        if (MuiForgeApi.isServerStarted()) {
-            LOGGER.info(MARKER, "");
-        }
     }
 
     /*@Nonnull

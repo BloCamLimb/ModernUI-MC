@@ -24,7 +24,6 @@ Changelogs
 * Apply blur effect only to screens that have default background (configurable)
 * Do not use Overwrite for calculateScale
 * Fix startup crash on server and datagen
-* Fix EditBox deletion undo not working
 * Remove ScreenCallback capability
 * Refactor project structure and bootstrap
 #### Fabric Extension 1.20.1

@@ -162,13 +162,10 @@ public final class TooltipRenderer {
                     int c = it.nextInt();
                     float[] hsv = new float[3];
                     Color.RGBToHSV(c, hsv);
-                    // discard colors with low saturation or brightness
-                    if (hsv[1] >= 0.3f && hsv[2] >= 0.4f) {
-                        // reduce saturation and brightness
-                        hsv[1] = Math.min(hsv[1], 0.9f);
-                        hsv[2] = Math.min(hsv[2], 0.85f);
-                        hsvColors.add(hsv);
-                    }
+                    // reduce saturation and brightness
+                    hsv[1] = Math.min(hsv[1], 0.9f);
+                    hsv[2] = MathUtil.clamp(hsv[2], 0.2f, 0.85f);
+                    hsvColors.add(hsv);
                 }
                 if (!hsvColors.isEmpty()) {
                     int size = hsvColors.size();
