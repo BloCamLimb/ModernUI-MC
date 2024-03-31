@@ -30,7 +30,6 @@ import icyllis.modernui.mc.mixin.AccessOptions;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.components.CycleButton;
-import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
@@ -213,10 +212,6 @@ final class Registration {
                 UIManagerForge.initializeRenderer();
                 // ensure it's applied and positioned
                 Config.CLIENT.mLastWindowMode.apply();
-                if (ModernUIMod.sDevelopment) {
-                    MenuScreens.register(MuiRegistries.TEST_MENU.get(), MenuScreenFactory.create(menu ->
-                            new TestPauseFragment()));
-                }
             });
 
             CrashReportCallables.registerCrashCallable("Fragments", () -> {
@@ -397,6 +392,14 @@ final class Registration {
                 }
             }
         }*/
+
+        @SubscribeEvent
+        static void onRegisterMenuScreens(@Nonnull RegisterMenuScreensEvent event) {
+            if (ModernUIMod.sDevelopment) {
+                event.register(MuiRegistries.TEST_MENU.get(), MenuScreenFactory.create(menu ->
+                        new TestPauseFragment()));
+            }
+        }
 
         @SubscribeEvent
         static void onRegisterShaders(@Nonnull RegisterShadersEvent event) {

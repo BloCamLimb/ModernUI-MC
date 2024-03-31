@@ -190,19 +190,6 @@ public final class MuiForgeApi extends MuiModApi {
     }
 
     /**
-     * <b>Debug only.</b>
-     * <p>
-     * Get the lifecycle of current server. At most one server instance exists
-     * at the same time, which may be integrated or dedicated.
-     *
-     * @return {@code true} if server started
-     */
-    @ApiStatus.Internal
-    public static boolean isServerStarted() {
-        return ServerHandler.INSTANCE.mStarted;
-    }
-
-    /**
      * Create a container menu on server-side with the given {@link MenuProvider}, generate a
      * container id represents the next screen. Then send a packet to the player to request to
      * open a GUI on the client. This method must be called from server thread,
