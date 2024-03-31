@@ -130,6 +130,7 @@ public sealed class NetworkMessages extends NetworkHandler {
                             p.containerMenu = menu;
                             Minecraft.getInstance().setScreen(new MenuScreen<>(UIManagerForge.getInstance(),
                                     fragment,
+                                    null,
                                     menu,
                                     p.getInventory(),
                                     CommonComponents.EMPTY));

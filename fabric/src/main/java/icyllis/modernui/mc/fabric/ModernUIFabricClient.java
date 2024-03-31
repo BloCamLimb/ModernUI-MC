@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.fabric;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
@@ -35,6 +36,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.CoreShaderRegistrationCallback;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.fabricmc.fabric.api.resource.*;
@@ -53,6 +55,7 @@ import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraftforge.fml.config.ModConfig;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -113,16 +116,24 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             }
         });
 
+        CoreShaderRegistrationCallback.EVENT.register(context -> {
+            try {
+                context.register(
+                        ModernUIMod.location("rendertype_modern_tooltip"),
+                        DefaultVertexFormat.POSITION,
+                        TooltipRenderType::setShaderTooltip);
+            } catch (IOException e) {
+                LOGGER.error(MARKER, "Bad tooltip shader", e);
+            }
+        });
+
         ModConfigEvents.loading(ID).register(Config::reloadAnyClient);
         ModConfigEvents.reloading(ID).register(Config::reloadAnyClient);
 
         ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
             UIManagerFabric.initializeRenderer();
-            var windowMode = Config.CLIENT.mLastWindowMode;
-            if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
-                // ensure it's applied and positioned
-                windowMode.apply();
-            }
+            // ensure it's applied and positioned
+            Config.CLIENT.mLastWindowMode.apply();
 
             if (Config.CLIENT.mUseNewGuiScale.get()) {
                 final OptionInstance<Integer> newGuiScale = new OptionInstance<>(
@@ -184,7 +195,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
         );
 
         FontResourceManager.getInstance();
-        if (isTextEngineEnabled()) {
+        if (ModernUIMod.isTextEngineEnabled()) {
             ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
                 MuiModApi.addOnWindowResizeListener(TextLayoutEngine.getInstance());
             });

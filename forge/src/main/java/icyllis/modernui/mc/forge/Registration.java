@@ -18,13 +18,13 @@
 
 package icyllis.modernui.mc.forge;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.ImageStore;
-import icyllis.modernui.mc.ScreenCallback;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessOptions;
 import icyllis.modernui.mc.testforge.TestContainerMenu;
@@ -33,6 +33,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.network.chat.Component;
@@ -46,7 +47,6 @@ import net.minecraft.world.item.Item;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.*;
@@ -59,6 +59,7 @@ import net.minecraftforge.registries.RegisterEvent;
 import org.apache.commons.io.output.StringBuilderWriter;
 
 import javax.annotation.Nonnull;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -193,7 +194,7 @@ final class Registration {
                     handler.post(() -> UIManager.getInstance().updateLayoutDir(Config.CLIENT.mForceRtl.get()));
                 }
             });
-            if (!ModernUIClient.isTextEngineEnabled()) {
+            if (!ModernUIMod.isTextEngineEnabled()) {
                 event.registerReloadListener(FontResourceManager.getInstance());
             }
             // else injected by MixinFontManager
@@ -207,10 +208,10 @@ final class Registration {
             event.register(UIManagerForge.ZOOM_KEY);
         }
 
-        @SubscribeEvent
+        /*@SubscribeEvent
         static void registerCapabilities(@Nonnull RegisterCapabilitiesEvent event) {
             event.register(ScreenCallback.class);
-        }
+        }*/
 
         @SubscribeEvent
         static void setupClient(@Nonnull FMLClientSetupEvent event) {
@@ -220,11 +221,8 @@ final class Registration {
             event.enqueueWork(() -> {
                 //ModernUI.getSelectedTypeface();
                 UIManagerForge.initializeRenderer();
-                var windowMode = Config.CLIENT.mLastWindowMode;
-                if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
-                    // ensure it's applied and positioned
-                    windowMode.apply();
-                }
+                // ensure it's applied and positioned
+                Config.CLIENT.mLastWindowMode.apply();
                 if (ModernUIMod.sDevelopment) {
                     MenuScreens.register(MuiRegistries.TEST_MENU.get(), MenuScreenFactory.create(menu ->
                             new TestPauseFragment()));
@@ -407,6 +405,19 @@ final class Registration {
                 if (event.getMenu() instanceof TestContainerMenu c) {
                     event.set(new TestPauseFragment());
                 }
+            }
+        }
+
+        @SubscribeEvent
+        static void onRegisterShaders(@Nonnull RegisterShadersEvent event) {
+            try {
+                event.registerShader(
+                        new ShaderInstance(event.getResourceProvider(),
+                                ModernUIMod.location("rendertype_modern_tooltip"),
+                                DefaultVertexFormat.POSITION),
+                        TooltipRenderType::setShaderTooltip);
+            } catch (IOException e) {
+                LOGGER.error(MARKER, "Bad tooltip shader", e);
             }
         }
     }

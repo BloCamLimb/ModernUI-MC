@@ -75,7 +75,7 @@ public final class UIManagerFabric extends UIManager {
         if (!minecraft.isSameThread()) {
             throw new IllegalStateException("Not called from main thread");
         }
-        minecraft.setScreen(new SimpleScreen(this, fragment));
+        minecraft.setScreen(new SimpleScreen(this, fragment, null, null, null));
     }
 
     @Override
@@ -89,15 +89,12 @@ public final class UIManagerFabric extends UIManager {
                     );
                 }
                 if (ModernUIMod.isOptiFineLoaded() &&
-                        ModernUIClient.isTextEngineEnabled()) {
+                        ModernUIMod.isTextEngineEnabled()) {
                     OptiFineIntegration.setFastRender(false);
                     LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
                 }
-                var windowMode = Config.CLIENT.mLastWindowMode;
-                if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
-                    // ensure it's applied and positioned
-                    windowMode.apply();
-                }
+                // ensure it's applied and positioned
+                Config.CLIENT.mLastWindowMode.apply();
                 mFirstScreenOpened = true;
             }
 

@@ -25,7 +25,6 @@ import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.lifecycle.LifecycleOwner;
-import icyllis.modernui.mc.ScreenCallback;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessNativeImage;
 import icyllis.modernui.mc.testforge.TestPauseFragment;
@@ -45,7 +44,6 @@ import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.common.capabilities.*;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -92,12 +90,6 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     public static final Field TEXTURE_ID =
             ObfuscationReflectionHelper.findField(AbstractTexture.class, "f_117950_");
 
-    /**
-     * Built-in capability, DO NOT USE.
-     */
-    public static final Capability<ScreenCallback> SCREEN_CALLBACK = CapabilityManager.get(new CapabilityToken<>() {
-    });
-
     private UIManagerForge() {
         super();
         // events
@@ -122,7 +114,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         if (!minecraft.isSameThread()) {
             throw new IllegalStateException("Not called from main thread");
         }
-        minecraft.setScreen(new SimpleScreen(this, fragment));
+        minecraft.setScreen(new SimpleScreen(this, fragment, null, null, null));
     }
 
     @SubscribeEvent
@@ -135,15 +127,12 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                 minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f));
             }
             if (ModernUIMod.isOptiFineLoaded() &&
-                    ModernUIClient.isTextEngineEnabled()) {
+                    ModernUIMod.isTextEngineEnabled()) {
                 OptiFineIntegration.setFastRender(false);
                 LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
             }
-            var windowMode = Config.CLIENT.mLastWindowMode;
-            if (windowMode == Config.Client.WindowMode.FULLSCREEN_BORDERLESS) {
-                // ensure it's applied and positioned
-                windowMode.apply();
-            }
+            // ensure it's applied and positioned
+            Config.CLIENT.mLastWindowMode.apply();
             mFirstScreenOpened = true;
         }
 
@@ -232,7 +221,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                         .getJavaLocale()).isRightToLeft()));*/
                         GlyphManager.getInstance().debug();
                 case GLFW_KEY_V -> {
-                    if (ModernUIClient.isTextEngineEnabled()) {
+                    if (ModernUIMod.isTextEngineEnabled()) {
                         //TextLayoutEngine.getInstance().dumpEmojiAtlas();
                         TextLayoutEngine.getInstance().dumpBitmapFonts();
                     }

@@ -7,6 +7,9 @@
   "authors": [
     "BloCamLimb"
   ],
+  "contributors": [
+    "The Android Open Source Project"
+  ],
   "contact": {
     "homepage": "https://curseforge.com/minecraft/mc-mods/modern-ui",
     "issues": "https://github.com/BloCamLimb/ModernUI/issues",
@@ -21,6 +24,9 @@
     ],
     "client": [
       "icyllis.modernui.mc.fabric.ModernUIFabricClient"
+    ],
+    "modmenu": [
+      "icyllis.modernui.mc.fabric.MuiModMenuApi"
     ]
   },
   "mixins": [
@@ -35,7 +41,8 @@
     "fabric-api": ">=0.87.0",
     "forgeconfigapiport": ">=8.0.0"
   },
-  "suggests": {
-    "another-mod": "*"
+  "conflicts": {
+    "blur": "*",
+    "tipthescales": "*"
   }
 }

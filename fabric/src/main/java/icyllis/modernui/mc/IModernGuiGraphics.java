@@ -22,6 +22,9 @@ import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nonnull;
 
+/**
+ * Fabric only.
+ */
 public interface IModernGuiGraphics {
 
     void modernUI_MC$setTooltipStack(@Nonnull ItemStack stack);

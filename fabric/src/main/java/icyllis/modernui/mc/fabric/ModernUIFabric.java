@@ -21,7 +21,6 @@ package icyllis.modernui.mc.fabric;
 import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
 import fuzs.forgeconfigapiport.api.config.v2.ModConfigEvents;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.mc.Config;
 import icyllis.modernui.mc.ModernUIMod;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
@@ -43,7 +42,6 @@ public class ModernUIFabric extends ModernUIMod implements ModInitializer {
 
         sLegendaryTooltipsLoaded = FabricLoader.getInstance().isModLoaded("legendarytooltips");
         sUntranslatedItemsLoaded = FabricLoader.getInstance().isModLoaded("untranslateditems");
-        sSodiumLoaded = FabricLoader.getInstance().isModLoaded("sodium");
 
         ModConfigEvents.loading(ID).register(Config::reloadCommon);
         ModConfigEvents.reloading(ID).register(Config::reloadCommon);

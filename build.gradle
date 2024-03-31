@@ -30,6 +30,8 @@ allprojects {
     dependencies {
         compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
         compileOnly 'org.jetbrains:annotations:23.1.0'
+        testCompileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+        testCompileOnly 'org.jetbrains:annotations:23.1.0'
 
         def lwjglNatives
         switch (org.gradle.internal.os.OperatingSystem.current()) {

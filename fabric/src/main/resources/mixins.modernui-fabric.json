@@ -20,6 +20,7 @@
     "MixinKeyboardHandler",
     "MixinLevelRendererDBG",
     "MixinMinecraft",
+    "MixinMinecraftEXT",
     "MixinMouseHandler",
     "MixinRenderSystem",
     "MixinScreen",
