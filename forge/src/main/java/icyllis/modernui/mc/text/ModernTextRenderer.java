@@ -105,7 +105,7 @@ public final class ModernTextRenderer {
         }*/
 
         int a = color >>> 24;
-        if (a <= 1) a = 255;
+        if (a <= 2) a = 255;
         int r = color >> 16 & 0xff;
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
@@ -145,7 +145,7 @@ public final class ModernTextRenderer {
         }*/
 
         int a = color >>> 24;
-        if (a <= 1) a = 255;
+        if (a <= 2) a = 255;
         int r = color >> 16 & 0xff;
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
@@ -185,7 +185,7 @@ public final class ModernTextRenderer {
         }*/
 
         int a = color >>> 24;
-        if (a <= 1) a = 255;
+        if (a <= 2) a = 255;
         int r = color >> 16 & 0xff;
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
@@ -262,7 +262,7 @@ public final class ModernTextRenderer {
         }
 
         int a = color >>> 24;
-        if (a <= 1) a = 255;
+        if (a <= 2) a = 255;
         int r = color >> 16 & 0xff;
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
@@ -301,7 +301,7 @@ public final class ModernTextRenderer {
             color = outlineColor;
         }
         int a = color >>> 24;
-        if (a <= 1) a = 255;
+        if (a <= 2) a = 255;
         int r = color >> 16 & 0xff;
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
@@ -323,7 +323,7 @@ public final class ModernTextRenderer {
         matrix = new Matrix4f(matrix);
 
         a = outlineColor >>> 24;
-        if (a <= 1) a = 255;
+        if (a <= 2) a = 255;
         r = outlineColor >> 16 & 0xff;
         g = outlineColor >> 8 & 0xff;
         b = outlineColor & 0xff;

@@ -38,11 +38,11 @@ import javax.annotation.Nonnull;
 public class DashboardFragment extends Fragment {
 
     public static final String CREDIT_TEXT = """
-            Modern UI 3.10
+            Modern UI 3.10.1
             by
             BloCamLimb
             (Icyllis Milica)
-            _(:з」∠)_""";
+            Ciallo～(∠・ω< )⌒☆""";
 
     private ViewGroup mLayout;
     private TextView mSideBox;
@@ -96,15 +96,17 @@ public class DashboardFragment extends Fragment {
                         .setBufferType(TextView.BufferType.SPANNABLE)
                         .build()
                         .setMarkdown(tv, """
-                                What's New in Modern UI 3.10
+                                What's New in Modern UI 3.10.1
                                 ----
-                                * Enhanced Text Layout
+                                * Brand-New Tooltip Style
+                                * Better Font Management
                                 * Better Mod Compatibility
                                 * Rendering Optimization
-                                * Basic Markdown Support
+                                * New Shader Compiler
+                                * New UI Components & Text Styles
                                 * Unicode 15.1 Emoji List
-                                * New UI Components
-                                * And More…
+                                * [Full Changelog…](https://github.com/BloCamLimb/ModernUI/blob/master/changelogs.md)
+                                * [Full Changelog…](https://github.com/BloCamLimb/ModernUI-MC/blob/master/changelogs.md)
                                                                 
                                 > Author: BloCamLimb \s
                                   Source Code: [Modern UI](https://github.com/BloCamLimb/ModernUI) \s
@@ -124,7 +126,7 @@ public class DashboardFragment extends Fragment {
         {
             var tv = new TextView(getContext());
             tv.setTextSize(12);
-            tv.setText("Copyright © 2019-2023 BloCamLimb. All rights reserved.");
+            tv.setText("Copyright © 2019-2024 BloCamLimb. All rights reserved.");
             var params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT);
             params.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;

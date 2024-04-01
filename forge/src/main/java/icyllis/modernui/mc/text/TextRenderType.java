@@ -309,7 +309,7 @@ public class TextRenderType extends RenderType {
         return sFirstSDFStrokeType;
     }
 
-    public static void clear() {
+    public static void clear(boolean cleanup) {
         if (sFirstSDFFillType != null) {
             assert (!sSDFFillTypes.isEmpty());
             var access = (AccessRenderBuffers) Minecraft.getInstance().renderBuffers();
@@ -328,7 +328,9 @@ public class TextRenderType extends RenderType {
         sSeeThroughTypes.clear();
         sFirstSDFFillBuffer.clear();
         sFirstSDFStrokeBuffer.clear();
-        sLinearFontSampler = RefCnt.move(sLinearFontSampler);
+        if (cleanup) {
+            sLinearFontSampler = RefCnt.move(sLinearFontSampler);
+        }
     }
 
     public static ShaderInstance getShaderNormal() {
@@ -354,8 +356,8 @@ public class TextRenderType extends RenderType {
         if (smart) {
             if (!sSmartShadersLoaded) {
                 sSmartShadersLoaded = true;
-                if (Core.requireDirectContext()
-                        .getCaps().shaderCaps().mGLSLVersion >= 400) {
+                if (((GLCaps) Core.requireDirectContext()
+                        .getCaps()).getGLSLVersion() >= 400) {
                     var provider = obtainResourceProvider();
                     try {
                         sShaderSDFFillSmart = new ShaderInstance(provider,

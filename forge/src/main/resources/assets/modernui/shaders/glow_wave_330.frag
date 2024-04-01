@@ -21,7 +21,8 @@ void main() {
 
     vec4 col;
 
-    if ((int(u_Color.x / 16.0) & 1) == 1) {
+    float mt = mod(u_Color.x / 16.0, 2.0);
+    if (mt >= 1.0) {
         float dist = abs(pos.y-sin(pos.x*10.0-u_Color.x*5.0)*0.1-cos(pos.x*5.0)*0.05);
         dist = pow(0.1/dist, 0.8);
 

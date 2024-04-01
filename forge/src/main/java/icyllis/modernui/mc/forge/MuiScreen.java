@@ -18,8 +18,10 @@
 
 package icyllis.modernui.mc.forge;
 
+import icyllis.modernui.annotation.UiThread;
 import icyllis.modernui.fragment.Fragment;
-import net.minecraftforge.common.capabilities.*;
+import icyllis.modernui.fragment.OnBackPressedDispatcher;
+import net.minecraft.client.gui.screens.Screen;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -28,14 +30,13 @@ import javax.annotation.Nullable;
  * Common interface between MenuScreen and SimpleScreen
  */
 public sealed interface MuiScreen
-        extends ICapabilityProvider
         permits MenuScreen, SimpleScreen {
 
     /**
-     * Built-in capability, DO NOT USE.
+     * @return this as screen
      */
-    Capability<ScreenCallback> SCREEN_CALLBACK = CapabilityManager.get(new CapabilityToken<>() {
-    });
+    @Nonnull
+    Screen self();
 
     /**
      * @return the main fragment
@@ -48,4 +49,34 @@ public sealed interface MuiScreen
      */
     @Nullable
     ScreenCallback getCallback();
+
+    /**
+     * Returns the previous screen associated with this screen.
+     * If non-null, then {@link #onBackPressed()} will return back to that screen.
+     * This is always null for menu screen.
+     *
+     * @see #isMenuScreen()
+     */
+    @Nullable
+    Screen getPreviousScreen();
+
+    /**
+     * Returns whether this is a container menu screen. If true, then this screen
+     * is guaranteed to have {@link net.minecraft.client.gui.screens.inventory.MenuAccess}.
+     *
+     * @return true for MenuScreen, false for SimpleScreen
+     */
+    boolean isMenuScreen();
+
+    /**
+     * Call {@link OnBackPressedDispatcher#onBackPressed()} programmatically.
+     * <p>
+     * Typically, if the back stack is not empty, pop the back stack.
+     * Otherwise, close this screen or back to previous screen.
+     */
+    //TODO not thread-safe, since the final onBackPressed executed on main thread,
+    // calling this method when this screen it not current should be disallowed,
+    // but we can't see it immediately on UI thread
+    @UiThread
+    void onBackPressed();
 }

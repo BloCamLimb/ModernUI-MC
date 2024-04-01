@@ -86,9 +86,8 @@ public class FontResourceManager implements PreparableReloadListener {
         if (sInstance == null) {
             synchronized (FontResourceManager.class) {
                 if (sInstance == null) {
-                    if (ModernUIForge.Client.isTextEngineEnabled()) {
+                    if (ModernUIForge.isTextEngineEnabled()) {
                         sInstance = new TextLayoutEngine();
-                        LOGGER.info(ModernUI.MARKER, "Created TextLayoutEngine");
                     } else {
                         sInstance = new FontResourceManager();
                         LOGGER.info(ModernUI.MARKER, "Created FontResourceManager");
@@ -271,7 +270,8 @@ public class FontResourceManager implements PreparableReloadListener {
         results.mEmojiShortcodes = map;
     }
 
-    public void onFontRegistered(FontFamily f) {
+    // ASYNC
+    public void onFontRegistered(@Nonnull FontFamily f) {
     }
 
     @Nullable
