@@ -283,7 +283,7 @@ public class GlyphManagerForge {
         //mEmojiMap.clear();
         //mTexture = null;
         //emojiTexture = 0;
-        TextRenderType.clear();
+        TextRenderType.clear(false);
         mSelectedFonts.clear();
         allocateGlyphTexture();
         loadPreferredFonts();

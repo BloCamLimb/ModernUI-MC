@@ -33,7 +33,7 @@ import javax.annotation.Nonnull;
 @Mixin(ClientTextTooltip.class)
 public class MixinClientTextTooltip {
 
-    @Redirect(method = "renderText",
+    /*@Redirect(method = "renderText",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Font;drawInBatch" +
                     "(Lnet/minecraft/util/FormattedCharSequence;FFIZLcom/mojang/math/Matrix4f;" +
                     "Lnet/minecraft/client/renderer/MultiBufferSource;ZII)I"))
@@ -51,5 +51,5 @@ public class MixinClientTextTooltip {
             return font.drawInBatch(text, x, y, color, dropShadow, matrix, source, seeThrough, colorBackground,
                     packedLight);
         }
-    }
+    }*/
 }

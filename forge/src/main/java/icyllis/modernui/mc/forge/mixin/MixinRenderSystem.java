@@ -20,7 +20,6 @@ package icyllis.modernui.mc.forge.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.engine.ContextOptions;
-import icyllis.arc3d.opengl.GLCore;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.forge.ModernUIForge;
