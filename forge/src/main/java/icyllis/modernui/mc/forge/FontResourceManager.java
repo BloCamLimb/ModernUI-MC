@@ -88,7 +88,6 @@ public class FontResourceManager implements PreparableReloadListener {
                 if (sInstance == null) {
                     if (ModernUIForge.isTextEngineEnabled()) {
                         sInstance = new TextLayoutEngine();
-                        LOGGER.info(ModernUI.MARKER, "Created TextLayoutEngine");
                     } else {
                         sInstance = new FontResourceManager();
                         LOGGER.info(ModernUI.MARKER, "Created FontResourceManager");

@@ -74,8 +74,8 @@ public final class TooltipRenderer {
 
     //private static final List<FormattedText> sTempTexts = new ArrayList<>();
 
-    private final FloatBuffer mMatBuf = BufferUtils.createFloatBuffer(16);
-    private final Matrix4 mCoreMat = new Matrix4();
+    /*private final FloatBuffer mMatBuf = BufferUtils.createFloatBuffer(16);
+    private final Matrix4 mCoreMat = new Matrix4();*/
 
     //private static final int[] sActiveFillColor = new int[4];
     private final int[] mWorkStrokeColor = new int[4];
