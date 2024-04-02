@@ -1,10 +1,10 @@
 ### Modern UI 3.10.1.1
 #### Forge Extension 1.18.2
-* Add IGNORE_ALL_VERSIONS display test
+* Add IGNORE_ALL_VERSION display test
 * Do not use new word breaker in command mode
 * Add preferences navigation to mods config button
 * Improve PreferencesFragment
-* Add API to allow back to previous screen, allow passing a ScreenCallback
+* Add API to allow back to previous screen
 * Add API to create MuiScreen
 * Add MenuScreenFactory to create MenuScreen
 * Add Segoe UI Symbol to default fallback list
