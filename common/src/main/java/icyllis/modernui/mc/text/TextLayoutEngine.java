@@ -328,9 +328,8 @@ public class TextLayoutEngine extends FontResourceManager
 
         mGlyphManager.addAtlasInvalidationCallback(invalidationInfo -> {
             if (invalidationInfo.resize()) {
-                // When OpenGL texture ID changed (atlas resized), we want to use the new first atlas
-                // for batch rendering, we need to clear any existing TextRenderType instances
-                TextRenderType.clear(false);
+                // texture atlas is resized to a larger size, but no glyphs are evicted
+                invalidateStrikeCache();
             } else {
                 // called by compact(), need to lookupGlyph() and cacheGlyph() again
                 reload();
@@ -378,6 +377,28 @@ public class TextLayoutEngine extends FontResourceManager
     }
 
     /**
+     * Called when font atlas is just resized to a larger size.
+     * {@link #reload()} method will do this invalidation equivalently.
+     */
+    @RenderThread
+    public void invalidateStrikeCache() {
+        // When OpenGL texture ID changed (atlas resized), we want to use the new first atlas
+        // for batch rendering, we need to clear any existing TextRenderType instances
+        TextRenderType.clear(/*cleanup*/ false);
+        if (mVanillaFontManager != null) {
+            // We reuse baked glyphs for TextLayout, but don't reuse StandardBakedGlyph in
+            // the compatibility layer for Minecraft text system, then we have to invalidate
+            // the glyph cache (because normalized texture coordinates are changed)
+            var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
+            for (var fontSet : fontSets.values()) {
+                if (fontSet instanceof StandardFontSet standardFontSet) {
+                    standardFontSet.invalidateCache(mResLevel);
+                }
+            }
+        }
+    }
+
+    /**
      * Cleanup layout cache.
      */
     public void clear() {
@@ -392,7 +413,7 @@ public class TextLayoutEngine extends FontResourceManager
         // Metrics change with resolution level
         mFastCharMap.clear();
         // Just clear TextRenderType instances, font textures are remained
-        TextRenderType.clear(false);
+        TextRenderType.clear(/*cleanup*/ false);
         if (count > 0) {
             LOGGER.debug(MARKER, "Cleanup {} text layout entries", count);
         }
@@ -669,7 +690,7 @@ public class TextLayoutEngine extends FontResourceManager
     public void close() {
         closeFonts();
         // do final cleanup
-        TextRenderType.clear(true);
+        TextRenderType.clear(/*cleanup*/ true);
     }
 
     private void closeFonts() {

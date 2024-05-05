@@ -217,7 +217,7 @@ public class TextRenderType extends RenderType {
             GLDevice device = (GLDevice) Core.requireDirectContext().getDevice();
             // default state is bilinear
             sLinearFontSampler = device.getResourceProvider().findOrCreateCompatibleSampler(
-                    SamplerState.DEFAULT);
+                    SamplerState.make(SamplerState.FILTER_LINEAR, SamplerState.MIPMAP_MODE_LINEAR));
             Objects.requireNonNull(sLinearFontSampler, "Failed to create sampler object");
         }
     }
