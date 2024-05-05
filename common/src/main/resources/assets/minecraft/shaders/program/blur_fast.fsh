@@ -13,17 +13,18 @@ out vec4 fragColor;
 void main() {
     vec4 blur = vec4(0.0);
 
-    float radius = floor(Progress);
+    int radius = int(Progress);
     // sigma = radius * 0.5
     // base = -0.5 / (sigma * sigma)
     // factor = 1.0 / (sigma * sqrt(2*PI))
     float base = -2.0 / (radius * radius);
     float factor = 0.79788456 / radius;
-    vec2 dir = oneTexel * BlurDir;
+    ivec2 basePos = ivec2(texCoord / oneTexel);
+    ivec2 dir = ivec2(BlurDir);
     float wsum = 0.0, w;
-    for (float r = -radius; r <= radius; r += 1.0) {
+    for (int r = -radius; r <= radius; r += 1) {
         w = exp(r * r * base) * factor;
-        blur += texture(DiffuseSampler, texCoord + r * dir) * w;
+        blur += texelFetch(DiffuseSampler, basePos + r * dir, 0) * w;
         wsum += w;
     }
 
