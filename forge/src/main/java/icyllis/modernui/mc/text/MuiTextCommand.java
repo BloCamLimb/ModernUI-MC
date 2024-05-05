@@ -129,41 +129,7 @@ public class MuiTextCommand {
             for (int j = i; j < lim; j++) {
                 int flag = glyphFlags[j];
                 b.append(' ');
-                if ((flag & CharacterStyle.BOLD_MASK) != 0) {
-                    b.append('B');
-                } else {
-                    b.append(' ');
-                }
-                if ((flag & CharacterStyle.ITALIC_MASK) != 0) {
-                    b.append('I');
-                } else {
-                    b.append(' ');
-                }
-                if ((flag & CharacterStyle.UNDERLINE_MASK) != 0) {
-                    b.append('U');
-                } else {
-                    b.append(' ');
-                }
-                if ((flag & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
-                    b.append('S');
-                } else {
-                    b.append(' ');
-                }
-                if ((flag & CharacterStyle.OBFUSCATED_MASK) != 0) {
-                    b.append('O');
-                } else {
-                    b.append(' ');
-                }
-                if ((flag & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0) {
-                    b.append('E');
-                } else {
-                    b.append(' ');
-                }
-                if ((flag & CharacterStyle.BITMAP_REPLACEMENT) != 0) {
-                    b.append('M');
-                } else {
-                    b.append(' ');
-                }
+                TextLayout.toFlagString(b, flag);
                 b.append("    ");
             }
             b.append('\n');

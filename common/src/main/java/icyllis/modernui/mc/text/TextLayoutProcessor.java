@@ -410,7 +410,7 @@ public class TextLayoutProcessor {
         TextLayout layout = createNewLayout(resLevel, computeFlags);
         if (DEBUG) {
             ModernUI.LOGGER.info("Performed Vanilla Layout: {}, {}, {}",
-                    mBuilder.toString(), text, layout);
+                    mBuilder.toString(), text, layout.toDetailedString());
         }
         reset();
         return layout;
@@ -423,7 +423,7 @@ public class TextLayoutProcessor {
         TextLayout layout = createNewLayout(resLevel, computeFlags);
         if (DEBUG) {
             ModernUI.LOGGER.info("Performed Text Layout: {}, {}, {}",
-                    mBuilder.toString(), text, layout);
+                    mBuilder.toString(), text, layout.toDetailedString());
         }
         reset();
         return layout;
@@ -436,7 +436,7 @@ public class TextLayoutProcessor {
         TextLayout layout = createNewLayout(resLevel, computeFlags);
         if (DEBUG) {
             ModernUI.LOGGER.info("Performed Sequence Layout: {}, {}, {}",
-                    mBuilder.toString(), sequence, layout);
+                    mBuilder.toString(), sequence, layout.toDetailedString());
         }
         reset();
         return layout;

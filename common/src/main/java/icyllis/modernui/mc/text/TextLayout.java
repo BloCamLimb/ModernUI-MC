@@ -835,11 +835,99 @@ public class TextLayout {
                 ",positions=" + toPositionString(mPositions) +
                 ",advances=" + Arrays.toString(mAdvances) +
                 ",charFlags=" + toFlagString(mGlyphFlags) +
-                ",lineBoundaries" + Arrays.toString(mLineBoundaries) +
+                ",lineBoundaries=" + Arrays.toString(mLineBoundaries) +
                 ",totalAdvance=" + mTotalAdvance +
                 ",hasEffect=" + mHasEffect +
                 ",hasColorEmoji=" + mHasColorEmoji +
                 '}';
+    }
+
+    @SuppressWarnings("UnnecessaryLocalVariable")
+    @Nonnull
+    public String toDetailedString() {
+        var b = new StringBuilder();
+        char[] chars = mTextBuf;
+        b.append("chars: ")
+                .append(chars.length)
+                .append('\n');
+        float[] advances = mAdvances;
+        int[] lineBoundaries = mLineBoundaries;
+        int lineBoundaryIndex = 0;
+        int nextLineBoundary = lineBoundaries != null
+                ? lineBoundaries[lineBoundaryIndex++]
+                : -1;
+        for (int i = 0; i < chars.length; ) {
+            b.append(String.format(" %04X ", i));
+            int lim = Math.min(i + 8, chars.length);
+            for (int j = i; j < lim; j++) {
+                b.append(String.format("\\u%04X", (int) chars[j]));
+            }
+            if (advances != null) {
+                b.append("\n      ");
+                for (int j = i; j < lim; j++) {
+                    b.append(String.format(" %5.1f", advances[j]));
+                }
+            }
+            if (advances != null || lineBoundaries != null) {
+                b.append("\n      ");
+                for (int j = i; j < lim; j++) {
+                    if (j == nextLineBoundary) {
+                        b.append("LB    ");
+                        nextLineBoundary = lineBoundaries[lineBoundaryIndex++];
+                    } else if (advances != null && advances[j] != 0) {
+                        b.append("GB    ");
+                    } else {
+                        b.append("NB    ");
+                    }
+                }
+            }
+            b.append('\n');
+            i = lim;
+        }
+
+        int[] glyphs = mGlyphs;
+        b.append("glyphs: ")
+                .append(glyphs.length)
+                .append('\n');
+        float[] positions = mPositions;
+        byte[] fontIndices = mFontIndices;
+        int[] glyphFlags = mGlyphFlags;
+        for (int i = 0; i < glyphs.length; ) {
+            b.append(String.format(" %04X ", i));
+            int lim = Math.min(i + 4, glyphs.length);
+            for (int j = i; j < lim; j++) {
+                int idx;
+                if (fontIndices == null) {
+                    idx = 0;
+                } else {
+                    idx = fontIndices[j] & 0xFF;
+                }
+                b.append(String.format(" %02X %02X %04X ",
+                        idx, glyphs[j] >>> 24, glyphs[j] & 0xFFFF));
+            }
+            b.append("\n      ");
+            for (int j = i; j < lim; j++) {
+                b.append(String.format("%6.1f,%4.1f ",
+                        positions[j << 1],
+                        positions[j << 1 | 1]));
+            }
+            b.append("\n      ");
+            for (int j = i; j < lim; j++) {
+                b.append(' ');
+                toFlagString(b, glyphFlags[j]);
+                b.append("    ");
+            }
+            b.append('\n');
+            i = lim;
+        }
+        Font[] fonts = mFonts;
+        for (int i = 0; i < fonts.length; i++) {
+            b.append(String.format(" %02X: %s\n", i, fonts[i].getFamilyName()));
+        }
+        b.append("total advance: ");
+        b.append(mTotalAdvance);
+
+        return b.toString();
     }
 
     @Nonnull
@@ -890,6 +978,44 @@ public class TextLayout {
             if (i == iMax)
                 return b.append(']').toString();
             b.append(" ");
+        }
+    }
+
+    public static void toFlagString(StringBuilder b, int flag) {
+        if ((flag & CharacterStyle.BOLD_MASK) != 0) {
+            b.append('B');
+        } else {
+            b.append(' ');
+        }
+        if ((flag & CharacterStyle.ITALIC_MASK) != 0) {
+            b.append('I');
+        } else {
+            b.append(' ');
+        }
+        if ((flag & CharacterStyle.UNDERLINE_MASK) != 0) {
+            b.append('U');
+        } else {
+            b.append(' ');
+        }
+        if ((flag & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
+            b.append('S');
+        } else {
+            b.append(' ');
+        }
+        if ((flag & CharacterStyle.OBFUSCATED_MASK) != 0) {
+            b.append('O');
+        } else {
+            b.append(' ');
+        }
+        if ((flag & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0) {
+            b.append('E');
+        } else {
+            b.append(' ');
+        }
+        if ((flag & CharacterStyle.BITMAP_REPLACEMENT) != 0) {
+            b.append('M');
+        } else {
+            b.append(' ');
         }
     }
 }

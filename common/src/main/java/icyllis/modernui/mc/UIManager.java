@@ -118,6 +118,11 @@ public abstract class UIManager implements LifecycleOwner {
 
     private volatile boolean mDebugLayout = false;
 
+    protected static final boolean DEBUG = false;
+
+    private boolean mTestChars = false;
+    private int mTestCodepoint = 0x4E00;
+
 
     /// Task Handling \\\
 
@@ -562,6 +567,9 @@ public abstract class UIManager implements LifecycleOwner {
                 case GLFW_KEY_U -> {
                     mClearNextMainTarget = true;
                 }
+                case GLFW_KEY_I -> {
+                    mTestChars ^= true;
+                }
                 case GLFW_KEY_N -> mDecor.postInvalidate();
                 case GLFW_KEY_P -> dump();
                 case GLFW_KEY_M -> changeRadialBlur();
@@ -973,6 +981,18 @@ public abstract class UIManager implements LifecycleOwner {
     protected void onClientTick(boolean isEnd) {
         if (isEnd) {
             BlurHandler.INSTANCE.onClientTick();
+            if (DEBUG && mTestChars) {
+                int cp = mTestCodepoint;
+                if (cp > 0x9FFF)
+                    cp = 0x4E00;
+                int end = cp + 16;
+                StringBuilder sb = new StringBuilder(16);
+                while (cp < end) {
+                    sb.appendCodePoint(cp++);
+                }
+                mTestCodepoint = end;
+                minecraft.gui.getChat().addMessage(Component.literal(sb.toString()));
+            }
         }
     }
 
