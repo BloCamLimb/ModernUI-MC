@@ -595,7 +595,10 @@ public final class TooltipRenderer {
         RenderSystem.defaultBlendFunc();
 
         final MultiBufferSource.BufferSource source = gr.bufferSource();
-        gr.pose().translate(partialX, partialY, 0);
+        // With rounded borders, we create a new matrix and do not perform matrix * vector
+        // on the CPU side. There are floating-point errors, and we found that this can cause
+        // text to be discarded by LEqual depth test on some GPUs, so lift it up by 0.1.
+        gr.pose().translate(partialX, partialY, sRoundedShapes ? 0.1f : 0);
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
             if (titleGap && i == 0 && sCenterTitle) {
