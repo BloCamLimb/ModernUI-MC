@@ -617,6 +617,7 @@ public abstract class UIManager implements LifecycleOwner {
         glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
         // SYNC GPU TODO (use transfer buffer?)
+        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, bitmap.getAddress());
         Util.ioPool().execute(() -> {
             try (bitmap) {
