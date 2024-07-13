@@ -20,6 +20,7 @@ package icyllis.modernui.mc.text;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.mc.ModernUIMod;
@@ -47,6 +48,20 @@ public class MuiTextCommand {
                                             );
                                             return Command.SINGLE_SUCCESS;
                                         })
+                                )
+                        )
+                        .then(Commands.literal("splitLines")
+                                .then(Commands.argument("width", FloatArgumentType.floatArg(0))
+                                        .then(Commands.argument("message", ComponentArgument.textComponent())
+                                                .executes(ctx -> {
+                                                    splitLines(
+                                                            ctx.getSource(),
+                                                            ComponentArgument.getComponent(ctx, "message"),
+                                                            FloatArgumentType.getFloat(ctx, "width")
+                                                    );
+                                                    return Command.SINGLE_SUCCESS;
+                                                })
+                                        )
                                 )
                         )
                 )
@@ -149,6 +164,44 @@ public class MuiTextCommand {
                 Component.literal(result)
                         .setStyle(Style.EMPTY.withFont(JB_MONO))
         );
+        Util.ioPool().execute(() -> ModernUI.LOGGER.info(TextLayoutEngine.MARKER, result));
+    }
+
+    private static void splitLines(CommandSourceStack source,
+                                   Component component,
+                                   float width) {
+        var b = Component.empty();
+
+        int[] lineNum = {0};
+        TextLayoutEngine.getInstance().getStringSplitter().computeLineBreaks(
+                component, width, Style.EMPTY, (line, notFirstLine) -> {
+                    String lineString = line.getString();
+                    int len = lineString.length();
+                    b.append(Component.literal(
+                                    String.format(
+                                            "Line %d, chars: %d, inWrappedLine: %b\nText: ",
+                                            lineNum[0]++, len, notFirstLine
+                                    )
+                            )
+                            .setStyle(Style.EMPTY.withFont(JB_MONO)));
+                    b.append(lineString);
+                    var ib = new StringBuilder();
+                    ib.append("\nUTF16: ");
+                    for (int i = 0; i < len; i++) {
+                        ib.append("\\u");
+                        String s = Integer.toHexString(lineString.charAt(i));
+                        ib.append("0".repeat(4 - s.length()));
+                        ib.append(s);
+                    }
+                    ib.append('\n');
+                    b.append(Component.literal(ib.toString())
+                            .setStyle(Style.EMPTY.withFont(JB_MONO)));
+                }
+        );
+
+        String result = b.getString();
+        source.sendSystemMessage(component);
+        source.sendSystemMessage(b);
         Util.ioPool().execute(() -> ModernUI.LOGGER.info(TextLayoutEngine.MARKER, result));
     }
 }

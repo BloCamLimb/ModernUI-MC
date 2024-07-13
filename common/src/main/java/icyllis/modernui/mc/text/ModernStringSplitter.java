@@ -494,9 +494,11 @@ public final class ModernStringSplitter extends StringSplitter {
      */
     public void computeLineBreaks(@Nonnull String text, float width, @Nonnull Style base,
                                   @Nonnull StringSplitter.LinePosConsumer consumer) {
-        if (text.isEmpty() || width < 0) {
+        if (text.isEmpty()) {
+            consumer.accept(base, 0, 0);
             return;
         }
+        width = Math.max(width, 0.0f);
 
         final TextLayout layout = mEngine.lookupVanillaLayout(text, base,
                 TextLayoutEngine.COMPUTE_ADVANCES | TextLayoutEngine.COMPUTE_LINE_BOUNDARIES);
@@ -573,6 +575,10 @@ public final class ModernStringSplitter extends StringSplitter {
                 mBreakPointOffset = result.getInt(mBreakOffsetIndex++);
             }
         }
+        String remainder = text.substring(lastSubPos);
+        if (!remainder.isEmpty()) {
+            consumer.accept(lastStyle, lastSubPos, text.length());
+        }
     }
 
     /**
@@ -588,9 +594,11 @@ public final class ModernStringSplitter extends StringSplitter {
      */
     public void computeLineBreaks(@Nonnull FormattedText text, float width, @Nonnull Style base,
                                   @Nonnull BiConsumer<FormattedText, Boolean> consumer) {
-        if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY || width < 0) {
+        if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
+            consumer.accept(FormattedText.EMPTY, Boolean.FALSE);
             return;
         }
+        width = Math.max(width, 0.0f);
 
         final TextLayout layout = mEngine.lookupFormattedLayout(text, base,
                 TextLayoutEngine.COMPUTE_ADVANCES | TextLayoutEngine.COMPUTE_LINE_BOUNDARIES);
@@ -670,13 +678,12 @@ public final class ModernStringSplitter extends StringSplitter {
                             mCollector.append(FormattedText.of(substring, lastStyle));
                         }
                         consumer.accept(mCollector.getResultOrEmpty(), mNonNewPara);
-                        if (mBreakOffsetIndex >= result.size()) {
-                            return FormattedText.STOP_ITERATION;
-                        }
                         lastSubPos = i + 1;
                         lastStyle = currStyle;
                         mCollector = new ComponentCollector();
-                        mBreakPointOffset = result.getInt(mBreakOffsetIndex++);
+                        mBreakPointOffset = mBreakOffsetIndex >= result.size()
+                                ? Integer.MAX_VALUE
+                                : result.getInt(mBreakOffsetIndex++);
                         mNonNewPara = c != '\n';
                     }
                 }
@@ -687,7 +694,16 @@ public final class ModernStringSplitter extends StringSplitter {
                 return Optional.empty(); // continue
             }
         }
-        text.visit(new LineBreakVisitor(), base);
+        var visitor = new LineBreakVisitor();
+        text.visit(visitor, base);
+        var remainder = visitor.mBreakPointOffset == Integer.MAX_VALUE
+                ? visitor.mCollector.getResult()
+                : visitor.mCollector.getResultOrEmpty();
+        if (remainder != null) {
+            consumer.accept(remainder, visitor.mNonNewPara);
+        } else if (!visitor.mNonNewPara) {
+            consumer.accept(FormattedText.EMPTY, Boolean.FALSE);
+        }
     }
 
     public static class LineProcessor {
