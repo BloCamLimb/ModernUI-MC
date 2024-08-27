@@ -89,6 +89,10 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
     @Override
     protected void checkFirstLoadTypeface() {
         // No-op, on Fabric, this can only be loaded on main thread...
+        LOGGER.info(MARKER,
+                "Loading typeface, printing the stacktrace for debugging purposes.",
+                new Exception("Loading typeface")
+                        .fillInStackTrace());
     }
 
     @Override
