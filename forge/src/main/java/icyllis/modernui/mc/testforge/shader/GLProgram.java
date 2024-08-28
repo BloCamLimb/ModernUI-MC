@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc.testforge.shader;
 
-import icyllis.arc3d.opengl.GLCore;
+import org.lwjgl.opengl.GL33C;
 
 /**
  * Represents OpenGL program objects.
@@ -35,7 +35,7 @@ public class GLProgram {
      * Use this shader program
      */
     public void use() {
-        GLCore.glUseProgram(mProgram);
+        GL33C.glUseProgram(mProgram);
     }
 
     public final int get() {

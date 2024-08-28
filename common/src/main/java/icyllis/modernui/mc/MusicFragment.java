@@ -417,14 +417,16 @@ public class MusicFragment extends Fragment {
                 invalidate = true;
             }
 
-            if (canvas instanceof GLSurfaceCanvas && invalidate) {
+            //FIXME
+            /*if (canvas instanceof GLSurfaceCanvas && invalidate) {
                 ((GLSurfaceCanvas) canvas).drawGlowWave(b.left, b.top, b.right, b.bottom);
-            }
+            }*/
 
             float alphaMult = 1.5f + MathUtil.sin(time / 600f) / 2;
             paint.setRGBA(160, 155, 230, (int) (64 * alphaMult));
             float radius = mBandHeight * 0.05f;
-            paint.setSmoothWidth(radius * 2.2f);
+            //FIXME
+            //paint.setSmoothWidth(radius * 2.2f);
             for (Particle p : mParticleList) {
                 canvas.drawCircle(
                         b.x() + p.x * b.width(),
@@ -433,7 +435,7 @@ public class MusicFragment extends Fragment {
                         paint
                 );
             }
-            paint.setSmoothWidth(0);
+            //paint.setSmoothWidth(0);
 
             for (int i = 0; i < AMPLITUDE_LENGTH; i++) {
                 paint.setRGBA(100 + i * 2, 220 - i * 2, 240 - i * 4, 255);

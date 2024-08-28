@@ -159,7 +159,7 @@ public class TestPauseFragment extends Fragment {
         public TabBackground(View view) {
             mRadius = view.dp(16);
             mTextPaint = new TextPaint();
-            mTextPaint.setFontSize(view.sp(16));
+            mTextPaint.setTextSize(view.sp(16));
         }
 
         @Override

@@ -21,11 +21,12 @@ package icyllis.modernui.mc;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.*;
 import icyllis.arc3d.core.MathUtil;
-import icyllis.arc3d.core.Matrix4;
+import icyllis.arc3d.core.*;
 import icyllis.arc3d.engine.Engine;
+import icyllis.arc3d.engine.ImmediateContext;
+import icyllis.arc3d.granite.*;
 import icyllis.arc3d.opengl.GLDevice;
 import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.ModernUI;
@@ -35,6 +36,7 @@ import icyllis.modernui.annotation.*;
 import icyllis.modernui.audio.AudioManager;
 import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.*;
+import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.LayoutCache;
@@ -53,29 +55,33 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.tooltip.*;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import org.apache.commons.io.output.StringBuilderWriter;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL33C;
 import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Field;
 import java.nio.ByteOrder;
 import java.util.List;
 import java.util.Objects;
 
-import static icyllis.arc3d.opengl.GLCore.*;
 import static icyllis.modernui.ModernUI.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL11C.GL_TEXTURE_BINDING_2D;
 
 /**
  * Manage UI thread and connect Minecraft to Modern UI view system at most bottom level.
@@ -95,6 +101,17 @@ public abstract class UIManager implements LifecycleOwner {
     protected static volatile UIManager sInstance;
 
     protected static final int fragment_container = 0x01020007;
+
+    private static final Field SURFACE_DEVICE;
+
+    static {
+        try {
+            SURFACE_DEVICE = GraniteSurface.class.getDeclaredField("mDevice");
+            SURFACE_DEVICE.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     // minecraft
     protected final Minecraft minecraft = Minecraft.getInstance();
@@ -135,10 +152,6 @@ public abstract class UIManager implements LifecycleOwner {
 
     /// Rendering \\\
 
-    // the UI framebuffer
-    private GLSurface mSurface;
-    protected GLSurfaceCanvas mCanvas;
-    protected GLDevice mDevice;
     private final Matrix4 mProjectionMatrix = new Matrix4();
     protected boolean mNoRender = false;
     protected boolean mClearNextMainTarget = false;
@@ -201,10 +214,7 @@ public abstract class UIManager implements LifecycleOwner {
             Core.glSetupDebugCallback();
         }
         Objects.requireNonNull(sInstance);
-        sInstance.mCanvas = GLSurfaceCanvas.initialize();
-        sInstance.mDevice = (GLDevice) Core.requireDirectContext().getDevice();
-        sInstance.mDevice.getContext().getResourceCache().setCacheLimit(1 << 28); // 256MB
-        sInstance.mSurface = new GLSurface();
+        Core.requireImmediateContext();
         BufferUploader.invalidate();
         LOGGER.info(MARKER, "UI renderer initialized");
     }
@@ -241,6 +251,7 @@ public abstract class UIManager implements LifecycleOwner {
             }
             break;
         }
+        mRoot.mSurface = RefCnt.move(mRoot.mSurface);
         Core.requireUiRecordingContext().unref();
         LOGGER.debug(MARKER, "Quited UI thread");
     }
@@ -608,17 +619,35 @@ public abstract class UIManager implements LifecycleOwner {
 
     @SuppressWarnings("resource")
     public void takeScreenshot() {
-        mSurface.bindRead();
-        final int width = mSurface.getBackingWidth();
-        final int height = mSurface.getBackingHeight();
+        @SharedPtr
+        Surface surface = mRoot.getSurface();
+        if (surface == null) {
+            return;
+        }
+        @RawPtr
+        GLTexture layer;
+        try {
+            @RawPtr
+            GraniteDevice device = (GraniteDevice) SURFACE_DEVICE.get(surface);
+            layer = (GLTexture) device.getReadView().getImage();
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+        final int width = layer.getWidth();
+        final int height = layer.getHeight();
         final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
-        glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-        glPixelStorei(GL_PACK_SKIP_ROWS, 0);
-        glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
-        glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        GL33C.glPixelStorei(GL33C.GL_PACK_ROW_LENGTH, 0);
+        GL33C.glPixelStorei(GL33C.GL_PACK_SKIP_ROWS, 0);
+        GL33C.glPixelStorei(GL33C.GL_PACK_SKIP_PIXELS, 0);
+        GL33C.glPixelStorei(GL33C.GL_PACK_ALIGNMENT, 1);
         // SYNC GPU TODO (use transfer buffer?)
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, bitmap.getAddress());
+        GL33C.glBindBuffer(GL33C.GL_PIXEL_PACK_BUFFER, 0);
+        int boundTexture = GL33C.glGetInteger(GL_TEXTURE_BINDING_2D);
+        GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, layer.getHandle());
+        GL33C.glGetTexImage(GL33C.GL_TEXTURE_2D, 0, GL33C.GL_RGBA, GL33C.GL_UNSIGNED_BYTE,
+                bitmap.getAddress());
+        GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);
+        surface.unref();
         Util.ioPool().execute(() -> {
             try (bitmap) {
                 Bitmap.flipVertically(bitmap);
@@ -778,7 +807,7 @@ public abstract class UIManager implements LifecycleOwner {
 
     @RenderThread
     public void render() {
-        if (mCanvas == null || mNoRender) {
+        if (mNoRender) {
             /*if (mScreen != null) {
                 String error = Language.getInstance().getOrDefault("error.modernui.gl_caps");
                 int x = (mWindow.getGuiScaledWidth() - minecraft.font.width(error)) / 2;
@@ -787,48 +816,96 @@ public abstract class UIManager implements LifecycleOwner {
             }*/
             return;
         }
-        RenderSystem.disableCull();
-        RenderSystem.enableBlend();
-        RenderSystem.activeTexture(GL_TEXTURE0);
-        RenderSystem.disableDepthTest();
-        //glDisable(GL_DEPTH_TEST);
 
-        // Minecraft.mainRenderTarget has no transparency (=== 1)
-        // UI layer has a transparent background, with premultiplied alpha
-        RenderSystem.blendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        final int oldVertexArray = GL33C.glGetInteger(GL33C.GL_VERTEX_ARRAY_BINDING);
+        final int oldProgram = GL33C.glGetInteger(GL33C.GL_CURRENT_PROGRAM);
 
-        final int oldVertexArray = glGetInteger(GL_VERTEX_ARRAY_BINDING);
-        final int oldProgram = glGetInteger(GL_CURRENT_PROGRAM);
 
-        int width = mWindow.getWidth();
-        int height = mWindow.getHeight();
+        @RawPtr
+        ImmediateContext context = Core.requireImmediateContext();
 
-        mDevice.markContextDirty(Engine.GLBackendState.kPixelStore);
-        mCanvas.setProjection(mProjectionMatrix.setOrthographic(
-                width, height, 0, icyllis.modernui.core.Window.LAST_SYSTEM_WINDOW * 2 + 1,
-                true));
-        mRoot.flushDrawCommands(mCanvas, mSurface, width, height);
+        var frameTask = mRoot.swapFrameTask();
+        @SharedPtr
+        RootTask rootTask = frameTask.getLeft();
+        @SharedPtr
+        Surface surface = frameTask.getRight();
 
-        var resourceCache = mDevice.getContext().getResourceCache();
-        resourceCache.cleanup();
-        // 2 min
-        if (mFrameTimeNanos - mLastPurgeNanos >= 120_000_000_000L) {
-            mLastPurgeNanos = mFrameTimeNanos;
-            resourceCache.purgeFreeResourcesOlderThan(
-                    System.currentTimeMillis() - 120_000,
-                    /*scratch only*/ true
-            );
-            GlyphManager.getInstance().compact();
+        if (rootTask != null) {
+            boolean added = context.addTask(rootTask);
+            rootTask.unref();
+            if (!added) {
+                LOGGER.error("Failed to add draw commands");
+            }
         }
 
-        glBindVertexArray(oldVertexArray);
-        glUseProgram(oldProgram);
+        ((GLDevice) context.getDevice()).flushRenderCalls();
 
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.disableBlend();
+        if (rootTask != null) {
+            context.submit();
+            GL33C.glBindFramebuffer(GL33C.GL_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);
+        }
+
+        GL33C.glBindVertexArray(oldVertexArray);
+        GL33C.glUseProgram(oldProgram);
+        BufferUploader.invalidate();
+
         // force changing Blaze3D state
-        RenderSystem.bindTexture(DEFAULT_TEXTURE);
+        for (int i = 0; i <= 3; i++) {
+            GL33C.glBindSampler(i, 0);
+        }
+        GL33C.glDisable(GL33C.GL_STENCIL_TEST);
+        RenderSystem.disableScissor();
+        GL33C.glDisable(GL33C.GL_SCISSOR_TEST);
+        RenderSystem.defaultBlendFunc();
+        GL33C.glBlendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
+        RenderSystem.disableBlend();
+        GL33C.glDisable(GL33C.GL_BLEND);
+        RenderSystem.blendEquation(GL33C.GL_FUNC_ADD);
+        GL33C.glBlendEquation(GL33C.GL_FUNC_ADD);
+        RenderSystem.disableDepthTest();
+        GL33C.glDisable(GL33C.GL_DEPTH_TEST);
+        RenderSystem.depthFunc(GL33C.GL_LEQUAL);
+        GL33C.glDepthFunc(GL33C.GL_LEQUAL);
+        RenderSystem.depthMask(true);
+        GL33C.glDepthMask(true);
+        for (int i = 3; i >= 0; i--) {
+            RenderSystem.activeTexture(GL33C.GL_TEXTURE0 + i);
+            RenderSystem.bindTexture(0);
+        }
+        GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
+        RenderSystem.disableCull();
+        RenderSystem.lineWidth(1);
+
+        int width = minecraft.getWindow().getWidth();
+        int height = minecraft.getWindow().getHeight();
+
+        RenderSystem.viewport(0, 0, width, height);
+
+        if (surface != null) {
+            @RawPtr
+            GLTexture layer;
+            try {
+                @RawPtr
+                GraniteDevice device = (GraniteDevice) SURFACE_DEVICE.get(surface);
+                layer = (GLTexture) device.getReadView().getImage();
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+            if (layer != null) {
+                double guiScale = minecraft.getWindow().getGuiScale();
+                // draw off-screen target to Minecraft mainTarget (not the default framebuffer)
+                RenderSystem.setShaderTexture(0, layer.getHandle());
+                RenderSystem.setShader(GameRenderer::getPositionTexShader);
+                BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
+                bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+                bufferBuilder.vertex(0, height / guiScale, 0).uv(0, 0).endVertex();
+                bufferBuilder.vertex(width / guiScale, height / guiScale, 0).uv(1, 0).endVertex();
+                bufferBuilder.vertex(width / guiScale, 0, 0).uv(1, 1).endVertex();
+                bufferBuilder.vertex(0, 0, 0).uv(0, 1).endVertex();
+                BufferUploader.drawWithShader(bufferBuilder.end());
+            }
+        }
+        RefCnt.move(surface);
     }
 
     private final Runnable mResizeRunnable = () -> mRoot.setFrame(mWindow.getWidth(), mWindow.getHeight());
@@ -957,6 +1034,12 @@ public abstract class UIManager implements LifecycleOwner {
         } else {
             // phase=end
             // main thread
+            var context = Core.requireImmediateContext();
+            if (mFrameTimeNanos - mLastPurgeNanos >= 20_000_000_000L) {
+                mLastPurgeNanos = mFrameTimeNanos;
+                context.performDeferredCleanup(120_000);
+                GlyphManager.getInstance().compact();
+            }
             if (!minecraft.isRunning() && mRunning) {
                 mRunning = false;
                 mRoot.mHandler.post(this::finish);
@@ -1000,14 +1083,10 @@ public abstract class UIManager implements LifecycleOwner {
     public static void destroy() {
         // see onRenderTick() above
         LOGGER.debug(MARKER, "Quiting Modern UI");
-        if (sInstance != null) {
-            if (sInstance.mCanvas != null) {
-                sInstance.mCanvas.destroy();
-            }
-        }
         FontResourceManager.getInstance().close();
         ImageStore.getInstance().clear();
-        Core.requireDirectContext().unref();
+        System.gc();
+        Core.requireImmediateContext().unref();
         if (sInstance != null) {
             AudioManager.getInstance().close();
             try {
@@ -1028,8 +1107,10 @@ public abstract class UIManager implements LifecycleOwner {
         ContextMenuBuilder mContextMenu;
         MenuHelper mContextMenuHelper;
 
-        private volatile boolean mPendingDraw = false;
-        private boolean mBlit;
+        Surface mSurface;
+        RootTask mLastFrameTask;
+
+        private long mLastPurgeNanos;
 
         @Override
         protected boolean dispatchTouchEvent(MotionEvent event) {
@@ -1076,27 +1157,79 @@ public abstract class UIManager implements LifecycleOwner {
         }
 
         @Override
-        protected Canvas beginDrawLocked(int width, int height) {
-            if (mCanvas != null) {
-                mCanvas.reset(width, height);
+        public void setFrame(int width, int height) {
+            super.setFrame(width, height);
+            synchronized (mRenderLock) {
+                if (mSurface == null ||
+                        mSurface.getWidth() != width ||
+                        mSurface.getHeight() != height) {
+                    if (width > 0 && height > 0) {
+                        mSurface = RefCnt.move(mSurface, GraniteSurface.makeRenderTarget(
+                                Core.requireUiRecordingContext(),
+                                ImageInfo.make(width, height,
+                                        ColorInfo.CT_RGBA_8888, ColorInfo.AT_PREMUL,
+                                        ColorSpace.get(ColorSpace.Named.SRGB)),
+                                false,
+                                Engine.SurfaceOrigin.kLowerLeft,
+                                null
+                        ));
+                    }
+                }
             }
-            return mCanvas;
+        }
+
+        @Override
+        protected Canvas beginDrawLocked(int width, int height) {
+            synchronized (mRenderLock) {
+                if (mSurface != null && width > 0 && height > 0) {
+                    mSurface.getCanvas().clear(0);
+                    return new ArcCanvas(mSurface.getCanvas());
+                }
+                return null;
+            }
         }
 
         @Override
         protected void endDrawLocked(@Nonnull Canvas canvas) {
-            mPendingDraw = true;
-            try {
-                mRenderLock.wait();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            canvas.restoreToCount(1);
+            RootTask task = Core.requireUiRecordingContext().snap();
+            synchronized (mRenderLock) {
+                mLastFrameTask = RefCnt.move(mLastFrameTask, task);
+                try {
+                    mRenderLock.wait();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                mLastFrameTask = RefCnt.move(mLastFrameTask);
+            }
+            var context = Core.requireUiRecordingContext();
+            if (System.nanoTime() - mLastPurgeNanos >= 20_000_000_000L) {
+                mLastPurgeNanos = System.nanoTime();
+                context.performDeferredCleanup(120_000);
+            }
+        }
+
+        @SharedPtr
+        private Surface getSurface() {
+            synchronized (mRenderLock) {
+                return RefCnt.create(mSurface);
             }
         }
 
         @RenderThread
-        private void flushDrawCommands(GLSurfaceCanvas canvas, GLSurface surface,
-                                       int width, int height) {
-            // wait UI thread, if slow
+        private Pair<@SharedPtr RootTask, @SharedPtr Surface> swapFrameTask() {
+            @SharedPtr
+            RootTask task;
+            @SharedPtr
+            Surface surface;
+            synchronized (mRenderLock) {
+                surface = RefCnt.create(mSurface);
+                task = mLastFrameTask;
+                mLastFrameTask = null;
+                mRenderLock.notifyAll();
+            }
+            return Pair.of(task, surface);
+            /*// wait UI thread, if slow
             synchronized (mRenderLock) {
 
                 if (mPendingDraw) {
@@ -1126,7 +1259,7 @@ public abstract class UIManager implements LifecycleOwner {
                     canvas.drawLayer(layer, width, height, 1, true);
                     canvas.executeRenderPass(null);
                 }
-            }
+            }*/
         }
 
         @Override

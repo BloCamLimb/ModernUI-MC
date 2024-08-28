@@ -195,11 +195,11 @@ public class DashboardFragment extends Fragment {
 
         @Override
         public void draw(@Nonnull Canvas canvas) {
-            if (canvas instanceof GLSurfaceCanvas) {
+            //if (canvas instanceof GLSurfaceCanvas) {
                 var bounds = getBounds();
                 var inner = mStrokeWidth * 0.5f;
-                ((GLSurfaceCanvas) canvas).drawGlowWave(bounds.left + inner * 1.5f, bounds.top + inner * 1.5f,
-                        bounds.right - inner, bounds.bottom - inner);
+                /*((GLSurfaceCanvas) canvas).drawGlowWave(bounds.left + inner * 1.5f, bounds.top + inner * 1.5f,
+                        bounds.right - inner, bounds.bottom - inner);*/
                 var paint = Paint.obtain();
                 paint.setStyle(Paint.STROKE);
                 paint.setColor(ThemeControl.THEME_COLOR);
@@ -208,7 +208,7 @@ public class DashboardFragment extends Fragment {
                         bounds.bottom - inner, mStrokeWidth * 2, paint);
                 paint.recycle();
                 invalidateSelf();
-            }
+            //}
         }
 
         @Override

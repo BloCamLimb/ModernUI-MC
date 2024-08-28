@@ -22,8 +22,9 @@ import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import icyllis.arc3d.core.ImageInfo;
-import icyllis.arc3d.opengl.GLBackendFormat;
+import icyllis.arc3d.core.ColorInfo;
+import icyllis.arc3d.engine.*;
+import icyllis.arc3d.opengl.GLDevice;
 import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
@@ -36,8 +37,6 @@ import org.lwjgl.system.MemoryUtil;
 import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-
-import static icyllis.arc3d.opengl.GLCore.GL_RGBA8;
 
 public class EffectRenderType extends RenderType {
 
@@ -106,33 +105,39 @@ public class EffectRenderType extends RenderType {
     }
 
     private static void makeWhiteTexture() {
-        var dContext = Core.requireDirectContext();
-        var format = GLBackendFormat.make(GL_RGBA8);
-        int width = 2, height = 2;
-        WHITE = (GLTexture) dContext
+        ImmediateContext context = Core.requireImmediateContext();
+        final int width = 2, height = 2;
+        final int colorType = ColorInfo.CT_RGBA_8888;
+        ImageDesc desc = context.getCaps().getDefaultColorImageDesc(
+                Engine.ImageType.k2D,
+                colorType,
+                width, height,
+                1,
+                ISurface.FLAG_SAMPLED_IMAGE
+        );
+        Objects.requireNonNull(desc); // RGBA8 is always supported
+        WHITE = (GLTexture) context
                 .getResourceProvider()
-                .createTexture(
-                        width, height,
-                        format,
-                        1,
-                        0,
-                        "MCTextEffect"
+                .findOrCreateImage(
+                        desc,
+                        /*budgeted*/ false,
+                        "MinecraftTextEffect"
                 );
         Objects.requireNonNull(WHITE);
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            int colorType = ImageInfo.CT_RGBA_8888;
-            int bpp = ImageInfo.bytesPerPixel(colorType);
+            int bpp = ColorInfo.bytesPerPixel(colorType);
             ByteBuffer pixels = stack.malloc(width * height * bpp);
             while (pixels.hasRemaining()) {
                 pixels.put((byte) 0xff);
             }
             pixels.flip();
-            dContext.getDevice().writePixels(
+            boolean res = ((GLDevice) context.getDevice()).writePixels(
                     WHITE, 0, 0, width, height,
                     colorType, colorType,
                     width * bpp,
                     MemoryUtil.memAddress(pixels)
             );
+            assert res;
         }
     }
 }

@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.neoforge;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import icyllis.arc3d.opengl.GLDevice;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
@@ -45,13 +46,13 @@ import net.neoforged.neoforge.client.settings.KeyModifier;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.TickEvent;
 import org.jetbrains.annotations.*;
+import org.lwjgl.opengl.GL45C;
 
 import javax.annotation.Nonnull;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.util.Map;
 
-import static icyllis.arc3d.opengl.GLCore.*;
 import static icyllis.modernui.ModernUI.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -183,7 +184,8 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
-        if (textureMap != null && mDevice.getCaps().hasDSASupport()) {
+        GLDevice device = (GLDevice) Core.requireImmediateContext().getDevice();
+        if (textureMap != null && device.getCaps().hasDSASupport()) {
             long gpuSize = 0;
             long cpuSize = 0;
             int dynamicTextures = 0;
@@ -192,15 +194,15 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             for (var texture : textureMap.values()) {
                 try {
                     int tex = TEXTURE_ID.getInt(texture);
-                    if (glIsTexture(tex)) {
-                        int internalFormat = glGetTextureLevelParameteri(tex, 0, GL_TEXTURE_INTERNAL_FORMAT);
-                        long width = glGetTextureLevelParameteri(tex, 0, GL_TEXTURE_WIDTH);
-                        long height = glGetTextureLevelParameteri(tex, 0, GL_TEXTURE_HEIGHT);
-                        int maxLevel = glGetTextureParameteri(tex, GL_TEXTURE_MAX_LEVEL);
+                    if (GL45C.glIsTexture(tex)) {
+                        int internalFormat = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_INTERNAL_FORMAT);
+                        long width = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_WIDTH);
+                        long height = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_HEIGHT);
+                        int maxLevel = GL45C.glGetTextureParameteri(tex, GL45C.GL_TEXTURE_MAX_LEVEL);
                         int bpp = switch (internalFormat) {
-                            case GL_R8, GL_RED -> 1;
-                            case GL_RG8, GL_RG -> 2;
-                            case GL_RGB8, GL_RGBA8, GL_RGB, GL_RGBA -> 4;
+                            case GL45C.GL_R8, GL45C.GL_RED -> 1;
+                            case GL45C.GL_RG8, GL45C.GL_RG -> 2;
+                            case GL45C.GL_RGB8, GL45C.GL_RGBA8, GL45C.GL_RGB, GL45C.GL_RGBA -> 4;
                             default -> 0;
                         };
                         long size = width * height * bpp;

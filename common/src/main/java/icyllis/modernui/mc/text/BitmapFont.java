@@ -21,9 +21,9 @@ package icyllis.modernui.mc.text;
 import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.font.GlyphInfo;
 import com.mojang.blaze3d.font.SheetGlyphInfo;
-import icyllis.arc3d.core.Strike;
-import icyllis.arc3d.engine.GpuResource;
-import icyllis.arc3d.engine.ISurface;
+import icyllis.arc3d.core.RefCnt;
+import icyllis.arc3d.core.Typeface;
+import icyllis.arc3d.engine.*;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
@@ -36,6 +36,7 @@ import net.minecraft.client.gui.font.glyphs.EmptyGlyph;
 import net.minecraft.client.gui.font.providers.BitmapProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
+import org.lwjgl.opengl.GL33C;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -43,8 +44,6 @@ import java.io.InputStream;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
-
-import static icyllis.arc3d.opengl.GLCore.*;
 
 /**
  * Directly provides a bitmap (mask format may be RGBA or grayscale) to replace
@@ -155,30 +154,38 @@ public class BitmapFont implements Font, AutoCloseable {
     // create texture from bitmap on render thread
     private void createTextureLazy() {
         try {
-            mTexture = (GLTexture) Core
-                    .requireDirectContext()
+            ImmediateContext context = Core.requireImmediateContext();
+            ImageDesc desc = context.getCaps().getDefaultColorImageDesc(
+                    Engine.ImageType.k2D,
+                    mBitmap.getColorType(),
+                    mBitmap.getWidth(),
+                    mBitmap.getHeight(),
+                    1,
+                    ISurface.FLAG_SAMPLED_IMAGE
+            );
+            Objects.requireNonNull(desc);
+            mTexture = (GLTexture) context
                     .getResourceProvider()
-                    .createTexture(
-                            mBitmap.getWidth(),
-                            mBitmap.getHeight(),
-                            GLBackendFormat.make(GL_RGBA8),
-                            1,
-                            ISurface.FLAG_BUDGETED,
-                            mBitmap.getColorType(),
-                            mBitmap.getColorType(),
-                            mBitmap.getRowStride(),
-                            mBitmap.getAddress(),
+                    .findOrCreateImage(
+                            desc,
+                            true,
                             mName.toString()
                     );
             Objects.requireNonNull(mTexture, "Failed to create font texture");
+            boolean res = ((GLDevice) context.getDevice()).writePixels(
+                    mTexture, 0, 0, mBitmap.getWidth(), mBitmap.getHeight(),
+                    mBitmap.getColorType(), mBitmap.getColorType(),
+                    mBitmap.getRowStride(), mBitmap.getAddress()
+            );
+            assert res;
 
-            int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
-            glBindTexture(GL_TEXTURE_2D, mTexture.getHandle());
+            int boundTexture = GL33C.glGetInteger(GL33C.GL_TEXTURE_BINDING_2D);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, mTexture.getHandle());
 
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MAG_FILTER, GL33C.GL_NEAREST);
+            GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MIN_FILTER, GL33C.GL_NEAREST);
 
-            glBindTexture(GL_TEXTURE_2D, boundTexture);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);
         } finally {
             mBitmap.close();
             mBitmap = null;
@@ -191,7 +198,7 @@ public class BitmapFont implements Font, AutoCloseable {
                 mName, mGlyphs.size(), mTexture);
         if (path != null && mTexture != null && Core.isOnRenderThread()) {
             GLFontAtlas.dumpAtlas(
-                    (GLCaps) Core.requireDirectContext().getCaps(),
+                    (GLCaps) Core.requireImmediateContext().getCaps(),
                     mTexture,
                     Bitmap.Format.RGBA_8888,
                     path);
@@ -333,7 +340,7 @@ public class BitmapFont implements Font, AutoCloseable {
     }
 
     @Override
-    public Strike findOrCreateStrike(FontPaint paint) {
+    public Typeface getNativeTypeface() {
         // no support except for Minecraft
         return null;
     }
@@ -369,7 +376,7 @@ public class BitmapFont implements Font, AutoCloseable {
             mBitmap.close();
             mBitmap = null;
         }
-        mTexture = GpuResource.move(mTexture);
+        mTexture = RefCnt.move(mTexture);
     }
 
     public static class Glyph extends BakedGlyph implements GlyphInfo {

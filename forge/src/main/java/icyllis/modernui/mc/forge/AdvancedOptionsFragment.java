@@ -269,11 +269,9 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            Core.executeOnRenderThread(() -> {
-                var caps = (GLCaps) Core.requireDirectContext().getCaps();
-                var s = caps.toString(/*includeFormatTable*/false);
-                tv.post(() -> tv.setText(s));
-            });
+            var caps = (GLCaps) Core.requireUiRecordingContext().getCaps();
+            var s = caps.toString(/*includeFormatTable*/false);
+            tv.setText(s);
             content.addView(tv);
         }
 
@@ -294,7 +292,7 @@ public class AdvancedOptionsFragment extends Fragment {
             });
         }
         if (mGPUResourceDump != null) {
-            Core.executeOnRenderThread(() -> {
+            /*Core.executeOnRenderThread(() -> {
                 var rc = Core.requireDirectContext().getResourceCache();
                 var s = "GPU Resource Cache:\n" +
                         String.format("Resource bytes: %s (%s bytes)",
@@ -319,9 +317,23 @@ public class AdvancedOptionsFragment extends Fragment {
                                 TextUtils.binaryCompact(rc.getMaxResourceBytes()),
                                 rc.getMaxResourceBytes());
                 mGPUResourceDump.post(() -> mGPUResourceDump.setText(s));
-            });
+            });*/
+            var content = Core.requireUiRecordingContext();
+            var s = "GPU Resource Cache:\n" +
+                    String.format("Current budgeted resource bytes: %s (%s bytes)",
+                            TextUtils.binaryCompact(content.getCurrentBudgetedBytes()),
+                            content.getCurrentBudgetedBytes()) +
+                    "\n" +
+                    String.format("Current purgeable resource bytes: %s (%s bytes)",
+                            TextUtils.binaryCompact(content.getCurrentPurgeableBytes()),
+                            content.getCurrentPurgeableBytes()) +
+                    "\n" +
+                    String.format("Max budgeted resource bytes: %s (%s bytes)",
+                            TextUtils.binaryCompact(content.getMaxBudgetedBytes()),
+                            content.getMaxBudgetedBytes());
+            mGPUResourceDump.setText(s);
         }
-        if (mPSOStatsDump != null) {
+        /*if (mPSOStatsDump != null) {
             mPSOStatsDump.setText(
                     Core.requireUiRecordingContext()
                             .getPipelineStateCache()
@@ -334,7 +346,7 @@ public class AdvancedOptionsFragment extends Fragment {
                 var s = Core.requireDirectContext().getDevice().getStats().toString();
                 mGPUStatsDump.post(() -> mGPUStatsDump.setText(s));
             });
-        }
+        }*/
         if (mContent != null) {
             mContent.postDelayed(this::refreshPage, 10_000);
         }

@@ -183,7 +183,7 @@ public class StandardFontSet extends FontSet {
                     // bake glyph ourselves
                     var glyph = TextLayoutEngine.getInstance().lookupGlyph(
                             outlineFont,
-                            mStandardPaint.getFontSize(),
+                            (int) mStandardPaint.getFontSize(),
                             glyphs.getInt(0)
                     );
                     if (glyph != null) {

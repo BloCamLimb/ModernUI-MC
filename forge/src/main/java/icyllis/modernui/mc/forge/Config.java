@@ -354,10 +354,10 @@ public final class Config {
                             TOOLTIP_BORDER_COLOR_ANIM_MAX);
             mTooltipWidth = builder.comment(
                             "The width of tooltip border, if rounded, in GUI Scale Independent Pixels.")
-                    .defineInRange("borderWidth", 4 / 3f, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
+                    .defineInRange("borderWidth", 4 / 3d, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
             mTooltipRadius = builder.comment(
                             "The corner radius of tooltip border, if rounded, in GUI Scale Independent Pixels.")
-                    .defineInRange("cornerRadius", 3f, TOOLTIP_CORNER_RADIUS_MIN, TOOLTIP_CORNER_RADIUS_MAX);
+                    .defineInRange("cornerRadius", 3d, TOOLTIP_CORNER_RADIUS_MIN, TOOLTIP_CORNER_RADIUS_MAX);
             /*mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
                     .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);*/
@@ -367,7 +367,7 @@ public final class Config {
                     .defineInRange("shadowRadius", 10.0, TOOLTIP_SHADOW_RADIUS_MIN, TOOLTIP_SHADOW_RADIUS_MAX);
             mTooltipShadowAlpha = builder.comment(
                             "The shadow opacity of tooltip, if rounded. No impact on performance.")
-                    .defineInRange("shadowOpacity", 0.35f, 0f, 1f);
+                    .defineInRange("shadowOpacity", 0.35, 0d, 1d);
             mAdaptiveTooltipColors = builder.comment(
                             "When true, tooltip border colors adapt to item's name and rarity.")
                     .define("adaptiveColors", true);
@@ -418,7 +418,7 @@ public final class Config {
             mForceRtl = builder.comment("Force layout direction to RTL, otherwise, the current Locale setting.")
                     .define("forceRtl", false);
             mFontScale = builder.comment("The global font scale used with sp units.")
-                    .defineInRange("fontScale", 1.0f, FONT_SCALE_MIN, FONT_SCALE_MAX);
+                    .defineInRange("fontScale", 1.0d, FONT_SCALE_MIN, FONT_SCALE_MAX);
             mScrollbarSize = builder.comment("Default scrollbar size in dips.")
                     .defineInRange("scrollbarSize", ViewConfiguration.SCROLL_BAR_SIZE, 0, 1024);
             mTouchSlop = builder.comment("Distance a touch can wander before we think the user is scrolling in dips.")
@@ -435,10 +435,10 @@ public final class Config {
                     .defineInRange("overflingDistance", ViewConfiguration.OVERFLING_DISTANCE, 0, 1024);
             mVerticalScrollFactor = builder.comment("Amount to scroll in response to a vertical scroll event, in dips" +
                             " per axis value.")
-                    .defineInRange("verticalScrollFactor", ViewConfiguration.VERTICAL_SCROLL_FACTOR, 0, 1024);
+                    .defineInRange("verticalScrollFactor", (double) ViewConfiguration.VERTICAL_SCROLL_FACTOR, 0, 1024);
             mHorizontalScrollFactor = builder.comment("Amount to scroll in response to a horizontal scroll event, in " +
                             "dips per axis value.")
-                    .defineInRange("horizontalScrollFactor", ViewConfiguration.HORIZONTAL_SCROLL_FACTOR, 0, 1024);
+                    .defineInRange("horizontalScrollFactor", (double) ViewConfiguration.HORIZONTAL_SCROLL_FACTOR, 0, 1024);
 
             builder.pop();
 
@@ -853,12 +853,12 @@ public final class Config {
                             "Control base font size, in GUI scaled pixels. The default and vanilla value is 8.",
                             "For bitmap fonts, 8 represents a glyph size of 8x or 16x if fixed resolution.",
                             "This option only applies to TrueType fonts.")
-                    .defineInRange("baseFontSize", TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE,
+                    .defineInRange("baseFontSize", (double) TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE,
                             BASE_FONT_SIZE_MIN, BASE_FONT_SIZE_MAX);
             mBaselineShift = builder.comment(
                             "Control vertical baseline for vanilla text layout, in GUI scaled pixels.",
                             "The vanilla default value is 7.")
-                    .defineInRange("baselineShift", TextLayout.STANDARD_BASELINE_OFFSET,
+                    .defineInRange("baselineShift", (double) TextLayout.STANDARD_BASELINE_OFFSET,
                             BASELINE_MIN, BASELINE_MAX);
             mShadowOffset = builder.comment(
                             "Control the text shadow offset for vanilla text rendering, in GUI scaled pixels.")

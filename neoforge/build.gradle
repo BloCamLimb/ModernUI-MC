@@ -154,7 +154,7 @@ if (project.hasProperty("keystore")) {
                 keystore: project.getProperty("keystore"),
                 storetype: 'pkcs12',
                 keypass: project.getProperty("keystore_keypass"),
-                tsaurl: 'http://sha256timestamp.ws.symantec.com/sha256/timestamp'
+                tsaurl: 'http://timestamp.digicert.com'
         )
     }
 }

@@ -23,8 +23,10 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import icyllis.arc3d.core.RefCnt;
 import icyllis.arc3d.core.SharedPtr;
-import icyllis.arc3d.engine.SamplerState;
-import icyllis.arc3d.opengl.*;
+import icyllis.arc3d.engine.ImmediateContext;
+import icyllis.arc3d.engine.SamplerDesc;
+import icyllis.arc3d.opengl.GLCaps;
+import icyllis.arc3d.opengl.GLSampler;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.MuiModApi;
@@ -36,6 +38,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.*;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceProvider;
+import org.lwjgl.opengl.GL33C;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -214,10 +217,10 @@ public class TextRenderType extends RenderType {
 
     private static void ensureLinearFontSampler() {
         if (sLinearFontSampler == null) {
-            GLDevice device = (GLDevice) Core.requireDirectContext().getDevice();
+            ImmediateContext context = Core.requireImmediateContext();
             // default state is bilinear
-            sLinearFontSampler = device.getResourceProvider().findOrCreateCompatibleSampler(
-                    SamplerState.make(SamplerState.FILTER_LINEAR, SamplerState.MIPMAP_MODE_LINEAR));
+            sLinearFontSampler = (GLSampler) context.getResourceProvider().findOrCreateCompatibleSampler(
+                    SamplerDesc.make(SamplerDesc.FILTER_LINEAR, SamplerDesc.MIPMAP_MODE_LINEAR));
             Objects.requireNonNull(sLinearFontSampler, "Failed to create sampler object");
         }
     }
@@ -229,12 +232,12 @@ public class TextRenderType extends RenderType {
             SDF_FILL_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
+                GL33C.glBindSampler(0, sLinearFontSampler.getHandle());
             }
         }, () -> {
             SDF_FILL_STATES.forEach(RenderStateShard::clearRenderState);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GLCore.glBindSampler(0, 0);
+                GL33C.glBindSampler(0, 0);
             }
         });
         if (sFirstSDFFillType == null) {
@@ -259,12 +262,12 @@ public class TextRenderType extends RenderType {
             SDF_STROKE_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
+                GL33C.glBindSampler(0, sLinearFontSampler.getHandle());
             }
         }, () -> {
             SDF_STROKE_STATES.forEach(RenderStateShard::clearRenderState);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GLCore.glBindSampler(0, 0);
+                GL33C.glBindSampler(0, 0);
             }
         });
         if (sFirstSDFStrokeType == null) {
@@ -371,7 +374,7 @@ public class TextRenderType extends RenderType {
         if (smart) {
             if (!sSmartShadersLoaded) {
                 sSmartShadersLoaded = true;
-                if (((GLCaps) Core.requireDirectContext()
+                if (((GLCaps) Core.requireImmediateContext()
                         .getCaps()).getGLSLVersion() >= 400) {
                     var provider = obtainResourceProvider();
                     try {
