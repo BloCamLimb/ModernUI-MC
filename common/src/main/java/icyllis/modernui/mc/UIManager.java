@@ -55,7 +55,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.tooltip.*;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -858,8 +858,8 @@ public abstract class UIManager implements LifecycleOwner {
         GL33C.glDisable(GL33C.GL_SCISSOR_TEST);
         RenderSystem.defaultBlendFunc();
         GL33C.glBlendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
-        RenderSystem.disableBlend();
-        GL33C.glDisable(GL33C.GL_BLEND);
+        RenderSystem.enableBlend();
+        GL33C.glEnable(GL33C.GL_BLEND);
         RenderSystem.blendEquation(GL33C.GL_FUNC_ADD);
         GL33C.glBlendEquation(GL33C.GL_FUNC_ADD);
         RenderSystem.disableDepthTest();
@@ -892,19 +892,37 @@ public abstract class UIManager implements LifecycleOwner {
                 throw new RuntimeException(e);
             }
             if (layer != null) {
-                double guiScale = minecraft.getWindow().getGuiScale();
                 // draw off-screen target to Minecraft mainTarget (not the default framebuffer)
-                RenderSystem.setShaderTexture(0, layer.getHandle());
-                RenderSystem.setShader(GameRenderer::getPositionTexShader);
+                ShaderInstance blitShader = minecraft.gameRenderer.blitShader;
+                blitShader.setSampler("DiffuseSampler", layer.getHandle());
+                // z is 0
+                Matrix4f projection = new Matrix4f()
+                        .setOrtho(0.0F, width, height, 0.0F, 1000.0F, 3000.0F);
+                if (blitShader.MODEL_VIEW_MATRIX != null) {
+                    blitShader.MODEL_VIEW_MATRIX.set(new Matrix4f().translation(0.0F, 0.0F, -2000.0F));
+                }
+                if (blitShader.PROJECTION_MATRIX != null) {
+                    blitShader.PROJECTION_MATRIX.set(projection);
+                }
+                RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
+                if (blitShader.COLOR_MODULATOR != null) {
+                    blitShader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
+                }
+                blitShader.apply();
+                // override blend with src over
+                RenderSystem.blendFuncSeparate(GL33C.GL_ONE, GL33C.GL_ONE_MINUS_SRC_ALPHA,
+                        GL33C.GL_ONE, GL33C.GL_ONE_MINUS_SRC_ALPHA);
                 BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
-                bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-                bufferBuilder.vertex(0, height / guiScale, 0).uv(0, 0).endVertex();
-                bufferBuilder.vertex(width / guiScale, height / guiScale, 0).uv(1, 0).endVertex();
-                bufferBuilder.vertex(width / guiScale, 0, 0).uv(1, 1).endVertex();
-                bufferBuilder.vertex(0, 0, 0).uv(0, 1).endVertex();
-                BufferUploader.drawWithShader(bufferBuilder.end());
+                bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+                bufferBuilder.vertex(0, height, 0).uv(0, 0).color(255, 255, 255, 255).endVertex();
+                bufferBuilder.vertex(width, height, 0).uv(1, 0).color(255, 255, 255, 255).endVertex();
+                bufferBuilder.vertex(width, 0, 0).uv(1, 1).color(255, 255, 255, 255).endVertex();
+                bufferBuilder.vertex(0, 0, 0).uv(0, 1).color(255, 255, 255, 255).endVertex();
+                BufferUploader.draw(bufferBuilder.end());
+                blitShader.clear();
             }
         }
+        RenderSystem.defaultBlendFunc();
         RefCnt.move(surface);
     }
 
