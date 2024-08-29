@@ -145,7 +145,6 @@ final class EventHandler {
         @SubscribeEvent
         static void onRenderTick(@Nonnull TickEvent.RenderTickEvent event) {
             Core.flushMainCalls();
-            Core.flushRenderCalls();
             StillAlive.tick();
         }
 

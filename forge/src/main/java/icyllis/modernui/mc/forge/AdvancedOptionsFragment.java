@@ -55,7 +55,8 @@ public class AdvancedOptionsFragment extends Fragment {
 
     ViewGroup mContent;
     TextView mUIManagerDump;
-    TextView mGPUResourceDump;
+    TextView mMainGPUResourceDump;
+    TextView mUIGPUResourceDump;
     TextView mPSOStatsDump;
     TextView mGPUStatsDump;
 
@@ -141,7 +142,7 @@ public class AdvancedOptionsFragment extends Fragment {
             {
                 var button = createDebugButton(context, "Take UI screenshot (Y)");
                 button.setOnClickListener((__) ->
-                        Core.executeOnRenderThread(() -> UIManager.getInstance().takeScreenshot()));
+                        Core.executeOnMainThread(() -> UIManager.getInstance().takeScreenshot()));
                 category.addView(button);
             }
             {
@@ -245,7 +246,15 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            mGPUResourceDump = tv;
+            mMainGPUResourceDump = tv;
+            content.addView(tv);
+        }
+
+        {
+            var tv = new TextView(context);
+            tv.setTextSize(12);
+            tv.setPadding(dp6, dp6, dp6, dp6);
+            mUIGPUResourceDump = tv;
             content.addView(tv);
         }
 
@@ -282,7 +291,7 @@ public class AdvancedOptionsFragment extends Fragment {
 
     void refreshPage() {
         if (mUIManagerDump != null) {
-            Core.executeOnRenderThread(() -> {
+            Core.executeOnMainThread(() -> {
                 StringBuilder builder = new StringBuilder();
                 try (var w = new PrintWriter(new StringBuilderWriter(builder))) {
                     UIManager.getInstance().dump(w, false);
@@ -291,7 +300,25 @@ public class AdvancedOptionsFragment extends Fragment {
                 mUIManagerDump.post(() -> mUIManagerDump.setText(s));
             });
         }
-        if (mGPUResourceDump != null) {
+        if (mMainGPUResourceDump != null) {
+            Core.executeOnMainThread(() -> {
+                var content = Core.requireImmediateContext();
+                var s = "GPU Resource Cache (Immediate Context):\n" +
+                        String.format("Current budgeted resource bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(content.getCurrentBudgetedBytes()),
+                                content.getCurrentBudgetedBytes()) +
+                        "\n" +
+                        String.format("Current purgeable resource bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(content.getCurrentPurgeableBytes()),
+                                content.getCurrentPurgeableBytes()) +
+                        "\n" +
+                        String.format("Max budgeted resource bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(content.getMaxBudgetedBytes()),
+                                content.getMaxBudgetedBytes());
+                mMainGPUResourceDump.post(() -> mMainGPUResourceDump.setText(s));
+            });
+        }
+        if (mUIGPUResourceDump != null) {
             /*Core.executeOnRenderThread(() -> {
                 var rc = Core.requireDirectContext().getResourceCache();
                 var s = "GPU Resource Cache:\n" +
@@ -319,7 +346,7 @@ public class AdvancedOptionsFragment extends Fragment {
                 mGPUResourceDump.post(() -> mGPUResourceDump.setText(s));
             });*/
             var content = Core.requireUiRecordingContext();
-            var s = "GPU Resource Cache:\n" +
+            var s = "GPU Resource Cache (UI Recording Context):\n" +
                     String.format("Current budgeted resource bytes: %s (%s bytes)",
                             TextUtils.binaryCompact(content.getCurrentBudgetedBytes()),
                             content.getCurrentBudgetedBytes()) +
@@ -331,7 +358,7 @@ public class AdvancedOptionsFragment extends Fragment {
                     String.format("Max budgeted resource bytes: %s (%s bytes)",
                             TextUtils.binaryCompact(content.getMaxBudgetedBytes()),
                             content.getMaxBudgetedBytes());
-            mGPUResourceDump.setText(s);
+            mUIGPUResourceDump.setText(s);
         }
         /*if (mPSOStatsDump != null) {
             mPSOStatsDump.setText(
@@ -348,7 +375,7 @@ public class AdvancedOptionsFragment extends Fragment {
             });
         }*/
         if (mContent != null) {
-            mContent.postDelayed(this::refreshPage, 10_000);
+            mContent.postDelayed(this::refreshPage, 5_000);
         }
     }
 }

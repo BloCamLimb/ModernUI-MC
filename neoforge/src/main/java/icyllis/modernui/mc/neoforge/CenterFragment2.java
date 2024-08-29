@@ -24,6 +24,7 @@ import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.*;
+import icyllis.modernui.graphics.*;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.ui.ThemeControl;
 import icyllis.modernui.text.Typeface;
@@ -88,6 +89,14 @@ public class CenterFragment2 extends Fragment {
             title.setText(I18n.get("modernui.center.title"));
             title.setTextSize(22);
             title.setTextStyle(Typeface.BOLD);
+            title.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+                var tv = (TextView) v;
+                tv.getPaint().setShader(new LinearGradient(0, 0, right - left, 0,
+                        Color.argb(255, 45, 212, 191),
+                        Color.argb(255, 14, 165, 233),
+                        Shader.TileMode.CLAMP,
+                        null));
+            });
 
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER;

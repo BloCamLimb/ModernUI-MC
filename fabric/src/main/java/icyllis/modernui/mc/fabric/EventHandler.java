@@ -27,7 +27,6 @@ final class EventHandler {
 
         static void onRenderTick() {
             Core.flushMainCalls();
-            Core.flushRenderCalls();
             StillAlive.tick();
         }
     }
