@@ -659,7 +659,7 @@ public final class TooltipRenderer {
             }
         }
         shader.safeGetUniform("u_PushData1")
-                .set(sShadowAlpha, 4f / shadowRadius, (sFillColor[0] >>> 24) / 255f, rainbowOffset);
+                .set(sShadowAlpha, 1.25f / shadowRadius, (sFillColor[0] >>> 24) / 255f, rainbowOffset);
         if (rainbowOffset == 0) {
             chooseBorderColor(0, shader.safeGetUniform("u_PushData2"));
             chooseBorderColor(1, shader.safeGetUniform("u_PushData3"));
