@@ -334,7 +334,7 @@ public class TextLayoutProcessor {
     }
 
     public static int computeFontSize(float resLevel) {
-        // Note max font size is 96, see FontPaint, font size will be (8 * res) in Minecraft by default
+        // Note max font size is 96, font size will be (8 * res) in Minecraft by default
         return Math.min((int) (sBaseFontSize * resLevel + 0.5), 96);
     }
 
@@ -691,6 +691,7 @@ public class TextLayoutProcessor {
      * @see #handleStyleRun(char[], int, int, boolean, int, ResourceLocation)
      */
     private void handleBidiRun(@Nonnull char[] text, int start, int limit, boolean isRtl) {
+        assert start < limit;
         final IntArrayList styles = mStyles;
         final List<ResourceLocation> fonts = mFontNames;
         int lastPos, currPos;
@@ -698,37 +699,33 @@ public class TextLayoutProcessor {
         ResourceLocation lastFont, currFont;
         // Style runs are in visual order
         if (isRtl) {
-            lastPos = limit;
-            currPos = limit - 1;
-            lastStyle = styles.getInt(currPos);
-            lastFont = fonts.get(currPos);
-            currStyle = lastStyle;
-            currFont = lastFont;
-            while (currPos > start) {
-                if ((currStyle = styles.getInt(currPos - 1)) != lastStyle ||
-                        (currFont = fonts.get(currPos - 1)) != lastFont) {
-                    handleStyleRun(text, currPos, lastPos, true,
+            lastPos = limit - 1;
+            currPos = limit - 2;
+            lastStyle = styles.getInt(lastPos);
+            lastFont = fonts.get(lastPos);
+            for (; currPos >= start; currPos--) {
+                currStyle = styles.getInt(currPos);
+                currFont = fonts.get(currPos);
+                if (currStyle != lastStyle || !currFont.equals(lastFont)) {
+                    handleStyleRun(text, currPos + 1, lastPos + 1, true,
                             lastStyle, lastFont);
                     lastPos = currPos;
                     lastStyle = currStyle;
                     lastFont = currFont;
                 }
-                currPos--;
             }
-            assert currPos == start;
-            handleStyleRun(text, currPos, lastPos, true,
-                    currStyle, currFont);
+            assert currPos + 1 == start;
+            handleStyleRun(text, currPos + 1, lastPos + 1, true,
+                    lastStyle, lastFont);
         } else {
             lastPos = start;
-            currPos = start;
-            lastStyle = styles.getInt(currPos);
-            lastFont = fonts.get(currPos);
-            currStyle = lastStyle;
-            currFont = lastFont;
-            while (currPos + 1 < limit) {
-                currPos++;
-                if ((currStyle = styles.getInt(currPos)) != lastStyle ||
-                        (currFont = fonts.get(currPos)) != lastFont) {
+            currPos = start + 1;
+            lastStyle = styles.getInt(lastPos);
+            lastFont = fonts.get(lastPos);
+            for (; currPos < limit; currPos++) {
+                currStyle = styles.getInt(currPos);
+                currFont = fonts.get(currPos);
+                if (currStyle != lastStyle || !currFont.equals(lastFont)) {
                     handleStyleRun(text, lastPos, currPos, false,
                             lastStyle, lastFont);
                     lastPos = currPos;
@@ -736,9 +733,9 @@ public class TextLayoutProcessor {
                     lastFont = currFont;
                 }
             }
-            assert currPos + 1 == limit;
-            handleStyleRun(text, lastPos, currPos + 1, false,
-                    currStyle, currFont);
+            assert currPos == limit;
+            handleStyleRun(text, lastPos, currPos, false,
+                    lastStyle, lastFont);
         }
 
         /*float lastAdvance = mAdvance;
