@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,7 +28,6 @@ import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.*;
-import icyllis.modernui.graphics.font.*;
 import icyllis.modernui.graphics.text.*;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.*;
@@ -379,7 +378,7 @@ public class BitmapFont implements Font, AutoCloseable {
         mTexture = RefCnt.move(mTexture);
     }
 
-    public static class Glyph extends BakedGlyph implements GlyphInfo {
+    public static class Glyph extends GLBakedGlyph implements GlyphInfo {
 
         public final float advance;
 

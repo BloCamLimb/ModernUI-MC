@@ -23,7 +23,6 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.Color;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.LineBreakConfig;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.text.*;

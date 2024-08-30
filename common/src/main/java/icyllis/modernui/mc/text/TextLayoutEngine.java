@@ -28,8 +28,6 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
-import icyllis.modernui.graphics.font.BakedGlyph;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.text.mixin.AccessFontManager;
@@ -1237,7 +1235,7 @@ public class TextLayoutEngine extends FontResourceManager
     }
 
     @Nullable
-    public BakedGlyph lookupGlyph(Font font, int devSize, int glyphId) {
+    public GLBakedGlyph lookupGlyph(Font font, int devSize, int glyphId) {
         if (font instanceof BitmapFont bitmapFont) {
             // auto bake
             return bitmapFont.getGlyph(glyphId);
@@ -1265,7 +1263,7 @@ public class TextLayoutEngine extends FontResourceManager
      */
     @Deprecated
     @Nullable
-    private BakedGlyph lookupEmoji(@Nonnull char[] buf, int start, int end) {
+    private GLBakedGlyph lookupEmoji(@Nonnull char[] buf, int start, int end) {
         return null;
     }
 
@@ -1395,7 +1393,7 @@ public class TextLayoutEngine extends FontResourceManager
         }
 
         // initial table
-        BakedGlyph[] glyphs = new BakedGlyph[189]; // 126 - 33 + 1 + 255 - 161 + 1
+        GLBakedGlyph[] glyphs = new GLBakedGlyph[189]; // 126 - 33 + 1 + 255 - 161 + 1
         // normalized offsets
         float[] offsets = new float[glyphs.length];
 
@@ -1406,7 +1404,7 @@ public class TextLayoutEngine extends FontResourceManager
         for (int i = 0; i < 10; i++) {
             chars[0] = (char) ('0' + i);
             float advance;
-            BakedGlyph glyph;
+            GLBakedGlyph glyph;
             // no text shaping
             if (awtFont != null) {
                 GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
@@ -1457,7 +1455,7 @@ public class TextLayoutEngine extends FontResourceManager
             for (char c = range[0], e = range[1]; c < e; c++) {
                 chars[0] = c;
                 float advance;
-                BakedGlyph glyph;
+                GLBakedGlyph glyph;
                 // no text shaping
                 if (awtFont != null) {
                     GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
@@ -1506,12 +1504,12 @@ public class TextLayoutEngine extends FontResourceManager
      * <p>
      * This is used to render fast digits and obfuscated chars.
      */
-    public static class FastCharSet extends BakedGlyph {
+    public static class FastCharSet extends GLBakedGlyph {
 
-        public final BakedGlyph[] glyphs;
+        public final GLBakedGlyph[] glyphs;
         public final float[] offsets;
 
-        public FastCharSet(BakedGlyph[] glyphs, float[] offsets) {
+        public FastCharSet(GLBakedGlyph[] glyphs, float[] offsets) {
             this.glyphs = glyphs;
             this.offsets = offsets;
         }

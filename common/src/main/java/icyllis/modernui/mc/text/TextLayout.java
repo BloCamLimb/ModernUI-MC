@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,7 +20,6 @@ package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.graphics.MathUtil;
-import icyllis.modernui.graphics.font.BakedGlyph;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.util.SparseArray;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -96,9 +95,9 @@ public class TextLayout {
      * obfuscated chars are {@link icyllis.modernui.mc.text.TextLayoutEngine.FastCharSet}.
      */
     private final int[] mGlyphs;
-    private transient BakedGlyph[] mBakedGlyphs;
-    private transient BakedGlyph[] mBakedGlyphsForSDF;
-    private transient SparseArray<BakedGlyph[]> mBakedGlyphsArray;
+    private transient GLBakedGlyph[] mBakedGlyphs;
+    private transient GLBakedGlyph[] mBakedGlyphsForSDF;
+    private transient SparseArray<GLBakedGlyph[]> mBakedGlyphsArray;
 
     /**
      * Position x1 y1 x2 y2... relative to the same point, for rendering glyphs.
@@ -249,9 +248,9 @@ public class TextLayout {
     }
 
     @Nonnull
-    private BakedGlyph[] prepareGlyphs(int resLevel, int fontSize) {
+    private GLBakedGlyph[] prepareGlyphs(int resLevel, int fontSize) {
         TextLayoutEngine engine = TextLayoutEngine.getInstance();
-        BakedGlyph[] glyphs = new BakedGlyph[mGlyphs.length];
+        GLBakedGlyph[] glyphs = new GLBakedGlyph[mGlyphs.length];
         for (int i = 0; i < glyphs.length; i++) {
             if ((mGlyphFlags[i] & CharacterStyle.OBFUSCATED_MASK) != 0) {
                 glyphs[i] = engine.lookupFastChars(
@@ -270,7 +269,7 @@ public class TextLayout {
     }
 
     @Nonnull
-    private BakedGlyph[] getGlyphs(int resLevel) {
+    private GLBakedGlyph[] getGlyphs(int resLevel) {
         if (resLevel == mCreatedResLevel) {
             if (mBakedGlyphs == null) {
                 int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
@@ -287,12 +286,12 @@ public class TextLayout {
     }
 
     @Nonnull
-    private BakedGlyph[] getGlyphsUniformScale(float density) {
+    private GLBakedGlyph[] getGlyphsUniformScale(float density) {
         if (mBakedGlyphsArray == null) {
             mBakedGlyphsArray = new SparseArray<>();
         }
         int fontSize = TextLayoutProcessor.computeFontSize(density);
-        BakedGlyph[] glyphs = mBakedGlyphsArray.get(fontSize);
+        GLBakedGlyph[] glyphs = mBakedGlyphsArray.get(fontSize);
         if (glyphs == null) {
             glyphs = prepareGlyphs(mCreatedResLevel, fontSize);
             mBakedGlyphsArray.put(fontSize, glyphs);
@@ -329,7 +328,7 @@ public class TextLayout {
         final int startG = g;
         final int startB = b;
         final float density;
-        final BakedGlyph[] glyphs;
+        final GLBakedGlyph[] glyphs;
         if (preferredMode == TextRenderType.MODE_SDF_FILL) {
             int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
             glyphs = getGlyphs(resLevel);

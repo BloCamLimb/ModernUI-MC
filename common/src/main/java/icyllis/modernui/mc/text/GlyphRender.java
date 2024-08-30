@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,11 +18,7 @@
 
 package icyllis.modernui.mc.text;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import icyllis.modernui.graphics.font.BakedGlyph;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
@@ -206,10 +202,10 @@ public abstract class GlyphRender {
          * The immutable glyph to render
          */
         @Nullable
-        private final BakedGlyph mGlyph;
+        private final GLBakedGlyph mGlyph;
 
         public StandardGlyphRender(int stripIndex, float offsetX, float advance, int decoration,
-                                   @Nullable BakedGlyph glyph) {
+                                   @Nullable GLBakedGlyph glyph) {
             super(stripIndex, offsetX, advance, decoration);
             mGlyph = glyph;
         }
@@ -315,10 +311,10 @@ public abstract class GlyphRender {
          * A reference of cached array in GlyphManager, 0-9 textured glyphs (in that order)
          */
         @Nonnull
-        private final Map.Entry<BakedGlyph[], float[]> mDigits;
+        private final Map.Entry<GLBakedGlyph[], float[]> mDigits;
 
         public DigitGlyphRender(int stripIndex, float offsetX, float advance, int decoration,
-                                @Nonnull Map.Entry<BakedGlyph[], float[]> digits) {
+                                @Nonnull Map.Entry<GLBakedGlyph[], float[]> digits) {
             super(stripIndex, offsetX, advance, decoration);
             mDigits = digits;
         }
@@ -433,10 +429,10 @@ public abstract class GlyphRender {
          * Array of glyphs with same advance
          */
         @Nonnull
-        private final Map.Entry<BakedGlyph[], float[]> mGlyphs;
+        private final Map.Entry<GLBakedGlyph[], float[]> mGlyphs;
 
         public RandomGlyphRender(int stripIndex, float offsetX, float advance, int decoration,
-                                 @Nonnull Map.Entry<BakedGlyph[], float[]> glyphs) {
+                                 @Nonnull Map.Entry<GLBakedGlyph[], float[]> glyphs) {
             super(stripIndex, advance, offsetX, decoration);
             mGlyphs = glyphs;
         }
