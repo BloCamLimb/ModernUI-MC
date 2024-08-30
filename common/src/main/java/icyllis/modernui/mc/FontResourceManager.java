@@ -56,8 +56,9 @@ public class FontResourceManager implements PreparableReloadListener {
     /**
      * Gui scale = 8.
      * <p>
+     * Bitmap fonts are not scalable, use a canonical font size for measuring.
      * This is because our emoji is 72px. Let emoji be 72px / 8(scale) = 9px,
-     * which is close to Minecraft base font size 8px.
+     * which is close to Minecraft base font size 8px and font designer.
      *
      * @see GlyphManager
      */

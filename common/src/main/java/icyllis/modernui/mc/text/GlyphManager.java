@@ -238,9 +238,6 @@ public class GlyphManager {
     @Nullable
     @RenderThread
     public GLBakedGlyph lookupGlyph(@NonNull Font font, int fontSize, int glyphId) {
-        if (glyphId == 0) {
-            return null;
-        }
         if (font instanceof OutlineFont) {
             java.awt.Font awtFont = ((OutlineFont) font).chooseFont(fontSize);
             long key = computeGlyphKey(awtFont, glyphId);
@@ -427,6 +424,10 @@ public class GlyphManager {
     private GLBakedGlyph cacheEmoji(@NonNull EmojiFont font, int glyphId,
                                     @NonNull GLFontAtlas atlas, @NonNull GLBakedGlyph glyph,
                                     long key) {
+        if (glyphId == 0) {
+            atlas.setNoPixels(key);
+            return null;
+        }
         String path = "emoji/" + font.getFileName(glyphId);
         var opts = new BitmapFactory.Options();
         opts.inPreferredFormat = Bitmap.Format.RGBA_8888;
