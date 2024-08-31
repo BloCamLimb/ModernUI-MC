@@ -911,7 +911,7 @@ public class TextLayoutEngine extends FontResourceManager
                 if (!isUnicodeFont(reference)) {
                     bundle.families.add(reference);
                     bundle.dependencies.add(reference);
-                } else {
+                } else if (!name.equals(Minecraft.DEFAULT_FONT)) {
                     bundle.families.add(INTERNAL_DEFAULT);
                 }
             }
