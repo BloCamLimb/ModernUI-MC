@@ -124,6 +124,12 @@ public class TextLayoutEngine extends FontResourceManager
     public static final ResourceLocation SANS_SERIF = ModernUIMod.location("sans-serif");
     public static final ResourceLocation SERIF = ModernUIMod.location("serif");
     public static final ResourceLocation MONOSPACED = ModernUIMod.location("monospace"); // no -d
+    /**
+     * We never load Unicode fonts, they will be ModernUI default typeface list and can be
+     * dynamically reloaded. However, if other fonts contain UNIHEX or refer to Unicode fonts,
+     * we use this placeholder and redirect it to the <em>current</em> ModernUI default typeface list.
+     */
+    private static final ResourceLocation INTERNAL_DEFAULT = ModernUIMod.location("internal-default");
 
     /*
      * Draw and cache all glyphs of all fonts needed
@@ -423,16 +429,20 @@ public class TextLayoutEngine extends FontResourceManager
      */
     @RenderThread
     public void reload() {
-        clear();
-
-        var ctx = ModernUI.getInstance();
+        var window = Minecraft.getInstance().getWindow();
         final int scale;
-        if (ctx != null) {
-            scale = Math.round(ctx.getResources()
-                    .getDisplayMetrics().density * 2);
+        //noinspection ConstantValue
+        if (window != null) { // this can be null on Fabric, because this class loads too early
+            scale = Math.round((float) window.getGuiScale());
         } else {
             scale = 2;
         }
+        internalReload(scale);
+    }
+
+    private void internalReload(int scale) {
+        clear();
+
         final int oldLevel = mResLevel;
         if (sFixedResolution) {
             // make font size to 16 (8 * 2)
@@ -533,7 +543,7 @@ public class TextLayoutEngine extends FontResourceManager
                 reload = !Objects.equals(mForceUnicodeFont, forceUnicodeFont);
             }
             if (reload) {
-                reload();
+                internalReload(newScale);
             }
         }
     }
@@ -822,6 +832,7 @@ public class TextLayoutEngine extends FontResourceManager
             sorter.addEntry(bundle.name, bundle);
         }
         final var map = new HashMap<ResourceLocation, FontCollection>();
+        map.put(INTERNAL_DEFAULT, ModernUI.getSelectedTypeface());
         sorter.orderByDependencies((name, bundle) -> {
             if (isUnicodeFont(name)) {
                 return;
@@ -892,11 +903,16 @@ public class TextLayoutEngine extends FontResourceManager
                         new FontFamily(spaceFont)
                 );
             }
+            case UNIHEX -> {
+                bundle.families.add(INTERNAL_DEFAULT);
+            }
             case REFERENCE -> {
                 ResourceLocation reference = ((ProviderReferenceDefinition) definition).id();
                 if (!isUnicodeFont(reference)) {
                     bundle.families.add(reference);
                     bundle.dependencies.add(reference);
+                } else {
+                    bundle.families.add(INTERNAL_DEFAULT);
                 }
             }
             default -> LOGGER.info(MARKER, "Unknown provider type '{}' in font '{}' in pack: '{}'",
