@@ -341,10 +341,10 @@ public final class Config {
                             "If less than 4 are provided, repeat the last value.")
                     .defineList("colorStroke", () -> {
                         List<String> list = new ArrayList<>();
-                        list.add("#F0AADCF0");
-                        list.add("#F0FFC3F7");
-                        list.add("#F0BFF2B2");
-                        list.add("#F0D27F3D");
+                        list.add("#FFC2D0D6");
+                        list.add("#FFE7DAE5");
+                        list.add("#FFCCDAC8");
+                        list.add("#FFC8B9AC");
                         return list;
                     }, $ -> true);
             mTooltipCycle = builder.comment(
@@ -353,10 +353,10 @@ public final class Config {
                             TOOLTIP_BORDER_COLOR_ANIM_MAX);
             mTooltipWidth = builder.comment(
                             "The width of tooltip border, if rounded, in GUI Scale Independent Pixels.")
-                    .defineInRange("borderWidth", 4 / 3f, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
+                    .defineInRange("borderWidth", 4 / 3d, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
             mTooltipRadius = builder.comment(
                             "The corner radius of tooltip border, if rounded, in GUI Scale Independent Pixels.")
-                    .defineInRange("cornerRadius", 3f, TOOLTIP_CORNER_RADIUS_MIN, TOOLTIP_CORNER_RADIUS_MAX);
+                    .defineInRange("cornerRadius", 3d, TOOLTIP_CORNER_RADIUS_MIN, TOOLTIP_CORNER_RADIUS_MAX);
             /*mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
                     .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);*/
@@ -366,7 +366,7 @@ public final class Config {
                     .defineInRange("shadowRadius", 10.0, TOOLTIP_SHADOW_RADIUS_MIN, TOOLTIP_SHADOW_RADIUS_MAX);
             mTooltipShadowAlpha = builder.comment(
                             "The shadow opacity of tooltip, if rounded. No impact on performance.")
-                    .defineInRange("shadowOpacity", 0.35f, 0f, 1f);
+                    .defineInRange("shadowOpacity", 0.3, 0d, 1d);
             mAdaptiveTooltipColors = builder.comment(
                             "When true, tooltip border colors adapt to item's name and rarity.")
                     .define("adaptiveColors", true);
@@ -417,7 +417,7 @@ public final class Config {
             mForceRtl = builder.comment("Force layout direction to RTL, otherwise, the current Locale setting.")
                     .define("forceRtl", false);
             mFontScale = builder.comment("The global font scale used with sp units.")
-                    .defineInRange("fontScale", 1.0f, FONT_SCALE_MIN, FONT_SCALE_MAX);
+                    .defineInRange("fontScale", 1.0d, FONT_SCALE_MIN, FONT_SCALE_MAX);
             mScrollbarSize = builder.comment("Default scrollbar size in dips.")
                     .defineInRange("scrollbarSize", ViewConfiguration.SCROLL_BAR_SIZE, 0, 1024);
             mTouchSlop = builder.comment("Distance a touch can wander before we think the user is scrolling in dips.")

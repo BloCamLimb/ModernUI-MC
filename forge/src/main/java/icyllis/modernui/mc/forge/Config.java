@@ -341,10 +341,10 @@ public final class Config {
                             "If less than 4 are provided, repeat the last value.")
                     .defineList("colorStroke", () -> {
                         List<String> list = new ArrayList<>();
-                        list.add("#F0AADCF0");
-                        list.add("#F0FFC3F7");
-                        list.add("#F0BFF2B2");
-                        list.add("#F0D27F3D");
+                        list.add("#FFC2D0D6");
+                        list.add("#FFE7DAE5");
+                        list.add("#FFCCDAC8");
+                        list.add("#FFC8B9AC");
                         return list;
                     }, $ -> true);
             mTooltipCycle = builder.comment(
@@ -366,7 +366,7 @@ public final class Config {
                     .defineInRange("shadowRadius", 10.0, TOOLTIP_SHADOW_RADIUS_MIN, TOOLTIP_SHADOW_RADIUS_MAX);
             mTooltipShadowAlpha = builder.comment(
                             "The shadow opacity of tooltip, if rounded. No impact on performance.")
-                    .defineInRange("shadowOpacity", 0.35, 0d, 1d);
+                    .defineInRange("shadowOpacity", 0.3, 0d, 1d);
             mAdaptiveTooltipColors = builder.comment(
                             "When true, tooltip border colors adapt to item's name and rarity.")
                     .define("adaptiveColors", true);

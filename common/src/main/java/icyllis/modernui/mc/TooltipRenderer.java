@@ -22,6 +22,8 @@ import com.mojang.blaze3d.shaders.AbstractUniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.modernui.graphics.Color;
+import icyllis.modernui.mc.mixin.AccessClientTextTooltip;
+import icyllis.modernui.mc.text.CharacterStyle;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -29,7 +31,7 @@ import net.minecraft.client.gui.screens.inventory.tooltip.*;
 import net.minecraft.client.renderer.*;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.util.StringDecomposer;
+import net.minecraft.util.*;
 import net.minecraft.world.item.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
@@ -52,7 +54,7 @@ public final class TooltipRenderer {
     public static volatile float sBorderWidth = 4 / 3f;
     public static volatile float sCornerRadius = 3;
     public static volatile float sShadowRadius = 10;
-    public static volatile float sShadowAlpha = 0.35f;
+    public static volatile float sShadowAlpha = 0.3f;
     public static volatile boolean sAdaptiveColors = true;
 
     // space between mouse and tooltip
@@ -277,6 +279,31 @@ public final class TooltipRenderer {
         return result;
     }
 
+    // return style if the line contains a single style, or it's too long to determine;
+    // return null if the line is empty, or multi style
+    @Nullable
+    static Style findSingleStyle(@Nonnull ClientTextTooltip line) {
+        FormattedCharSequence text = ((AccessClientTextTooltip) line).getText();
+        class StyleFinder implements FormattedCharSink {
+            Style style = null;
+            int count = 0;
+
+            @Override
+            public boolean accept(int index, @Nonnull Style style, int codePoint) {
+                if (this.style == null) {
+                    this.style = style;
+                } else if (!CharacterStyle.equalsForTextLayout(this.style, style)) {
+                    this.style = null;
+                    return false;
+                }
+                return ++count <= 50;
+            }
+        }
+        var finder = new StyleFinder();
+        text.accept(finder);
+        return finder.style;
+    }
+
     /*public static void drawTooltip(@Nonnull GLCanvas canvas, @Nonnull List<? extends FormattedText> texts,
                                    @Nonnull Font font, @Nonnull ItemStack stack, @Nonnull PoseStack poseStack,
                                    float mouseX, float mouseY, float preciseMouseX, float preciseMouseY,
@@ -486,15 +513,38 @@ public final class TooltipRenderer {
         } else {
             tooltipWidth = 0;
             tooltipHeight = 0;
+            Style singleStyle = null;
             for (int i = 0; i < list.size(); i++) {
                 ClientTooltipComponent component = list.get(i);
                 tooltipWidth = Math.max(tooltipWidth, component.getWidth(font));
                 int componentHeight = component.getHeight();
                 tooltipHeight += componentHeight;
-                if (i == 0 && !itemStack.isEmpty() &&
-                        component instanceof ClientTextTooltip) {
-                    titleGap = true;
+                if (i == 0) {
                     titleBreakHeight = componentHeight;
+                    if (component instanceof ClientTextTooltip) {
+                        if (!itemStack.isEmpty()) {
+                            // item stack provided, always add title gap
+                            titleGap = true;
+                        } else {
+                            singleStyle = findSingleStyle((ClientTextTooltip) component);
+                            if (singleStyle == null) {
+                                // multi-style, add title gap
+                                titleGap = true;
+                            }
+                        }
+                    }
+                } else if (i <= 2 && !titleGap && component instanceof ClientTextTooltip) {
+                    // check first three lines to see if title gap is needed
+                    final Style lineStyle = findSingleStyle((ClientTextTooltip) component);
+                    if (lineStyle == null) {
+                        // multi-style, add title gap
+                        titleGap = true;
+                    } else if (singleStyle == null) {
+                        singleStyle = lineStyle;
+                    } else if (!CharacterStyle.equalsForTextLayout(singleStyle, lineStyle)) {
+                        // multi-style, add title gap
+                        titleGap = true;
+                    }
                 }
             }
             if (!titleGap) {
