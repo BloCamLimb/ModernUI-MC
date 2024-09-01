@@ -54,6 +54,7 @@ import static icyllis.modernui.ModernUI.LOGGER;
  *
  * @see GLFontAtlas
  * @see FontCollection
+ * @see icyllis.arc3d.granite.GlyphAtlasManager
  */
 public class GlyphManager {
 
@@ -66,6 +67,12 @@ public class GlyphManager {
      * Additional notes: two pixels because we may use SDF to stroke.
      */
     public static final int GLYPH_BORDER = 2;
+
+    /**
+     * We only allow glyphs with a maximum of 256x256 pixels to be uploaded to the atlas.
+     * This value must be less than {@link GLFontAtlas#CHUNK_SIZE}.
+     */
+    public static final int IMAGE_SIZE = 256;
 
     /**
      * Transparent (alpha zero) black background color for use with BufferedImage.clearRect().
@@ -95,6 +102,7 @@ public class GlyphManager {
 
     private GLFontAtlas mFontAtlas;
     private GLFontAtlas mEmojiAtlas;
+    private GLFontAtlas mBitmapAtlas;
     private GLDevice mDevice;
 
     /**
@@ -107,6 +115,10 @@ public class GlyphManager {
     private final Object2IntOpenHashMap<EmojiFont> mEmojiFontTable = new Object2IntOpenHashMap<>();
 
     private final ToIntFunction<EmojiFont> mEmojiFontTableMapper = f -> mEmojiFontTable.size() + 1;
+
+    private final Object2IntOpenHashMap<BitmapFont> mBitmapFontTable = new Object2IntOpenHashMap<>();
+
+    private final ToIntFunction<BitmapFont> mBitmapFontTableMapper = f -> mBitmapFontTable.size() + 1;
 
     /**
      * Draw a single glyph onto this image and then loaded from here into an OpenGL texture.
@@ -170,13 +182,19 @@ public class GlyphManager {
         if (mEmojiAtlas != null) {
             mEmojiAtlas.close();
         }
+        if (mBitmapAtlas != null) {
+            mBitmapAtlas.close();
+        }
         mFontAtlas = null;
         mEmojiAtlas = null;
+        mBitmapAtlas = null;
         mFontTable.clear();
         mFontTable.trim();
-        /*mReverseFontTable.clear();
-        mReverseFontTable.trimToSize();*/
-        allocateImage(64, 64);
+        mEmojiFontTable.clear();
+        mEmojiFontTable.trim();
+        mBitmapFontTable.clear();
+        mBitmapFontTable.trim();
+        allocateImage();
     }
 
     /**
@@ -224,6 +242,11 @@ public class GlyphManager {
         return (fontKey << 32) | glyphId;
     }
 
+    private long computeBitmapGlyphKey(@NonNull BitmapFont font, int glyphId) {
+        long fontKey = mBitmapFontTable.computeIfAbsent(font, mBitmapFontTableMapper);
+        return (fontKey << 32) | glyphId;
+    }
+
     /**
      * Given a font and a glyph ID within that font, locate the glyph's pre-rendered image
      * in the glyph atlas and return its cache entry. The entry stores the texture with the
@@ -244,7 +267,7 @@ public class GlyphManager {
             if (mFontAtlas == null) {
                 // we use mipmapping and SDF, so 2px width border around it
                 ImmediateContext context = Core.requireImmediateContext();
-                mFontAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_A8, GLYPH_BORDER);
+                mFontAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_A8, GLYPH_BORDER, true);
                 mDevice = (GLDevice) context.getDevice();
             }
             GLBakedGlyph glyph = mFontAtlas.getGlyph(key);
@@ -263,7 +286,7 @@ public class GlyphManager {
             if (mEmojiAtlas == null) {
                 // we assume emoji images have a border, and no additional border
                 ImmediateContext context = Core.requireImmediateContext();
-                mEmojiAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_ARGB, 0);
+                mEmojiAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_ARGB, 0, true);
                 mDevice = (GLDevice) context.getDevice();
             }
             GLBakedGlyph glyph = mEmojiAtlas.getGlyph(key);
@@ -277,6 +300,32 @@ public class GlyphManager {
                 );
             }
             return glyph;
+        } else if (font instanceof BitmapFont bitmapFont) {
+            if (bitmapFont.nothingToDraw()) {
+                return null;
+            }
+            if (bitmapFont.fitsInAtlas()) {
+                long key = computeBitmapGlyphKey(bitmapFont, glyphId);
+                if (mBitmapAtlas == null) {
+                    ImmediateContext context = Core.requireImmediateContext();
+                    mBitmapAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_ARGB, 0, false);
+                    mDevice = (GLDevice) context.getDevice();
+                }
+                GLBakedGlyph glyph = mBitmapAtlas.getGlyph(key);
+                if (glyph != null && glyph.x == Short.MIN_VALUE) {
+                    return cacheBitmapGlyph(
+                            bitmapFont,
+                            glyphId,
+                            mBitmapAtlas,
+                            glyph,
+                            key
+                    );
+                }
+                return glyph;
+            } else {
+                // auto bake
+                return bitmapFont.getBakedGlyph(glyphId);
+            }
         }
         return null;
     }
@@ -300,19 +349,17 @@ public class GlyphManager {
     }
 
     @RenderThread
-    public int getCurrentTexture(Font font) {
-        if (font instanceof OutlineFont) {
+    public int getCurrentTexture(BitmapFont font) {
+        if (font.nothingToDraw()) {
+            return 0;
+        }
+        if (font.fitsInAtlas()) {
             GLTexture texture;
-            if (mFontAtlas != null && (texture = mFontAtlas.mTexture) != null) {
-                mDevice.generateMipmaps(texture);
+            if (mBitmapAtlas != null && (texture = mBitmapAtlas.mTexture) != null) {
                 return texture.getHandle();
             }
-        } else if (font instanceof EmojiFont) {
-            GLTexture texture;
-            if (mEmojiAtlas != null && (texture = mEmojiAtlas.mTexture) != null) {
-                mDevice.generateMipmaps(texture);
-                return texture.getHandle();
-            }
+        } else {
+            return font.getCurrentTexture();
         }
         return 0;
     }
@@ -334,11 +381,18 @@ public class GlyphManager {
                 callback.accept(info);
             }
         }
+        if (mBitmapAtlas != null && mBitmapAtlas.compact()) {
+            var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_ARGB, false);
+            for (var callback : mAtlasInvalidationCallbacks) {
+                callback.accept(info);
+            }
+        }
     }
 
     public void debug() {
         debug(mFontAtlas, "FontAtlas");
         debug(mEmojiAtlas, "EmojiAtlas");
+        debug(mBitmapAtlas, "BitmapAtlas");
     }
 
     private static void debug(GLFontAtlas atlas, String name) {
@@ -354,6 +408,9 @@ public class GlyphManager {
         }
         if (mEmojiAtlas != null) {
             mEmojiAtlas.dumpInfo(pw, "EmojiAtlas");
+        }
+        if (mBitmapAtlas != null) {
+            mBitmapAtlas.dumpInfo(pw, "BitmapAtlas");
         }
     }
 
@@ -381,8 +438,9 @@ public class GlyphManager {
         int borderedWidth = bounds.width + GLYPH_BORDER * 2;
         int borderedHeight = bounds.height + GLYPH_BORDER * 2;
 
-        while (borderedWidth > mImage.getWidth() || borderedHeight > mImage.getHeight()) {
-            allocateImage(mImage.getWidth() << 1, mImage.getHeight() << 1);
+        if (borderedWidth > mImage.getWidth() || borderedHeight > mImage.getHeight()) {
+            atlas.setNoPixels(key);
+            return null;
         }
 
         // give it an offset to draw at origin
@@ -460,11 +518,36 @@ public class GlyphManager {
         }
     }
 
-    private void allocateImage(int width, int height) {
-        mImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+    @Nullable
+    @RenderThread
+    private GLBakedGlyph cacheBitmapGlyph(@NonNull BitmapFont font, int glyphId,
+                                          @NonNull GLFontAtlas atlas, @NonNull GLBakedGlyph glyph,
+                                          long key) {
+        long src = MemoryUtil.memAddress(mImageBuffer);
+        if (!font.getGlyphImage(glyphId, src)) {
+            atlas.setNoPixels(key);
+            return null;
+        }
+        // here width and height are in pixels
+        glyph.width = (short) font.getSpriteWidth();
+        glyph.height = (short) font.getSpriteHeight();
+        boolean invalidated = atlas.stitch(glyph, src);
+        // here width and height are scaled
+        font.setGlyphMetrics(glyph);
+        if (invalidated) {
+            var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_ARGB, true);
+            for (var callback : mAtlasInvalidationCallbacks) {
+                callback.accept(info);
+            }
+        }
+        return glyph;
+    }
+
+    private void allocateImage() {
+        mImage = new BufferedImage(IMAGE_SIZE, IMAGE_SIZE, BufferedImage.TYPE_INT_ARGB);
         mGraphics = mImage.createGraphics();
 
-        mImageData = new int[width * height];
+        mImageData = new int[IMAGE_SIZE * IMAGE_SIZE];
         mImageBuffer = BufferUtils.createByteBuffer(mImageData.length * 4); // auto GC
 
         // set background color for use with clearRect()

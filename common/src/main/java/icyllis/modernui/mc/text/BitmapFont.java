@@ -21,16 +21,18 @@ package icyllis.modernui.mc.text;
 import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.font.GlyphInfo;
 import com.mojang.blaze3d.font.SheetGlyphInfo;
-import icyllis.arc3d.core.RefCnt;
-import icyllis.arc3d.core.Typeface;
+import icyllis.arc3d.core.*;
 import icyllis.arc3d.engine.*;
 import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
+import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.graphics.text.*;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
-import it.unimi.dsi.fastutil.ints.*;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.minecraft.client.gui.font.glyphs.EmptyGlyph;
 import net.minecraft.client.gui.font.providers.BitmapProvider;
 import net.minecraft.resources.ResourceLocation;
@@ -40,8 +42,7 @@ import org.lwjgl.opengl.GL33C;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStream;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -49,7 +50,9 @@ import java.util.function.Function;
  * Unicode code points without text shaping. If such a font wins the font itemization,
  * the layout engine will create a ReplacementRun, just like color emojis.
  * <p>
- * The bitmap is just a single texture atlas.
+ * Thread safety: this class is not thread safe, it must be safely published. Bitmap font
+ * can be created from any thread; the glyph info can be queried from any thread; it can
+ * only be rendered and closed on Minecraft main thread (i.e. OpenGL thread).
  *
  * @author BloCamLimb
  * @see net.minecraft.client.gui.font.providers.BitmapProvider
@@ -57,13 +60,24 @@ import java.util.function.Function;
  */
 public class BitmapFont implements Font, AutoCloseable {
 
+    /**
+     * Minecraft allows 256x256 bitmap font texture at most. However, we only want to
+     * stitch small glyphs into the texture atlas, as we only have one 4096x4096 atlas.
+     * Otherwise, we will create a dedicated texture for the bitmap font.
+     * <p>
+     * This value must be less than {@link GlyphManager#IMAGE_SIZE}.
+     */
+    public static final int MAX_ATLAS_DIMENSION = 128;
+
     private final ResourceLocation mName;
 
-    // this is auto GC, null after uploading to texture
     private Bitmap mBitmap;
-    private final Int2ObjectMap<Glyph> mGlyphs = new Int2ObjectOpenHashMap<>();
+    private final Int2ObjectOpenHashMap<Glyph> mGlyphs = new Int2ObjectOpenHashMap<>();
 
-    private GLTexture mTexture;
+    // used if mSpriteWidth or mSpriteHeight > MAX_ATLAS_DIMENSION
+    @SharedPtr
+    private GLTexture mTexture; // lazy init
+    private Int2ObjectOpenHashMap<GLBakedGlyph> mBakedGlyphs;
 
     private final int mAscent;  // positive
     private final int mDescent; // positive
@@ -71,6 +85,7 @@ public class BitmapFont implements Font, AutoCloseable {
     private final int mSpriteWidth;
     private final int mSpriteHeight;
     private final float mScaleFactor;
+    private final int[][] mCodepointGrid;
 
     private BitmapFont(ResourceLocation name, Bitmap bitmap,
                        int[][] grid, int rows, int cols,
@@ -82,30 +97,55 @@ public class BitmapFont implements Font, AutoCloseable {
         mSpriteWidth = bitmap.getWidth() / cols;
         mSpriteHeight = bitmap.getHeight() / rows;
         mScaleFactor = (float) height / mSpriteHeight;
+        mCodepointGrid = grid;
 
+        // height <= 0 means nothing to render
+        boolean isEmpty = height <= 0 || mSpriteWidth <= 0 || mSpriteHeight <= 0;
+        boolean useDedicatedTexture = !isEmpty &&
+                (mSpriteWidth > MAX_ATLAS_DIMENSION || mSpriteHeight > MAX_ATLAS_DIMENSION);
+        if (useDedicatedTexture) {
+            mBakedGlyphs = new Int2ObjectOpenHashMap<>();
+        }
+
+        int numEmptyGlyphs = 0;
         for (int r = 0; r < rows; r++) {
             for (int c = 0; c < cols; c++) {
                 int ch = grid[r][c];
                 if (ch == '\u0000') {
+                    numEmptyGlyphs++;
                     continue; // padding
                 }
                 int actualWidth = getActualGlyphWidth(bitmap, mSpriteWidth, mSpriteHeight, c, r);
+                // (width == 0) means the glyph is fully transparent
+                if (actualWidth == 0) {
+                    numEmptyGlyphs++;
+                }
                 // Note: this must be (int) (0.5 + value) to match vanilla behavior,
                 // do not use Math.round() as results are different for negative values
-                Glyph glyph = new Glyph((int) (0.5 + actualWidth * mScaleFactor) + 1);
-                glyph.x = 0;
-                glyph.y = (short) (-mAscent * TextLayoutEngine.BITMAP_SCALE);
-                glyph.width = (short) Math.round(mSpriteWidth * mScaleFactor * TextLayoutEngine.BITMAP_SCALE);
-                glyph.height = (short) Math.round(mSpriteHeight * mScaleFactor * TextLayoutEngine.BITMAP_SCALE);
-                glyph.u1 = (float) (c * mSpriteWidth) / bitmap.getWidth();
-                glyph.v1 = (float) (r * mSpriteHeight) / bitmap.getHeight();
-                glyph.u2 = (float) (c * mSpriteWidth + mSpriteWidth) / bitmap.getWidth();
-                glyph.v2 = (float) (r * mSpriteHeight + mSpriteHeight) / bitmap.getHeight();
+                Glyph glyph = new Glyph((int) (0.5 + actualWidth * mScaleFactor) + 1,
+                        c * mSpriteWidth, r * mSpriteHeight,
+                        actualWidth == 0);
                 if (mGlyphs.put(ch, glyph) != null) {
                     ModernUI.LOGGER.warn("Codepoint '{}' declared multiple times in {}",
                             Integer.toHexString(ch), mName);
                 }
+                if (useDedicatedTexture) {
+                    GLBakedGlyph bakedGlyph = new GLBakedGlyph();
+                    setGlyphMetrics(bakedGlyph);
+                    bakedGlyph.u1 = (float) (c * mSpriteWidth) / bitmap.getWidth();
+                    bakedGlyph.v1 = (float) (r * mSpriteHeight) / bitmap.getHeight();
+                    bakedGlyph.u2 = (float) (c * mSpriteWidth + mSpriteWidth) / bitmap.getWidth();
+                    bakedGlyph.v2 = (float) (r * mSpriteHeight + mSpriteHeight) / bitmap.getHeight();
+                    mBakedGlyphs.put(ch, bakedGlyph);
+                }
             }
+        }
+
+        if (isEmpty || numEmptyGlyphs == (cols * rows)) {
+            // nothing to render, free the bitmap and empty the atlas holder
+            mBitmap.close();
+            mBitmap = null;
+            mBakedGlyphs = null;
         }
     }
 
@@ -153,50 +193,47 @@ public class BitmapFont implements Font, AutoCloseable {
     }
 
     // create texture from bitmap on render thread
-    private void createTextureLazy() {
-        try {
-            ImmediateContext context = Core.requireImmediateContext();
-            ImageDesc desc = context.getCaps().getDefaultColorImageDesc(
-                    Engine.ImageType.k2D,
-                    mBitmap.getColorType(),
-                    mBitmap.getWidth(),
-                    mBitmap.getHeight(),
-                    1,
-                    ISurface.FLAG_SAMPLED_IMAGE
-            );
-            Objects.requireNonNull(desc);
-            mTexture = (GLTexture) context
-                    .getResourceProvider()
-                    .findOrCreateImage(
-                            desc,
-                            true,
-                            mName.toString()
-                    );
-            Objects.requireNonNull(mTexture, "Failed to create font texture");
-            boolean res = ((GLDevice) context.getDevice()).writePixels(
-                    mTexture, 0, 0, mBitmap.getWidth(), mBitmap.getHeight(),
-                    mBitmap.getColorType(), mBitmap.getColorType(),
-                    mBitmap.getRowStride(), mBitmap.getAddress()
-            );
-            assert res;
+    private void createTexture() {
+        assert mBitmap != null;
+        ImmediateContext context = Core.requireImmediateContext();
+        ImageDesc desc = context.getCaps().getDefaultColorImageDesc(
+                Engine.ImageType.k2D,
+                mBitmap.getColorType(),
+                mBitmap.getWidth(),
+                mBitmap.getHeight(),
+                1,
+                ISurface.FLAG_SAMPLED_IMAGE
+        );
+        Objects.requireNonNull(desc);
+        mTexture = (GLTexture) context
+                .getResourceProvider()
+                .findOrCreateImage(
+                        desc,
+                        true,
+                        mName.toString()
+                );
+        Objects.requireNonNull(mTexture, "Failed to create font texture");
+        boolean res = ((GLDevice) context.getDevice()).writePixels(
+                mTexture, 0, 0, mBitmap.getWidth(), mBitmap.getHeight(),
+                mBitmap.getColorType(), mBitmap.getColorType(),
+                mBitmap.getRowStride(), mBitmap.getAddress()
+        );
+        assert res;
 
-            int boundTexture = GL33C.glGetInteger(GL33C.GL_TEXTURE_BINDING_2D);
-            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, mTexture.getHandle());
+        int boundTexture = GL33C.glGetInteger(GL33C.GL_TEXTURE_BINDING_2D);
+        GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, mTexture.getHandle());
 
-            GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MAG_FILTER, GL33C.GL_NEAREST);
-            GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MIN_FILTER, GL33C.GL_NEAREST);
+        GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MAG_FILTER, GL33C.GL_NEAREST);
+        GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MIN_FILTER, GL33C.GL_NEAREST);
 
-            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);
-        } finally {
-            mBitmap.close();
-            mBitmap = null;
-        }
+        GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);
     }
 
     public void dumpAtlas(String path) {
-        ModernUI.LOGGER.info(GlyphManager.MARKER,
-                "BitmapFont: {}, glyphs: {}, texture: {}",
-                mName, mGlyphs.size(), mTexture);
+        ModernUI.LOGGER.info(GlyphManager.MARKER, "BitmapFont: {}, ascent: {}, descent: {}, numGlyphs: {}, " +
+                        "nothingToDraw: {}, fitsInAtlas: {}, dedicatedTexture: {}",
+                mName, getAscent(), getDescent(), mGlyphs.size(),
+                nothingToDraw(), fitsInAtlas(), mTexture);
         if (path != null && mTexture != null && Core.isOnRenderThread()) {
             GLFontAtlas.dumpAtlas(
                     (GLCaps) Core.requireImmediateContext().getCaps(),
@@ -227,30 +264,87 @@ public class BitmapFont implements Font, AutoCloseable {
         return 0;
     }
 
-    // Render thread only
     @Nullable
     public Glyph getGlyph(int ch) {
-        Glyph glyph = mGlyphs.get(ch);
-        if (glyph != null && mBitmap != null) {
-            createTextureLazy();
-            assert mBitmap == null;
+        return mGlyphs.get(ch);
+    }
+
+    /**
+     * True means all glyphs have nothing to render (texture is fully transparent or
+     * has negative metrics).
+     */
+    public boolean nothingToDraw() {
+        return mBitmap == null;
+    }
+
+    /**
+     * True to use a texture atlas that is managed by {@link GlyphManager},
+     * false to use a dedicated texture that is managed by this instance.
+     */
+    public boolean fitsInAtlas() {
+        return mBakedGlyphs == null;
+    }
+
+    public void setGlyphMetrics(@Nonnull GLBakedGlyph glyph) {
+        // bearing x, bearing y
+        glyph.x = 0;
+        glyph.y = (short) MathUtil.clamp(-mAscent * TextLayoutEngine.BITMAP_SCALE,
+                Short.MIN_VALUE, Short.MAX_VALUE);
+        glyph.width = (short) MathUtil.clamp(
+                Math.round(mSpriteWidth * mScaleFactor * TextLayoutEngine.BITMAP_SCALE),
+                0, Short.MAX_VALUE);
+        glyph.height = (short) MathUtil.clamp(
+                Math.round(mSpriteHeight * mScaleFactor * TextLayoutEngine.BITMAP_SCALE),
+                0, Short.MAX_VALUE);
+    }
+
+    public boolean getGlyphImage(int ch, long dst) {
+        assert mBitmap != null;
+        Glyph src = getGlyph(ch);
+        if (src == null || src.isEmpty) {
+            return false;
+        }
+        PixelUtils.copyImage(
+                mBitmap.getAddress() +
+                        (long) src.offsetY * mBitmap.getRowStride() +
+                        (long) src.offsetX * 4,
+                mBitmap.getRowStride(),
+                dst,
+                mSpriteWidth * 4L,
+                mSpriteWidth * 4L,
+                mSpriteHeight
+        );
+        return true;
+    }
+
+    /**
+     * Called by {@link GlyphManager} to fetch the dedicated texture info.
+     */
+    // Render thread only
+    @Nullable
+    public GLBakedGlyph getBakedGlyph(int ch) {
+        assert mBitmap != null && mBakedGlyphs != null;
+        GLBakedGlyph glyph = mBakedGlyphs.get(ch);
+        if (glyph != null && mTexture == null) {
+            createTexture();
         }
         return glyph;
     }
 
-    @Nullable
-    public Glyph getGlyphInfo(int ch) {
-        return mGlyphs.get(ch);
-    }
-
+    /**
+     * Called by {@link GlyphManager} to fetch the dedicated texture info.
+     */
+    // Render thread only
     public int getCurrentTexture() {
         return mTexture != null ? mTexture.getHandle() : 0;
     }
 
+    // positive
     public int getAscent() {
         return mAscent;
     }
 
+    // positive
     public int getDescent() {
         return mDescent;
     }
@@ -315,7 +409,7 @@ public class BitmapFont implements Font, AutoCloseable {
                 ch = _c1;
             }
 
-            Glyph glyph = getGlyphInfo(ch);
+            Glyph glyph = getGlyph(ch);
             if (glyph == null) {
                 continue;
             }
@@ -346,16 +440,12 @@ public class BitmapFont implements Font, AutoCloseable {
         return null;
     }
 
-    /*@Override
+    @Override
     public int hashCode() {
-        int result = 0;
-        result = 31 * result + mName.hashCode();
+        int result = mName.hashCode();
         result = 31 * result + mAscent;
         result = 31 * result + mDescent;
-        result = 31 * result + mSpriteWidth;
-        result = 31 * result + mSpriteHeight;
-        result = 31 * result + Float.hashCode(mScaleFactor);
-        result = 31 * result + mGlyphs.keySet().hashCode();
+        result = 31 * result + Arrays.deepHashCode(mCodepointGrid);
         return result;
     }
 
@@ -366,12 +456,9 @@ public class BitmapFont implements Font, AutoCloseable {
         BitmapFont that = (BitmapFont) o;
         if (mAscent != that.mAscent) return false;
         if (mDescent != that.mDescent) return false;
-        if (mSpriteWidth != that.mSpriteWidth) return false;
-        if (mSpriteHeight != that.mSpriteHeight) return false;
-        if (mScaleFactor != that.mScaleFactor) return false;
         if (!mName.equals(that.mName)) return false;
-        return mGlyphs.keySet().equals(that.mGlyphs.keySet());
-    }*/
+        return Arrays.deepEquals(mCodepointGrid, that.mCodepointGrid);
+    }
 
     @Override
     public void close() {
@@ -382,12 +469,24 @@ public class BitmapFont implements Font, AutoCloseable {
         mTexture = RefCnt.move(mTexture);
     }
 
-    public static class Glyph extends GLBakedGlyph implements GlyphInfo {
+    public static class Glyph implements GlyphInfo {
 
         public final float advance;
+        /**
+         * Pixel location in bitmap.
+         */
+        public final int offsetX;
+        public final int offsetY;
+        /**
+         * True if the glyph is fully transparent.
+         */
+        public final boolean isEmpty;
 
-        public Glyph(int advance) {
+        public Glyph(int advance, int offsetX, int offsetY, boolean isEmpty) {
             this.advance = advance;
+            this.offsetX = offsetX;
+            this.offsetY = offsetY;
+            this.isEmpty = isEmpty;
         }
 
         @Override

@@ -101,7 +101,7 @@ public class StandardFontSet extends FontSet {
             // we must check BitmapFont first,
             // because codePoint may be an invalid Unicode code point
             if (font instanceof BitmapFont bitmapFont) {
-                var glyph = bitmapFont.getGlyphInfo(codePoint);
+                var glyph = bitmapFont.getGlyph(codePoint);
                 if (glyph != null) {
                     return glyph;
                 }
@@ -146,8 +146,12 @@ public class StandardFontSet extends FontSet {
             // because codePoint may be an invalid Unicode code point
             // but vanilla doesn't validate that
             if (font instanceof BitmapFont bitmapFont) {
-                // auto bake
-                var glyph = bitmapFont.getGlyph(codePoint);
+                // bake glyph ourselves
+                var glyph = TextLayoutEngine.getInstance().lookupGlyph(
+                        bitmapFont,
+                        (int) mStandardPaint.getFontSize(),
+                        codePoint
+                );
                 if (glyph != null) {
                     // convert to Minecraft, bearing Y is 3, see SheetGlyphInfo
                     float up = 3F + bitmapFont.getAscent() +
@@ -156,7 +160,7 @@ public class StandardFontSet extends FontSet {
                     float right = (float) (glyph.x + glyph.width) / TextLayoutEngine.BITMAP_SCALE;
                     float down = up + (float) glyph.height / TextLayoutEngine.BITMAP_SCALE;
                     return new StandardBakedGlyph(
-                            bitmapFont::getCurrentTexture,
+                            () -> TextLayoutEngine.getInstance().getBitmapTexture(bitmapFont),
                             glyph.u1,
                             glyph.u2,
                             glyph.v1,
@@ -167,6 +171,8 @@ public class StandardFontSet extends FontSet {
                             down
                     );
                 }
+                // no pixels
+                return EmptyGlyph.INSTANCE;
             } else if (font instanceof SpaceFont) {
                 return EmptyGlyph.INSTANCE;
             } else if (font instanceof OutlineFont outlineFont) {

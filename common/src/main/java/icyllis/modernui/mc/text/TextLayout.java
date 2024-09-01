@@ -398,7 +398,7 @@ public class TextLayout {
                     compatDisplayMode = net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET;
                 }
                 if (getFont(i) instanceof BitmapFont bitmapFont) {
-                    texture = bitmapFont.getCurrentTexture();
+                    texture = TextLayoutEngine.getInstance().getBitmapTexture(bitmapFont);
                     ascent = bitmapFont.getAscent();
                 } else {
                     texture = TextLayoutEngine.getInstance().getEmojiTexture();
@@ -432,7 +432,7 @@ public class TextLayout {
                     }
                     w = (float) glyph.width * scaleFactor;
                     h = (float) glyph.height * scaleFactor;
-                    texture = bitmapFont.getCurrentTexture();
+                    texture = TextLayoutEngine.getInstance().getBitmapTexture(bitmapFont);
                 } else {
                     effMode = preferredMode;
                     rx += x + positions[i << 1] + glyph.x * invDensity;

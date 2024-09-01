@@ -1252,10 +1252,6 @@ public class TextLayoutEngine extends FontResourceManager
 
     @Nullable
     public GLBakedGlyph lookupGlyph(Font font, int devSize, int glyphId) {
-        if (font instanceof BitmapFont bitmapFont) {
-            // auto bake
-            return bitmapFont.getGlyph(glyphId);
-        }
         return mGlyphManager.lookupGlyph(font, devSize, glyphId);
     }
 
@@ -1265,6 +1261,10 @@ public class TextLayoutEngine extends FontResourceManager
 
     public int getStandardTexture() {
         return mGlyphManager.getCurrentTexture(Engine.MASK_FORMAT_A8);
+    }
+
+    public int getBitmapTexture(BitmapFont font) {
+        return mGlyphManager.getCurrentTexture(font);
     }
 
     /**
@@ -1466,7 +1466,14 @@ public class TextLayoutEngine extends FontResourceManager
                     continue;
                 }
                 advance = gl.advance;
-                glyph = gl;
+                glyph = mGlyphManager.lookupGlyph(bitmapFont, deviceFontSize, chars[0]);
+                if (glyph == null) {
+                    if (i == 0) {
+                        LOGGER.warn(MARKER, bitmapFont + " does not support ASCII digits");
+                        return null;
+                    }
+                    continue;
+                }
             }
             glyphs[i] = glyph;
             // '0' is standard, because it's wider than other digits in general
@@ -1511,7 +1518,7 @@ public class TextLayoutEngine extends FontResourceManager
                     if (advance - 1f > offsets[0]) {
                         continue;
                     }
-                    glyph = gl;
+                    glyph = mGlyphManager.lookupGlyph(bitmapFont, deviceFontSize, chars[0]);
                 }
                 // allow empty
                 if (glyph != null) {

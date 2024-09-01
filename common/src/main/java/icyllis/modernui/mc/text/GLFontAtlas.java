@@ -47,9 +47,12 @@ import static org.lwjgl.opengl.GL33C.*;
  * alternately. For example, 1024*1024 -> 1024*2048 -> 2048*2048.
  * Each 512*512 area becomes a chunk, and has its {@link RectanglePacker}.
  * The OpenGL texture ID will change due to expanding the texture size.
+ * <p>
+ * For {@link Engine#MASK_FORMAT_ARGB}, we have non-premultiplied alpha.
  *
  * @see GlyphManager
  * @see GLBakedGlyph
+ * @see icyllis.arc3d.granite.DrawAtlas
  */
 //TODO handle too many glyphs?
 @RenderThread
@@ -63,16 +66,11 @@ public class GLFontAtlas implements AutoCloseable {
      */
     //public static final int MIPMAP_LEVEL = 4;
 
-    /**
-     * Config values.
-     * Linear sampling with mipmaps;
-     */
-    public static volatile boolean sLinearSampling = true;
-
     // OpenHashMap uses less memory than RBTree/AVLTree, but higher than ArrayMap
     private final Long2ObjectMap<GLBakedGlyph> mGlyphs = new Long2ObjectOpenHashMap<>();
 
     // texture can change by resizing
+    @SharedPtr
     GLTexture mTexture = null;
 
     private final List<Chunk> mChunks = new ArrayList<>();
@@ -91,11 +89,17 @@ public class GLFontAtlas implements AutoCloseable {
     private final int mBorderWidth;
     private final int mMaxTextureSize;
 
+    /**
+     * Linear sampling with mipmaps;
+     */
+    private final boolean mLinearSampling;
+
     // overflow and wrap
     private int mLastCompactChunkIndex;
 
     @RenderThread
-    public GLFontAtlas(ImmediateContext context, int maskFormat, int borderWidth) {
+    public GLFontAtlas(ImmediateContext context, int maskFormat, int borderWidth,
+                       boolean linearSampling) {
         mContext = context;
         mMaskFormat = maskFormat;
         mBorderWidth = borderWidth;
@@ -106,7 +110,9 @@ public class GLFontAtlas implements AutoCloseable {
                         ? 8192
                         : 4096
         );
+        mLinearSampling = linearSampling;
         assert mMaxTextureSize >= 1024;
+        assert mBorderWidth >= 0 && mBorderWidth <= 2;
     }
 
     /**
@@ -278,7 +284,7 @@ public class GLFontAtlas implements AutoCloseable {
         glTexParameteri(
                 GL_TEXTURE_2D,
                 GL_TEXTURE_MIN_FILTER,
-                sLinearSampling
+                mLinearSampling
                         ? GL_LINEAR_MIPMAP_LINEAR
                         : GL_NEAREST
         );
@@ -302,7 +308,7 @@ public class GLFontAtlas implements AutoCloseable {
                 Engine.maskFormatToColorType(mMaskFormat),
                 mWidth, mHeight,
                 1,
-                ISurface.FLAG_SAMPLED_IMAGE | ISurface.FLAG_MIPMAPPED
+                ISurface.FLAG_SAMPLED_IMAGE | (mLinearSampling ? ISurface.FLAG_MIPMAPPED : 0)
         );
         Objects.requireNonNull(desc, "No suitable image descriptor");
         return (GLTexture) Objects.requireNonNull(mContext
