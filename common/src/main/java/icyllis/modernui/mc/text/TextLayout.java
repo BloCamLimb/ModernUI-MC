@@ -33,7 +33,8 @@ import java.util.Random;
 /**
  * The layout contains all glyph layout information and rendering information.
  * <p>
- * This is a Minecraft alternative of framework's {@link icyllis.modernui.graphics.text.ShapedText}.
+ * This is a Minecraft alternative of {@link icyllis.modernui.graphics.text.ShapedText},
+ * {@link icyllis.arc3d.core.TextBlob} and {@link icyllis.arc3d.granite.BakedTextBlob}.
  */
 public class TextLayout {
 

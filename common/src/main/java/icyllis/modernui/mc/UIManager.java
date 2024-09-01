@@ -595,6 +595,9 @@ public abstract class UIManager implements LifecycleOwner {
                         LOGGER.info("Break backwards: width {} index:{}", width, index);
                     }
                     LOGGER.info(TextLayoutEngine.getInstance().lookupVanillaLayout(text));*/
+                    if (ModernUIMod.isTextEngineEnabled()) {
+                        TextLayoutEngine.getInstance().dumpLayoutCache();
+                    }
                 }
                 case GLFW_KEY_G ->
                 /*if (minecraft.screen == null && minecraft.isLocalServer() &&

@@ -90,7 +90,9 @@ public class BitmapFont implements Font, AutoCloseable {
                     continue; // padding
                 }
                 int actualWidth = getActualGlyphWidth(bitmap, mSpriteWidth, mSpriteHeight, c, r);
-                Glyph glyph = new Glyph(Math.round(actualWidth * mScaleFactor) + 1);
+                // Note: this must be (int) (0.5 + value) to match vanilla behavior,
+                // do not use Math.round() as results are different for negative values
+                Glyph glyph = new Glyph((int) (0.5 + actualWidth * mScaleFactor) + 1);
                 glyph.x = 0;
                 glyph.y = (short) (-mAscent * TextLayoutEngine.BITMAP_SCALE);
                 glyph.width = (short) Math.round(mSpriteWidth * mScaleFactor * TextLayoutEngine.BITMAP_SCALE);
@@ -344,7 +346,7 @@ public class BitmapFont implements Font, AutoCloseable {
         return null;
     }
 
-    @Override
+    /*@Override
     public int hashCode() {
         int result = 0;
         result = 31 * result + mName.hashCode();
@@ -353,6 +355,7 @@ public class BitmapFont implements Font, AutoCloseable {
         result = 31 * result + mSpriteWidth;
         result = 31 * result + mSpriteHeight;
         result = 31 * result + Float.hashCode(mScaleFactor);
+        result = 31 * result + mGlyphs.keySet().hashCode();
         return result;
     }
 
@@ -366,8 +369,9 @@ public class BitmapFont implements Font, AutoCloseable {
         if (mSpriteWidth != that.mSpriteWidth) return false;
         if (mSpriteHeight != that.mSpriteHeight) return false;
         if (mScaleFactor != that.mScaleFactor) return false;
-        return mName.equals(that.mName);
-    }
+        if (!mName.equals(that.mName)) return false;
+        return mGlyphs.keySet().equals(that.mGlyphs.keySet());
+    }*/
 
     @Override
     public void close() {

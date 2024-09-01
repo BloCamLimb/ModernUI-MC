@@ -1356,6 +1356,22 @@ public class TextLayoutEngine extends FontResourceManager
         return size;
     }
 
+    public void dumpLayoutCache() {
+        int i = 0;
+        for (var e : mVanillaCache.entrySet()) {
+            LOGGER.info(MARKER, "VanillaCache {}\n{}\n{}", i, e.getKey(), e.getValue().toDetailedString());
+            i++;
+        }
+        for (var e : mComponentCache.entrySet()) {
+            LOGGER.info(MARKER, "ComponentCache {}\n{}\n{}", i, e.getKey(), e.getValue().toDetailedString());
+            i++;
+        }
+        for (var e : mFormattedCache.entrySet()) {
+            LOGGER.info(MARKER, "FormattedCache {}\n{}\n{}", i, e.getKey(), e.getValue().toDetailedString());
+            i++;
+        }
+    }
+
     public int getResLevel() {
         return mResLevel;
     }

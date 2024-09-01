@@ -168,6 +168,15 @@ public class AdvancedOptionsFragment extends Fragment {
                     category.addView(button);
                 }
                 {
+                    var button = createDebugButton(context, "Dump text layout cache");
+                    button.setOnClickListener((__) -> {
+                        Core.executeOnMainThread(() -> {
+                            TextLayoutEngine.getInstance().dumpLayoutCache();
+                        });
+                    });
+                    category.addView(button);
+                }
+                {
                     var button = createDebugButton(context, "Reload text layout (MC)");
                     button.setOnClickListener((__) ->
                             Core.executeOnMainThread(() -> TextLayoutEngine.getInstance().reload()));
