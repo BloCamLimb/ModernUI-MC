@@ -100,7 +100,9 @@ public class BitmapFont implements Font, AutoCloseable {
         mCodepointGrid = grid;
 
         // height <= 0 means nothing to render
-        boolean isEmpty = height <= 0 || mSpriteWidth <= 0 || mSpriteHeight <= 0;
+        boolean isEmpty = height <= 0 || mSpriteWidth <= 0 || mSpriteHeight <= 0 ||
+                // drop if out of screen
+                Math.abs(ascent) > 3000;
         boolean useDedicatedTexture = !isEmpty &&
                 (mSpriteWidth > MAX_ATLAS_DIMENSION || mSpriteHeight > MAX_ATLAS_DIMENSION);
         if (useDedicatedTexture) {
@@ -229,10 +231,10 @@ public class BitmapFont implements Font, AutoCloseable {
         GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);
     }
 
-    public void dumpAtlas(String path) {
-        ModernUI.LOGGER.info(GlyphManager.MARKER, "BitmapFont: {}, ascent: {}, descent: {}, numGlyphs: {}, " +
+    public void dumpAtlas(int index, String path) {
+        ModernUI.LOGGER.info(GlyphManager.MARKER, "BitmapFont {}: {}, ascent: {}, descent: {}, numGlyphs: {}, " +
                         "nothingToDraw: {}, fitsInAtlas: {}, dedicatedTexture: {}",
-                mName, getAscent(), getDescent(), mGlyphs.size(),
+                index, mName, getAscent(), getDescent(), mGlyphs.size(),
                 nothingToDraw(), fitsInAtlas(), mTexture);
         if (path != null && mTexture != null && Core.isOnRenderThread()) {
             GLFontAtlas.dumpAtlas(

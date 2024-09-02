@@ -872,6 +872,11 @@ public class TextLayoutProcessor {
                 int runStart = run.start();
                 int runLimit = run.limit();
 
+                int glyphFlags = styleFlags;
+                if (font instanceof BitmapFont) {
+                    glyphFlags |= CharacterStyle.BITMAP_REPLACEMENT;
+                }
+
                 float adv = font.doSimpleLayout(new char[]{'0'},
                         0, 1, mFontPaint, null, null, 0, 0);
                 if (adv > 0) {
@@ -890,7 +895,7 @@ public class TextLayoutProcessor {
                         mPositions.add(pos);
                         mPositions.add(0);
                         mFontIndices.add(fontIdx);
-                        mGlyphFlags.add(styleFlags);
+                        mGlyphFlags.add(glyphFlags);
                         mHasEffect |= (styleFlags & CharacterStyle.EFFECT_MASK) != 0;
 
                         offset += adv;

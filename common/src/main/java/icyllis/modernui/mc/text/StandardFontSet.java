@@ -147,20 +147,20 @@ public class StandardFontSet extends FontSet {
             // but vanilla doesn't validate that
             if (font instanceof BitmapFont bitmapFont) {
                 // bake glyph ourselves
-                var glyph = TextLayoutEngine.getInstance().lookupGlyph(
+                var glyph = GlyphManager.getInstance().lookupGlyph(
                         bitmapFont,
                         (int) mStandardPaint.getFontSize(),
                         codePoint
                 );
                 if (glyph != null) {
                     // convert to Minecraft, bearing Y is 3, see SheetGlyphInfo
-                    float up = 3F + bitmapFont.getAscent() +
+                    float up = 3F + TextLayout.STANDARD_BASELINE_OFFSET +
                             (float) glyph.y / TextLayoutEngine.BITMAP_SCALE;
                     float left = (float) glyph.x / TextLayoutEngine.BITMAP_SCALE;
-                    float right = (float) (glyph.x + glyph.width) / TextLayoutEngine.BITMAP_SCALE;
+                    float right = left + (float) glyph.width / TextLayoutEngine.BITMAP_SCALE;
                     float down = up + (float) glyph.height / TextLayoutEngine.BITMAP_SCALE;
                     return new StandardBakedGlyph(
-                            () -> TextLayoutEngine.getInstance().getBitmapTexture(bitmapFont),
+                            () -> GlyphManager.getInstance().getCurrentTexture(bitmapFont),
                             glyph.u1,
                             glyph.u2,
                             glyph.v1,
@@ -187,19 +187,20 @@ public class StandardFontSet extends FontSet {
                 if (glyphs.size() == 1 &&
                         glyphs.getInt(0) != 0) { // 0 is the missing glyph for TTF
                     // bake glyph ourselves
-                    var glyph = TextLayoutEngine.getInstance().lookupGlyph(
+                    var glyph = GlyphManager.getInstance().lookupGlyph(
                             outlineFont,
                             (int) mStandardPaint.getFontSize(),
                             glyphs.getInt(0)
                     );
                     if (glyph != null) {
                         // convert to Minecraft, bearing Y is 3, see SheetGlyphInfo
-                        float up = 3F + TextLayout.STANDARD_BASELINE_OFFSET + glyph.y / mResLevel;
-                        float left = glyph.x / mResLevel;
-                        float right = (glyph.x + glyph.width) / mResLevel;
-                        float down = up + glyph.height / mResLevel;
+                        float up = 3F + TextLayout.STANDARD_BASELINE_OFFSET +
+                                (float) glyph.y / mResLevel;
+                        float left = (float) glyph.x / mResLevel;
+                        float right = left + (float) glyph.width / mResLevel;
+                        float down = up + (float) glyph.height / mResLevel;
                         return new StandardBakedGlyph(
-                                () -> TextLayoutEngine.getInstance().getStandardTexture(), // <- singleton
+                                () -> GlyphManager.getInstance().getFontTexture(), // <- singleton
                                 glyph.u1,
                                 glyph.u2,
                                 glyph.v1,

@@ -93,7 +93,7 @@ public class TextLayout {
     /**
      * All baked glyphs for rendering, empty glyphs have been removed from this array.
      * The order is visually left-to-right (i.e. in visual order). Fast digit chars and
-     * obfuscated chars are {@link icyllis.modernui.mc.text.TextLayoutEngine.FastCharSet}.
+     * obfuscated chars are {@link icyllis.modernui.mc.text.GlyphManager.FastCharSet}.
      */
     private final int[] mGlyphs;
     private transient GLBakedGlyph[] mBakedGlyphs;
@@ -250,16 +250,16 @@ public class TextLayout {
 
     @Nonnull
     private GLBakedGlyph[] prepareGlyphs(int resLevel, int fontSize) {
-        TextLayoutEngine engine = TextLayoutEngine.getInstance();
+        GlyphManager glyphManager = GlyphManager.getInstance();
         GLBakedGlyph[] glyphs = new GLBakedGlyph[mGlyphs.length];
         for (int i = 0; i < glyphs.length; i++) {
             if ((mGlyphFlags[i] & CharacterStyle.OBFUSCATED_MASK) != 0) {
-                glyphs[i] = engine.lookupFastChars(
+                glyphs[i] = glyphManager.lookupFastChars(
                         getFont(i),
                         resLevel
                 );
             } else {
-                glyphs[i] = engine.lookupGlyph(
+                glyphs[i] = glyphManager.lookupGlyph(
                         getFont(i),
                         fontSize,
                         mGlyphs[i]
@@ -357,9 +357,9 @@ public class TextLayout {
         int prevTexture = -1;
         VertexConsumer builder = null;
 
-        int standardTexture = -1;
+        int fontTexture = -1;
 
-        boolean seeThrough = preferredMode == TextRenderType.MODE_SEE_THROUGH;
+        final boolean seeThrough = preferredMode == TextRenderType.MODE_SEE_THROUGH;
         for (int i = 0, e = glyphs.length; i < e; i++) {
             var glyph = glyphs[i];
             if (glyph == null) {
@@ -370,87 +370,67 @@ public class TextLayout {
             float ry;
             final float w;
             final float h;
-            final int effMode;
+            final int mode;
             final int texture;
             boolean fakeItalic = false;
             int ascent = 0;
-            net.minecraft.client.gui.Font.DisplayMode compatDisplayMode = null;
+            net.minecraft.client.gui.Font.DisplayMode vanillaDisplayMode = null;
+            if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
+                var chars = (GlyphManager.FastCharSet) glyph;
+                int fastIndex = RANDOM.nextInt(chars.glyphs.length);
+                glyph = chars.glyphs[fastIndex];
+                // 0 is standard, no additional offset
+                if (fastIndex != 0) {
+                    rx += chars.offsets[fastIndex];
+                }
+            }
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
-                float scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
-                if ((bits & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0) {
+                final float scaleFactor;
+                if (getFont(i) instanceof BitmapFont bitmapFont) {
+                    texture = GlyphManager.getInstance().getCurrentTexture(bitmapFont);
+                    ascent = bitmapFont.getAscent();
+                    scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
+                } else {
+                    assert (bits & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0;
                     if (isShadow) {
                         continue;
                     }
-                    scaleFactor *= TextLayoutProcessor.sBaseFontSize / TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE;
+                    texture = GlyphManager.getInstance().getEmojiTexture();
+                    ascent = TextLayout.STANDARD_BASELINE_OFFSET;
+                    scaleFactor = TextLayoutProcessor.sBaseFontSize / GlyphManager.EMOJI_BASE;
                 }
-                rx = x + positions[i << 1] + (float) glyph.x * scaleFactor;
-                ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
+                fakeItalic = (bits & CharacterStyle.ITALIC_MASK) != 0;
+                rx += x + positions[i << 1] + glyph.x * scaleFactor;
+                ry = baseline + positions[i << 1 | 1] + glyph.y * scaleFactor;
                 if (isShadow) {
                     // bitmap font shadow offset is always 1 pixel
                     rx += 1.0f - ModernTextRenderer.sShadowOffset;
                     ry += 1.0f - ModernTextRenderer.sShadowOffset;
                 }
 
-                w = (float) glyph.width * scaleFactor;
-                h = (float) glyph.height * scaleFactor;
-                effMode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL;
+                w = glyph.width * scaleFactor;
+                h = glyph.height * scaleFactor;
+                mode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL;
                 if (polygonOffset) {
-                    compatDisplayMode = net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET;
+                    vanillaDisplayMode = net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET;
                 }
-                if (getFont(i) instanceof BitmapFont bitmapFont) {
-                    texture = TextLayoutEngine.getInstance().getBitmapTexture(bitmapFont);
-                    ascent = bitmapFont.getAscent();
-                } else {
-                    texture = TextLayoutEngine.getInstance().getEmojiTexture();
-                    ascent = TextLayout.STANDARD_BASELINE_OFFSET;
-                }
-                fakeItalic = (bits & CharacterStyle.ITALIC_MASK) != 0;
             } else {
-                boolean obfuscated = false;
-                if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
-                    var chars = (TextLayoutEngine.FastCharSet) glyph;
-                    int fastIndex = RANDOM.nextInt(chars.glyphs.length);
-                    glyph = chars.glyphs[fastIndex];
-                    // 0 is standard, no additional offset
-                    if (fastIndex != 0) {
-                        rx += chars.offsets[fastIndex];
-                    }
-                    obfuscated = true;
-                }
-                if (obfuscated && getFont(i) instanceof BitmapFont bitmapFont) {
-                    effMode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL;
-                    if (polygonOffset) {
-                        compatDisplayMode = net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET;
-                    }
-                    float scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
-                    rx += x + positions[i << 1] + (float) glyph.x * scaleFactor;
-                    ry = baseline + positions[i << 1 | 1] + (float) glyph.y * scaleFactor;
-                    if (isShadow) {
-                        // bitmap font shadow offset is always 1 pixel
-                        rx += 1.0f - ModernTextRenderer.sShadowOffset;
-                        ry += 1.0f - ModernTextRenderer.sShadowOffset;
-                    }
-                    w = (float) glyph.width * scaleFactor;
-                    h = (float) glyph.height * scaleFactor;
-                    texture = TextLayoutEngine.getInstance().getBitmapTexture(bitmapFont);
-                } else {
-                    effMode = preferredMode;
-                    rx += x + positions[i << 1] + glyph.x * invDensity;
-                    ry = baseline + positions[i << 1 | 1] + glyph.y * invDensity;
+                mode = preferredMode;
+                rx += x + positions[i << 1] + glyph.x * invDensity;
+                ry = baseline + positions[i << 1 | 1] + glyph.y * invDensity;
 
-                    w = glyph.width * invDensity;
-                    h = glyph.height * invDensity;
-                    if (standardTexture == -1) {
-                        standardTexture = TextLayoutEngine.getInstance().getStandardTexture();
-                    }
-                    texture = standardTexture;
+                w = glyph.width * invDensity;
+                h = glyph.height * invDensity;
+                if (fontTexture == -1) {
+                    fontTexture = GlyphManager.getInstance().getFontTexture();
                 }
+                texture = fontTexture;
             }
-            if (effMode == TextRenderType.MODE_NORMAL &&
+            if (mode == TextRenderType.MODE_NORMAL &&
                     !TextLayoutEngine.sCurrentInWorldRendering) {
                 // align to screen pixel center in 2D
-                rx = (int) (rx * density + 0.5f) * invDensity;
-                ry = (int) (ry * density + 0.5f) * invDensity;
+                rx = Math.round(rx * density) * invDensity;
+                ry = Math.round(ry * density) * invDensity;
             }
             if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
                 r = startR;
@@ -467,11 +447,11 @@ public class TextLayout {
                 }
             }
             if (builder == null || prevTexture != texture) {
-                // bitmap/color texture and grayscale texture are different, don't check effMode
+                // bitmap/color texture and grayscale texture are different, don't check mode
                 prevTexture = texture;
-                builder = source.getBuffer(compatDisplayMode != null
-                        ? TextRenderType.getOrCreate(prevTexture, compatDisplayMode)
-                        : TextRenderType.getOrCreate(prevTexture, effMode));
+                builder = source.getBuffer(vanillaDisplayMode != null
+                        ? TextRenderType.getOrCreate(prevTexture, vanillaDisplayMode)
+                        : TextRenderType.getOrCreate(prevTexture, mode));
             }
             float upSkew = 0;
             float downSkew = 0;
@@ -506,18 +486,18 @@ public class TextLayout {
         if (mHasEffect) {
             builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough));
             for (int i = 0, e = glyphs.length; i < e; i++) {
-                final int flag = flags[i];
-                if ((flag & CharacterStyle.EFFECT_MASK) == 0) {
+                final int bits = flags[i];
+                if ((bits & CharacterStyle.EFFECT_MASK) == 0) {
                     continue;
                 }
-                if ((flag & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
+                if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
                     r = startR;
                     g = startG;
                     b = startB;
                 } else {
-                    r = flag >> 16 & 0xff;
-                    g = flag >> 8 & 0xff;
-                    b = flag & 0xff;
+                    r = bits >> 16 & 0xff;
+                    g = bits >> 8 & 0xff;
+                    b = bits & 0xff;
                     if (isShadow) {
                         r >>= 2;
                         g >>= 2;
@@ -526,11 +506,11 @@ public class TextLayout {
                 }
                 final float rx1 = x + positions[i << 1];
                 final float rx2 = x + ((i + 1 == e) ? mTotalAdvance : positions[(i + 1) << 1]);
-                if ((flag & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
+                if ((bits & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
                     TextRenderEffect.drawStrikethrough(matrix, builder, rx1, rx2, baseline,
                             r, g, b, a, packedLight);
                 }
-                if ((flag & CharacterStyle.UNDERLINE_MASK) != 0) {
+                if ((bits & CharacterStyle.UNDERLINE_MASK) != 0) {
                     TextRenderEffect.drawUnderline(matrix, builder, rx1, rx2, baseline,
                             r, g, b, a, packedLight);
                 }
@@ -581,7 +561,7 @@ public class TextLayout {
                                 int packedLight) {
         final float resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
 
-        final var glyphs = getGlyphs((int) resLevel);
+        final GLBakedGlyph[] glyphs = getGlyphs((int) resLevel);
         final var positions = mPositions;
         final var flags = mGlyphFlags;
         //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
@@ -591,7 +571,7 @@ public class TextLayout {
         int prevTexture = -1;
         VertexConsumer builder = null;
 
-        int standardTexture = -1;
+        int fontTexture = -1;
 
         // outset glyph bounds
         final float sBloat = 1.0f / resLevel;
@@ -610,7 +590,7 @@ public class TextLayout {
                 continue;
             } else {
                 if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
-                    var chars = (TextLayoutEngine.FastCharSet) glyph;
+                    var chars = (GlyphManager.FastCharSet) glyph;
                     int fastIndex = RANDOM.nextInt(chars.glyphs.length);
                     glyph = chars.glyphs[fastIndex];
                     // 0 is standard, no additional offset
@@ -623,10 +603,10 @@ public class TextLayout {
 
                 w = glyph.width / resLevel;
                 h = glyph.height / resLevel;
-                if (standardTexture == -1) {
-                    standardTexture = TextLayoutEngine.getInstance().getStandardTexture();
+                if (fontTexture == -1) {
+                    fontTexture = GlyphManager.getInstance().getFontTexture();
                 }
-                texture = standardTexture;
+                texture = fontTexture;
             }
             /*if (alignPixels) {
                 rx = Math.round(rx * scale) / scale;
@@ -674,7 +654,7 @@ public class TextLayout {
     /**
      * All baked glyphs for rendering, empty glyphs have been removed from this array.
      * The order is visually left-to-right (i.e. in visual order). Fast digit chars and
-     * obfuscated chars are {@link icyllis.modernui.mc.text.TextLayoutEngine.FastCharSet}.
+     * obfuscated chars are {@link icyllis.modernui.mc.text.GlyphManager.FastCharSet}.
      */
     @Nonnull
     public int[] getGlyphs() {

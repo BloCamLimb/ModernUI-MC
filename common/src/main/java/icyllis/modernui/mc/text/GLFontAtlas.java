@@ -379,14 +379,15 @@ public class GLFontAtlas implements AutoCloseable {
         return cleared;
     }
 
-    public void debug(@Nullable String path) {
+    public void debug(String name, @Nullable String path) {
         if (path == null) {
+            ModernUI.LOGGER.info(GlyphManager.MARKER, name);
             for (var glyph : mGlyphs.long2ObjectEntrySet()) {
                 ModernUI.LOGGER.info(GlyphManager.MARKER, "Key 0x{}: {}",
                         Long.toHexString(glyph.getLongKey()), glyph.getValue());
             }
         } else if (Core.isOnRenderThread()) {
-            ModernUI.LOGGER.info(GlyphManager.MARKER, "Glyphs: {}", mGlyphs.size());
+            ModernUI.LOGGER.info(GlyphManager.MARKER, "{}, Glyphs: {}", name, mGlyphs.size());
             if (mTexture == null)
                 return;
             dumpAtlas((GLCaps) mContext.getCaps(), mTexture,
@@ -416,6 +417,7 @@ public class GLFontAtlas implements AutoCloseable {
                 case RGBA_8888 -> GL_RGBA;
                 default -> throw new IllegalArgumentException();
             };
+            glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
             GL45C.glGetTextureImage(texture.getHandle(), 0, externalGlFormat, GL_UNSIGNED_BYTE,
                     (int) bitmap.getSize(), bitmap.getAddress());
             CompletableFuture.runAsync(() -> {

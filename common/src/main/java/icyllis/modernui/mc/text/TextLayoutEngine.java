@@ -23,7 +23,6 @@ import com.ibm.icu.text.Bidi;
 import com.mojang.blaze3d.font.SpaceProvider;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.serialization.JsonOps;
-import icyllis.arc3d.engine.Engine;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
@@ -55,7 +54,8 @@ import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -114,7 +114,7 @@ public class TextLayoutEngine extends FontResourceManager
     public static volatile boolean sUseTextShadersInWorld = true;
 
     /**
-     * The raw config value of {@link #sUseTextShadersInWorld}.
+     * The raw user config value of {@link #sUseTextShadersInWorld}.
      */
     public static volatile boolean sRawUseTextShadersInWorld = true;
 
@@ -261,17 +261,6 @@ public class TextLayoutEngine extends FontResourceManager
      */
     private final Pools.Pool<TextLayoutProcessor> mProcessorPool = Pools.newSynchronizedPool(3);
 
-    private record FontStrikeDesc(Font font, int resLevel) {
-    }
-
-    /**
-     * For fast digit replacement and obfuscated char rendering.
-     * Map from 'derived font' to 'ASCII 33(!) to 126(~) characters with their standard advances and relative advances'.
-     */
-    private final Map<FontStrikeDesc, FastCharSet> mFastCharMap = new HashMap<>();
-    // it's necessary to cache the lambda
-    private final Function<FontStrikeDesc, FastCharSet> mCacheFastChars = this::cacheFastChars;
-
     /**
      * All the fonts to use. Maps typeface name to FontCollection.
      */
@@ -358,14 +347,6 @@ public class TextLayoutEngine extends FontResourceManager
         return (TextLayoutEngine) FontResourceManager.getInstance();
     }
 
-    /**
-     * @return the glyph manager
-     */
-    @Nonnull
-    public GlyphManager getGlyphManager() {
-        return mGlyphManager;
-    }
-
     @Nonnull
     public ModernTextRenderer getTextRenderer() {
         return mTextRenderer;
@@ -415,7 +396,7 @@ public class TextLayoutEngine extends FontResourceManager
         mComponentCache = new HashMap<>();
         mFormattedCache = new HashMap<>();
         // Metrics change with resolution level
-        mFastCharMap.clear();
+        GlyphManager.getInstance().clearFastCharMap();
         // Just clear TextRenderType instances, font textures are remained
         TextRenderType.clear(/*cleanup*/ false);
         if (count > 0) {
@@ -598,9 +579,9 @@ public class TextLayoutEngine extends FontResourceManager
             for (FontFamily family : mRawDefaultFontCollection.getFamilies()) {
                 switch (family.getFamilyName()) {
                     case "minecraft:font/nonlatin_european.png",
-                            "minecraft:font/accented.png",
-                            "minecraft:font/ascii.png",
-                            "minecraft:include/space / minecraft:space" -> {
+                         "minecraft:font/accented.png",
+                         "minecraft:font/ascii.png",
+                         "minecraft:include/space / minecraft:space" -> {
                         if ((behavior & DEFAULT_FONT_BEHAVIOR_KEEP_ASCII) != 0) {
                             set.add(family);
                         }
@@ -696,9 +677,11 @@ public class TextLayoutEngine extends FontResourceManager
 
     @Override
     public void close() {
+        super.close();
         closeFonts();
         // do final cleanup
         TextRenderType.clear(/*cleanup*/ true);
+        EffectRenderType.clear();
     }
 
     private void closeFonts() {
@@ -1240,31 +1223,14 @@ public class TextLayoutEngine extends FontResourceManager
                 var font = family.getClosestMatch(FontPaint.NORMAL);
                 if (font instanceof BitmapFont bmf) {
                     if (basePath != null) {
-                        bmf.dumpAtlas(basePath + "_" + index + ".png");
-                        index++;
+                        bmf.dumpAtlas(index, basePath + "_" + index + ".png");
                     } else {
-                        bmf.dumpAtlas(null);
+                        bmf.dumpAtlas(index, null);
                     }
+                    index++;
                 }
             }
         }
-    }
-
-    @Nullable
-    public GLBakedGlyph lookupGlyph(Font font, int devSize, int glyphId) {
-        return mGlyphManager.lookupGlyph(font, devSize, glyphId);
-    }
-
-    public int getEmojiTexture() {
-        return mGlyphManager.getCurrentTexture(Engine.MASK_FORMAT_ARGB);
-    }
-
-    public int getStandardTexture() {
-        return mGlyphManager.getCurrentTexture(Engine.MASK_FORMAT_A8);
-    }
-
-    public int getBitmapTexture(BitmapFont font) {
-        return mGlyphManager.getCurrentTexture(font);
     }
 
     /**
@@ -1384,174 +1350,6 @@ public class TextLayoutEngine extends FontResourceManager
     @Nonnull
     public TextDirectionHeuristic getTextDirectionHeuristic() {
         return mTextDirectionHeuristic;
-    }
-
-    /**
-     * Lookup fast char glyph with given font.
-     * The pair right is the offsetX to standard '0' advance alignment (already scaled by GUI factor).
-     * Because we assume FAST digit glyphs are monospaced, no matter whether it's a monospaced font.
-     *
-     * @param font     derived font including style
-     * @param resLevel resolution level
-     * @return array of all fast char glyphs, and others, or null if not supported
-     */
-    @Nullable
-    public FastCharSet lookupFastChars(@Nonnull Font font, int resLevel) {
-        if (font == mEmojiFont) {
-            // Emojis are supported for obfuscated rendering
-            return null;
-        }
-        if (font instanceof BitmapFont) {
-            resLevel = 1;
-        }
-        return mFastCharMap.computeIfAbsent(
-                new FontStrikeDesc(font, resLevel),
-                mCacheFastChars
-        );
-    }
-
-    @Nullable
-    private FastCharSet cacheFastChars(@Nonnull FontStrikeDesc desc) {
-        java.awt.Font awtFont = null;
-        BitmapFont bitmapFont = null;
-        int deviceFontSize = 1;
-        if (desc.font instanceof OutlineFont) {
-            deviceFontSize = TextLayoutProcessor.computeFontSize(desc.resLevel);
-            awtFont = ((OutlineFont) desc.font).chooseFont(deviceFontSize);
-        } else if (desc.font instanceof BitmapFont) {
-            bitmapFont = (BitmapFont) desc.font;
-        } else {
-            return null;
-        }
-
-        // initial table
-        GLBakedGlyph[] glyphs = new GLBakedGlyph[189]; // 126 - 33 + 1 + 255 - 161 + 1
-        // normalized offsets
-        float[] offsets = new float[glyphs.length];
-
-        char[] chars = new char[1];
-        int n = 0;
-
-        // 48 to 57, always cache all digits for fast digit replacement
-        for (int i = 0; i < 10; i++) {
-            chars[0] = (char) ('0' + i);
-            float advance;
-            GLBakedGlyph glyph;
-            // no text shaping
-            if (awtFont != null) {
-                GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
-                if (vector.getNumGlyphs() == 0) {
-                    if (i == 0) {
-                        LOGGER.warn(MARKER, awtFont + " does not support ASCII digits");
-                        return null;
-                    }
-                    continue;
-                }
-                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
-                glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
-                if (glyph == null) {
-                    if (i == 0) {
-                        LOGGER.warn(MARKER, awtFont + " does not support ASCII digits");
-                        return null;
-                    }
-                    continue;
-                }
-            } else {
-                var gl = bitmapFont.getGlyph(chars[0]);
-                if (gl == null) {
-                    if (i == 0) {
-                        LOGGER.warn(MARKER, bitmapFont + " does not support ASCII digits");
-                        return null;
-                    }
-                    continue;
-                }
-                advance = gl.advance;
-                glyph = mGlyphManager.lookupGlyph(bitmapFont, deviceFontSize, chars[0]);
-                if (glyph == null) {
-                    if (i == 0) {
-                        LOGGER.warn(MARKER, bitmapFont + " does not support ASCII digits");
-                        return null;
-                    }
-                    continue;
-                }
-            }
-            glyphs[i] = glyph;
-            // '0' is standard, because it's wider than other digits in general
-            if (i == 0) {
-                // 0 is standard advance
-                offsets[n] = advance;
-            } else {
-                // relative offset to standard advance, to center the glyph
-                offsets[n] = (offsets[0] - advance) / 2f;
-            }
-            n++;
-        }
-
-        char[][] ranges = {{33, 48}, {58, 127}, {161, 256}};
-
-        // cache only narrow chars
-        for (char[] range : ranges) {
-            for (char c = range[0], e = range[1]; c < e; c++) {
-                chars[0] = c;
-                float advance;
-                GLBakedGlyph glyph;
-                // no text shaping
-                if (awtFont != null) {
-                    GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
-                    if (vector.getNumGlyphs() == 0) {
-                        continue;
-                    }
-                    advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
-                    // too wide
-                    if (advance - 1f > offsets[0]) {
-                        continue;
-                    }
-                    glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
-                } else {
-                    var gl = bitmapFont.getGlyph(chars[0]);
-                    // allow empty
-                    if (gl == null) {
-                        continue;
-                    }
-                    advance = gl.advance;
-                    // too wide
-                    if (advance - 1f > offsets[0]) {
-                        continue;
-                    }
-                    glyph = mGlyphManager.lookupGlyph(bitmapFont, deviceFontSize, chars[0]);
-                }
-                // allow empty
-                if (glyph != null) {
-                    glyphs[n] = glyph;
-                    offsets[n] = (offsets[0] - advance) / 2f;
-                    n++;
-                }
-            }
-        }
-
-        if (n < glyphs.length) {
-            glyphs = Arrays.copyOf(glyphs, n);
-            offsets = Arrays.copyOf(offsets, n);
-        }
-        return new FastCharSet(glyphs, offsets);
-    }
-
-    /**
-     * FastCharSet have uniform advances. Offset[0] is the advance for all glyphs.
-     * Other offsets is the relative X offset to center the glyph. Normalized to
-     * Minecraft GUI system.
-     * <p>
-     * This is used to render fast digits and obfuscated chars.
-     */
-    public static class FastCharSet extends GLBakedGlyph {
-
-        public final GLBakedGlyph[] glyphs;
-        public final float[] offsets;
-
-        public FastCharSet(GLBakedGlyph[] glyphs, float[] offsets) {
-            this.glyphs = glyphs;
-            this.offsets = offsets;
-        }
     }
 
     /**

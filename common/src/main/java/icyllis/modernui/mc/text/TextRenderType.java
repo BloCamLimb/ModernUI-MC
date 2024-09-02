@@ -190,10 +190,10 @@ public class TextRenderType extends RenderType {
     @Nonnull
     public static TextRenderType getOrCreate(int texture, int mode) {
         return switch (mode) {
-            default -> sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
             case MODE_SDF_FILL -> sSDFFillTypes.computeIfAbsent(texture, TextRenderType::makeSDFFillType);
             case MODE_SDF_STROKE -> sSDFStrokeTypes.computeIfAbsent(texture, TextRenderType::makeSDFStrokeType);
             case MODE_SEE_THROUGH -> sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
+            default -> sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
         };
     }
 
@@ -201,9 +201,9 @@ public class TextRenderType extends RenderType {
     @Nonnull
     public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode) {
         return switch (mode) {
-            default -> sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
             case SEE_THROUGH -> sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
             case POLYGON_OFFSET -> sPolygonOffsetTypes.computeIfAbsent(texture, TextRenderType::makePolygonOffsetType);
+            default -> sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
         };
     }
 

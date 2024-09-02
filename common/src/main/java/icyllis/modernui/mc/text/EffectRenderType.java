@@ -23,6 +23,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.arc3d.core.ColorInfo;
+import icyllis.arc3d.core.RefCnt;
 import icyllis.arc3d.engine.*;
 import icyllis.arc3d.opengl.GLDevice;
 import icyllis.arc3d.opengl.GLTexture;
@@ -102,6 +103,10 @@ public class EffectRenderType extends RenderType {
     @Nonnull
     public static EffectRenderType getRenderType(Font.DisplayMode mode) {
         throw new IllegalStateException();
+    }
+
+    public static void clear() {
+        WHITE = RefCnt.move(WHITE);
     }
 
     private static void makeWhiteTexture() {

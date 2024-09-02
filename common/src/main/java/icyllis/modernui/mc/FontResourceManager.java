@@ -159,6 +159,7 @@ public class FontResourceManager implements PreparableReloadListener {
 
     // SYNC, close native resources
     public void close() {
+        mGlyphManager.closeAtlases();
     }
 
     // ASYNC
