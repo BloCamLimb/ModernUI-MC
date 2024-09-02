@@ -30,6 +30,7 @@ import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.ui.FourColorPicker;
 import icyllis.modernui.mc.ui.ThemeControl;
 import icyllis.modernui.text.*;
@@ -222,12 +223,6 @@ public class PreferencesFragment extends Fragment {
                         reloadDefaultTypeface(context, () -> {
                         });
                     }));
-
-            category.addView(createBooleanOption(context, "modernui.center.font.antiAliasing",
-                    Config.CLIENT.mAntiAliasing, Config.CLIENT::saveAndReloadAsync));
-
-            category.addView(createBooleanOption(context, "modernui.center.font.autoHinting",
-                    Config.CLIENT.mAutoHinting, Config.CLIENT::saveAndReloadAsync));
 
             category.addView(createStringListOption(context, "modernui.center.font.fontRegistrationList",
                     Config.CLIENT.mFontRegistrationList, () -> {
@@ -569,6 +564,12 @@ public class PreferencesFragment extends Fragment {
 
         Runnable saveFn = Config.TEXT::saveAndReloadAsync;
 
+        category.addView(createBooleanOption(context, "modernui.center.font.antiAliasing",
+                Config.TEXT.mAntiAliasing, saveFn));
+
+        category.addView(createBooleanOption(context, "modernui.center.font.linearMetrics",
+                Config.TEXT.mLinearMetrics, saveFn));
+
         category.addView(createBooleanOption(context, "modernui.center.text.textShadersInWorld",
                 Config.TEXT.mUseTextShadersInWorld, saveFn));
 
@@ -580,6 +581,10 @@ public class PreferencesFragment extends Fragment {
 
         category.addView(createBooleanOption(context, "modernui.center.text.computeDeviceFontSize",
                 Config.TEXT.mComputeDeviceFontSize, saveFn));
+
+        category.addView(createIntegerOption(context, "modernui.center.text.minPixelDensityForSDF",
+                TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF, MuiModApi.MAX_GUI_SCALE,
+                1, 1, Config.TEXT.mMinPixelDensityForSDF, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
                 Config.TEXT.mAllowShadow, saveFn));

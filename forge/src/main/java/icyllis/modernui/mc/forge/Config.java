@@ -227,9 +227,6 @@ public final class Config {
 
         private final ForgeConfigSpec.ConfigValue<List<? extends String>> mBlurBlacklist;
 
-        public final ForgeConfigSpec.BooleanValue mAntiAliasing;
-        public final ForgeConfigSpec.BooleanValue mAutoHinting;
-        //public final ForgeConfigSpec.BooleanValue mLinearSampling;
         public final ForgeConfigSpec.ConfigValue<String> mFirstFontFamily;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFallbackFontFamilyList;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFontRegistrationList;
@@ -445,17 +442,6 @@ public final class Config {
             builder.comment("Font Config")
                     .push("font");
 
-            mAntiAliasing = builder.comment(
-                            "Control the anti-aliasing of raw glyph rasterization.")
-                    .define("antiAliasing", true);
-            mAutoHinting = builder.comment(
-                            "Control the FreeType font hinting of raw glyph metrics.",
-                            "Enable if on low-res monitor; disable for linear texts.")
-                    .define("autoHinting", Platform.get() != Platform.MACOSX);
-            /*mLinearSampling = builder.comment(
-                            "Enable linear sampling for font atlases with mipmaps, mag filter will be always NEAREST.",
-                            "If your fonts are not bitmap fonts, then you should keep this setting true.")
-                    .define("linearSampling", true);*/
             // Segoe UI, Source Han Sans CN Medium, Noto Sans, Open Sans, San Francisco, Calibri,
             // Microsoft YaHei UI, STHeiti, SimHei, SansSerif
             mFirstFontFamily = builder.comment(
@@ -619,28 +605,11 @@ public final class Config {
                 });
             }
 
-            boolean reloadStrike = false;
-            if (GlyphManager.sAntiAliasing != mAntiAliasing.get()) {
-                GlyphManager.sAntiAliasing = mAntiAliasing.get();
-                reloadStrike = true;
-            }
-            if (GlyphManager.sFractionalMetrics == mAutoHinting.get()) {
-                GlyphManager.sFractionalMetrics = !mAutoHinting.get();
-                reloadStrike = true;
-            }
-            /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
-                GLFontAtlas.sLinearSampling = mLinearSampling.get();
-                reload = true;
-            }*/
             ModernUIClient.sUseColorEmoji = mUseColorEmoji.get();
             ModernUIClient.sEmojiShortcodes = mEmojiShortcodes.get();
             ModernUIClient.sFirstFontFamily = mFirstFontFamily.get();
             ModernUIClient.sFallbackFontFamilyList = mFallbackFontFamilyList.get();
             ModernUIClient.sFontRegistrationList = mFontRegistrationList.get();
-            if (reloadStrike) {
-                Minecraft.getInstance().submit(
-                        () -> FontResourceManager.getInstance().reloadAll());
-            }
 
             // scan and preload typeface in background thread
             ModernUI.getSelectedTypeface();
@@ -825,6 +794,11 @@ public final class Config {
         public final ForgeConfigSpec.BooleanValue mComputeDeviceFontSize;
         public final ForgeConfigSpec.BooleanValue mAllowSDFTextIn2D;
 
+        public final ForgeConfigSpec.BooleanValue mAntiAliasing;
+        public final ForgeConfigSpec.BooleanValue mLinearMetrics;
+        public final ForgeConfigSpec.IntValue mMinPixelDensityForSDF;
+        //public final ModConfigSpec.BooleanValue mLinearSampling;
+
         //private final ForgeConfigSpec.BooleanValue antiAliasing;
         //private final ForgeConfigSpec.BooleanValue highPrecision;
         //private final ForgeConfigSpec.BooleanValue enableMipmap;
@@ -963,6 +937,23 @@ public final class Config {
                             "Otherwise, it uses nearest-neighbor or bilinear sampling based on texel density.",
                             "This option only applies to TrueType fonts.")
                     .define("allowSDFTextIn2D", true);
+            mAntiAliasing = builder.comment(
+                            "Control the anti-aliasing of raw glyph rasterization.")
+                    .define("antiAliasing", true);
+            mLinearMetrics = builder.comment(
+                            "Control the FreeType linear metrics / font hinting of raw glyph metrics.",
+                            "Disable if on low-res monitor; enable for linear texts.")
+                    .define("linearMetrics", Platform.get() == Platform.MACOSX);
+            mMinPixelDensityForSDF = builder.comment(
+                            "Control the minimum pixel density for SDF text and text in 3D world rendering.",
+                            "This value will be no less than current GUI scale.",
+                            "Recommend setting a higher value on high-res monitor and powerful PC hardware.")
+                    .defineInRange("minPixelDensityForSDF", TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF,
+                            TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF, MuiModApi.MAX_GUI_SCALE);
+            /*mLinearSampling = builder.comment(
+                            "Enable linear sampling for font atlases with mipmaps, mag filter will be always NEAREST.",
+                            "If your fonts are not bitmap fonts, then you should keep this setting true.")
+                    .define("linearSampling", true);*/
             /*antiAliasing = builder.comment(
                     "Enable font anti-aliasing.")
                     .define("antiAliasing", true);
@@ -1047,6 +1038,23 @@ public final class Config {
 
             ModernTextRenderer.sComputeDeviceFontSize = mComputeDeviceFontSize.get();
             ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();
+
+            if (GlyphManager.sAntiAliasing != mAntiAliasing.get()) {
+                GlyphManager.sAntiAliasing = mAntiAliasing.get();
+                reloadStrike = true;
+            }
+            if (GlyphManager.sFractionalMetrics != mLinearMetrics.get()) {
+                GlyphManager.sFractionalMetrics = mLinearMetrics.get();
+                reloadStrike = true;
+            }
+            if (TextLayoutEngine.sMinPixelDensityForSDF != mMinPixelDensityForSDF.get()) {
+                TextLayoutEngine.sMinPixelDensityForSDF = mMinPixelDensityForSDF.get();
+                reload = true;
+            }
+            /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
+                GLFontAtlas.sLinearSampling = mLinearSampling.get();
+                reload = true;
+            }*/
 
             if (reloadStrike) {
                 Minecraft.getInstance().submit(

@@ -227,8 +227,8 @@ public final class ModernTextRenderer {
                         return TextRenderType.MODE_NORMAL;
                     } else if (sComputeDeviceFontSize && MathUtil.isApproxEqual(ctm.m00(), ctm.m11())) {
                         float upperLimit = Math.max(1.0f,
-                                (float) TextLayoutEngine.MIN_PIXEL_DENSITY_FOR_SDF / mEngine.getResLevel());
-                        if (ctm.m00() < upperLimit) {
+                                (float) TextLayoutEngine.sMinPixelDensityForSDF / mEngine.getResLevel());
+                        if (ctm.m00() <= upperLimit) {
                             // uniform scale smaller and not too large
                             return TextRenderType.MODE_UNIFORM_SCALE;
                         }

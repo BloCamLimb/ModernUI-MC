@@ -64,8 +64,6 @@ public class FontResourceManager implements PreparableReloadListener {
      */
     public static final int BITMAP_SCALE = 8;
 
-    protected final GlyphManager mGlyphManager;
-
     protected EmojiFont mEmojiFont;
 
     /**
@@ -74,8 +72,6 @@ public class FontResourceManager implements PreparableReloadListener {
     protected final HashMap<String, String> mEmojiShortcodes = new HashMap<>();
 
     protected FontResourceManager() {
-        // init first
-        mGlyphManager = GlyphManager.getInstance();
     }
 
     /**
@@ -100,8 +96,6 @@ public class FontResourceManager implements PreparableReloadListener {
     }
 
     public void reloadAll() {
-        mGlyphManager.reload();
-        LOGGER.info(GlyphManager.MARKER, "Reloaded glyph manager");
         LayoutCache.clear();
     }
 
@@ -159,7 +153,6 @@ public class FontResourceManager implements PreparableReloadListener {
 
     // SYNC, close native resources
     public void close() {
-        mGlyphManager.closeAtlases();
     }
 
     // ASYNC

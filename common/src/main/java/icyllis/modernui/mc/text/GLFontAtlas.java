@@ -67,7 +67,7 @@ public class GLFontAtlas implements AutoCloseable {
     //public static final int MIPMAP_LEVEL = 4;
 
     // OpenHashMap uses less memory than RBTree/AVLTree, but higher than ArrayMap
-    private final Long2ObjectMap<GLBakedGlyph> mGlyphs = new Long2ObjectOpenHashMap<>();
+    private final Long2ObjectOpenHashMap<GLBakedGlyph> mGlyphs = new Long2ObjectOpenHashMap<>();
 
     // texture can change by resizing
     @SharedPtr

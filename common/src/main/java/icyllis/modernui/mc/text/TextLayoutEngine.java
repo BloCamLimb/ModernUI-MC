@@ -137,6 +137,8 @@ public class TextLayoutEngine extends FontResourceManager
      */
     //private GlyphManagerForge glyphManager;
 
+    private final GlyphManager mGlyphManager;
+
     /*
      * A cache of recently seen strings to their fully laid-out state, complete with color changes and texture
      * coordinates of
@@ -270,7 +272,9 @@ public class TextLayoutEngine extends FontResourceManager
 
     private final ConcurrentHashMap<ResourceLocation, FontCollection> mRegisteredFonts = new ConcurrentHashMap<>();
 
-    public static final int MIN_PIXEL_DENSITY_FOR_SDF = 4;
+    public static final int DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF = 4;
+
+    public static volatile int sMinPixelDensityForSDF = 4;
 
     /*
      * Emoji sequence to sprite index (used as glyph code in emoji atlas).
@@ -318,6 +322,9 @@ public class TextLayoutEngine extends FontResourceManager
 
         /* Pre-cache the ASCII digits to allow for fast glyph substitution */
         //cacheDigitGlyphs();
+
+        // init first
+        mGlyphManager = GlyphManager.getInstance();
 
         mGlyphManager.addAtlasInvalidationCallback(invalidationInfo -> {
             if (invalidationInfo.resize()) {
@@ -512,6 +519,8 @@ public class TextLayoutEngine extends FontResourceManager
     @RenderThread
     public void reloadAll() {
         super.reloadAll();
+        mGlyphManager.reload();
+        LOGGER.info(GlyphManager.MARKER, "Reloaded glyph manager");
         reload();
     }
 
@@ -677,7 +686,7 @@ public class TextLayoutEngine extends FontResourceManager
 
     @Override
     public void close() {
-        super.close();
+        mGlyphManager.closeAtlases();
         closeFonts();
         // do final cleanup
         TextRenderType.clear(/*cleanup*/ true);
@@ -926,7 +935,7 @@ public class TextLayoutEngine extends FontResourceManager
      * @param resLevel current resolution level
      */
     public static int adjustPixelDensityForSDF(int resLevel) {
-        return Math.max(resLevel, MIN_PIXEL_DENSITY_FOR_SDF);
+        return Math.max(resLevel, sMinPixelDensityForSDF);
     }
 
 

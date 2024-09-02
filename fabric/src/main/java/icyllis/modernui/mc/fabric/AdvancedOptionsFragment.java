@@ -141,13 +141,13 @@ public class AdvancedOptionsFragment extends Fragment {
                         Core.executeOnMainThread(() -> UIManager.getInstance().dump()));
                 category.addView(button);
             }
-            {
-                var button = createDebugButton(context, "Dump font atlases (G)");
-                button.setOnClickListener((__) ->
-                        Core.executeOnMainThread(() -> GlyphManager.getInstance().debug()));
-                category.addView(button);
-            }
             if (ModernUIMod.isTextEngineEnabled()) {
+                {
+                    var button = createDebugButton(context, "Dump font atlases (G)");
+                    button.setOnClickListener((__) ->
+                            Core.executeOnMainThread(() -> GlyphManager.getInstance().debug()));
+                    category.addView(button);
+                }
                 {
                     var button = createDebugButton(context, "Dump bitmap fonts (V)");
                     button.setOnClickListener((__) ->
@@ -167,28 +167,28 @@ public class AdvancedOptionsFragment extends Fragment {
                     category.addView(button);
                 }
                 {
+                    var button = createDebugButton(context, "Reload glyph manager");
+                    button.setOnClickListener((__) ->
+                            Core.executeOnMainThread(() -> GlyphManager.getInstance().reload()));
+                    category.addView(button);
+                }
+                {
                     var button = createDebugButton(context, "Reload text layout (MC)");
                     button.setOnClickListener((__) ->
                             Core.executeOnMainThread(() -> TextLayoutEngine.getInstance().reload()));
                     category.addView(button);
                 }
-            }
-            {
-                var button = createDebugButton(context, "Reload glyph manager");
-                button.setOnClickListener((__) ->
-                        Core.executeOnMainThread(() -> GlyphManager.getInstance().reload()));
-                category.addView(button);
+                {
+                    var button = createDebugButton(context, "Reload full text engine");
+                    button.setOnClickListener((__) ->
+                            ModernUIClient.getInstance().reloadFontStrike());
+                    category.addView(button);
+                }
             }
             {
                 var button = createDebugButton(context, "Reset layout cache");
                 button.setOnClickListener((__) ->
                         Core.executeOnMainThread(LayoutCache::clear));
-                category.addView(button);
-            }
-            {
-                var button = createDebugButton(context, "Reload full text engine");
-                button.setOnClickListener((__) ->
-                        ModernUIClient.getInstance().reloadFontStrike());
                 category.addView(button);
             }
             {
