@@ -69,10 +69,6 @@ final class SimpleScreen extends Screen implements MuiScreen {
     protected void init() {
         super.init();
         mHost.initScreen(this);
-        ScreenCallback callback = getCallback();
-        if (callback == null || callback.shouldBlurBackground()) {
-            BlurHandler.INSTANCE.forceBlur();
-        }
     }
 
     @Override

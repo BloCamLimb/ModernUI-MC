@@ -113,6 +113,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                     // Call in lambda, not in creating the lambda
                     handler.post(() -> UIManager.getInstance().updateLayoutDir(Config.CLIENT.mForceRtl.get()));
                 }
+                BlurHandler.INSTANCE.loadEffect();
             }
         });
 

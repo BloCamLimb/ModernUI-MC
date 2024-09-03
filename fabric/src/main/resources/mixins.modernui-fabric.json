@@ -16,6 +16,7 @@
     "MixinClientTelemetryManager",
     "MixinContainerScreen",
     "MixinEditBox",
+    "MixinGameRenderer",
     "MixinGuiGraphics",
     "MixinInventoryScreen",
     "MixinKeyboardHandler",

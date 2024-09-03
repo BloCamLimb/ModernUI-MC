@@ -192,7 +192,7 @@ public abstract class UIManager implements LifecycleOwner {
     protected UIManager() {
         //MuiModApi.addOnScrollListener(this::onScroll);
         MuiModApi.addOnScreenChangeListener(this::onScreenChange);
-        MuiModApi.addOnWindowResizeListener((width, height, guiScale, oldGuiScale) -> resize());
+        MuiModApi.addOnWindowResizeListener((width, height, guiScale, oldGuiScale) -> resize(width, height));
         MuiModApi.addOnPreKeyInputListener((window, keyCode, scanCode, action, mods) -> {
             if (window == minecraft.getWindow().getWindow()) {
                 onPreKeyInput(keyCode, scanCode, action, mods);
@@ -350,7 +350,7 @@ public abstract class UIManager implements LifecycleOwner {
         }
         mScreen = screen;
         // ensure it's resized
-        resize();
+        resize(minecraft.getWindow().getWidth(), minecraft.getWindow().getHeight());
     }
 
     @UiThread
@@ -395,7 +395,7 @@ public abstract class UIManager implements LifecycleOwner {
         mDecor.setLayoutTransition(new LayoutTransition());
 
         mRoot.setView(mDecor);
-        resize();
+        resize(minecraft.getWindow().getWidth(), minecraft.getWindow().getHeight());
 
         mDecor.getViewTreeObserver().addOnScrollChangedListener(() -> onHoverMove(false));
 
@@ -929,15 +929,13 @@ public abstract class UIManager implements LifecycleOwner {
         RefCnt.move(surface);
     }
 
-    private final Runnable mResizeRunnable = () -> mRoot.setFrame(mWindow.getWidth(), mWindow.getHeight());
-
     /**
      * Called when game window size changed, used to re-layout the window.
      */
     @MainThread
-    void resize() {
+    void resize(int width, int height) {
         if (mRoot != null) {
-            mRoot.mHandler.post(mResizeRunnable);
+            mRoot.mHandler.post(() -> mRoot.setFrame(width, height));
         }
     }
 
@@ -1108,6 +1106,7 @@ public abstract class UIManager implements LifecycleOwner {
         ImageStore.getInstance().clear();
         System.gc();
         Core.requireImmediateContext().unref();
+        BlurHandler.INSTANCE.closeEffect();
         if (sInstance != null) {
             AudioManager.getInstance().close();
             try {

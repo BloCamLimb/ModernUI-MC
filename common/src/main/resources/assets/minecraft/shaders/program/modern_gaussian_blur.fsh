@@ -14,17 +14,17 @@ void main() {
     vec4 blur = vec4(0.0);
 
     int radius = int(Progress);
-    // sigma = radius * 0.5
+    // sigma = radius / sqrt(3)
     // base = -0.5 / (sigma * sigma)
     // factor = 1.0 / (sigma * sqrt(2*PI))
-    float base = -2.0 / (radius * radius);
-    float factor = 0.79788456 / radius;
+    float base = -1.5 / (radius * radius);
+    float factor = 0.6909883 / radius;
     ivec2 basePos = ivec2(texCoord / oneTexel);
-    ivec2 dir = ivec2(BlurDir);
+    ivec2 blurDir = ivec2(BlurDir);
     float wsum = 0.0, w;
     for (int r = -radius; r <= radius; r += 1) {
         w = exp(r * r * base) * factor;
-        blur += texelFetch(DiffuseSampler, basePos + r * dir, 0) * w;
+        blur += texelFetch(DiffuseSampler, basePos + r * blurDir, 0) * w;
         wsum += w;
     }
 

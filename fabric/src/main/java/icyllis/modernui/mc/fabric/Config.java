@@ -264,8 +264,8 @@ public final class Config {
                             "Disable this if you run into a problem or are on low-end PCs")
                     .define("blurEffect", true);
             mBlurWithBackground = builder.comment(
-                            "This option means that blur effect only applies for GUI screens with a background",
-                            "This is only meaningful when blur effect is enabled.")
+                            "This option means that blur effect only applies for GUI screens with a background.",
+                            "Otherwise, it is applied before HUD elements.")
                     .define("blurWithBackground", true);
             mBlurRadius = builder.comment(
                             "The strength for two-pass gaussian convolution blur effect.",
