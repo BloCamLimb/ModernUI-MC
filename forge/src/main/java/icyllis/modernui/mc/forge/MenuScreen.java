@@ -104,7 +104,7 @@ final class MenuScreen<T extends AbstractContainerMenu>
     @Override
     public void removed() {
         super.removed();
-        mHost.removed();
+        mHost.removed(this);
     }
 
     @Nonnull

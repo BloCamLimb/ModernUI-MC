@@ -339,12 +339,13 @@ public abstract class UIManager implements LifecycleOwner {
         if (mScreen != screen) {
             if (mScreen != null) {
                 LOGGER.warn(MARKER, "You cannot set multiple screens.");
-                removed();
+                return;
             }
             mRoot.mHandler.post(this::suppressLayoutTransition);
             mFragmentController.getFragmentManager().beginTransaction()
                     .add(fragment_container, screen.getFragment(), "main")
                     .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                    .setReorderingAllowed(true)
                     .commit();
             mRoot.mHandler.post(this::restoreLayoutTransition);
         }
@@ -369,9 +370,9 @@ public abstract class UIManager implements LifecycleOwner {
 
     protected void onScreenChange(@Nullable Screen oldScreen, @Nullable Screen newScreen) {
         BlurHandler.INSTANCE.blur(newScreen);
-        if (newScreen == null) {
+        /*if (newScreen == null) {
             removed();
-        }
+        }*/
     }
 
     @UiThread
@@ -952,15 +953,16 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     @MainThread
-    public void removed() {
+    public void removed(@Nonnull Screen target) {
         MuiScreen screen = mScreen;
-        if (screen == null) {
+        if (target != screen) {
+            LOGGER.warn(MARKER, "No screen to remove, try to remove {}, but have {}", target, screen);
             return;
         }
         mRoot.mHandler.post(this::suppressLayoutTransition);
         mFragmentController.getFragmentManager().beginTransaction()
                 .remove(screen.getFragment())
-                .runOnCommit(() -> mFragmentContainerView.removeAllViews())
+                .setReorderingAllowed(true)
                 .commit();
         mRoot.mHandler.post(this::restoreLayoutTransition);
         mScreen = null;

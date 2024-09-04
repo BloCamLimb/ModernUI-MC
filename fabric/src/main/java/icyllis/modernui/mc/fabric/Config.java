@@ -268,8 +268,8 @@ public final class Config {
                             "Otherwise, it is applied before HUD elements.")
                     .define("blurWithBackground", true);
             mBlurRadius = builder.comment(
-                            "The strength for two-pass gaussian convolution blur effect.",
-                            "samples/pixel = ((radius * 2) + 1) * 2, sigma = radius / 2.")
+                            "The kernel radius for gaussian convolution blur effect.",
+                            "samples per pixel = ((radius * 2) + 1) * 2, sigma = radius / sqrt(3).")
                     .defineInRange("blurRadius", 7, BLUR_RADIUS_MIN, BLUR_RADIUS_MAX);
             mBlurBlacklist = builder.comment(
                             "A list of GUI screen superclasses that won't activate blur effect when opened.")

@@ -91,7 +91,7 @@ final class SimpleScreen extends Screen implements MuiScreen {
     @Override
     public void removed() {
         super.removed();
-        mHost.removed();
+        mHost.removed(this);
     }
 
     @Override
