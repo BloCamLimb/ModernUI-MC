@@ -81,6 +81,8 @@ public enum BlurHandler {
      */
     private boolean mBlurLoaded;
 
+    private float mBlurRadius;
+
     /**
      * If a screen excluded, the other screens that opened after this screen won't be blurred, unless current screen
      * closed
@@ -249,14 +251,19 @@ public enum BlurHandler {
     }
 
     private void updateRadius(float radius) {
+        mBlurRadius = radius;
         PostChain effect;
         if (sBlurWithBackground) {
-            effect = mBlurEffect;
+            return;
         } else {
             effect = minecraft.gameRenderer.currentEffect();
         }
         if (effect == null)
             return;
+        updateRadius(effect, radius);
+    }
+
+    private void updateRadius(@Nonnull PostChain effect, float radius) {
         List<PostPass> passes = ((AccessPostChain) effect).getPasses();
         for (PostPass s : passes) {
             s.getEffect().safeGetUniform("Progress").set(radius);
@@ -307,6 +314,7 @@ public enum BlurHandler {
                     .color(30, 31, 34, 255).endVertex();
         } else {
             if (mBlurring && sBlurWithBackground && mBlurEffect != null) {
+                updateRadius(mBlurEffect, mBlurRadius);
                 // we don't use time, pass deltaTicks = 0
                 mBlurEffect.process(0);
                 minecraft.getMainRenderTarget().bindWrite(false);
