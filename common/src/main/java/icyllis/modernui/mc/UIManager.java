@@ -1104,11 +1104,11 @@ public abstract class UIManager implements LifecycleOwner {
     public static void destroy() {
         // see onRenderTick() above
         LOGGER.debug(MARKER, "Quiting Modern UI");
+        BlurHandler.INSTANCE.closeEffect();
         FontResourceManager.getInstance().close();
         ImageStore.getInstance().clear();
         System.gc();
         Core.requireImmediateContext().unref();
-        BlurHandler.INSTANCE.closeEffect();
         if (sInstance != null) {
             AudioManager.getInstance().close();
             try {
@@ -1179,8 +1179,7 @@ public abstract class UIManager implements LifecycleOwner {
         }
 
         @Override
-        public void setFrame(int width, int height) {
-            super.setFrame(width, height);
+        protected Canvas beginDrawLocked(int width, int height) {
             synchronized (mRenderLock) {
                 if (mSurface == null ||
                         mSurface.getWidth() != width ||
@@ -1197,12 +1196,6 @@ public abstract class UIManager implements LifecycleOwner {
                         ));
                     }
                 }
-            }
-        }
-
-        @Override
-        protected Canvas beginDrawLocked(int width, int height) {
-            synchronized (mRenderLock) {
                 if (mSurface != null && width > 0 && height > 0) {
                     mSurface.getCanvas().clear(0);
                     return new ArcCanvas(mSurface.getCanvas());

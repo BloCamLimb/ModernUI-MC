@@ -321,7 +321,7 @@ public class TextRenderType extends RenderType {
         return sFirstSDFStrokeType;
     }
 
-    public static void clear(boolean cleanup) {
+    public static synchronized void clear(boolean cleanup) {
         if (sFirstSDFFillType != null) {
             assert (!sSDFFillTypes.isEmpty());
             var access = (AccessBufferSource) Minecraft.getInstance().renderBuffers().bufferSource();
@@ -348,6 +348,30 @@ public class TextRenderType extends RenderType {
         sFirstSDFStrokeBuffer.clear();
         if (cleanup) {
             sLinearFontSampler = RefCnt.move(sLinearFontSampler);
+            if (sShaderNormal != null) {
+                sShaderNormal.close();
+            }
+            if (sShaderSDFFill != null) {
+                sShaderSDFFill.close();
+            }
+            if (sShaderSDFStroke != null) {
+                sShaderSDFStroke.close();
+            }
+            if (sShaderSDFFillSmart != null) {
+                //noinspection DataFlowIssue
+                sShaderSDFFillSmart.close();
+            }
+            if (sShaderSDFStrokeSmart != null) {
+                //noinspection DataFlowIssue
+                sShaderSDFStrokeSmart.close();
+            }
+            sShaderNormal = null;
+            sShaderSDFFill = null;
+            sShaderSDFStroke = null;
+            sShaderSDFFillSmart = null;
+            sShaderSDFStrokeSmart = null;
+            sCurrentShaderSDFFill = null;
+            sCurrentShaderSDFStroke = null;
         }
     }
 
