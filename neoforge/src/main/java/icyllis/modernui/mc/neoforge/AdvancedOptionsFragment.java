@@ -202,6 +202,19 @@ public class AdvancedOptionsFragment extends Fragment {
                 category.addView(button);
             }
             {
+                var button = createDebugButton(context, "Purge GPU resources on immediate context");
+                button.setOnClickListener((__) ->
+                        Core.executeOnMainThread(() ->
+                                Core.requireImmediateContext().freeGpuResources()));
+                category.addView(button);
+            }
+            {
+                var button = createDebugButton(context, "Purge GPU resources on UI recording context");
+                button.setOnClickListener((__) ->
+                        Core.requireUiRecordingContext().freeGpuResources());
+                category.addView(button);
+            }
+            {
                 var button = createDebugButton(context, "GC (F)");
                 button.setOnClickListener((__) -> System.gc());
                 category.addView(button);

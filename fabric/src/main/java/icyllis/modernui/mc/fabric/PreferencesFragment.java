@@ -26,8 +26,7 @@ import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.Color;
-import icyllis.modernui.graphics.MathUtil;
+import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.text.TextLayoutEngine;
@@ -70,6 +69,8 @@ public class PreferencesFragment extends Fragment {
         pager.setKeyboardNavigationCluster(true);
 
         pager.setEdgeEffectColor(ThemeControl.THEME_COLOR);
+        pager.setLeftEdgeEffectBlendMode(BlendMode.SRC_OVER);
+        pager.setRightEdgeEffectBlendMode(BlendMode.SRC_OVER);
 
         {
             var indicator = new LinearPagerIndicator(getContext());
@@ -120,6 +121,8 @@ public class PreferencesFragment extends Fragment {
                 });
             }
             sv.setEdgeEffectColor(ThemeControl.THEME_COLOR);
+            sv.setTopEdgeEffectBlendMode(BlendMode.SRC_OVER);
+            sv.setBottomEdgeEffectBlendMode(BlendMode.SRC_OVER);
 
             var params = new LinearLayout.LayoutParams(0, MATCH_PARENT, 1);
             var dp6 = sv.dp(6);
@@ -488,6 +491,7 @@ public class PreferencesFragment extends Fragment {
             var layout = new LinearLayout(context);
             layout.setOrientation(LinearLayout.VERTICAL);
 
+            final int dp3 = layout.dp(3);
             final int dp6 = layout.dp(6);
             final Button title;
             {
@@ -501,12 +505,12 @@ public class PreferencesFragment extends Fragment {
             }
 
             title.setOnClickListener(new TooltipBorderCollapsed(layout, saveFn));
-
+            title.setPadding(dp3, 0, dp3, 0);
             ThemeControl.addBackground(title);
 
             var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER;
-            params.setMargins(dp6, layout.dp(3), dp6, 0);
+            params.setMargins(dp6, dp3, dp6, 0);
             category.addView(layout, params);
         }
 
@@ -591,7 +595,7 @@ public class PreferencesFragment extends Fragment {
 
         category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
                 Config.Text.SHADOW_OFFSET_MIN, Config.Text.SHADOW_OFFSET_MAX,
-                5, Config.TEXT.mShadowOffset, 10, saveFn));
+                5, Config.TEXT.mShadowOffset, 100, saveFn));
 
         category.addView(createFloatOption(context, "modernui.center.text.baselineShift",
                 Config.Text.BASELINE_MIN, Config.Text.BASELINE_MAX,
@@ -599,7 +603,7 @@ public class PreferencesFragment extends Fragment {
 
         category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
                 Config.Text.OUTLINE_OFFSET_MIN, Config.Text.OUTLINE_OFFSET_MAX,
-                5, Config.TEXT.mOutlineOffset, 10, saveFn));
+                5, Config.TEXT.mOutlineOffset, 100, saveFn));
 
         return category;
     }

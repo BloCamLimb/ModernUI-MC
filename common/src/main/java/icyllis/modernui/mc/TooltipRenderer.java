@@ -52,7 +52,7 @@ public final class TooltipRenderer {
     public static final int[] sFillColor = new int[4];
     public static final int[] sStrokeColor = new int[4];
     public static volatile float sBorderWidth = 4 / 3f;
-    public static volatile float sCornerRadius = 3;
+    public static volatile float sCornerRadius = 4;
     public static volatile float sShadowRadius = 10;
     public static volatile float sShadowAlpha = 0.3f;
     public static volatile boolean sAdaptiveColors = true;

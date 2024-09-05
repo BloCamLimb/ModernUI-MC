@@ -246,7 +246,7 @@ public final class Config {
                             "The duration of GUI background color and blur radius animation in milliseconds. (0 = OFF)")
                     .defineInRange("animationDuration", 200, ANIM_DURATION_MIN, ANIM_DURATION_MAX);
             mBackgroundColor = builder.comment(
-                            "The GUI background color in #RRGGBB or #AARRGGBB format. Default value: #66000000",
+                            "The GUI background color in #RRGGBB or #AARRGGBB format. Default value: #99000000",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
                             "Multiple values produce a gradient effect, whereas one value produce a solid color.",
@@ -259,13 +259,12 @@ public final class Config {
                     }, o -> true);
 
             mBlurEffect = builder.comment(
-                            "Add blur effect to GUI background when opened, it is incompatible with OptiFine's FXAA " +
-                                    "shader and some mods.",
+                            "Add Gaussian blur effect to GUI background when opened.",
                             "Disable this if you run into a problem or are on low-end PCs")
                     .define("blurEffect", true);
             mBlurWithBackground = builder.comment(
-                            "This option means that blur effect only applies for GUI screens with a background.",
-                            "Otherwise, it is applied before HUD elements.")
+                            "This option means that blur effect only applies to GUI screens with a background.",
+                            "Similar to Minecraft 1.21. Enable this for better optimization & compatibility.")
                     .define("blurWithBackground", true);
             mBlurRadius = builder.comment(
                             "The kernel radius for gaussian convolution blur effect.",
@@ -353,7 +352,7 @@ public final class Config {
                     .defineInRange("borderWidth", 4 / 3d, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
             mTooltipRadius = builder.comment(
                             "The corner radius of tooltip border, if rounded, in GUI Scale Independent Pixels.")
-                    .defineInRange("cornerRadius", 3d, TOOLTIP_CORNER_RADIUS_MIN, TOOLTIP_CORNER_RADIUS_MAX);
+                    .defineInRange("cornerRadius", 4d, TOOLTIP_CORNER_RADIUS_MIN, TOOLTIP_CORNER_RADIUS_MAX);
             /*mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
                     .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);*/
@@ -835,7 +834,7 @@ public final class Config {
                             BASELINE_MIN, BASELINE_MAX);
             mShadowOffset = builder.comment(
                             "Control the text shadow offset for vanilla text rendering, in GUI scaled pixels.")
-                    .defineInRange("shadowOffset", 0.8, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
+                    .defineInRange("shadowOffset", 0.67, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
             mOutlineOffset = builder.comment(
                             "Control the text outline offset for vanilla text rendering, in GUI scaled pixels.")
                     .defineInRange("outlineOffset", 0.5, OUTLINE_OFFSET_MIN, OUTLINE_OFFSET_MAX);
@@ -853,7 +852,7 @@ public final class Config {
             /*mRehashThreshold = builder.comment("Set the rehash threshold of layout cache")
                     .defineInRange("rehashThreshold", 100, REHASH_MIN, REHASH_MAX);*/
             mTextDirection = builder.comment(
-                            "The bidirectional text heuristic algorithm.",
+                            "The bidirectional text heuristic algorithm. The default is FirstStrong (Locale).",
                             "This will affect which BiDi algorithm to use during text layout.")
                     .defineEnum("textDirection", TextDirection.FIRST_STRONG);
             /*mBitmapReplacement = builder.comment(
@@ -907,8 +906,7 @@ public final class Config {
                             "Modern UI will use another cache strategy if this is disabled.")
                     .define("useComponentCache", !ModernUIMod.isUntranslatedItemsLoaded());
             mAllowAsyncLayout = builder.comment(
-                            "Allow text layout to be computed from background threads, which may lead to " +
-                                    "inconsistency issues.",
+                            "Allow text layout to be computed from background threads (not cached).",
                             "Otherwise, block the current thread and wait for main thread.")
                     .define("allowAsyncLayout", true);
             mLineBreakStyle = builder.comment(
@@ -941,9 +939,9 @@ public final class Config {
                             "Control the anti-aliasing of raw glyph rasterization.")
                     .define("antiAliasing", true);
             mLinearMetrics = builder.comment(
-                            "Control the FreeType linear metrics / font hinting of raw glyph metrics.",
-                            "Disable if on low-res monitor; enable for linear texts.")
-                    .define("linearMetrics", Platform.get() == Platform.MACOSX);
+                            "Control the FreeType linear metrics and font hinting of raw glyph metrics.",
+                            "Disable if on low-res monitor; enable for linear text.")
+                    .define("linearMetrics", true);
             mMinPixelDensityForSDF = builder.comment(
                     "Control the minimum pixel density for SDF text and text in 3D world rendering.",
                     "This value will be no less than current GUI scale.",

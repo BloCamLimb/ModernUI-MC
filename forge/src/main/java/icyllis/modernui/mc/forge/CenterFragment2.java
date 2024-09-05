@@ -90,12 +90,21 @@ public class CenterFragment2 extends Fragment {
             title.setTextSize(22);
             title.setTextStyle(Typeface.BOLD);
             title.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
-                var tv = (TextView) v;
-                tv.getPaint().setShader(new LinearGradient(0, 0, right - left, 0,
-                        Color.argb(255, 45, 212, 191),
-                        Color.argb(255, 14, 165, 233),
-                        Shader.TileMode.CLAMP,
-                        null));
+                int height = bottom - top;
+                int oldHeight = oldBottom - oldTop;
+                if (height != oldHeight) {
+                    var tv = (TextView) v;
+                    tv.getPaint().setShader(new LinearGradient(0, 0, height * 2, height,
+                            // Minato Aqua
+                            new int[]{
+                                    0xFFB8DFF4,
+                                    0xFFF8C5CE,
+                                    0xFFFEFDF0
+                            },
+                            null,
+                            Shader.TileMode.MIRROR,
+                            null));
+                }
             });
 
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);

@@ -87,6 +87,32 @@ public class MarkdownFragment extends Fragment {
             layout.addView(preview, params);
         }
 
+        mInput.setText("""
+                Modern UI Markdown
+                ---
+                My **First** Line
+                > My *Second* Line
+                * One
+                  * ```java
+                    public static void main(String[] args) {
+                        System.out.println("Hello, Modern UI!");
+                    }
+                    ```
+                  * Three
+                    * Four
+                                       \s
+                1. One
+                2. Two
+                3. Three
+                # Heading 1
+                ## Heading 2 👋
+                ### Heading 3 🤔
+                                       \s
+                AAA AAA
+                ******
+                BBB BBB
+                \s""");
+        mRenderMarkdown.run();
         mInput.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -102,31 +128,6 @@ public class MarkdownFragment extends Fragment {
                 mPreview.postDelayed(mRenderMarkdown, 600);
             }
         });
-        mInput.setText("""
-                Modern UI Markdown
-                ---
-                My **First** Line
-                > My *Second* Line
-                * One
-                  * ```java
-                    public static void main(String[] args) {
-                        System.out.println("Hello, Modern UI!");
-                    }
-                    ```
-                  * Three
-                    * Four
-                                        
-                1. One
-                2. Two
-                3. Three
-                # Heading 1
-                ## Heading 2 👋
-                ### Heading 3 🤔
-                                        
-                AAA AAA
-                ******
-                BBB BBB
-                """);
 
         return layout;
     }

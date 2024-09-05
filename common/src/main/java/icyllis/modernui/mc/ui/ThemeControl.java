@@ -22,25 +22,43 @@ import icyllis.modernui.graphics.drawable.*;
 import icyllis.modernui.util.StateSet;
 import icyllis.modernui.view.View;
 
+import javax.annotation.Nonnull;
+
 public class ThemeControl {
 
     public static final int BACKGROUND_COLOR = 0xc0292a2c;
     public static final int THEME_COLOR = 0xffcda398;
     public static final int THEME_COLOR_2 = 0xffcd98a3;
 
-    public static void addBackground(View view) {
-        StateListDrawable background = new StateListDrawable();
-        ShapeDrawable drawable = new ShapeDrawable();
-        drawable.setShape(ShapeDrawable.RECTANGLE);
-        drawable.setColor(0x80a0a0a0);
-        drawable.setCornerRadius(view.dp(2));
-        background.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), drawable);
-        background.setEnterFadeDuration(250);
-        background.setExitFadeDuration(250);
-        view.setBackground(background);
+    private static Drawable.ConstantState sBackgroundState;
+    private static int sBackgroundDensity;
+
+    public static synchronized void addBackground(@Nonnull View view) {
+        createBackground(view);
+        if (sBackgroundState != null) {
+            view.setBackground(sBackgroundState.newDrawable());
+        }
     }
 
-    public static Drawable makeDivider(View view) {
+    private static synchronized void createBackground(@Nonnull View view) {
+        int density = view.getContext().getResources().getDisplayMetrics().densityDpi;
+        if (sBackgroundState == null || density != sBackgroundDensity) {
+            sBackgroundDensity = density;
+            StateListDrawable background = new StateListDrawable();
+            ShapeDrawable drawable = new ShapeDrawable();
+            drawable.setShape(ShapeDrawable.RECTANGLE);
+            drawable.setColor(0x60A0A0A0);
+            drawable.setCornerRadius(view.dp(3));
+            int dp1 = view.dp(1);
+            drawable.setStroke(dp1, 0xFFE6E6E6);
+            background.addState(StateSet.get(StateSet.VIEW_STATE_HOVERED), drawable);
+            background.setEnterFadeDuration(200);
+            background.setExitFadeDuration(200);
+            sBackgroundState = background.getConstantState();
+        }
+    }
+
+    public static Drawable makeDivider(@Nonnull View view) {
         ShapeDrawable drawable = new ShapeDrawable();
         drawable.setShape(ShapeDrawable.HLINE);
         drawable.setColor(THEME_COLOR);
