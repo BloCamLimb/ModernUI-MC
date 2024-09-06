@@ -76,8 +76,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.nio.ByteOrder;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static icyllis.modernui.ModernUI.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
@@ -810,7 +809,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     @RenderThread
-    public void render() {
+    public void render(@Nullable GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
         if (mNoRender) {
             /*if (mScreen != null) {
                 String error = Language.getInstance().getOrDefault("error.modernui.gl_caps");
@@ -928,6 +927,12 @@ public abstract class UIManager implements LifecycleOwner {
         }
         RenderSystem.defaultBlendFunc();
         RefCnt.move(surface);
+
+        if (gr != null) {
+            for (var handler : mRoot.mRawDrawHandlers) {
+                handler.render(gr, mouseX, mouseY, deltaTick, mWindow);
+            }
+        }
     }
 
     /**
@@ -965,6 +970,7 @@ public abstract class UIManager implements LifecycleOwner {
                 .setReorderingAllowed(true)
                 .commit();
         mRoot.mHandler.post(this::restoreLayoutTransition);
+        mRoot.mRawDrawHandlers.clear();
         mScreen = null;
         glfwSetCursor(mWindow.getWindow(), MemoryUtil.NULL);
     }
@@ -1068,7 +1074,7 @@ public abstract class UIManager implements LifecycleOwner {
             } else if (minecraft.isRunning() && mRunning &&
                     mScreen == null && minecraft.getOverlay() == null) {
                 // Render the UI above everything
-                render();
+                render(null, 0, 0, 0);
             }
         }
         /* else {
@@ -1133,6 +1139,9 @@ public abstract class UIManager implements LifecycleOwner {
         RootTask mLastFrameTask;
 
         private long mLastPurgeNanos;
+
+        ArrayList<MinecraftDrawHandler.Operation> mPendingRawDrawHandlerOperations = new ArrayList<>();
+        ArrayList<MinecraftDrawHandler> mRawDrawHandlers = new ArrayList<>();
 
         @Override
         protected boolean dispatchTouchEvent(MotionEvent event) {
@@ -1241,6 +1250,17 @@ public abstract class UIManager implements LifecycleOwner {
                 surface = RefCnt.create(mSurface);
                 task = mLastFrameTask;
                 mLastFrameTask = null;
+                for (var operation : mPendingRawDrawHandlerOperations) {
+                    switch (operation.mOp) {
+                        case MinecraftDrawHandler.Operation.OP_ADD ->
+                            mRawDrawHandlers.add(operation.mTarget);
+                        case MinecraftDrawHandler.Operation.OP_REMOVE ->
+                            mRawDrawHandlers.remove(operation.mTarget);
+                        case MinecraftDrawHandler.Operation.OP_UPDATE ->
+                            operation.mTarget.syncProperties();
+                    }
+                }
+                mPendingRawDrawHandlerOperations.clear();
                 mRenderLock.notifyAll();
             }
             return Pair.of(task, surface);

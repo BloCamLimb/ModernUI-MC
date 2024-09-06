@@ -18,39 +18,27 @@
 
 package icyllis.modernui.mc;
 
-import com.mojang.blaze3d.platform.Lighting;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
-import icyllis.arc3d.core.*;
-import icyllis.arc3d.engine.DrawableInfo;
 import icyllis.modernui.graphics.Canvas;
-import icyllis.modernui.graphics.*;
-import icyllis.modernui.util.Pools;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.ItemRenderer;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 
 import javax.annotation.Nonnull;
 import java.nio.FloatBuffer;
-import java.util.ArrayDeque;
-import java.util.Queue;
 
 /**
  * ContainerDrawHelper is used to draw items using Minecraft
  * rendering pipeline in Modern UI rendering system.
  *
  * @author BloCamLimb
+ * @deprecated use {@link MinecraftSurfaceView}
  */
+@Deprecated
 public final class ContainerDrawHelper {
 
     //private static final Pools.Pool<DrawItem> sDrawItemPool = Pools.newSimplePool(60);

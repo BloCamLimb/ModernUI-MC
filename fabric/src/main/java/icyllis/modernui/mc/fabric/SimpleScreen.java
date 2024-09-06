@@ -82,7 +82,7 @@ final class SimpleScreen extends Screen implements MuiScreen {
         if (callback == null || callback.hasDefaultBackground()) {
             BlurHandler.INSTANCE.drawScreenBackground(gr, 0, 0, this.width, this.height);
         }
-        mHost.render();
+        mHost.render(gr, mouseX, mouseY, deltaTick);
     }
 
     @Override
