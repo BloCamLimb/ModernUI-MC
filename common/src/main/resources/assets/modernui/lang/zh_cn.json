@@ -81,6 +81,8 @@
   "modernui.center.tooltip.adaptiveColors_desc": "启用时，边框颜色将适应物品名称和稀有度。",
   "modernui.center.tooltip.borderCycle": "边框颜色周期时间",
   "modernui.center.tooltip.borderCycle_desc": "不为0时，该值表示一个顶点的颜色渐变到下个顶点的颜色的毫秒时长。",
+  "modernui.center.tooltip.arrowScrollFactor": "方向键滚动因数",
+  "modernui.center.tooltip.arrowScrollFactor_desc": "不为0时, 该值设置响应上下方向键按下事件来滚动工具提示的量，需要开启精确定位。",
   "modernui.center.text.textEngine": "现代化文本引擎",
   "modernui.center.text.textEngine_desc": "现代化文本引擎为 Minecraft 提供高质量文本渲染、分辨率无关轮廓字体、彩色表情符号、以及正确的 Unicode 文本处理和布局支持。\n这是对 Minecraft 的扩展支持，Modern UI 自身不受该选项影响。",
   "modernui.center.text.enhancedTextField": "增强文本输入框",

@@ -484,6 +484,10 @@ public class PreferencesFragment extends Fragment {
         category.addView(createBooleanOption(context, "modernui.center.tooltip.exactPositioning",
                 Config.CLIENT.mExactTooltipPositioning, saveFn));
 
+        category.addView(createIntegerOption(context, "modernui.center.tooltip.arrowScrollFactor",
+                Config.Client.TOOLTIP_ARROW_SCROLL_FACTOR_MIN, Config.Client.TOOLTIP_ARROW_SCROLL_FACTOR_MAX,
+                3, 1, Config.CLIENT.mTooltipArrowScrollFactor, saveFn));
+
         category.addView(createColorOpacityOption(context, "modernui.center.tooltip.backgroundOpacity",
                 Config.CLIENT.mTooltipFill, saveFn));
 

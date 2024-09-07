@@ -81,6 +81,8 @@
   "modernui.center.tooltip.adaptiveColors_desc": "When enabled, border colors will adapt to item name and rarity.",
   "modernui.center.tooltip.borderCycle": "Border Color Cycle Time",
   "modernui.center.tooltip.borderCycle_desc": "When not zero, this value (in milliseconds) sets the duration of transition from the color of a vertex to the color of the next vertex.",
+  "modernui.center.tooltip.arrowScrollFactor": "Arrow Key Scroll Factor",
+  "modernui.center.tooltip.arrowScrollFactor_desc": "When not zero, this value sets the amount to scroll the tooltip in response to a up/down arrow key pressed event, requires Exact Positioning.",
   "modernui.center.text.textEngine": "Modern Text Engine",
   "modernui.center.text.textEngine_desc": "Modern Text Engine provides high-quality text rendering, resolution-independent outline fonts, color emojis, and proper Unicode text and layout support for Minecraft.\nThis is an extension to Minecraft, Modern UI itself is not affected by this option.",
   "modernui.center.text.enhancedTextField": "Enhanced Text Field",

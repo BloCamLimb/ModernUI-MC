@@ -81,6 +81,8 @@
   "modernui.center.tooltip.adaptiveColors_desc": "When enabled, border colors will adapt to item name and rarity.",
   "modernui.center.tooltip.borderCycle": "邊框顏色變換時間",
   "modernui.center.tooltip.borderCycle_desc": "當不為 0 時，此值（以毫秒為單位）設定從一個頂點的顏色過渡到下一個頂點的持續時間。",
+  "modernui.center.tooltip.arrowScrollFactor": "Arrow Key Scroll Factor",
+  "modernui.center.tooltip.arrowScrollFactor_desc": "When not zero, this value sets the amount to scroll the tooltip in response to a up/down arrow key pressed event, requires Exact Positioning.",
   "modernui.center.text.textEngine": "現代文字引擎",
   "modernui.center.text.textEngine_desc": "現代文字引擎提供高品質的文字繪製、解析度獨立的輪廓字型、彩色表情圖案，以及對 Minecraft 的正確 Unicode 文字和版面支援。\n這是 Minecraft 的擴充，Modern UI 本身不受此選項影響。",
   "modernui.center.text.enhancedTextField": "增強文字欄位",

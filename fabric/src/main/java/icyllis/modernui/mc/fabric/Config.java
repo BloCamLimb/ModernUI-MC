@@ -40,7 +40,6 @@ import net.minecraftforge.fml.config.ModConfig;
 import org.jetbrains.annotations.ApiStatus;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.system.Platform;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -179,6 +178,8 @@ public final class Config {
         public static final float TOOLTIP_CORNER_RADIUS_MAX = 8;
         public static final float TOOLTIP_SHADOW_RADIUS_MIN = 0;
         public static final float TOOLTIP_SHADOW_RADIUS_MAX = 32;
+        public static final int TOOLTIP_ARROW_SCROLL_FACTOR_MIN = 0;
+        public static final int TOOLTIP_ARROW_SCROLL_FACTOR_MAX = 320;
 
         public final ForgeConfigSpec.BooleanValue mBlurEffect;
         public final ForgeConfigSpec.BooleanValue mBlurWithBackground;
@@ -199,6 +200,7 @@ public final class Config {
         public final ForgeConfigSpec.DoubleValue mTooltipShadowRadius;
         public final ForgeConfigSpec.DoubleValue mTooltipShadowAlpha;
         public final ForgeConfigSpec.BooleanValue mAdaptiveTooltipColors;
+        public final ForgeConfigSpec.IntValue mTooltipArrowScrollFactor;
         //public final ForgeConfigSpec.IntValue mTooltipDuration;
         public final ForgeConfigSpec.BooleanValue mDing;
         //public final ForgeConfigSpec.BooleanValue mZoom;
@@ -366,6 +368,9 @@ public final class Config {
             mAdaptiveTooltipColors = builder.comment(
                             "When true, tooltip border colors adapt to item's name and rarity.")
                     .define("adaptiveColors", true);
+            mTooltipArrowScrollFactor = builder.comment(
+                            "Amount to scroll the tooltip in response to a arrow key pressed event.")
+                    .defineInRange("arrowScrollFactor", 60, TOOLTIP_ARROW_SCROLL_FACTOR_MIN, TOOLTIP_ARROW_SCROLL_FACTOR_MAX);
 
             builder.pop();
 
@@ -577,6 +582,7 @@ public final class Config {
             TooltipRenderer.sShadowRadius = mTooltipShadowRadius.get().floatValue();
             TooltipRenderer.sShadowAlpha = mTooltipShadowAlpha.get().floatValue();
             TooltipRenderer.sAdaptiveColors = mAdaptiveTooltipColors.get();
+            TooltipRenderer.sArrowScrollFactor = mTooltipArrowScrollFactor.get();
 
             UIManager.sDingEnabled = mDing.get();
             //UIManager.sZoomEnabled = mZoom.get() && !ModernUIMod.isOptiFineLoaded();

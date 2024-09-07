@@ -44,7 +44,7 @@ import java.util.*;
  * An extension that replaces vanilla tooltip style.
  */
 @ApiStatus.Internal
-public final class TooltipRenderer {
+public final class TooltipRenderer implements ScrollController.IListener {
 
     // config value
     public static volatile boolean sTooltip = true;
@@ -77,6 +77,7 @@ public final class TooltipRenderer {
     public static volatile boolean sRoundedShapes = true;
     public static volatile boolean sCenterTitle = true;
     public static volatile boolean sTitleBreak = true;
+    public static volatile int sArrowScrollFactor = 60;
 
     public volatile boolean mLayoutRTL;
 
@@ -88,6 +89,10 @@ public final class TooltipRenderer {
     private int mMarqueeDir;
     // the time point when marquee is at top or bottom
     private long mMarqueeEndMillis;
+
+    // arrow key movement
+    private int mPendingArrowMove;
+    private final ScrollController mScroller = new ScrollController(this);
 
     private static final long MARQUEE_DELAY_MILLIS = 1200;
 
@@ -118,17 +123,33 @@ public final class TooltipRenderer {
         if (mDraw) {
             mDraw = false;
             if (mFrameGap) {
+                mScroller.scrollTo(0);
+                mScroller.abortAnimation();
                 mMarqueeEndMillis = timeMillis;
+                // default is auto scrolling
                 mMarqueeDir = 1;
-                mScroll = 0;
             }
             mFrameGap = false;
         } else {
             mFrameGap = true;
             mLastSeenItem = null;
+            mPendingArrowMove = 0;
         }
         mCurrTimeMillis = timeMillis;
         mCurrDeltaMillis = deltaMillis;
+    }
+
+    public void updateArrowMovement(int move) {
+        if (sArrowScrollFactor > 0) {
+            mPendingArrowMove += move;
+        }
+    }
+
+    @Override
+    public void onScrollAmountUpdated(ScrollController controller, float amount) {
+        // stop auto scrolling
+        mMarqueeDir = 0;
+        mScroll = amount;
     }
 
     // compute a gradient for the given item
@@ -589,6 +610,17 @@ public final class TooltipRenderer {
         }
 
         if (maxScroll > 0) {
+            mScroller.setMaxScroll(maxScroll);
+            if (mPendingArrowMove != 0) {
+                if (mMarqueeDir != 0) {
+                    mScroller.scrollTo(mScroll);
+                    mScroller.abortAnimation();
+                }
+                mScroller.scrollBy(mPendingArrowMove * sArrowScrollFactor);
+                mPendingArrowMove = 0;
+            }
+            mScroller.update(MuiModApi.getElapsedTime());
+
             mScroll = MathUtil.clamp(mScroll, 0, maxScroll);
 
             if (mMarqueeDir != 0 && mCurrTimeMillis - mMarqueeEndMillis >= MARQUEE_DELAY_MILLIS) {
@@ -610,6 +642,7 @@ public final class TooltipRenderer {
             }
         } else {
             mScroll = 0;
+            mPendingArrowMove = 0;
         }
 
         if (sBorderColorCycle > 0) {
