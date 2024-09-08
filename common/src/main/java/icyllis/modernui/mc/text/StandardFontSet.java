@@ -30,8 +30,10 @@ import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Unmodifiable;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
-import java.util.function.*;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 /**
  * This class is used only for <b>compatibility</b>.
@@ -160,7 +162,7 @@ public class StandardFontSet extends FontSet {
                     float right = left + (float) glyph.width / TextLayoutEngine.BITMAP_SCALE;
                     float down = up + (float) glyph.height / TextLayoutEngine.BITMAP_SCALE;
                     return new StandardBakedGlyph(
-                            () -> GlyphManager.getInstance().getCurrentTexture(bitmapFont),
+                            bitmapFont,
                             glyph.u1,
                             glyph.u2,
                             glyph.v1,
@@ -200,7 +202,7 @@ public class StandardFontSet extends FontSet {
                         float right = left + (float) glyph.width / mResLevel;
                         float down = up + (float) glyph.height / mResLevel;
                         return new StandardBakedGlyph(
-                                () -> GlyphManager.getInstance().getFontTexture(), // <- singleton
+                                null,
                                 glyph.u1,
                                 glyph.u2,
                                 glyph.v1,
@@ -268,26 +270,37 @@ public class StandardFontSet extends FontSet {
         private static final GlyphRenderTypes EMPTY_TYPES =
                 GlyphRenderTypes.createForColorTexture(new ResourceLocation(""));
 
-        // OpenGL texture ID can be changing
-        private final IntSupplier mCurrentTexture;
+        // null for TTF fonts, non-null for bitmap fonts
+        @Nullable
+        private final BitmapFont mBitmapFont;
 
-        public StandardBakedGlyph(IntSupplier currentTexture,
+        public StandardBakedGlyph(@Nullable BitmapFont bitmapFont,
                                   float u0, float u1, float v0, float v1,
                                   float left, float right, float up, float down) {
             super(EMPTY_TYPES,
                     u0, u1, v0, v1,
                     left, right, up, down);
-            mCurrentTexture = currentTexture;
+            mBitmapFont = bitmapFont;
         }
 
         @Nonnull
         @Override
         public RenderType renderType(
                 @Nonnull net.minecraft.client.gui.Font.DisplayMode mode) {
-            return TextRenderType.getOrCreate(
-                    mCurrentTexture.getAsInt(),
-                    mode
-            );
+            // OpenGL texture ID can be changing
+            if (mBitmapFont != null) {
+                return TextRenderType.getOrCreate(
+                        GlyphManager.getInstance().getCurrentTexture(mBitmapFont),
+                        mode,
+                        /*isBitmap*/true
+                );
+            } else {
+                return TextRenderType.getOrCreate(
+                        GlyphManager.getInstance().getFontTexture(),
+                        mode,
+                        /*isBitmap*/false
+                );
+            }
         }
     }
 }

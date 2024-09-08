@@ -355,6 +355,8 @@ public class TextLayout {
         final float baseline = top + sBaselineOffset;
 
         int prevTexture = -1;
+        int prevMode = -1;
+        net.minecraft.client.gui.Font.DisplayMode prevVanillaDisplayMode = null;
         VertexConsumer builder = null;
 
         int fontTexture = -1;
@@ -375,6 +377,7 @@ public class TextLayout {
             boolean fakeItalic = false;
             int ascent = 0;
             net.minecraft.client.gui.Font.DisplayMode vanillaDisplayMode = null;
+            boolean isBitmapFont = false;
             if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
                 var chars = (GlyphManager.FastCharSet) glyph;
                 int fastIndex = RANDOM.nextInt(chars.glyphs.length);
@@ -390,6 +393,7 @@ public class TextLayout {
                     texture = GlyphManager.getInstance().getCurrentTexture(bitmapFont);
                     ascent = bitmapFont.getAscent();
                     scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
+                    isBitmapFont = true;
                 } else {
                     assert (bits & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0;
                     if (isShadow) {
@@ -410,7 +414,12 @@ public class TextLayout {
 
                 w = glyph.width * scaleFactor;
                 h = glyph.height * scaleFactor;
-                mode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL;
+                mode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL; // for color emoji
+                if (isBitmapFont) {
+                    vanillaDisplayMode = seeThrough
+                            ? net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH
+                            : net.minecraft.client.gui.Font.DisplayMode.NORMAL;
+                }
                 if (polygonOffset) {
                     vanillaDisplayMode = net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET;
                 }
@@ -446,12 +455,15 @@ public class TextLayout {
                     b >>= 2;
                 }
             }
-            if (builder == null || prevTexture != texture) {
-                // bitmap/color texture and grayscale texture are different, don't check mode
+            if (builder == null || prevTexture != texture || prevMode != mode ||
+                    prevVanillaDisplayMode != vanillaDisplayMode) {
+                // no need to check isBitmapFont
                 prevTexture = texture;
+                prevMode = mode;
+                prevVanillaDisplayMode = vanillaDisplayMode;
                 builder = source.getBuffer(vanillaDisplayMode != null
-                        ? TextRenderType.getOrCreate(prevTexture, vanillaDisplayMode)
-                        : TextRenderType.getOrCreate(prevTexture, mode));
+                        ? TextRenderType.getOrCreate(texture, vanillaDisplayMode, isBitmapFont)
+                        : TextRenderType.getOrCreate(texture, mode));
             }
             float upSkew = 0;
             float downSkew = 0;

@@ -92,17 +92,19 @@ public class TextRenderType extends RenderType {
     private static final ImmutableList<RenderStateShard> NORMAL_STATES;
     private static final ImmutableList<RenderStateShard> SDF_FILL_STATES;
     private static final ImmutableList<RenderStateShard> SDF_STROKE_STATES;
+    private static final ImmutableList<RenderStateShard> VANILLA_STATES;
     private static final ImmutableList<RenderStateShard> SEE_THROUGH_STATES;
     private static final ImmutableList<RenderStateShard> POLYGON_OFFSET_STATES;
 
     /**
      * Texture id to render type map
      */
-    private static final Int2ObjectMap<TextRenderType> sNormalTypes = new Int2ObjectOpenHashMap<>();
-    private static final Int2ObjectMap<TextRenderType> sSDFFillTypes = new Int2ObjectOpenHashMap<>();
-    private static final Int2ObjectMap<TextRenderType> sSDFStrokeTypes = new Int2ObjectOpenHashMap<>();
-    private static final Int2ObjectMap<TextRenderType> sSeeThroughTypes = new Int2ObjectOpenHashMap<>();
-    private static final Int2ObjectMap<TextRenderType> sPolygonOffsetTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sNormalTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sSDFFillTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sSDFStrokeTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sVanillaTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sSeeThroughTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sPolygonOffsetTypes = new Int2ObjectOpenHashMap<>();
 
     private static TextRenderType sFirstSDFFillType;
     private static final BufferBuilder sFirstSDFFillBuffer = new BufferBuilder(131072);
@@ -154,6 +156,19 @@ public class TextRenderType extends RenderType {
                 COLOR_DEPTH_WRITE,
                 DEFAULT_LINE
         );
+        VANILLA_STATES = ImmutableList.of(
+                RENDERTYPE_TEXT_SHADER,
+                TRANSLUCENT_TRANSPARENCY,
+                LEQUAL_DEPTH_TEST,
+                CULL,
+                LIGHTMAP,
+                NO_OVERLAY,
+                NO_LAYERING,
+                MAIN_TARGET,
+                DEFAULT_TEXTURING,
+                COLOR_DEPTH_WRITE,
+                DEFAULT_LINE
+        );
         SEE_THROUGH_STATES = ImmutableList.of(
                 RENDERTYPE_TEXT_SEE_THROUGH_SHADER,
                 TRANSLUCENT_TRANSPARENCY,
@@ -199,11 +214,13 @@ public class TextRenderType extends RenderType {
 
     // compatibility
     @Nonnull
-    public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode) {
+    public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode, boolean isBitmapFont) {
         return switch (mode) {
             case SEE_THROUGH -> sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
             case POLYGON_OFFSET -> sPolygonOffsetTypes.computeIfAbsent(texture, TextRenderType::makePolygonOffsetType);
-            default -> sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
+            default -> isBitmapFont
+                    ? sVanillaTypes.computeIfAbsent(texture, TextRenderType::makeVanillaType)
+                    : sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
         };
     }
 
@@ -286,6 +303,14 @@ public class TextRenderType extends RenderType {
     }
 
     @Nonnull
+    private static TextRenderType makeVanillaType(int texture) {
+        return new TextRenderType("modern_text_vanilla", 256, () -> {
+            VANILLA_STATES.forEach(RenderStateShard::setupRenderState);
+            RenderSystem.setShaderTexture(0, texture);
+        }, () -> VANILLA_STATES.forEach(RenderStateShard::clearRenderState));
+    }
+
+    @Nonnull
     private static TextRenderType makeSeeThroughType(int texture) {
         return new TextRenderType("modern_text_see_through", 256, () -> {
             SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
@@ -343,7 +368,9 @@ public class TextRenderType extends RenderType {
         sNormalTypes.clear();
         sSDFFillTypes.clear();
         sSDFStrokeTypes.clear();
+        sVanillaTypes.clear();
         sSeeThroughTypes.clear();
+        sPolygonOffsetTypes.clear();
         sFirstSDFFillBuffer.clear();
         sFirstSDFStrokeBuffer.clear();
         if (cleanup) {
