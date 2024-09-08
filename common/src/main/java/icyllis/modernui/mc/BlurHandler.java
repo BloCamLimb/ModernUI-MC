@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.animation.ColorEvaluator;
@@ -315,6 +316,9 @@ public enum BlurHandler {
         } else {
             if (mBlurring && sBlurWithBackground && mBlurEffect != null) {
                 updateRadius(mBlurEffect, mBlurRadius);
+                // depth test needs to be disabled for Minecraft <1.20
+                // and for Forge <1.20.6, because GuiFarPlane changed
+                RenderSystem.disableDepthTest();
                 // we don't use time, pass deltaTicks = 0
                 mBlurEffect.process(0);
                 minecraft.getMainRenderTarget().bindWrite(false);
