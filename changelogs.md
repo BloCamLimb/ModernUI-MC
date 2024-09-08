@@ -1,5 +1,66 @@
 Changelogs
 ===
+### Modern UI 3.11.0.5
+#### NeoForge Extension 1.20.4
+* Add MinecraftSurfaceView to handle raw rendering calls
+* Ensure that all (native/GPU) resources are closed when the game exits
+* Slightly improve the Center UI
+* Fix a random crash when opening/closing UI frequently
+* Rework tooltip rendering
+  - Add white noise to shadow
+  - Add dithering to gradient colors
+  - Use L1 norm instead of L2 norm for coverage antialiasing
+  - Change shadow approximation method
+  - Change default border radius and shadow alpha
+  - Add new conditions for adding the extra space below tooltip title line
+  - If the first three lines of the tooltip have different styles, we consider the first line as the title
+  - Reduce the saturation of default tooltip colors
+* Allow using arrow keys to manually scroll the tooltip
+* Add small epsilon to text Z value for tooltip rendering to work around FP errors on some GPUs
+* Optimize blur effect
+  - Use texelFetch instead of texture
+  - Remove the additional blit pass and render target because we work around a Minecraft bug
+  - Change the sigma value for gaussian convolution from (radius / 2) to (radius / sqrt(3))
+  - Try to cache the shader program and temporary render target for blurring, and handle errors
+  - Apply blur effect to the screen background instead of the world, just like Minecraft 1.21
+* Migrate to new rendering pipeline
+#### Forge Extension 1.20.4
+* Equivalent to NeoForge version
+#### Fabric Extension 1.20.4
+* Add a log output on first loading typeface
+* Others are functionally equivalent to NeoForge version
+#### Modern Text Engine 1.20.4
+* Add compatibility for bitmap fonts with custom text shader
+* Enable linear metrics and disable font hinting by default
+* Add config to change the minimum pixel density for SDF text
+* Fix some possible bugs on text rendering
+* Optimize text rendering
+  - Add texture cleanup to FontResourceManager
+  - Simplify text layout rendering code
+  - Use Math.round for aligning pixels
+  - Fix glyph info for FontSet compatibility
+* Rework and optimize bitmap font rendering
+  - Try to stitch bitmap font into atlas
+  - Try to discard bitmap fonts if they have negative metrics, transparent pixels, or huge metrics
+  - Saturate glyph metrics for bitmap font
+  - Fix hashCode and equals for correct de-duplication
+* Adjust lod bias for normal text shader
+* Adjust bitmap font to match vanilla behavior
+  - Adjust glyph advance calculation
+* Adjust Unicode font loading behavior
+  - Any reference to vanilla Unicode font and UNIHEX font will redirect to current ModernUI default typeface list
+    instead of system fonts, except for Minecraft default font set
+* Fix text layout bug when finding style transitions
+* Allow caching the missing glyph to atlas
+* Adopt full text rendering technology from core framework
+* Fix line breaker that may output no lines and keep consistency with vanilla behavior
+  - This fix a bug with IBE Editor
+* Fix text strike cache invalidation for FontSet compatibility
+  - This fix a bug with Create
+* Add text layout dump in advanced options
+* Add a command for debugging line breaker
+* Add methods for debugging text engine
+
 ### Modern UI 3.10.1.5
 #### NeoForge Extension 1.20.4
 * Do not use new word breaker in command mode
