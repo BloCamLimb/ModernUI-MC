@@ -47,6 +47,7 @@ import javax.annotation.Nullable;
  *
  * @see NetworkHandler#buffer(int)
  */
+@Deprecated
 public final class PacketBuffer extends FriendlyByteBuf {
 
     private final ResourceLocation mName;
@@ -63,12 +64,12 @@ public final class PacketBuffer extends FriendlyByteBuf {
      */
     @OnlyIn(Dist.CLIENT)
     public void sendToServer() {
-        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        /*ClientPacketListener connection = Minecraft.getInstance().getConnection();
         if (connection != null) {
             connection.send(new ServerboundCustomPayloadPacket(new DiscardedPayload(mName, this)));
         } else {
             release(); // do not wait for GC
-        }
+        }*/
     }
 
     /**
@@ -80,7 +81,7 @@ public final class PacketBuffer extends FriendlyByteBuf {
      * @param player the player
      */
     public void sendToPlayer(@Nonnull Player player) {
-        ((ServerPlayer) player).connection.send(new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)));
+        //((ServerPlayer) player).connection.send(new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)));
     }
 
     /**
@@ -92,7 +93,7 @@ public final class PacketBuffer extends FriendlyByteBuf {
      * @param player the player
      */
     public void sendToPlayer(@Nonnull ServerPlayer player) {
-        player.connection.send(new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)));
+        //player.connection.send(new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)));
     }
 
     /**
@@ -104,10 +105,10 @@ public final class PacketBuffer extends FriendlyByteBuf {
      * @param players players on server
      */
     public void sendToPlayers(@Nonnull Iterable<? extends Player> players) {
-        Packet<?> packet = new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this));
+        /*Packet<?> packet = new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this));
         for (Player player : players) {
             ((ServerPlayer) player).connection.send(packet);
-        }
+        }*/
     }
 
     /**
@@ -117,8 +118,8 @@ public final class PacketBuffer extends FriendlyByteBuf {
      * the data buffer anymore.
      */
     public void sendToAll() {
-        ServerLifecycleHooks.getCurrentServer().getPlayerList()
-                .broadcastAll(new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)));
+        /*ServerLifecycleHooks.getCurrentServer().getPlayerList()
+                .broadcastAll(new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)));*/
     }
 
     /**
@@ -130,8 +131,8 @@ public final class PacketBuffer extends FriendlyByteBuf {
      * @param dimension dimension that players in
      */
     public void sendToDimension(@Nonnull ResourceKey<Level> dimension) {
-        ServerLifecycleHooks.getCurrentServer().getPlayerList()
-                .broadcastAll(new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)), dimension);
+        /*ServerLifecycleHooks.getCurrentServer().getPlayerList()
+                .broadcastAll(new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)), dimension);*/
     }
 
     /**
@@ -149,9 +150,9 @@ public final class PacketBuffer extends FriendlyByteBuf {
      */
     public void sendToNear(@Nullable Player excluded, double x, double y, double z, double radius,
                            @Nonnull ResourceKey<Level> dimension) {
-        ServerLifecycleHooks.getCurrentServer().getPlayerList().broadcast(
+        /*ServerLifecycleHooks.getCurrentServer().getPlayerList().broadcast(
                 excluded, x, y, z, radius, dimension, new ClientboundCustomPayloadPacket(new DiscardedPayload(mName,
-                        this)));
+                        this)));*/
     }
 
     /**
@@ -165,8 +166,8 @@ public final class PacketBuffer extends FriendlyByteBuf {
      * @param entity the entity is tracking
      */
     public void sendToTrackingEntity(@Nonnull Entity entity) {
-        ((ServerLevel) entity.level()).getChunkSource().broadcast(entity,
-                new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)));
+        /*((ServerLevel) entity.level()).getChunkSource().broadcast(entity,
+                new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)));*/
     }
 
     /**
@@ -180,8 +181,8 @@ public final class PacketBuffer extends FriendlyByteBuf {
      * @param entity the entity is tracking
      */
     public void sendToTrackingAndSelf(@Nonnull Entity entity) {
-        ((ServerLevel) entity.level()).getChunkSource().broadcastAndSend(entity,
-                new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)));
+        /*((ServerLevel) entity.level()).getChunkSource().broadcastAndSend(entity,
+                new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this)));*/
     }
 
     /**
@@ -194,9 +195,9 @@ public final class PacketBuffer extends FriendlyByteBuf {
      * @param pos   the block pos used to find the chunk
      */
     public void sendToTrackingChunk(@Nonnull Level level, @Nonnull BlockPos pos) {
-        Packet<?> packet = new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this));
+        /*Packet<?> packet = new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this));
         ((ServerLevel) level).getChunkSource().chunkMap.getPlayers(
-                level.getChunk(pos).getPos(), /* boundaryOnly */ false).forEach(p -> p.connection.send(packet));
+                level.getChunk(pos).getPos(), *//* boundaryOnly *//* false).forEach(p -> p.connection.send(packet));*/
     }
 
     /**
@@ -208,8 +209,8 @@ public final class PacketBuffer extends FriendlyByteBuf {
      * @param chunk the chunk that players in
      */
     public void sendToTrackingChunk(@Nonnull LevelChunk chunk) {
-        Packet<?> packet = new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this));
+        /*Packet<?> packet = new ClientboundCustomPayloadPacket(new DiscardedPayload(mName, this));
         ((ServerLevel) chunk.getLevel()).getChunkSource().chunkMap.getPlayers(
-                chunk.getPos(), /* boundaryOnly */ false).forEach(p -> p.connection.send(packet));
+                chunk.getPos(), *//* boundaryOnly *//* false).forEach(p -> p.connection.send(packet));*/
     }
 }

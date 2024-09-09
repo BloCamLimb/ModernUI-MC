@@ -119,10 +119,6 @@ final class Registration {
         if (bytes == null) {
             throw new IllegalStateException();
         }*/
-        if (ModernUIMod.sDevelopment) {
-            NetworkMessages.sNetwork = DistExecutor.safeRunForDist(() -> NetworkMessages::client,
-                    () -> NetworkMessages::new);
-        }
 
         MinecraftForge.EVENT_BUS.register(ServerHandler.INSTANCE);
     }

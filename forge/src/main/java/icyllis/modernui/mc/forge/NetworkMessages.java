@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 /**
  * Internal use.
  */
+@Deprecated
 @ApiStatus.Internal
 public sealed class NetworkMessages extends NetworkHandler {
 

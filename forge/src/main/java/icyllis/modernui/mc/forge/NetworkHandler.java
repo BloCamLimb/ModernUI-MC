@@ -36,6 +36,7 @@ import javax.annotation.Nullable;
 /**
  * This class maintains a channel to {@link NetworkRegistry} that fixes some bugs.
  */
+@Deprecated
 @SuppressWarnings("unused")
 public class NetworkHandler {
 
@@ -101,9 +102,10 @@ public class NetworkHandler {
     }
 
     protected void onCustomPayload(@Nonnull CustomPayloadEvent event) {
-        switch (event.getSource().getDirection()) {
-            case PLAY_TO_CLIENT -> onClientCustomPayload(event);
-            case PLAY_TO_SERVER -> onServerCustomPayload(event);
+        if (event.getSource().isClientSide()) {
+            onClientCustomPayload(event);
+        } else {
+            onServerCustomPayload(event);
         }
     }
 

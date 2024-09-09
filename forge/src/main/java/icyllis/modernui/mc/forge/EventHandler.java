@@ -67,8 +67,6 @@ final class EventHandler {
                             return new TestContainerMenu(containerId, inventory, player);
                         }
                     }, buf -> buf.writeBoolean(diamond));
-                } else {
-                    MuiForgeApi.openMenu0(event.getEntity(), TestContainerMenu::new, buf -> buf.writeBoolean(diamond));
                 }
             }
         }

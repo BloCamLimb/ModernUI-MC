@@ -258,18 +258,15 @@ public final class MuiForgeApi extends MuiModApi {
     @ApiStatus.Internal
     public static void openMenu(@Nonnull Player player, @Nonnull MenuProvider provider,
                                 @Nullable Consumer<FriendlyByteBuf> writer) {
-        if (ModernUIMod.isDeveloperMode()) {
-            openMenu0(player, provider, writer);
-        } else {
-            if (!(player instanceof ServerPlayer p)) {
-                ModernUI.LOGGER.warn(ModernUI.MARKER, "openMenu() is not called from logical server",
-                        new Exception().fillInStackTrace());
-                return;
-            }
-            p.openMenu(provider, writer);
+        if (!(player instanceof ServerPlayer p)) {
+            ModernUI.LOGGER.warn(ModernUI.MARKER, "openMenu() is not called from logical server",
+                    new Exception().fillInStackTrace());
+            return;
         }
+        p.openMenu(provider, writer);
     }
 
+    @Deprecated
     @ApiStatus.Internal
     static void openMenu0(@Nonnull Player player, @Nonnull MenuConstructor provider,
                           @Nullable Consumer<FriendlyByteBuf> writer) {
