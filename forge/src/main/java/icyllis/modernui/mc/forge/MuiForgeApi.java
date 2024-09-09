@@ -186,7 +186,9 @@ public final class MuiForgeApi extends MuiModApi {
 
     @Override
     public Style applyRarityTo(Rarity rarity, Style baseStyle) {
-        return rarity.getStyleModifier().apply(baseStyle);
+        //FIXME Forge removed IExtensibleEnum for Rarity, not sure when it will be back...
+        //return rarity.getStyleModifier().apply(baseStyle);
+        return baseStyle.withColor(rarity.color());
     }
 
     /**

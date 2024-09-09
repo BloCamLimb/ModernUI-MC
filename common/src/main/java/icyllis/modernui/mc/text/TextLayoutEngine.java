@@ -793,13 +793,10 @@ public class TextLayoutEngine extends FontResourceManager
                     for (int i = 0; i < providers.size(); i++) {
                         var metadata = GsonHelper.convertToJsonObject(
                                 providers.get(i), "providers[" + i + "]");
-                        var definition = Util.getOrThrow(
-                                GlyphProviderDefinition.CODEC.parse(
-                                        JsonOps.INSTANCE,
-                                        metadata
-                                ),
-                                JsonParseException::new
-                        );
+                        var definition = GlyphProviderDefinition.Conditional.CODEC
+                                .parse(JsonOps.INSTANCE, metadata)
+                                .getOrThrow(JsonParseException::new)
+                                .definition();
                         loadSingleFont(resources, name, bundle,
                                 resource.sourcePackId(), i, metadata, definition);
                     }

@@ -40,7 +40,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
@@ -373,7 +372,7 @@ final class Registration {
             @Nonnull
             @Override
             public Codec<Integer> codec() {
-                return ExtraCodecs.validate(Codec.INT, value -> {
+                return Codec.INT.validate(value -> {
                     int max = maxInclusive() + 1;
                     if (value.compareTo(minInclusive()) >= 0 && value.compareTo(max) <= 0) {
                         return DataResult.success(value);

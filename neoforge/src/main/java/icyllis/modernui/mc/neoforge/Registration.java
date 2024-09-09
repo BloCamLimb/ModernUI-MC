@@ -38,7 +38,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
@@ -46,7 +45,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.CrashReportCallables;
 import net.neoforged.fml.ModList;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -69,7 +68,7 @@ import static icyllis.modernui.ModernUI.*;
 /**
  * This class handles mod loading events, all registry entries are only available under the development mode.
  */
-@Mod.EventBusSubscriber(modid = ModernUI.ID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = ModernUI.ID, bus = EventBusSubscriber.Bus.MOD)
 final class Registration {
 
     private Registration() {
@@ -153,7 +152,7 @@ final class Registration {
         return sb.toString();
     }*/
 
-    @Mod.EventBusSubscriber(modid = ModernUI.ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = ModernUI.ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
     static class ModClient {
 
         static {
@@ -363,7 +362,7 @@ final class Registration {
             @Nonnull
             @Override
             public Codec<Integer> codec() {
-                return ExtraCodecs.validate(Codec.INT, value -> {
+                return Codec.INT.validate(value -> {
                     int max = maxInclusive() + 1;
                     if (value.compareTo(minInclusive()) >= 0 && value.compareTo(max) <= 0) {
                         return DataResult.success(value);

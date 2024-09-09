@@ -435,10 +435,10 @@ public final class Config {
                     .defineInRange("overflingDistance", ViewConfiguration.OVERFLING_DISTANCE, 0, 1024);
             mVerticalScrollFactor = builder.comment("Amount to scroll in response to a vertical scroll event, in dips" +
                             " per axis value.")
-                    .defineInRange("verticalScrollFactor", ViewConfiguration.VERTICAL_SCROLL_FACTOR, 0, 1024);
+                    .defineInRange("verticalScrollFactor", (double) ViewConfiguration.VERTICAL_SCROLL_FACTOR, 0, 1024);
             mHorizontalScrollFactor = builder.comment("Amount to scroll in response to a horizontal scroll event, in " +
                             "dips per axis value.")
-                    .defineInRange("horizontalScrollFactor", ViewConfiguration.HORIZONTAL_SCROLL_FACTOR, 0, 1024);
+                    .defineInRange("horizontalScrollFactor", (double) ViewConfiguration.HORIZONTAL_SCROLL_FACTOR, 0, 1024);
 
             builder.pop();
 
@@ -831,12 +831,12 @@ public final class Config {
                             "Control base font size, in GUI scaled pixels. The default and vanilla value is 8.",
                             "For bitmap fonts, 8 represents a glyph size of 8x or 16x if fixed resolution.",
                             "This option only applies to TrueType fonts.")
-                    .defineInRange("baseFontSize", TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE,
+                    .defineInRange("baseFontSize", (double) TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE,
                             BASE_FONT_SIZE_MIN, BASE_FONT_SIZE_MAX);
             mBaselineShift = builder.comment(
                             "Control vertical baseline for vanilla text layout, in GUI scaled pixels.",
                             "The vanilla default value is 7.")
-                    .defineInRange("baselineShift", TextLayout.STANDARD_BASELINE_OFFSET,
+                    .defineInRange("baselineShift", (double) TextLayout.STANDARD_BASELINE_OFFSET,
                             BASELINE_MIN, BASELINE_MAX);
             mShadowOffset = builder.comment(
                             "Control the text shadow offset for vanilla text rendering, in GUI scaled pixels.")

@@ -31,9 +31,9 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Items;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.event.TickEvent;
+import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 import javax.annotation.Nonnull;
@@ -41,7 +41,7 @@ import javax.annotation.Nonnull;
 /**
  * Handles game server or client events from Forge event bus
  */
-@Mod.EventBusSubscriber(modid = ModernUI.ID)
+@EventBusSubscriber(modid = ModernUI.ID)
 final class EventHandler {
 
     @SubscribeEvent
@@ -89,7 +89,7 @@ final class EventHandler {
     /**
      * Handles game client events from Forge event bus
      */
-    @Mod.EventBusSubscriber(modid = ModernUI.ID, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = ModernUI.ID, value = Dist.CLIENT)
     static class Client {
 
         static {
@@ -143,7 +143,13 @@ final class EventHandler {
         }*/
 
         @SubscribeEvent
-        static void onRenderTick(@Nonnull TickEvent.RenderTickEvent event) {
+        static void onRenderFramePre(@Nonnull RenderFrameEvent.Pre event) {
+            Core.flushMainCalls();
+            StillAlive.tick();
+        }
+
+        @SubscribeEvent
+        static void onRenderFramePost(@Nonnull RenderFrameEvent.Post event) {
             Core.flushMainCalls();
             StillAlive.tick();
         }

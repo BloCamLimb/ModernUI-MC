@@ -40,11 +40,10 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.util.ObfuscationReflectionHelper;
 import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.gui.LoadingErrorScreen;
-import net.neoforged.neoforge.client.gui.overlay.VanillaGuiOverlay;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.client.settings.KeyModifier;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.TickEvent;
 import org.jetbrains.annotations.*;
 import org.lwjgl.opengl.GL45C;
 
@@ -255,7 +254,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     }
 
     @SubscribeEvent
-    void onRenderGameOverlayLayer(@Nonnull RenderGuiOverlayEvent.Pre event) {
+    void onRenderGameOverlayLayer(@Nonnull RenderGuiLayerEvent.Pre event) {
         /*switch (event.getType()) {
             case CROSSHAIRS:
                 event.setCanceled(mScreen != null);
@@ -269,7 +268,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                     TestHUD.sInstance.drawBars(mFCanvas);
                 break;*//*
         }*/
-        if (event.getOverlay() == VanillaGuiOverlay.CROSSHAIR.type()) {
+        if (event.getName().equals(VanillaGuiLayers.CROSSHAIR)) {
             if (mScreen != null) {
                 event.setCanceled(true);
             }
@@ -310,13 +309,23 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     }
 
     @SubscribeEvent
-    void onRenderTick(@Nonnull TickEvent.RenderTickEvent event) {
-        super.onRenderTick(event.phase == TickEvent.Phase.END);
+    void onRenderFramePre(@Nonnull RenderFrameEvent.Pre event) {
+        super.onRenderTick(/*isEnd*/ false);
     }
 
     @SubscribeEvent
-    void onClientTick(@Nonnull TickEvent.ClientTickEvent event) {
-        super.onClientTick(event.phase == TickEvent.Phase.END);
+    void onRenderFramePost(@Nonnull RenderFrameEvent.Post event) {
+        super.onRenderTick(/*isEnd*/ true);
+    }
+
+    @SubscribeEvent
+    void onClientTickPre(@Nonnull ClientTickEvent.Pre event) {
+        super.onClientTick(/*isEnd*/ false);
+    }
+
+    @SubscribeEvent
+    void onClientTickPost(@Nonnull ClientTickEvent.Post event) {
+        super.onClientTick(/*isEnd*/ true);
     }
 
     @SubscribeEvent

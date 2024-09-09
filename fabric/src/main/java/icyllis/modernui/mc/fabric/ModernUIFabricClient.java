@@ -21,8 +21,8 @@ package icyllis.modernui.mc.fabric;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
-import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
-import fuzs.forgeconfigapiport.api.config.v2.ModConfigEvents;
+import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeConfigRegistry;
+import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeModConfigEvents;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
@@ -49,7 +49,6 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.ExtraCodecs;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.minecraftforge.fml.config.ModConfig;
@@ -132,8 +131,8 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             }
         });
 
-        ModConfigEvents.loading(ID).register(Config::reloadAnyClient);
-        ModConfigEvents.reloading(ID).register(Config::reloadAnyClient);
+        ForgeModConfigEvents.loading(ID).register(Config::reloadAnyClient);
+        ForgeModConfigEvents.reloading(ID).register(Config::reloadAnyClient);
 
         ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
             UIManagerFabric.initializeRenderer();
@@ -205,9 +204,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                 MuiModApi.addOnWindowResizeListener(TextLayoutEngine.getInstance());
             });
 
-            ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
-                MuiTextCommand.register(dispatcher);
-            });
+            ClientCommandRegistrationCallback.EVENT.register(MuiTextCommand::register);
 
             MuiModApi.addOnDebugDumpListener(TextLayoutEngine.getInstance());
 
@@ -295,7 +292,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
         @Nonnull
         @Override
         public Codec<Integer> codec() {
-            return ExtraCodecs.validate(Codec.INT, value -> {
+            return Codec.INT.validate(value -> {
                 int max = maxInclusive() + 1;
                 if (value.compareTo(minInclusive()) >= 0 && value.compareTo(max) <= 0) {
                     return DataResult.success(value);

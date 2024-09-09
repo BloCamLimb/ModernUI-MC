@@ -99,6 +99,6 @@ public final class MuiFabricApi extends MuiModApi {
 
     @Override
     public Style applyRarityTo(Rarity rarity, Style baseStyle) {
-        return baseStyle.withColor(rarity.color);
+        return baseStyle.withColor(rarity.color());
     }
 }

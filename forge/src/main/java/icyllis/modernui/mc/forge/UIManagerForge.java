@@ -37,7 +37,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.client.gui.LoadingErrorScreen;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.common.MinecraftForge;
@@ -254,9 +253,9 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         }
     }
 
-    @SubscribeEvent
+    /*@SubscribeEvent
     void onRenderGameOverlayLayer(@Nonnull RenderGuiOverlayEvent.Pre event) {
-        /*switch (event.getType()) {
+        *//*switch (event.getType()) {
             case CROSSHAIRS:
                 event.setCanceled(mScreen != null);
                 break;
@@ -264,23 +263,23 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                 // hotfix 1.16 vanilla, using shader makes TEXTURE_2D disabled
                 RenderSystem.enableTexture();
                 break;
-            *//*case HEALTH:
+            *//**//*case HEALTH:
                 if (TestHUD.sBars)
                     TestHUD.sInstance.drawBars(mFCanvas);
-                break;*//*
-        }*/
+                break;*//**//*
+        }*//*
         if (event.getOverlay() == VanillaGuiOverlay.CROSSHAIR.type()) {
             if (mScreen != null) {
                 event.setCanceled(true);
             }
-            /*minecraft.font.draw(event.getMatrixStack(),
+            *//*minecraft.font.draw(event.getMatrixStack(),
                     ChatFormatting.DARK_RED + "Fuck you " + ChatFormatting.UNDERLINE + "OK " + mElapsedTimeMillis +
                      " " + ChatFormatting.OBFUSCATED + "66" + ChatFormatting.RESET + " Fine", 20, 20, 0xFF0000);
             minecraft.font.draw(event.getMatrixStack(),
                     new TextComponent("Yes " + ChatFormatting.DARK_RED + "Fuck " + ChatFormatting.RESET + "That"),
-                    20, 60, 0x00FFFF);*/
+                    20, 60, 0x00FFFF);*//*
         }
-    }
+    }*/
 
     @SubscribeEvent(priority = EventPriority.HIGH)
     void onRenderTooltipH(@Nonnull RenderTooltipEvent.Pre event) {

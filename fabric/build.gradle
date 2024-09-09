@@ -51,11 +51,11 @@ dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings loom.officialMojangMappings()
 
-    modImplementation "net.fabricmc:fabric-loader:0.15.3"
-    modApi "net.fabricmc.fabric-api:fabric-api:0.92.1+1.20.4"
+    modImplementation "net.fabricmc:fabric-loader:0.16.5"
+    modApi "net.fabricmc.fabric-api:fabric-api:0.100.8+1.20.6"
 
-    modImplementation "com.terraformersmc:modmenu:9.0.0"
-    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:20.4.0"
+    modImplementation "com.terraformersmc:modmenu:10.0.0"
+    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:20.6.1"
 
     implementation project(':common')
 

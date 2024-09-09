@@ -20,9 +20,9 @@ package icyllis.modernui.mc;
 
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiGraphics;
 import org.jetbrains.annotations.ApiStatus;
+import org.joml.Matrix4fStack;
 
 import javax.annotation.Nonnull;
 import java.lang.ref.WeakReference;
@@ -65,9 +65,9 @@ public class MinecraftDrawHandler {
         int rtHeight = window.getHeight();
         double guiScale = window.getGuiScale();
         //XXX: the parent matrix should only have z-translation
-        PoseStack mvs = RenderSystem.getModelViewStack();
-        mvs.pushPose();
-        mvs.translate(p.mPositionLeft / guiScale, p.mPositionTop / guiScale, 0.0);
+        Matrix4fStack mvs = RenderSystem.getModelViewStack();
+        mvs.pushMatrix();
+        mvs.translate((float) (p.mPositionLeft / guiScale), (float) (p.mPositionTop / guiScale), 0.0f);
         RenderSystem.applyModelViewMatrix();
         //XXX: the parent should not have a scissor test
         RenderSystem.enableScissor(p.mPositionLeft,
@@ -76,7 +76,7 @@ public class MinecraftDrawHandler {
         try {
             renderer.onDraw(gr, mouseX, mouseY, deltaTick, guiScale, p.mAlpha);
         } finally {
-            mvs.popPose();
+            mvs.popMatrix();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.disableScissor();
         }

@@ -76,7 +76,7 @@ public class StandardFontSet extends FontSet {
     }
 
     public void reload(@Nonnull FontCollection fontCollection, int newResLevel) {
-        super.reload(Collections.emptyList());
+        super.reload(Collections.emptyList(), Collections.emptySet());
         mFamilies = fontCollection.getFamilies();
         invalidateCache(newResLevel);
     }

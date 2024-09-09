@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.text.TextRenderType;
 import net.minecraft.client.Camera;
@@ -42,13 +41,13 @@ public class MixinLevelRenderer {
     @Inject(method = "renderLevel",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/OutlineBufferSource;endOutlineBatch()V"))
-    private void endTextBatch(PoseStack poseStack,
-                              float partialTick,
+    private void endTextBatch(float partialTick,
                               long finishNanoTime,
                               boolean renderBlockOutline,
                               Camera camera,
                               GameRenderer gameRenderer,
                               LightTexture lightTexture,
+                              Matrix4f modelViewMatrix,
                               Matrix4f projectionMatrix,
                               CallbackInfo ci) {
         if (TextLayoutEngine.sUseTextShadersInWorld) {

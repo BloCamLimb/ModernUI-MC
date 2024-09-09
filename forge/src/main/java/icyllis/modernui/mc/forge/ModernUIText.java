@@ -133,7 +133,7 @@ public final class ModernUIText {
 
         @SubscribeEvent
         static void onRegisterClientCommands(@Nonnull RegisterClientCommandsEvent event) {
-            MuiTextCommand.register(event.getDispatcher());
+            MuiTextCommand.register(event.getDispatcher(), event.getBuildContext());
         }
     }
 }

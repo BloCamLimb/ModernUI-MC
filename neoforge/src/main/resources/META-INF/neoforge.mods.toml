@@ -9,7 +9,6 @@ license="LGPL-3.0-or-later"
     version="${version}"
     displayName="Modern UI"
     displayURL="https://curseforge.com/minecraft/mc-mods/modern-ui"
-    displayTest="IGNORE_ALL_VERSION"
     authors="BloCamLimb"
     description='''
     Modern desktop framework from low-level 3D graphics API to high-level view model, for development of 2D/3D rendering software or game engine, with internationalization support and many new technologies.
@@ -26,12 +25,12 @@ license="LGPL-3.0-or-later"
 [[dependencies.modernui]]
     modId="neoforge"
     type="required"
-    versionRange="[20.4,)"
+    versionRange="[20.6,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.modernui]]
     modId="minecraft"
     type="required"
-    versionRange="[1.20.4, 1.21)"
+    versionRange="[1.20.6, 1.21)"
     ordering="NONE"
     side="BOTH"

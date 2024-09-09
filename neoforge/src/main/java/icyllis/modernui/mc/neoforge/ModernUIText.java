@@ -25,9 +25,9 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.TickEvent;
 
 import javax.annotation.Nonnull;
 
@@ -125,15 +125,13 @@ public final class ModernUIText {
         }*/
 
         @SubscribeEvent
-        static void onClientTick(@Nonnull TickEvent.ClientTickEvent event) {
-            if (event.phase == TickEvent.Phase.END) {
-                TextLayoutEngine.getInstance().onEndClientTick();
-            }
+        static void onClientTick(@Nonnull ClientTickEvent.Post event) {
+            TextLayoutEngine.getInstance().onEndClientTick();
         }
 
         @SubscribeEvent
         static void onRegisterClientCommands(@Nonnull RegisterClientCommandsEvent event) {
-            MuiTextCommand.register(event.getDispatcher());
+            MuiTextCommand.register(event.getDispatcher(), event.getBuildContext());
         }
     }
 }

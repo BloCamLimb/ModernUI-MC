@@ -32,7 +32,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.client.ConfigScreenHandler;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 
 import javax.annotation.Nonnull;
 import java.util.Locale;
@@ -56,7 +56,7 @@ public final class ModernUIForge extends ModernUIMod {
     //public static boolean sSecureProfilePublicKey;
 
     // mod-loading thread
-    public ModernUIForge(IEventBus modEventBus) {
+    public ModernUIForge(IEventBus modEventBus, ModContainer modContainer) {
         if (!FMLEnvironment.production) {
             ModernUIMod.sDevelopment = true;
             LOGGER.debug(MARKER, "Auto detected in FML development environment");
@@ -80,7 +80,7 @@ public final class ModernUIForge extends ModernUIMod {
         sUntranslatedItemsLoaded = ModList.get().isLoaded("untranslateditems");
 
         Config.initCommonConfig(
-                spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, spec,
+                spec -> modContainer.registerConfig(ModConfig.Type.COMMON, spec,
                         ModernUI.NAME_CPT + "/common.toml")
         );
         modEventBus.addListener(
@@ -88,9 +88,9 @@ public final class ModernUIForge extends ModernUIMod {
         );
         LocalStorage.init();
 
-        if (FMLEnvironment.dist.isClient()) {
+        /*if (FMLEnvironment.dist.isClient()) {
             Loader.init(modEventBus);
-        }
+        }*/
 
         /*if ((getBootstrapLevel() & BOOTSTRAP_ENABLE_DEBUG_INJECTORS) != 0) {
             MinecraftForge.EVENT_BUS.register(EventHandler.ClientDebug.class);
@@ -101,32 +101,34 @@ public final class ModernUIForge extends ModernUIMod {
     }
 
     public static void warnSetup(String key, Object... args) {
-        ModLoader.get().addWarning(new ModLoadingWarning(null, ModLoadingStage.SIDED_SETUP, key, args));
+        ModLoader.addLoadingIssue(ModLoadingIssue.warning(key, args));
     }
 
-    private static class Loader {
+    /*private static class Loader {
 
         @SuppressWarnings("resource")
         public static void init(IEventBus modEventBus) {
             new Client(modEventBus);
         }
-    }
+    }*/
 
     @OnlyIn(Dist.CLIENT)
+    @Mod(value = ModernUI.ID, dist = {Dist.CLIENT})
     public static class Client extends ModernUIClient {
 
         static {
             assert FMLEnvironment.dist.isClient();
         }
 
-        private Client(IEventBus modEventBus) {
+        // mod-loading thread
+        public Client(IEventBus modEventBus, ModContainer modContainer) {
             super();
             Config.initClientConfig(
-                    spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
+                    spec -> modContainer.registerConfig(ModConfig.Type.CLIENT, spec,
                             ModernUI.NAME_CPT + "/client.toml")
             );
             Config.initTextConfig(
-                    spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
+                    spec -> modContainer.registerConfig(ModConfig.Type.CLIENT, spec,
                             ModernUI.NAME_CPT + "/text.toml")
             );
             FontResourceManager.getInstance();
@@ -137,16 +139,15 @@ public final class ModernUIForge extends ModernUIMod {
             modEventBus.addListener(
                     (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())
             );
-            ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
-                    () -> new ConfigScreenHandler.ConfigScreenFactory(
-                            (mc, modsScreen) -> {
-                                var args = new DataSet();
-                                args.putBoolean("navigateToPreferences", true);
-                                var fragment = new CenterFragment2();
-                                fragment.setArguments(args);
-                                return MuiForgeApi.get().createScreen(fragment, null, modsScreen);
-                            }
-                    ));
+            modContainer.registerExtensionPoint(IConfigScreenFactory.class,
+                    (mc, modsScreen) -> {
+                        var args = new DataSet();
+                        args.putBoolean("navigateToPreferences", true);
+                        var fragment = new CenterFragment2();
+                        fragment.setArguments(args);
+                        return MuiForgeApi.get().createScreen(fragment, null, modsScreen);
+                    }
+            );
             if (ModernUIMod.sDevelopment) {
                 modEventBus.register(Registration.ModClientDev.class);
             }

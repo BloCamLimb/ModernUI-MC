@@ -25,8 +25,7 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.mc.ModernUIMod;
 import net.minecraft.Util;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
+import net.minecraft.commands.*;
 import net.minecraft.commands.arguments.ComponentArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -36,11 +35,12 @@ public class MuiTextCommand {
 
     public static final ResourceLocation JB_MONO = ModernUIMod.location("jetbrains-mono-medium");
 
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher,
+                                CommandBuildContext context) {
         dispatcher.register(Commands.literal(ModernUI.ID)
                 .then(Commands.literal("text")
                         .then(Commands.literal("layout")
-                                .then(Commands.argument("message", ComponentArgument.textComponent())
+                                .then(Commands.argument("message", ComponentArgument.textComponent(context))
                                         .executes(ctx -> {
                                             layout(
                                                     ctx.getSource(),
@@ -52,7 +52,7 @@ public class MuiTextCommand {
                         )
                         .then(Commands.literal("splitLines")
                                 .then(Commands.argument("width", FloatArgumentType.floatArg(0))
-                                        .then(Commands.argument("message", ComponentArgument.textComponent())
+                                        .then(Commands.argument("message", ComponentArgument.textComponent(context))
                                                 .executes(ctx -> {
                                                     splitLines(
                                                             ctx.getSource(),

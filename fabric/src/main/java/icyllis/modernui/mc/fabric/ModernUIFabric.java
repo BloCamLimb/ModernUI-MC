@@ -18,8 +18,8 @@
 
 package icyllis.modernui.mc.fabric;
 
-import fuzs.forgeconfigapiport.api.config.v2.ForgeConfigRegistry;
-import fuzs.forgeconfigapiport.api.config.v2.ModConfigEvents;
+import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeConfigRegistry;
+import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeModConfigEvents;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.ModernUIMod;
 import net.fabricmc.api.ModInitializer;
@@ -43,8 +43,8 @@ public class ModernUIFabric extends ModernUIMod implements ModInitializer {
         sLegendaryTooltipsLoaded = FabricLoader.getInstance().isModLoaded("legendarytooltips");
         sUntranslatedItemsLoaded = FabricLoader.getInstance().isModLoaded("untranslateditems");
 
-        ModConfigEvents.loading(ID).register(Config::reloadCommon);
-        ModConfigEvents.reloading(ID).register(Config::reloadCommon);
+        ForgeModConfigEvents.loading(ID).register(Config::reloadCommon);
+        ForgeModConfigEvents.reloading(ID).register(Config::reloadCommon);
         Config.initCommonConfig(
                 spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.COMMON, spec,
                         ModernUI.NAME_CPT + "/common.toml")

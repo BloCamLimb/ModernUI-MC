@@ -753,8 +753,8 @@ public final class TooltipRenderer implements ScrollController.IListener {
         var buffer = gr.bufferSource().getBuffer(TooltipRenderType.tooltip());
 
         // we expect local coordinates, concat pose with model view
-        RenderSystem.getModelViewStack().pushPose();
-        RenderSystem.getModelViewStack().mulPoseMatrix(pose);
+        RenderSystem.getModelViewStack().pushMatrix();
+        RenderSystem.getModelViewStack().mul(pose);
         RenderSystem.getModelViewStack().translate(centerX, centerY, 0);
         RenderSystem.applyModelViewMatrix();
         // estimate the draw bounds, half stroke width + 0.5 AA bloat + shadow spread
@@ -767,7 +767,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
         buffer.vertex(-extentX, extentY, 0).endVertex();
 
         gr.flush();
-        RenderSystem.getModelViewStack().popPose();
+        RenderSystem.getModelViewStack().popMatrix();
         RenderSystem.applyModelViewMatrix();
 
         if (titleGap && sTitleBreak) {

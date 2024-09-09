@@ -27,6 +27,7 @@ import icyllis.modernui.mc.ModernUIMod;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.Util;
+import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.arguments.ComponentArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -36,11 +37,12 @@ public class MuiTextCommand {
 
     public static final ResourceLocation JB_MONO = ModernUIMod.location("jetbrains-mono-medium");
 
-    public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
+    public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher,
+                                CommandBuildContext context) {
         dispatcher.register(ClientCommandManager.literal(ModernUI.ID)
                 .then(ClientCommandManager.literal("text")
                         .then(ClientCommandManager.literal("layout")
-                                .then(ClientCommandManager.argument("message", ComponentArgument.textComponent())
+                                .then(ClientCommandManager.argument("message", ComponentArgument.textComponent(context))
                                         .executes(ctx -> {
                                             layout(
                                                     ctx.getSource(),
@@ -52,7 +54,7 @@ public class MuiTextCommand {
                         )
                         .then(ClientCommandManager.literal("splitLines")
                                 .then(ClientCommandManager.argument("width", FloatArgumentType.floatArg(0))
-                                        .then(ClientCommandManager.argument("message", ComponentArgument.textComponent())
+                                        .then(ClientCommandManager.argument("message", ComponentArgument.textComponent(context))
                                                 .executes(ctx -> {
                                                     splitLines(
                                                             ctx.getSource(),

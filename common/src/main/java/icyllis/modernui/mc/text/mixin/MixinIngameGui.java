@@ -36,19 +36,13 @@ public abstract class MixinIngameGui {
 
     @Shadow
     @Final
-    protected Minecraft minecraft;
+    private Minecraft minecraft;
 
     @Shadow
-    protected int screenWidth;
-
-    @Shadow
-    protected int screenHeight;
-
-    @Shadow
-    public abstract Font getFont();
+    protected abstract boolean isExperienceBarVisible();
 
     @Redirect(
-            method = "renderExperienceBar",
+            method = "renderExperienceLevel",
             at = @At(value = "FIELD", target = "net/minecraft/client/player/LocalPlayer.experienceLevel:I",
                     opcode = Opcodes.GETFIELD)
     )
@@ -56,15 +50,15 @@ public abstract class MixinIngameGui {
         return 0;
     }
 
-    @Inject(method = "renderExperienceBar", at = @At("TAIL"))
-    private void drawExperience(GuiGraphics gr, int i, CallbackInfo ci) {
+    @Inject(method = "renderExperienceLevel", at = @At("TAIL"))
+    private void drawExperience(GuiGraphics gr, float f, CallbackInfo ci) {
         LocalPlayer player = minecraft.player;
-        if (player != null && player.experienceLevel > 0) {
+        if (player != null && player.experienceLevel > 0 && isExperienceBarVisible()) {
             String s = Integer.toString(player.experienceLevel);
             TextLayoutEngine engine = TextLayoutEngine.getInstance();
             float w = engine.getStringSplitter().measureText(s);
-            float x = (screenWidth - w) / 2;
-            float y = screenHeight - 31 - 4;
+            float x = (gr.guiWidth() - w) / 2;
+            float y = gr.guiHeight() - 31 - 4;
             float offset = ModernTextRenderer.sOutlineOffset;
             Matrix4f pose = gr.pose().last().pose();
             // end batch for each draw to prevent transparency sorting
