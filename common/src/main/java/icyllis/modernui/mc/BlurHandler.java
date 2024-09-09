@@ -318,7 +318,7 @@ public enum BlurHandler {
                 updateRadius(mBlurEffect, mBlurRadius);
                 // depth test needs to be disabled for Minecraft <1.20
                 // and for Forge <1.20.6, because GuiFarPlane changed
-                RenderSystem.disableDepthTest();
+                //RenderSystem.disableDepthTest();
                 // we don't use time, pass deltaTicks = 0
                 mBlurEffect.process(0);
                 minecraft.getMainRenderTarget().bindWrite(false);
