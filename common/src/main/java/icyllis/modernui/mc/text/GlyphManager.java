@@ -85,7 +85,7 @@ public class GlyphManager {
      * This may require additional reviews on pixel alignment.
      */
     public static volatile boolean sAntiAliasing = true;
-    public static volatile boolean sFractionalMetrics = false;
+    public static volatile boolean sFractionalMetrics = true;
 
     /**
      * Emoji font design.

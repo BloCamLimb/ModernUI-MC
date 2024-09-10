@@ -543,6 +543,8 @@ public class TextLayoutProcessor {
 
             int fontSize = computeFontSize(resLevel);
             mFontPaint.setFontSize(fontSize);
+            mFontPaint.setAntiAlias(GlyphManager.sAntiAliasing);
+            mFontPaint.setLinearMetrics(GlyphManager.sFractionalMetrics);
 
             // pre allocate memory
             if (mComputeAdvances) {
