@@ -306,8 +306,8 @@ public class PreferencesFragment extends Fragment {
             list.addView(createBooleanOption(context, "modernui.center.screen.blurEffect",
                     Config.CLIENT.mBlurEffect, saveFn));
 
-            list.addView(createBooleanOption(context, "modernui.center.screen.blurWithBackground",
-                    Config.CLIENT.mBlurWithBackground, saveFn));
+            list.addView(createBooleanOption(context, "modernui.center.screen.overrideVanillaBlur",
+                    Config.CLIENT.mOverrideVanillaBlur, saveFn));
 
             list.addView(createIntegerOption(context, "modernui.center.screen.blurRadius",
                     Config.Client.BLUR_RADIUS_MIN, Config.Client.BLUR_RADIUS_MAX,

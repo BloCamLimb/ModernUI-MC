@@ -21,7 +21,7 @@ void main() {
     float base = -1.5 / (radius * radius);
     float factor = 0.6909883 / radius;
     ivec2 bound = ivec2(InSize) - 1;
-    ivec2 basePos = ivec2(texCoord * InSize + 0.5);
+    ivec2 basePos = ivec2(texCoord * InSize);
     ivec2 blurDir = ivec2(BlurDir);
     float wsum = 0.0, w;
     for (int r = -radius; r <= radius; r += 1) {

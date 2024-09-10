@@ -53,6 +53,8 @@
   "modernui.center.screen.blurEffect_desc": "Apply Gaussian blur to screen backdrop.",
   "modernui.center.screen.blurWithBackground": "Blur with Screen Background",
   "modernui.center.screen.blurWithBackground_desc": "When enabled, Gaussian blur is applied only when the screen has a default background, similar to Minecraft 1.21, with better optimization and compatibility.",
+  "modernui.center.screen.overrideVanillaBlur": "Override Vanilla Blur Effect",
+  "modernui.center.screen.overrideVanillaBlur_desc": "When enabled, Vanilla 3-pass box blur will be replaced with Modern UI Gaussian blur, which will give you better blur quality and rendering performance.\nTo obtain similar blur strength to Vanilla, set the blur radius to twice that of Vanilla menu blurriness. Although the blur radius is increased, Modern UI has lower CPU and GPU usage when reaching the same frame rate.\nIt's highly recommended that you enable this option.",
   "modernui.center.screen.blurRadius": "Blur Radius",
   "modernui.center.screen.inventoryPause": "Inventory Pause",
   "modernui.center.screen.inventoryPause_desc": "Pause your single player game when Inventory is open.",

@@ -10,7 +10,6 @@
     "AccessGameRenderer",
     "AccessNativeImage",
     "AccessOptions",
-    "AccessPostChain",
     "MixinChatFormatting",
     "MixinChatScreen",
     "MixinClientTelemetryManager",

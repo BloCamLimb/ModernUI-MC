@@ -9,7 +9,6 @@
     "AccessClientTextTooltip",
     "AccessNativeImage",
     "AccessOptions",
-    "AccessPostChain",
     "MixinChatFormatting",
     "MixinChatScreen",
     "MixinClientTelemetryManager",

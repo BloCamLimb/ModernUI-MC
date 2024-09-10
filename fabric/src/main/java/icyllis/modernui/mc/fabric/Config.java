@@ -166,7 +166,7 @@ public final class Config {
 
         public static final int ANIM_DURATION_MIN = 0;
         public static final int ANIM_DURATION_MAX = 800;
-        public static final int BLUR_RADIUS_MIN = 2;
+        public static final int BLUR_RADIUS_MIN = 0;
         public static final int BLUR_RADIUS_MAX = 18;
         public static final float FONT_SCALE_MIN = 0.5f;
         public static final float FONT_SCALE_MAX = 2.0f;
@@ -182,7 +182,8 @@ public final class Config {
         public static final int TOOLTIP_ARROW_SCROLL_FACTOR_MAX = 320;
 
         public final ForgeConfigSpec.BooleanValue mBlurEffect;
-        public final ForgeConfigSpec.BooleanValue mBlurWithBackground;
+        //public final ModConfigSpec.BooleanValue mBlurWithBackground;
+        public final ForgeConfigSpec.BooleanValue mOverrideVanillaBlur;
         public final ForgeConfigSpec.IntValue mBackgroundDuration;
         public final ForgeConfigSpec.IntValue mBlurRadius;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mBackgroundColor;
@@ -264,12 +265,16 @@ public final class Config {
                             "Add Gaussian blur effect to GUI background when opened.",
                             "Disable this if you run into a problem or are on low-end PCs")
                     .define("blurEffect", true);
-            mBlurWithBackground = builder.comment(
+            /*mBlurWithBackground = builder.comment(
                             "This option means that blur effect only applies to GUI screens with a background.",
                             "Similar to Minecraft 1.21. Enable this for better optimization & compatibility.")
-                    .define("blurWithBackground", true);
+                    .define("blurWithBackground", true);*/
+            mOverrideVanillaBlur = builder.comment(
+                            "Whether to replace Vanilla 3-pass box blur with Modern UI Gaussian blur.",
+                            "This gives you better quality and performance, recommend setting this to true.")
+                    .define("overrideVanillaBlur", true);
             mBlurRadius = builder.comment(
-                            "The kernel radius for gaussian convolution blur effect.",
+                            "The kernel radius for gaussian convolution blur effect, 0 = disable.",
                             "samples per pixel = ((radius * 2) + 1) * 2, sigma = radius / sqrt(3).")
                     .defineInRange("blurRadius", 7, BLUR_RADIUS_MIN, BLUR_RADIUS_MAX);
             mBlurBlacklist = builder.comment(
@@ -505,7 +510,8 @@ public final class Config {
 
         private void reload() {
             BlurHandler.sBlurEffect = mBlurEffect.get();
-            BlurHandler.sBlurWithBackground = mBlurWithBackground.get();
+            //BlurHandler.sBlurWithBackground = mBlurWithBackground.get();
+            BlurHandler.sOverrideVanillaBlur = mOverrideVanillaBlur.get();
             BlurHandler.sBackgroundDuration = mBackgroundDuration.get();
             BlurHandler.sBlurRadius = mBlurRadius.get();
 
