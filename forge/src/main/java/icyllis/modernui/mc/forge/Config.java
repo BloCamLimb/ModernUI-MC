@@ -623,7 +623,7 @@ public final class Config {
             ModernUIClient.sFontRegistrationList = mFontRegistrationList.get();
 
             // scan and preload typeface in background thread
-            ModernUI.getSelectedTypeface();
+            ModernUIClient.getInstance().loadTypeface();
         }
 
         public enum WindowMode {

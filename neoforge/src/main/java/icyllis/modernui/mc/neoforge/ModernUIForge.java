@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.neoforge;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.util.DataSet;
@@ -154,7 +153,7 @@ public final class ModernUIForge extends ModernUIMod {
             LOGGER.info(MARKER, "Initialized Modern UI client");
         }
 
-        @Override
+        /*@Override
         protected void checkFirstLoadTypeface() {
             if (RenderSystem.isOnRenderThread() || Minecraft.getInstance().isSameThread()) {
                 LOGGER.error(MARKER,
@@ -163,7 +162,7 @@ public final class ModernUIForge extends ModernUIMod {
                         new Exception("Loading typeface at the wrong mod loading stage")
                                 .fillInStackTrace());
             }
-        }
+        }*/
 
         @SuppressWarnings("ConstantValue")
         @Nonnull

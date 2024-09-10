@@ -20,7 +20,7 @@ package icyllis.modernui.mc;
 
 import icyllis.arc3d.engine.DriverBugWorkarounds;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.graphics.text.*;
+import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
@@ -34,6 +34,7 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public abstract class ModernUIClient extends ModernUI {
@@ -160,6 +161,7 @@ public abstract class ModernUIClient extends ModernUI {
                                  @Nonnull Consumer<FontFamily> firstSetter,
                                  boolean firstLoad) {
         if (firstLoad) {
+            var tasks = new ArrayList<CompletableFuture<Void>>();
             var fontManager = FontResourceManager.getInstance();
             var registrationList = sFontRegistrationList;
             if (registrationList != null) {
@@ -178,17 +180,22 @@ public abstract class ModernUIClient extends ModernUI {
                         entries = new File[]{file};
                     }
                     for (File entry : entries) {
-                        try {
-                            FontFamily[] families = FontFamily.createFamilies(entry, /*register*/true);
-                            for (var f : families) {
-                                fontManager.onFontRegistered(f);
-                                LOGGER.info(MARKER, "Registered font '{}', path '{}'",
-                                        f.getFamilyName(), entry);
-                            }
-                        } catch (Exception e) {
-                            LOGGER.error(MARKER, "Failed to register font '{}'",
-                                    entry, e);
-                        }
+                        tasks.add(CompletableFuture.runAsync(
+                                () -> {
+                                    try {
+                                        FontFamily[] families = FontFamily.createFamilies(
+                                                entry, /*register*/true);
+                                        for (var f : families) {
+                                            fontManager.onFontRegistered(f);
+                                            LOGGER.info(MARKER, "Registered font '{}', path '{}'",
+                                                    f.getFamilyName(), entry);
+                                        }
+                                    } catch (Exception e) {
+                                        LOGGER.error(MARKER, "Failed to register font '{}'",
+                                                entry, e);
+                                    }
+                                })
+                        );
                     }
                 }
             }
@@ -200,18 +207,23 @@ public abstract class ModernUIClient extends ModernUI {
                             name.endsWith(".otf") ||
                             name.endsWith(".ttc") ||
                             name.endsWith(".otc")) {
-                        p = p.toAbsolutePath();
-                        try {
-                            FontFamily[] families = FontFamily.createFamilies(p.toFile(), /*register*/true);
-                            for (var f : families) {
-                                fontManager.onFontRegistered(f);
-                                LOGGER.info(MARKER, "Registered font '{}', path '{}'",
-                                        f.getFamilyName(), p);
-                            }
-                        } catch (Exception e) {
-                            LOGGER.error(MARKER, "Failed to register font '{}'",
-                                    p, e);
-                        }
+                        Path absP = p.toAbsolutePath();
+                        tasks.add(CompletableFuture.runAsync(
+                                () -> {
+                                    try {
+                                        FontFamily[] families = FontFamily.createFamilies(
+                                                absP.toFile(), /*register*/true);
+                                        for (var f : families) {
+                                            fontManager.onFontRegistered(f);
+                                            LOGGER.info(MARKER, "Registered font '{}', path '{}'",
+                                                    f.getFamilyName(), absP);
+                                        }
+                                    } catch (Exception e) {
+                                        LOGGER.error(MARKER, "Failed to register font '{}'",
+                                                absP, e);
+                                    }
+                                }
+                        ));
                     }
                 }
             } catch (IOException e) {
@@ -230,25 +242,31 @@ public abstract class ModernUIClient extends ModernUI {
                         return false;
                     }).entrySet()) {
                 for (var resource : entry.getValue()) {
-                    try (var inputStream = resource.open()) {
-                        FontFamily[] families = FontFamily.createFamilies(inputStream, /*register*/true);
-                        for (var f : families) {
-                            fontManager.onFontRegistered(f);
-                            LOGGER.info(MARKER, "Registered font '{}', location '{}' in pack: '{}'",
-                                    f.getFamilyName(), entry.getKey(), resource.sourcePackId());
-                        }
-                    } catch (Exception e) {
-                        LOGGER.error(MARKER, "Failed to register font '{}' in pack: '{}'",
-                                entry.getKey(), resource.sourcePackId(), e);
-                    }
+                    tasks.add(CompletableFuture.runAsync(
+                            () -> {
+                                try (var inputStream = resource.open()) {
+                                    FontFamily[] families = FontFamily.createFamilies(
+                                            inputStream, /*register*/true);
+                                    for (var f : families) {
+                                        fontManager.onFontRegistered(f);
+                                        LOGGER.info(MARKER, "Registered font '{}', location '{}' in pack: '{}'",
+                                                f.getFamilyName(), entry.getKey(), resource.sourcePackId());
+                                    }
+                                } catch (Exception e) {
+                                    LOGGER.error(MARKER, "Failed to register font '{}' in pack: '{}'",
+                                            entry.getKey(), resource.sourcePackId(), e);
+                                }
+                            }
+                    ));
                 }
             }
+            CompletableFuture.allOf(tasks.toArray(new CompletableFuture[0])).join();
         }
-        boolean hasFail = loadSingleFont(first, selected, firstSetter);
+        boolean success = loadSingleFont(first, selected, firstSetter);
         for (String fallback : fallbacks) {
-            hasFail |= loadSingleFont(fallback, selected, null);
+            success &= loadSingleFont(fallback, selected, null);
         }
-        if (hasFail && ModernUIMod.isDeveloperMode()) {
+        if (!success && ModernUIMod.isDeveloperMode()) {
             LOGGER.debug(MARKER, "Available system font families:\n{}",
                     String.join("\n", FontFamily.getSystemFontMap().keySet()));
         }
@@ -300,25 +318,21 @@ public abstract class ModernUIClient extends ModernUI {
         if (mTypeface != null) {
             return mTypeface;
         }
+        return super.onGetSelectedTypeface();
+    }
+
+    // called from worker thread on Forge
+    // called from main thread on NeoForge
+    // never called on Fabric, will use reloadTypeface()
+    public void loadTypeface() {
         synchronized (this) {
-            // should be a worker thread
             if (mTypeface == null) {
-                checkFirstLoadTypeface();
+                assert mFirstFontFamily == null;
                 mTypeface = loadTypefaceInternal(this::setFirstFontFamily, true);
-                // do some warm-up, but do not block ourselves
-                var paint = new FontPaint();
-                paint.setFont(mTypeface);
-                paint.setLocale(Locale.ROOT);
-                paint.setFontSize(12);
-                Minecraft.getInstance().tell(() -> LayoutCache.getOrCreate(new char[]{'M'},
-                        0, 1, 0, 1, false, paint, 0));
                 LOGGER.info(MARKER, "Loaded typeface: {}", mTypeface);
             }
         }
-        return mTypeface;
     }
-
-    protected abstract void checkFirstLoadTypeface();
 
     // reload just Typeface on main thread, called after loaded
     public void reloadTypeface() {
