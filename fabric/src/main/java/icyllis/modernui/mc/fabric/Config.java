@@ -275,7 +275,7 @@ public final class Config {
                     .define("overrideVanillaBlur", true);
             mBlurRadius = builder.comment(
                             "The kernel radius for gaussian convolution blur effect, 0 = disable.",
-                            "samples per pixel = ((radius * 2) + 1) * 2, sigma = radius / sqrt(3).")
+                            "samples per pixel = ((radius * 2) + 1) * 2, sigma = radius / 2.")
                     .defineInRange("blurRadius", 7, BLUR_RADIUS_MIN, BLUR_RADIUS_MAX);
             mBlurBlacklist = builder.comment(
                             "A list of GUI screen superclasses that won't activate blur effect when opened.")

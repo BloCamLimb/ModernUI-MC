@@ -15,11 +15,11 @@ void main() {
     vec4 blur = vec4(0.0);
 
     int radius = int(Progress);
-    // sigma = radius / sqrt(3)
+    // sigma = radius / 2.0
     // base = -0.5 / (sigma * sigma)
     // factor = 1.0 / (sigma * sqrt(2*PI))
-    float base = -1.5 / (radius * radius);
-    float factor = 0.6909883 / radius;
+    float base = -2.0 / (radius * radius);
+    float factor = 0.79788456 / radius;
     ivec2 bound = ivec2(InSize) - 1;
     ivec2 basePos = ivec2(texCoord * InSize);
     ivec2 blurDir = ivec2(BlurDir);

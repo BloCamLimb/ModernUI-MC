@@ -23,7 +23,6 @@ Changelogs
 * Optimize blur effect
   - Use texelFetch instead of texture
   - Remove the additional blit pass and render target because we work around a Minecraft bug
-  - Change the sigma value for gaussian convolution from (radius / 2) to (radius / sqrt(3))
   - Try to cache the shader program and temporary render target for blurring, and handle errors
   - Apply blur effect to the screen background instead of the world, just like Minecraft 1.21
 * Migrate to new rendering pipeline
