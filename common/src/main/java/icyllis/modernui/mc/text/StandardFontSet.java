@@ -157,8 +157,8 @@ public class StandardFontSet extends FontSet {
                         codePoint
                 );
                 if (glyph != null) {
-                    // convert to Minecraft, bearing Y is 3, see SheetGlyphInfo
-                    float up = 3F + TextLayout.STANDARD_BASELINE_OFFSET +
+                    // convert to Minecraft, see SheetGlyphInfo
+                    float up = TextLayout.STANDARD_BASELINE_OFFSET +
                             (float) glyph.y / TextLayoutEngine.BITMAP_SCALE;
                     float left = (float) glyph.x / TextLayoutEngine.BITMAP_SCALE;
                     float right = left + (float) glyph.width / TextLayoutEngine.BITMAP_SCALE;
@@ -197,8 +197,8 @@ public class StandardFontSet extends FontSet {
                             glyphs.getInt(0)
                     );
                     if (glyph != null) {
-                        // convert to Minecraft, bearing Y is 3, see SheetGlyphInfo
-                        float up = 3F + TextLayout.STANDARD_BASELINE_OFFSET +
+                        // convert to Minecraft, see SheetGlyphInfo
+                        float up = TextLayout.STANDARD_BASELINE_OFFSET +
                                 (float) glyph.y / mResLevel;
                         float left = (float) glyph.x / mResLevel;
                         float right = left + (float) glyph.width / mResLevel;
