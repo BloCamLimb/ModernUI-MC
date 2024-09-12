@@ -324,7 +324,7 @@ public abstract class ModernUIClient extends ModernUI {
     // called from worker thread on Forge
     // called from main thread on NeoForge
     // never called on Fabric, will use reloadTypeface()
-    public void loadTypeface() {
+    /*public void loadTypeface() {
         synchronized (this) {
             if (mTypeface == null) {
                 assert mFirstFontFamily == null;
@@ -332,7 +332,7 @@ public abstract class ModernUIClient extends ModernUI {
                 LOGGER.info(MARKER, "Loaded typeface: {}", mTypeface);
             }
         }
-    }
+    }*/
 
     // reload just Typeface on main thread, called after loaded
     public void reloadTypeface() {
