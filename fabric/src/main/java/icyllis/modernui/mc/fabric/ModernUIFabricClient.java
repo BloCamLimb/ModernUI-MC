@@ -21,8 +21,8 @@ package icyllis.modernui.mc.fabric;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
-import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeConfigRegistry;
-import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeModConfigEvents;
+import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;
+import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeModConfigEvents;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
@@ -51,7 +51,7 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.Mth;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.config.ModConfig;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -122,8 +122,8 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             }
         });
 
-        ForgeModConfigEvents.loading(ID).register(Config::reloadAnyClient);
-        ForgeModConfigEvents.reloading(ID).register(Config::reloadAnyClient);
+        NeoForgeModConfigEvents.loading(ID).register(Config::reloadAnyClient);
+        NeoForgeModConfigEvents.reloading(ID).register(Config::reloadAnyClient);
 
         ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
             UIManagerFabric.initializeRenderer();
@@ -181,11 +181,11 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
         });
 
         Config.initClientConfig(
-                spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
+                spec -> NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
                         ModernUI.NAME_CPT + "/client.toml")
         );
         Config.initTextConfig(
-                spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
+                spec -> NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
                         ModernUI.NAME_CPT + "/text.toml")
         );
 

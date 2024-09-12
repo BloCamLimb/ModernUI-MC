@@ -18,13 +18,13 @@
 
 package icyllis.modernui.mc.fabric;
 
-import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeConfigRegistry;
-import fuzs.forgeconfigapiport.fabric.api.forge.v4.ForgeModConfigEvents;
+import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;
+import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeModConfigEvents;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.ModernUIMod;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraftforge.fml.config.ModConfig;
+import net.neoforged.fml.config.ModConfig;
 
 import static icyllis.modernui.ModernUI.*;
 
@@ -43,10 +43,10 @@ public class ModernUIFabric extends ModernUIMod implements ModInitializer {
         sLegendaryTooltipsLoaded = FabricLoader.getInstance().isModLoaded("legendarytooltips");
         sUntranslatedItemsLoaded = FabricLoader.getInstance().isModLoaded("untranslateditems");
 
-        ForgeModConfigEvents.loading(ID).register(Config::reloadCommon);
-        ForgeModConfigEvents.reloading(ID).register(Config::reloadCommon);
+        NeoForgeModConfigEvents.loading(ID).register(Config::reloadCommon);
+        NeoForgeModConfigEvents.reloading(ID).register(Config::reloadCommon);
         Config.initCommonConfig(
-                spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.COMMON, spec,
+                spec -> NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.COMMON, spec,
                         ModernUI.NAME_CPT + "/common.toml")
         );
 

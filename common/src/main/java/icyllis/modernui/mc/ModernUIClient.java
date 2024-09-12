@@ -391,7 +391,7 @@ public abstract class ModernUIClient extends ModernUI {
     @Nonnull
     @Override
     public InputStream getResourceStream(@Nonnull String namespace, @Nonnull String path) throws IOException {
-        return Minecraft.getInstance().getResourceManager().open(new ResourceLocation(namespace, path));
+        return Minecraft.getInstance().getResourceManager().open(ResourceLocation.fromNamespaceAndPath(namespace, path));
     }
 
     @Nonnull

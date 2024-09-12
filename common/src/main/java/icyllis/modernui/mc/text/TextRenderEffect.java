@@ -79,87 +79,71 @@ public class TextRenderEffect {
     public static void drawUnderline(@Nonnull VertexConsumer builder, float start, float end,
                                      float baseline, int r, int g, int b, int a) {
         baseline += UNDERLINE_OFFSET;
-        builder.vertex(start, baseline + UNDERLINE_THICKNESS, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .endVertex();
-        builder.vertex(end, baseline + UNDERLINE_THICKNESS, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .endVertex();
-        builder.vertex(end, baseline, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .endVertex();
-        builder.vertex(start, baseline, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .endVertex();
+        builder.addVertex(start, baseline + UNDERLINE_THICKNESS, EFFECT_DEPTH)
+                .setColor(r, g, b, a);
+        builder.addVertex(end, baseline + UNDERLINE_THICKNESS, EFFECT_DEPTH)
+                .setColor(r, g, b, a);
+        builder.addVertex(end, baseline, EFFECT_DEPTH)
+                .setColor(r, g, b, a);
+        builder.addVertex(start, baseline, EFFECT_DEPTH)
+                .setColor(r, g, b, a);
     }
 
     public static void drawUnderline(@Nonnull Matrix4f matrix, @Nonnull VertexConsumer builder,
                                      float start, float end, float baseline,
                                      int r, int g, int b, int a, int light) {
         baseline += UNDERLINE_OFFSET;
-        builder.vertex(matrix, start, baseline + UNDERLINE_THICKNESS, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .uv(0, 1)
-                .uv2(light)
-                .endVertex();
-        builder.vertex(matrix, end, baseline + UNDERLINE_THICKNESS, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .uv(1, 1)
-                .uv2(light)
-                .endVertex();
-        builder.vertex(matrix, end, baseline, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .uv(1, 0)
-                .uv2(light)
-                .endVertex();
-        builder.vertex(matrix, start, baseline, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .uv(0, 0)
-                .uv2(light)
-                .endVertex();
+        builder.addVertex(matrix, start, baseline + UNDERLINE_THICKNESS, EFFECT_DEPTH)
+                .setColor(r, g, b, a)
+                .setUv(0, 1)
+                .setLight(light);
+        builder.addVertex(matrix, end, baseline + UNDERLINE_THICKNESS, EFFECT_DEPTH)
+                .setColor(r, g, b, a)
+                .setUv(1, 1)
+                .setLight(light);
+        builder.addVertex(matrix, end, baseline, EFFECT_DEPTH)
+                .setColor(r, g, b, a)
+                .setUv(1, 0)
+                .setLight(light);
+        builder.addVertex(matrix, start, baseline, EFFECT_DEPTH)
+                .setColor(r, g, b, a)
+                .setUv(0, 0)
+                .setLight(light);
     }
 
     public static void drawStrikethrough(@Nonnull VertexConsumer builder, float start, float end,
                                          float baseline, int r, int g, int b, int a) {
         baseline += STRIKETHROUGH_OFFSET;
-        builder.vertex(start, baseline + STRIKETHROUGH_THICKNESS, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .endVertex();
-        builder.vertex(end, baseline + STRIKETHROUGH_THICKNESS, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .endVertex();
-        builder.vertex(end, baseline, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .endVertex();
-        builder.vertex(start, baseline, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .endVertex();
+        builder.addVertex(start, baseline + STRIKETHROUGH_THICKNESS, EFFECT_DEPTH)
+                .setColor(r, g, b, a);
+        builder.addVertex(end, baseline + STRIKETHROUGH_THICKNESS, EFFECT_DEPTH)
+                .setColor(r, g, b, a);
+        builder.addVertex(end, baseline, EFFECT_DEPTH)
+                .setColor(r, g, b, a);
+        builder.addVertex(start, baseline, EFFECT_DEPTH)
+                .setColor(r, g, b, a);
     }
 
     public static void drawStrikethrough(@Nonnull Matrix4f matrix, @Nonnull VertexConsumer builder,
                                          float start, float end, float baseline,
                                          int r, int g, int b, int a, int light) {
         baseline += STRIKETHROUGH_OFFSET;
-        builder.vertex(matrix, start, baseline + STRIKETHROUGH_THICKNESS, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .uv(0, 1)
-                .uv2(light)
-                .endVertex();
-        builder.vertex(matrix, end, baseline + STRIKETHROUGH_THICKNESS, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .uv(1, 1)
-                .uv2(light)
-                .endVertex();
-        builder.vertex(matrix, end, baseline, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .uv(1, 0)
-                .uv2(light)
-                .endVertex();
-        builder.vertex(matrix, start, baseline, EFFECT_DEPTH)
-                .color(r, g, b, a)
-                .uv(0, 0)
-                .uv2(light)
-                .endVertex();
+        builder.addVertex(matrix, start, baseline + STRIKETHROUGH_THICKNESS, EFFECT_DEPTH)
+                .setColor(r, g, b, a)
+                .setUv(0, 1)
+                .setLight(light);
+        builder.addVertex(matrix, end, baseline + STRIKETHROUGH_THICKNESS, EFFECT_DEPTH)
+                .setColor(r, g, b, a)
+                .setUv(1, 1)
+                .setLight(light);
+        builder.addVertex(matrix, end, baseline, EFFECT_DEPTH)
+                .setColor(r, g, b, a)
+                .setUv(1, 0)
+                .setLight(light);
+        builder.addVertex(matrix, start, baseline, EFFECT_DEPTH)
+                .setColor(r, g, b, a)
+                .setUv(0, 0)
+                .setLight(light);
     }
 
     /*@Nonnull

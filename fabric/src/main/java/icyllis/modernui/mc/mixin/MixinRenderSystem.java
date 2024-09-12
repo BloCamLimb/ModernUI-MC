@@ -41,7 +41,6 @@ public class MixinRenderSystem {
 
     @Inject(method = "initBackendSystem", at = @At("HEAD"), remap = false)
     private static void onInitBackendSystem(CallbackInfoReturnable<TimeSource.NanoTimeSource> ci) {
-        RenderSystem.assertInInitPhase();
         String name = Configuration.OPENGL_LIBRARY_NAME.get();
         if (name != null) {
             // non-system library should load before window creation

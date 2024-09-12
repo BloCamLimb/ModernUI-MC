@@ -706,9 +706,9 @@ public abstract class UIManager implements LifecycleOwner {
             LOGGER.info(MARKER, "Load post-processing effect");
             final ResourceLocation effect;
             if (InputConstants.isKeyDown(mWindow.getWindow(), GLFW_KEY_RIGHT_SHIFT)) {
-                effect = new ResourceLocation("shaders/post/grayscale.json");
+                effect = ResourceLocation.withDefaultNamespace("shaders/post/grayscale.json");
             } else {
-                effect = new ResourceLocation("shaders/post/radial_blur.json");
+                effect = ResourceLocation.withDefaultNamespace("shaders/post/radial_blur.json");
             }
             MuiModApi.get().loadEffect(minecraft.gameRenderer, effect);
         } else {
@@ -925,13 +925,13 @@ public abstract class UIManager implements LifecycleOwner {
                 // override blend with src over
                 RenderSystem.blendFuncSeparate(GL33C.GL_ONE, GL33C.GL_ONE_MINUS_SRC_ALPHA,
                         GL33C.GL_ONE, GL33C.GL_ONE_MINUS_SRC_ALPHA);
-                BufferBuilder bufferBuilder = Tesselator.getInstance().getBuilder();
-                bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-                bufferBuilder.vertex(0, height, 0).uv(0, 0).color(255, 255, 255, 255).endVertex();
-                bufferBuilder.vertex(width, height, 0).uv(1, 0).color(255, 255, 255, 255).endVertex();
-                bufferBuilder.vertex(width, 0, 0).uv(1, 1).color(255, 255, 255, 255).endVertex();
-                bufferBuilder.vertex(0, 0, 0).uv(0, 1).color(255, 255, 255, 255).endVertex();
-                BufferUploader.draw(bufferBuilder.end());
+                BufferBuilder bufferBuilder = Tesselator.getInstance()
+                        .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+                bufferBuilder.addVertex(0, height, 0).setUv(0, 0).setColor(~0);
+                bufferBuilder.addVertex(width, height, 0).setUv(1, 0).setColor(~0);
+                bufferBuilder.addVertex(width, 0, 0).setUv(1, 1).setColor(~0);
+                bufferBuilder.addVertex(0, 0, 0).setUv(0, 1).setColor(~0);
+                BufferUploader.draw(bufferBuilder.buildOrThrow());
                 blitShader.clear();
             }
         }
@@ -1262,12 +1262,9 @@ public abstract class UIManager implements LifecycleOwner {
                 mLastFrameTask = null;
                 for (var operation : mPendingRawDrawHandlerOperations) {
                     switch (operation.mOp) {
-                        case MinecraftDrawHandler.Operation.OP_ADD ->
-                            mRawDrawHandlers.add(operation.mTarget);
-                        case MinecraftDrawHandler.Operation.OP_REMOVE ->
-                            mRawDrawHandlers.remove(operation.mTarget);
-                        case MinecraftDrawHandler.Operation.OP_UPDATE ->
-                            operation.mTarget.syncProperties();
+                        case MinecraftDrawHandler.Operation.OP_ADD -> mRawDrawHandlers.add(operation.mTarget);
+                        case MinecraftDrawHandler.Operation.OP_REMOVE -> mRawDrawHandlers.remove(operation.mTarget);
+                        case MinecraftDrawHandler.Operation.OP_UPDATE -> operation.mTarget.syncProperties();
                     }
                 }
                 mPendingRawDrawHandlerOperations.clear();

@@ -104,7 +104,7 @@ public final class Config {
     }*/
 
     public static void reloadCommon(@Nonnull ModConfig config) {
-        final IConfigSpec<?> spec = config.getSpec();
+        final IConfigSpec spec = config.getSpec();
         if (spec == COMMON_SPEC) {
             COMMON.reload();
             LOGGER.debug(MARKER, "Modern UI common config loaded/reloaded");
@@ -112,7 +112,7 @@ public final class Config {
     }
 
     public static void reloadAnyClient(@Nonnull ModConfig config) {
-        final IConfigSpec<?> spec = config.getSpec();
+        final IConfigSpec spec = config.getSpec();
         if (spec == CLIENT_SPEC) {
             CLIENT.reload();
             LOGGER.debug(MARKER, "Modern UI client config loaded/reloaded");

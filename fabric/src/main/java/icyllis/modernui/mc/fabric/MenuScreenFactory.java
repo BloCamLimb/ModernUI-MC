@@ -39,7 +39,7 @@ import java.util.Objects;
  * The factory interface is used to create menu screens with a main {@link Fragment}.
  * The factory is invoked when the server requires the client to open an application
  * screen to interact with a container menu. The menu instance is created on the
- * client with {@link ExtendedScreenHandlerType.ExtendedFactory#create(int, Inventory, FriendlyByteBuf)},
+ * client with {@link ExtendedScreenHandlerType.ExtendedFactory#create(int, Inventory, Object)},
  * which contains custom network data from server. For example:
  * <pre>{@code
  * @Override

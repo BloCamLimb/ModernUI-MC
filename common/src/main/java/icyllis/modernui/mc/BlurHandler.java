@@ -44,7 +44,7 @@ public enum BlurHandler {
 
     // minecraft namespace
     private static final ResourceLocation GAUSSIAN_BLUR =
-            new ResourceLocation("shaders/post/modern_gaussian_blur.json");
+            ResourceLocation.withDefaultNamespace("shaders/post/modern_gaussian_blur.json");
 
     /**
      * Config values
@@ -277,14 +277,14 @@ public enum BlurHandler {
         Matrix4f pose = gr.pose().last().pose();
         int z = 0;
         if (minecraft.level == null) {
-            consumer.vertex(pose, x2, y1, z)
-                    .color(30, 31, 34, 255).endVertex();
-            consumer.vertex(pose, x1, y1, z)
-                    .color(30, 31, 34, 255).endVertex();
-            consumer.vertex(pose, x1, y2, z)
-                    .color(30, 31, 34, 255).endVertex();
-            consumer.vertex(pose, x2, y2, z)
-                    .color(30, 31, 34, 255).endVertex();
+            consumer.addVertex(pose, x2, y1, z)
+                    .setColor(30, 31, 34, 255);
+            consumer.addVertex(pose, x1, y1, z)
+                    .setColor(30, 31, 34, 255);
+            consumer.addVertex(pose, x1, y2, z)
+                    .setColor(30, 31, 34, 255);
+            consumer.addVertex(pose, x2, y2, z)
+                    .setColor(30, 31, 34, 255);
         } else {
             if (mBlurring && mBlurEffect != null) {
                 updateRadius(mBlurEffect, mBlurRadius);
@@ -296,17 +296,17 @@ public enum BlurHandler {
                 minecraft.getMainRenderTarget().bindWrite(false);
             }
             int color = mBackgroundColor[1];
-            consumer.vertex(pose, x2, y1, z)
-                    .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
+            consumer.addVertex(pose, x2, y1, z)
+                    .setColor(color);
             color = mBackgroundColor[0];
-            consumer.vertex(pose, x1, y1, z)
-                    .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
+            consumer.addVertex(pose, x1, y1, z)
+                    .setColor(color);
             color = mBackgroundColor[3];
-            consumer.vertex(pose, x1, y2, z)
-                    .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
+            consumer.addVertex(pose, x1, y2, z)
+                    .setColor(color);
             color = mBackgroundColor[2];
-            consumer.vertex(pose, x2, y2, z)
-                    .color(color >> 16 & 0xff, color >> 8 & 0xff, color & 0xff, color >>> 24).endVertex();
+            consumer.addVertex(pose, x2, y2, z)
+                    .setColor(color);
         }
         gr.flush();
     }

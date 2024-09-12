@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc.testforge.shader.program;
 
-import icyllis.modernui.ModernUI;
+import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.testforge.shader.GLProgram;
 import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL43C;
@@ -28,8 +28,8 @@ import javax.annotation.Nonnull;
 @Deprecated
 public class RectProgram extends GLProgram {
 
-    public static final ResourceLocation VERT = new ResourceLocation(ModernUI.ID, "shaders/pos_color.vert");
-    public static final ResourceLocation VERT_TEX = new ResourceLocation(ModernUI.ID, "shaders/pos_color_tex.vert");
+    public static final ResourceLocation VERT = ModernUIMod.location("shaders/pos_color.vert");
+    public static final ResourceLocation VERT_TEX = ModernUIMod.location("shaders/pos_color_tex.vert");
 
     private static RectProgram sFill;
     private static FillTex sFillTex;
@@ -41,7 +41,7 @@ public class RectProgram extends GLProgram {
 
     public static void createPrograms() {
         if (sFill == null) {
-            sFill = new RectProgram(VERT, new ResourceLocation(ModernUI.ID, "shaders/color_fill.frag"));
+            sFill = new RectProgram(VERT, ModernUIMod.location("shaders/color_fill.frag"));
             sFillTex = new FillTex();
             sFeathered = new Feathered();
         }
@@ -62,7 +62,7 @@ public class RectProgram extends GLProgram {
     private static class FillTex extends RectProgram {
 
         private FillTex() {
-            super(VERT_TEX, new ResourceLocation(ModernUI.ID, "shaders/color_tex.frag"));
+            super(VERT_TEX, ModernUIMod.location("shaders/color_tex.frag"));
         }
 
         /*@Override
@@ -75,7 +75,7 @@ public class RectProgram extends GLProgram {
     public static class Feathered extends RectProgram {
 
         private Feathered() {
-            super(VERT, new ResourceLocation(ModernUI.ID, "shaders/rect_fill_v.frag"));
+            super(VERT, ModernUIMod.location("shaders/rect_fill_v.frag"));
         }
 
         public void setThickness(float thickness) {

@@ -1161,10 +1161,10 @@ public class GlyphManagerForge {
             //RenderSystem.bindTexture(renderType.textureName);
             x += baselineX;
             y += baselineY;
-            builder.vertex(x, y, 0).color(r, g, b, a).uv(u1, v1).endVertex();
+            /*builder.vertex(x, y, 0).color(r, g, b, a).uv(u1, v1).endVertex();
             builder.vertex(x, y + height, 0).color(r, g, b, a).uv(u1, v2).endVertex();
             builder.vertex(x + width, y + height, 0).color(r, g, b, a).uv(u2, v2).endVertex();
-            builder.vertex(x + width, y, 0).color(r, g, b, a).uv(u2, v1).endVertex();
+            builder.vertex(x + width, y, 0).color(r, g, b, a).uv(u2, v1).endVertex();*/
         }
 
         public void drawGlyph(Matrix4f matrix, @Nonnull MultiBufferSource buffer, float x, float y, int r, int g,
@@ -1172,10 +1172,10 @@ public class GlyphManagerForge {
             VertexConsumer builder = buffer.getBuffer(seeThrough ? seeThroughType : renderType);
             x += baselineX;
             y += baselineY;
-            builder.vertex(matrix, x, y, 0).color(r, g, b, a).uv(u1, v1).uv2(packedLight).endVertex();
+            /*builder.vertex(matrix, x, y, 0).color(r, g, b, a).uv(u1, v1).uv2(packedLight).endVertex();
             builder.vertex(matrix, x, y + height, 0).color(r, g, b, a).uv(u1, v2).uv2(packedLight).endVertex();
             builder.vertex(matrix, x + width, y + height, 0).color(r, g, b, a).uv(u2, v2).uv2(packedLight).endVertex();
-            builder.vertex(matrix, x + width, y, 0).color(r, g, b, a).uv(u2, v1).uv2(packedLight).endVertex();
+            builder.vertex(matrix, x + width, y, 0).color(r, g, b, a).uv(u2, v1).uv2(packedLight).endVertex();*/
         }
 
         /**

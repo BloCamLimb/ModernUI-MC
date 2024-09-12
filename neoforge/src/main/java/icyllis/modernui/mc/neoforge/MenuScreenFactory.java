@@ -22,7 +22,7 @@ import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
@@ -39,7 +39,7 @@ import java.util.function.Consumer;
  * The factory interface is used to create menu screens with a main {@link Fragment}.
  * The factory is invoked when the server requires the client to open an application
  * screen to interact with a container menu. The menu instance is created on the
- * client with {@link IContainerFactory#create(int, Inventory, FriendlyByteBuf)},
+ * client with {@link IContainerFactory#create(int, Inventory, RegistryFriendlyByteBuf)},
  * which contains custom network data from server. For example:
  * <pre>{@code
  * @SubscribeEvent

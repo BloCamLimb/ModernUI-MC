@@ -270,7 +270,7 @@ public class StandardFontSet extends FontSet {
     public static class StandardBakedGlyph extends BakedGlyph {
 
         private static final GlyphRenderTypes EMPTY_TYPES =
-                GlyphRenderTypes.createForColorTexture(new ResourceLocation(""));
+                GlyphRenderTypes.createForColorTexture(ResourceLocation.withDefaultNamespace(""));
 
         // null for TTF fonts, non-null for bitmap fonts
         @Nullable

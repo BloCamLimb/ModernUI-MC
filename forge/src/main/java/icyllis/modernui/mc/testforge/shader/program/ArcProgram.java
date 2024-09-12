@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc.testforge.shader.program;
 
-import icyllis.modernui.ModernUI;
+import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.testforge.shader.GLProgram;
 import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL43C;
@@ -57,7 +57,7 @@ public class ArcProgram extends GLProgram {
     public static class Fill extends ArcProgram {
 
         private Fill() {
-            super(RectProgram.VERT, new ResourceLocation(ModernUI.ID, "shaders/arc_fill.frag"));
+            super(RectProgram.VERT, ModernUIMod.location("shaders/arc_fill.frag"));
         }
 
         public void setRadius(float radius, float feather) {
@@ -73,7 +73,7 @@ public class ArcProgram extends GLProgram {
     public static class Stroke extends ArcProgram {
 
         private Stroke() {
-            super(RectProgram.VERT, new ResourceLocation(ModernUI.ID, "shaders/arc_stroke.frag"));
+            super(RectProgram.VERT, ModernUIMod.location("shaders/arc_stroke.frag"));
         }
 
         public void setRadius(float radius, float feather, float thickness) {

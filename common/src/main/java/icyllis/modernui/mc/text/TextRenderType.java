@@ -107,10 +107,10 @@ public class TextRenderType extends RenderType {
     private static final Int2ObjectOpenHashMap<TextRenderType> sPolygonOffsetTypes = new Int2ObjectOpenHashMap<>();
 
     private static TextRenderType sFirstSDFFillType;
-    private static final BufferBuilder sFirstSDFFillBuffer = new BufferBuilder(131072);
+    private static final ByteBufferBuilder sFirstSDFFillBuffer = new ByteBufferBuilder(131072);
 
     private static TextRenderType sFirstSDFStrokeType;
-    private static final BufferBuilder sFirstSDFStrokeBuffer = new BufferBuilder(131072);
+    private static final ByteBufferBuilder sFirstSDFStrokeBuffer = new ByteBufferBuilder(131072);
 
     // SDF requires bilinear sampling
     @SharedPtr

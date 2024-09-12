@@ -18,8 +18,8 @@
 
 package icyllis.modernui.mc.testforge.shader.program;
 
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
+import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.testforge.shader.GLProgram;
 import net.minecraft.resources.ResourceLocation;
 import org.lwjgl.opengl.GL43C;
@@ -65,7 +65,7 @@ public class RoundRectProgram extends GLProgram {
     public static class Fill extends RoundRectProgram {
 
         private Fill() {
-            super(RectProgram.VERT, new ResourceLocation(ModernUI.ID, "shaders/round_rect_fill.frag"));
+            super(RectProgram.VERT, ModernUIMod.location("shaders/round_rect_fill.frag"));
         }
 
         private Fill(@Nonnull ResourceLocation vert, @Nonnull ResourceLocation frag) {
@@ -81,7 +81,7 @@ public class RoundRectProgram extends GLProgram {
     public static class FillTex extends Fill {
 
         private FillTex() {
-            super(RectProgram.VERT_TEX, new ResourceLocation(ModernUI.ID, "shaders/round_rect_tex.frag"));
+            super(RectProgram.VERT_TEX, ModernUIMod.location("shaders/round_rect_tex.frag"));
         }
 
         /*@Override
@@ -94,7 +94,7 @@ public class RoundRectProgram extends GLProgram {
     public static class Stroke extends RoundRectProgram {
 
         private Stroke() {
-            super(RectProgram.VERT, new ResourceLocation(ModernUI.ID, "shaders/round_rect_stroke.frag"));
+            super(RectProgram.VERT, ModernUIMod.location("shaders/round_rect_stroke.frag"));
         }
 
         public void setRadius(float radius, float feather, float thickness) {

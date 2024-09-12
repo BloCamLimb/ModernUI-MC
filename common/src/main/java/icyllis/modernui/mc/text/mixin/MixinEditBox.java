@@ -236,28 +236,28 @@ public abstract class MixinEditBox extends AbstractWidget {
             }
 
             VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.guiOverlay());
-            consumer.vertex(matrix, startX, baseY + 10, 0)
-                    .color(51, 181, 229, 56).endVertex();
-            consumer.vertex(matrix, endX, baseY + 10, 0)
-                    .color(51, 181, 229, 56).endVertex();
-            consumer.vertex(matrix, endX, baseY - 1, 0)
-                    .color(51, 181, 229, 56).endVertex();
-            consumer.vertex(matrix, startX, baseY - 1, 0)
-                    .color(51, 181, 229, 56).endVertex();
+            consumer.addVertex(matrix, startX, baseY + 10, 0)
+                    .setColor(51, 181, 229, 56);
+            consumer.addVertex(matrix, endX, baseY + 10, 0)
+                    .setColor(51, 181, 229, 56);
+            consumer.addVertex(matrix, endX, baseY - 1, 0)
+                    .setColor(51, 181, 229, 56);
+            consumer.addVertex(matrix, startX, baseY - 1, 0)
+                    .setColor(51, 181, 229, 56);
             gr.flush();
         } else if (cursorVisible) {
             if (cursorNotAtEnd) {
                 gr.flush();
 
                 VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.guiOverlay());
-                consumer.vertex(matrix, cursorX - 0.5f, baseY + 10, 0)
-                        .color(208, 208, 208, 255).endVertex();
-                consumer.vertex(matrix, cursorX + 0.5f, baseY + 10, 0)
-                        .color(208, 208, 208, 255).endVertex();
-                consumer.vertex(matrix, cursorX + 0.5f, baseY - 1, 0)
-                        .color(208, 208, 208, 255).endVertex();
-                consumer.vertex(matrix, cursorX - 0.5f, baseY - 1, 0)
-                        .color(208, 208, 208, 255).endVertex();
+                consumer.addVertex(matrix, cursorX - 0.5f, baseY + 10, 0)
+                        .setColor(208, 208, 208, 255);
+                consumer.addVertex(matrix, cursorX + 0.5f, baseY + 10, 0)
+                        .setColor(208, 208, 208, 255);
+                consumer.addVertex(matrix, cursorX + 0.5f, baseY - 1, 0)
+                        .setColor(208, 208, 208, 255);
+                consumer.addVertex(matrix, cursorX - 0.5f, baseY - 1, 0)
+                        .setColor(208, 208, 208, 255);
                 gr.flush();
             } else {
                 engine.getTextRenderer().drawText(CURSOR_APPEND_CHARACTER, cursorX, baseY, color, true,

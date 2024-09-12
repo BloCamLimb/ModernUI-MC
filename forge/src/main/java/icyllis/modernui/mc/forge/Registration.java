@@ -38,7 +38,6 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.MenuType;
@@ -48,7 +47,8 @@ import net.minecraftforge.client.event.*;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.*;
+import net.minecraftforge.fml.CrashReportCallables;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -424,18 +424,18 @@ final class Registration {
 
         @SubscribeEvent
         static void onRegistryModel(@Nonnull ModelEvent.RegisterAdditional event) {
-            event.register(ModernUIMod.location("item/project_builder_main"));
-            event.register(ModernUIMod.location("item/project_builder_cube"));
+            event.register(new ModelResourceLocation(ModernUIMod.location("item/project_builder_main"), "standalone"));
+            event.register(new ModelResourceLocation(ModernUIMod.location("item/project_builder_cube"), "standalone"));
         }
 
         @SubscribeEvent
         static void onBakeModel(@Nonnull ModelEvent.ModifyBakingResult event) {
-            Map<ResourceLocation, BakedModel> registry = event.getModels();
-            replaceModel(registry, new ModelResourceLocation(ModernUI.ID, "project_builder", "inventory"),
+            Map<ModelResourceLocation, BakedModel> registry = event.getModels();
+            replaceModel(registry, ModelResourceLocation.inventory(ModernUIMod.location("project_builder")),
                     baseModel -> new ProjectBuilderModel(baseModel, event.getModels()));
         }
 
-        private static void replaceModel(@Nonnull Map<ResourceLocation, BakedModel> modelRegistry,
+        private static void replaceModel(@Nonnull Map<ModelResourceLocation, BakedModel> modelRegistry,
                                          @Nonnull ModelResourceLocation location,
                                          @Nonnull Function<BakedModel, BakedModel> replacer) {
             modelRegistry.put(location, replacer.apply(modelRegistry.get(location)));

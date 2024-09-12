@@ -66,7 +66,7 @@ public abstract class ModernUIMod {
 
     @Nonnull
     public static ResourceLocation location(String path) {
-        return new ResourceLocation(ID, path);
+        return ResourceLocation.fromNamespaceAndPath(ID, path);
     }
 
     public static boolean isOptiFineLoaded() {

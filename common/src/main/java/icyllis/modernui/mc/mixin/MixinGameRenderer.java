@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.mixin;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.mc.BlurHandler;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.PostChain;
@@ -61,9 +60,7 @@ public class MixinGameRenderer {
     @Inject(method = "processBlurEffect", at = @At("HEAD"), cancellable = true)
     private void onProcessBlurEffect(float partialTick, CallbackInfo ci) {
         if (BlurHandler.sOverrideVanillaBlur) {
-            RenderSystem.enableBlend();
             BlurHandler.INSTANCE.processBlurEffect(partialTick);
-            RenderSystem.disableBlend();
             ci.cancel();
         }
     }

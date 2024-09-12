@@ -36,7 +36,6 @@ import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.MenuType;
@@ -426,18 +425,18 @@ final class Registration {
 
         @SubscribeEvent
         static void onRegistryModel(@Nonnull ModelEvent.RegisterAdditional event) {
-            event.register(ModernUIMod.location("item/project_builder_main"));
-            event.register(ModernUIMod.location("item/project_builder_cube"));
+            event.register(ModelResourceLocation.standalone(ModernUIMod.location("item/project_builder_main")));
+            event.register(ModelResourceLocation.standalone(ModernUIMod.location("item/project_builder_cube")));
         }
 
         @SubscribeEvent
         static void onBakeModel(@Nonnull ModelEvent.ModifyBakingResult event) {
-            Map<ResourceLocation, BakedModel> registry = event.getModels();
-            replaceModel(registry, new ModelResourceLocation(ModernUI.ID, "project_builder", "inventory"),
+            Map<ModelResourceLocation, BakedModel> registry = event.getModels();
+            replaceModel(registry, ModelResourceLocation.inventory(ModernUIMod.location("project_builder")),
                     baseModel -> new ProjectBuilderModel(baseModel, event.getModels()));
         }
 
-        private static void replaceModel(@Nonnull Map<ResourceLocation, BakedModel> modelRegistry,
+        private static void replaceModel(@Nonnull Map<ModelResourceLocation, BakedModel> modelRegistry,
                                          @Nonnull ModelResourceLocation location,
                                          @Nonnull Function<BakedModel, BakedModel> replacer) {
             modelRegistry.put(location, replacer.apply(modelRegistry.get(location)));

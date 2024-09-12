@@ -761,10 +761,10 @@ public final class TooltipRenderer implements ScrollController.IListener {
         float extent = sBorderWidth / 2f + 0.5f + shadowRadius * 1.2f;
         float extentX = sizeX + extent;
         float extentY = sizeY + extent;
-        buffer.vertex(extentX, extentY, 0).endVertex();
-        buffer.vertex(extentX, -extentY, 0).endVertex();
-        buffer.vertex(-extentX, -extentY, 0).endVertex();
-        buffer.vertex(-extentX, extentY, 0).endVertex();
+        buffer.addVertex(extentX, extentY, 0);
+        buffer.addVertex(extentX, -extentY, 0);
+        buffer.addVertex(-extentX, -extentY, 0);
+        buffer.addVertex(-extentX, extentY, 0);
 
         gr.flush();
         RenderSystem.getModelViewStack().popMatrix();
@@ -838,36 +838,20 @@ public final class TooltipRenderer implements ScrollController.IListener {
 
         // CCW
         int color = colorLR;
-        int a = (color >>> 24);
-        int r = ((color >> 16) & 0xff);
-        int g = ((color >> 8) & 0xff);
-        int b = (color & 0xff);
-        buffer.vertex(pose, right, bottom, 0)
-                .color(r, g, b, a).endVertex();
+        buffer.addVertex(pose, right, bottom, 0)
+                .setColor(color);
 
         color = colorUR;
-        a = (color >>> 24);
-        r = ((color >> 16) & 0xff);
-        g = ((color >> 8) & 0xff);
-        b = (color & 0xff);
-        buffer.vertex(pose, right, top, 0)
-                .color(r, g, b, a).endVertex();
+        buffer.addVertex(pose, right, top, 0)
+                .setColor(color);
 
         color = colorUL;
-        a = (color >>> 24);
-        r = ((color >> 16) & 0xff);
-        g = ((color >> 8) & 0xff);
-        b = (color & 0xff);
-        buffer.vertex(pose, left, top, 0)
-                .color(r, g, b, a).endVertex();
+        buffer.addVertex(pose, left, top, 0)
+                .setColor(color);
 
         color = colorLL;
-        a = (color >>> 24);
-        r = ((color >> 16) & 0xff);
-        g = ((color >> 8) & 0xff);
-        b = (color & 0xff);
-        buffer.vertex(pose, left, bottom, 0)
-                .color(r, g, b, a).endVertex();
+        buffer.addVertex(pose, left, bottom, 0)
+                .setColor(color);
 
         gr.flush();
     }

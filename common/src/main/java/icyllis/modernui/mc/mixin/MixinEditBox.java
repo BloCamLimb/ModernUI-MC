@@ -201,7 +201,12 @@ public abstract class MixinEditBox implements IModernEditBox {
         mgr.endUpdate();
     }
 
-    @Inject(method = "keyPressed", at = @At("TAIL"), cancellable = true)
+    @Inject(method = "keyPressed",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/gui/screens/Screen;isSelectAll(I)Z"
+            ),
+            cancellable = true)
     public void onKeyPressed(int i, int j, int k, CallbackInfoReturnable<Boolean> cir) {
         if (i == GLFW.GLFW_KEY_Z || i == GLFW.GLFW_KEY_Y) {
             if (Screen.hasControlDown() && !Screen.hasAltDown()) {

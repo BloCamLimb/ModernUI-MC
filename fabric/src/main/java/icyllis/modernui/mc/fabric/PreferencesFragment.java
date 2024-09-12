@@ -40,7 +40,7 @@ import icyllis.modernui.view.*;
 import icyllis.modernui.widget.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
@@ -686,7 +686,7 @@ public class PreferencesFragment extends Fragment {
     public static LinearLayout createBooleanOption(
             Context context,
             String name,
-            ForgeConfigSpec.BooleanValue config,
+            ModConfigSpec.BooleanValue config,
             Runnable saveFn) {
         var layout = createSwitchLayout(context, name);
         var button = layout.<SwitchButton>requireViewById(R.id.button1);
@@ -702,7 +702,7 @@ public class PreferencesFragment extends Fragment {
             Context context,
             String name,
             E[] values,
-            ForgeConfigSpec.EnumValue<E> config,
+            ModConfigSpec.EnumValue<E> config,
             Runnable saveFn) {
         var option = new LinearLayout(context);
         option.setOrientation(LinearLayout.HORIZONTAL);
@@ -917,7 +917,7 @@ public class PreferencesFragment extends Fragment {
 
     public static LinearLayout createIntegerOption(Context context, String name,
                                                    int minValue, int maxValue, int maxLength, int stepSize,
-                                                   ForgeConfigSpec.IntValue config,
+                                                   ModConfigSpec.IntValue config,
                                                    Runnable saveFn) {
         return createIntegerOption(context, name,
                 minValue, maxValue, maxLength, stepSize,
@@ -975,7 +975,7 @@ public class PreferencesFragment extends Fragment {
 
     public static LinearLayout createColorOpacityOption(
             Context context, String name,
-            ForgeConfigSpec.ConfigValue<List<? extends String>> config,
+            ModConfigSpec.ConfigValue<List<? extends String>> config,
             Runnable saveFn) {
         Supplier<Double> getter = () -> {
             List<? extends String> colors = config.get();
@@ -1010,7 +1010,7 @@ public class PreferencesFragment extends Fragment {
 
     public static LinearLayout createFloatOption(Context context, String name,
                                                  float minValue, float maxValue, int maxLength,
-                                                 ForgeConfigSpec.DoubleValue config,
+                                                 ModConfigSpec.DoubleValue config,
                                                  float denominator,
                                                  Runnable saveFn) {
         return createFloatOption(context, name, minValue, maxValue, maxLength,
@@ -1070,7 +1070,7 @@ public class PreferencesFragment extends Fragment {
 
     public static LinearLayout createStringListOption(Context context,
                                                       String name,
-                                                      ForgeConfigSpec.ConfigValue<List<? extends String>> config,
+                                                      ModConfigSpec.ConfigValue<List<? extends String>> config,
                                                       Runnable saveFn) {
         var option = new LinearLayout(context);
         option.setOrientation(LinearLayout.HORIZONTAL);

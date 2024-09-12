@@ -20,8 +20,7 @@ package icyllis.modernui.mc.mixin;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.*;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.*;
@@ -42,7 +41,7 @@ import static icyllis.modernui.ModernUI.LOGGER;
 public class MixinLevelRendererDBG {
 
     @Inject(method = "renderLevel", at = @At(value = "CONSTANT", args = "stringValue=blockentities", ordinal = 0))
-    private void afterEntities(float partialTicks, long frameTimeNanos, boolean renderBlockOutline,
+    private void afterEntities(DeltaTracker deltaTracker, boolean renderBlockOutline,
                                Camera camera, GameRenderer gameRenderer, LightTexture lightTexture,
                                Matrix4f modelView, Matrix4f projection, CallbackInfo ci) {
         if (Screen.hasAltDown() &&
@@ -61,7 +60,8 @@ public class MixinLevelRendererDBG {
             LocalPlayer player = Minecraft.getInstance().player;
             if (player != null) {
                 LOGGER.info("LocalPlayer: yaw: {}, yawHead: {}, eyePos: {}",
-                        player.getYRot(), player.getYHeadRot(), player.getEyePosition(partialTicks));
+                        player.getYRot(), player.getYHeadRot(),
+                        player.getEyePosition(deltaTracker.getGameTimeDeltaPartialTick(false)));
             }
             Entity cameraEntity = Minecraft.getInstance().cameraEntity;
             if (cameraEntity != null) {

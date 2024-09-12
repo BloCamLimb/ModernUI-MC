@@ -21,6 +21,7 @@ package icyllis.modernui.mc.text.mixin;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.text.TextRenderType;
 import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.*;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
@@ -41,8 +42,7 @@ public class MixinLevelRenderer {
     @Inject(method = "renderLevel",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/OutlineBufferSource;endOutlineBatch()V"))
-    private void endTextBatch(float partialTick,
-                              long finishNanoTime,
+    private void endTextBatch(DeltaTracker deltaTracker,
                               boolean renderBlockOutline,
                               Camera camera,
                               GameRenderer gameRenderer,

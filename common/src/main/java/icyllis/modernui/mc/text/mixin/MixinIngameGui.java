@@ -20,6 +20,7 @@ package icyllis.modernui.mc.text.mixin;
 
 import icyllis.modernui.mc.text.ModernTextRenderer;
 import icyllis.modernui.mc.text.TextLayoutEngine;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.*;
 import net.minecraft.client.player.LocalPlayer;
@@ -51,7 +52,7 @@ public abstract class MixinIngameGui {
     }
 
     @Inject(method = "renderExperienceLevel", at = @At("TAIL"))
-    private void drawExperience(GuiGraphics gr, float f, CallbackInfo ci) {
+    private void drawExperience(GuiGraphics gr, DeltaTracker deltaTracker, CallbackInfo ci) {
         LocalPlayer player = minecraft.player;
         if (player != null && player.experienceLevel > 0 && isExperienceBarVisible()) {
             String s = Integer.toString(player.experienceLevel);
