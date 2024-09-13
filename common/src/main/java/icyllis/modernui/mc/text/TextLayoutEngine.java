@@ -498,13 +498,22 @@ public class TextLayoutEngine extends FontResourceManager
             if (fontSets.get(Minecraft.DEFAULT_FONT) instanceof StandardFontSet standardFontSet) {
                 standardFontSet.reload(mFontCollections.get(Minecraft.DEFAULT_FONT), mResLevel);
             }
+            if (fontSets.get(Minecraft.UNIFORM_FONT) instanceof StandardFontSet standardFontSet) {
+                standardFontSet.reload(ModernUI.getSelectedTypeface(), mResLevel);
+            }
             for (var e : fontSets.entrySet()) {
-                if (e.getKey().equals(Minecraft.DEFAULT_FONT)) {
+                if (e.getKey().equals(Minecraft.DEFAULT_FONT) ||
+                        e.getKey().equals(Minecraft.UNIFORM_FONT)) {
                     continue;
                 }
                 if (e.getValue() instanceof StandardFontSet standardFontSet) {
                     standardFontSet.invalidateCache(mResLevel);
                 }
+            }
+            if (!fontSets.containsKey(Minecraft.UNIFORM_FONT)) {
+                var fontSet = new StandardFontSet(Minecraft.getInstance().getTextureManager(), Minecraft.UNIFORM_FONT);
+                fontSet.reload(ModernUI.getSelectedTypeface(), mResLevel);
+                fontSets.put(Minecraft.UNIFORM_FONT, fontSet);
             }
         }
 
@@ -670,11 +679,6 @@ public class TextLayoutEngine extends FontResourceManager
                 fontSet.reload(fontCollection, mResLevel);
                 fontSets.put(fontName, fontSet);
             });
-            {
-                var fontSet = new StandardFontSet(textureManager, Minecraft.UNIFORM_FONT);
-                fontSet.reload(ModernUI.getSelectedTypeface(), mResLevel);
-                fontSets.put(Minecraft.UNIFORM_FONT, fontSet);
-            }
         } else {
             LOGGER.warn(MARKER, "Where is font manager?");
         }

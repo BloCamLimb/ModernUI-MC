@@ -166,7 +166,7 @@ public final class Config {
 
         public static final int ANIM_DURATION_MIN = 0;
         public static final int ANIM_DURATION_MAX = 800;
-        public static final int BLUR_RADIUS_MIN = 2;
+        public static final int BLUR_RADIUS_MIN = 0;
         public static final int BLUR_RADIUS_MAX = 18;
         public static final float FONT_SCALE_MIN = 0.5f;
         public static final float FONT_SCALE_MAX = 2.0f;
@@ -266,11 +266,11 @@ public final class Config {
                     .define("blurEffect", true);
             mBlurWithBackground = builder.comment(
                             "This option means that blur effect only applies to GUI screens with a background.",
-                            "Similar to Minecraft 1.21. Enable this for better optimization & compatibility.")
+                            "Similar to Minecraft 1.20.6. Enable this for better optimization & compatibility.")
                     .define("blurWithBackground", true);
             mBlurRadius = builder.comment(
-                            "The kernel radius for gaussian convolution blur effect.",
-                            "samples per pixel = ((radius * 2) + 1) * 2, sigma = radius / sqrt(3).")
+                            "The kernel radius for gaussian convolution blur effect, 0 = disable.",
+                            "samples per pixel = ((radius * 2) + 1) * 2, sigma = radius / 2.")
                     .defineInRange("blurRadius", 7, BLUR_RADIUS_MIN, BLUR_RADIUS_MAX);
             mBlurBlacklist = builder.comment(
                             "A list of GUI screen superclasses that won't activate blur effect when opened.")

@@ -854,6 +854,8 @@ public abstract class UIManager implements LifecycleOwner {
         if (rootTask != null) {
             context.submit();
             GL33C.glBindFramebuffer(GL33C.GL_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);
+        } else {
+            context.checkForFinishedWork();
         }
 
         GL33C.glBindVertexArray(oldVertexArray);

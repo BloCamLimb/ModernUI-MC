@@ -90,6 +90,8 @@ public class StandardFontSet extends FontSet {
         }
         int fontSize = TextLayoutProcessor.computeFontSize(newResLevel);
         mStandardPaint.setFontSize(fontSize);
+        mStandardPaint.setAntiAlias(GlyphManager.sAntiAliasing);
+        mStandardPaint.setLinearMetrics(GlyphManager.sFractionalMetrics);
         mResLevel = newResLevel;
     }
 
