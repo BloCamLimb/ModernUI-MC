@@ -61,6 +61,9 @@ Changelogs
 * Add text layout dump in advanced options
 * Add a command for debugging line breaker
 * Add methods for debugging text engine
+* Work around AMD driver bug before GCN 1
+* Change the initial size of A8 font atlas to 2048x2048
+* Fix crash when compacting font atlas
 
 ### Modern UI 3.11.0.5
 #### NeoForge Extension 1.20.4
