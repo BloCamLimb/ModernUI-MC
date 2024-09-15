@@ -23,7 +23,6 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.Color;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.LineBreakConfig;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.text.*;
@@ -41,7 +40,6 @@ import net.minecraftforge.fml.config.ModConfig;
 import org.jetbrains.annotations.ApiStatus;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.system.Platform;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -168,7 +166,7 @@ public final class Config {
 
         public static final int ANIM_DURATION_MIN = 0;
         public static final int ANIM_DURATION_MAX = 800;
-        public static final int BLUR_RADIUS_MIN = 2;
+        public static final int BLUR_RADIUS_MIN = 0;
         public static final int BLUR_RADIUS_MAX = 18;
         public static final float FONT_SCALE_MIN = 0.5f;
         public static final float FONT_SCALE_MAX = 2.0f;
@@ -180,6 +178,8 @@ public final class Config {
         public static final float TOOLTIP_CORNER_RADIUS_MAX = 8;
         public static final float TOOLTIP_SHADOW_RADIUS_MIN = 0;
         public static final float TOOLTIP_SHADOW_RADIUS_MAX = 32;
+        public static final int TOOLTIP_ARROW_SCROLL_FACTOR_MIN = 0;
+        public static final int TOOLTIP_ARROW_SCROLL_FACTOR_MAX = 320;
 
         public final ForgeConfigSpec.BooleanValue mBlurEffect;
         public final ForgeConfigSpec.BooleanValue mBlurWithBackground;
@@ -200,6 +200,7 @@ public final class Config {
         public final ForgeConfigSpec.DoubleValue mTooltipShadowRadius;
         public final ForgeConfigSpec.DoubleValue mTooltipShadowAlpha;
         public final ForgeConfigSpec.BooleanValue mAdaptiveTooltipColors;
+        public final ForgeConfigSpec.IntValue mTooltipArrowScrollFactor;
         //public final ForgeConfigSpec.IntValue mTooltipDuration;
         public final ForgeConfigSpec.BooleanValue mDing;
         public final ForgeConfigSpec.BooleanValue mZoom;
@@ -228,9 +229,6 @@ public final class Config {
 
         private final ForgeConfigSpec.ConfigValue<List<? extends String>> mBlurBlacklist;
 
-        public final ForgeConfigSpec.BooleanValue mAntiAliasing;
-        public final ForgeConfigSpec.BooleanValue mAutoHinting;
-        //public final ForgeConfigSpec.BooleanValue mLinearSampling;
         public final ForgeConfigSpec.ConfigValue<String> mFirstFontFamily;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFallbackFontFamilyList;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFontRegistrationList;
@@ -250,7 +248,7 @@ public final class Config {
                             "The duration of GUI background color and blur radius animation in milliseconds. (0 = OFF)")
                     .defineInRange("animationDuration", 200, ANIM_DURATION_MIN, ANIM_DURATION_MAX);
             mBackgroundColor = builder.comment(
-                            "The GUI background color in #RRGGBB or #AARRGGBB format. Default value: #66000000",
+                            "The GUI background color in #RRGGBB or #AARRGGBB format. Default value: #99000000",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
                             "Multiple values produce a gradient effect, whereas one value produce a solid color.",
@@ -263,17 +261,16 @@ public final class Config {
                     }, o -> true);
 
             mBlurEffect = builder.comment(
-                            "Add blur effect to GUI background when opened, it is incompatible with OptiFine's FXAA " +
-                                    "shader and some mods.",
+                            "Add Gaussian blur effect to GUI background when opened.",
                             "Disable this if you run into a problem or are on low-end PCs")
                     .define("blurEffect", true);
             mBlurWithBackground = builder.comment(
-                            "This option means that blur effect only applies for GUI screens with a background",
-                            "This is only meaningful when blur effect is enabled.")
+                            "This option means that blur effect only applies to GUI screens with a background.",
+                            "Similar to Minecraft 1.20.6. Enable this for better optimization & compatibility.")
                     .define("blurWithBackground", true);
             mBlurRadius = builder.comment(
-                            "The strength for two-pass gaussian convolution blur effect.",
-                            "samples/pixel = ((radius * 2) + 1) * 2, sigma = radius / 2.")
+                            "The kernel radius for gaussian convolution blur effect, 0 = disable.",
+                            "samples per pixel = ((radius * 2) + 1) * 2, sigma = radius / 2.")
                     .defineInRange("blurRadius", 7, BLUR_RADIUS_MIN, BLUR_RADIUS_MAX);
             mBlurBlacklist = builder.comment(
                             "A list of GUI screen superclasses that won't activate blur effect when opened.")
@@ -342,10 +339,10 @@ public final class Config {
                             "If less than 4 are provided, repeat the last value.")
                     .defineList("colorStroke", () -> {
                         List<String> list = new ArrayList<>();
-                        list.add("#F0AADCF0");
-                        list.add("#F0FFC3F7");
-                        list.add("#F0BFF2B2");
-                        list.add("#F0D27F3D");
+                        list.add("#FFC2D0D6");
+                        list.add("#FFE7DAE5");
+                        list.add("#FFCCDAC8");
+                        list.add("#FFC8B9AC");
                         return list;
                     }, $ -> true);
             mTooltipCycle = builder.comment(
@@ -354,10 +351,10 @@ public final class Config {
                             TOOLTIP_BORDER_COLOR_ANIM_MAX);
             mTooltipWidth = builder.comment(
                             "The width of tooltip border, if rounded, in GUI Scale Independent Pixels.")
-                    .defineInRange("borderWidth", 4 / 3f, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
+                    .defineInRange("borderWidth", 4 / 3d, TOOLTIP_BORDER_WIDTH_MIN, TOOLTIP_BORDER_WIDTH_MAX);
             mTooltipRadius = builder.comment(
                             "The corner radius of tooltip border, if rounded, in GUI Scale Independent Pixels.")
-                    .defineInRange("cornerRadius", 3f, TOOLTIP_CORNER_RADIUS_MIN, TOOLTIP_CORNER_RADIUS_MAX);
+                    .defineInRange("cornerRadius", 4d, TOOLTIP_CORNER_RADIUS_MIN, TOOLTIP_CORNER_RADIUS_MAX);
             /*mTooltipDuration = builder.comment(
                             "The duration of tooltip alpha animation in milliseconds. (0 = OFF)")
                     .defineInRange("animationDuration", 0, ANIM_DURATION_MIN, ANIM_DURATION_MAX);*/
@@ -367,10 +364,13 @@ public final class Config {
                     .defineInRange("shadowRadius", 10.0, TOOLTIP_SHADOW_RADIUS_MIN, TOOLTIP_SHADOW_RADIUS_MAX);
             mTooltipShadowAlpha = builder.comment(
                             "The shadow opacity of tooltip, if rounded. No impact on performance.")
-                    .defineInRange("shadowOpacity", 0.35f, 0f, 1f);
+                    .defineInRange("shadowOpacity", 0.3, 0d, 1d);
             mAdaptiveTooltipColors = builder.comment(
                             "When true, tooltip border colors adapt to item's name and rarity.")
                     .define("adaptiveColors", true);
+            mTooltipArrowScrollFactor = builder.comment(
+                            "Amount to scroll the tooltip in response to a arrow key pressed event.")
+                    .defineInRange("arrowScrollFactor", 60, TOOLTIP_ARROW_SCROLL_FACTOR_MIN, TOOLTIP_ARROW_SCROLL_FACTOR_MAX);
 
             builder.pop();
 
@@ -418,7 +418,7 @@ public final class Config {
             mForceRtl = builder.comment("Force layout direction to RTL, otherwise, the current Locale setting.")
                     .define("forceRtl", false);
             mFontScale = builder.comment("The global font scale used with sp units.")
-                    .defineInRange("fontScale", 1.0f, FONT_SCALE_MIN, FONT_SCALE_MAX);
+                    .defineInRange("fontScale", 1.0d, FONT_SCALE_MIN, FONT_SCALE_MAX);
             mScrollbarSize = builder.comment("Default scrollbar size in dips.")
                     .defineInRange("scrollbarSize", ViewConfiguration.SCROLL_BAR_SIZE, 0, 1024);
             mTouchSlop = builder.comment("Distance a touch can wander before we think the user is scrolling in dips.")
@@ -435,10 +435,10 @@ public final class Config {
                     .defineInRange("overflingDistance", ViewConfiguration.OVERFLING_DISTANCE, 0, 1024);
             mVerticalScrollFactor = builder.comment("Amount to scroll in response to a vertical scroll event, in dips" +
                             " per axis value.")
-                    .defineInRange("verticalScrollFactor", ViewConfiguration.VERTICAL_SCROLL_FACTOR, 0, 1024);
+                    .defineInRange("verticalScrollFactor", (double) ViewConfiguration.VERTICAL_SCROLL_FACTOR, 0, 1024);
             mHorizontalScrollFactor = builder.comment("Amount to scroll in response to a horizontal scroll event, in " +
                             "dips per axis value.")
-                    .defineInRange("horizontalScrollFactor", ViewConfiguration.HORIZONTAL_SCROLL_FACTOR, 0, 1024);
+                    .defineInRange("horizontalScrollFactor", (double) ViewConfiguration.HORIZONTAL_SCROLL_FACTOR, 0, 1024);
 
             builder.pop();
 
@@ -446,17 +446,6 @@ public final class Config {
             builder.comment("Font Config")
                     .push("font");
 
-            mAntiAliasing = builder.comment(
-                            "Control the anti-aliasing of raw glyph rasterization.")
-                    .define("antiAliasing", true);
-            mAutoHinting = builder.comment(
-                            "Control the FreeType font hinting of raw glyph metrics.",
-                            "Enable if on low-res monitor; disable for linear texts.")
-                    .define("autoHinting", Platform.get() != Platform.MACOSX);
-            /*mLinearSampling = builder.comment(
-                            "Enable linear sampling for font atlases with mipmaps, mag filter will be always NEAREST.",
-                            "If your fonts are not bitmap fonts, then you should keep this setting true.")
-                    .define("linearSampling", true);*/
             // Segoe UI, Source Han Sans CN Medium, Noto Sans, Open Sans, San Francisco, Calibri,
             // Microsoft YaHei UI, STHeiti, SimHei, SansSerif
             mFirstFontFamily = builder.comment(
@@ -593,6 +582,7 @@ public final class Config {
             TooltipRenderer.sShadowRadius = mTooltipShadowRadius.get().floatValue();
             TooltipRenderer.sShadowAlpha = mTooltipShadowAlpha.get().floatValue();
             TooltipRenderer.sAdaptiveColors = mAdaptiveTooltipColors.get();
+            TooltipRenderer.sArrowScrollFactor = mTooltipArrowScrollFactor.get();
 
             UIManager.sDingEnabled = mDing.get();
             UIManager.sZoomEnabled = mZoom.get() && !ModernUIMod.isOptiFineLoaded();
@@ -620,31 +610,14 @@ public final class Config {
                 });
             }
 
-            boolean reloadStrike = false;
-            if (GlyphManager.sAntiAliasing != mAntiAliasing.get()) {
-                GlyphManager.sAntiAliasing = mAntiAliasing.get();
-                reloadStrike = true;
-            }
-            if (GlyphManager.sFractionalMetrics == mAutoHinting.get()) {
-                GlyphManager.sFractionalMetrics = !mAutoHinting.get();
-                reloadStrike = true;
-            }
-            /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
-                GLFontAtlas.sLinearSampling = mLinearSampling.get();
-                reload = true;
-            }*/
             ModernUIClient.sUseColorEmoji = mUseColorEmoji.get();
             ModernUIClient.sEmojiShortcodes = mEmojiShortcodes.get();
             ModernUIClient.sFirstFontFamily = mFirstFontFamily.get();
             ModernUIClient.sFallbackFontFamilyList = mFallbackFontFamilyList.get();
             ModernUIClient.sFontRegistrationList = mFontRegistrationList.get();
-            if (reloadStrike) {
-                Minecraft.getInstance().submit(
-                        () -> FontResourceManager.getInstance().reloadAll());
-            }
 
             // scan and preload typeface in background thread
-            ModernUI.getSelectedTypeface();
+            ModernUIClient.getInstance().loadTypeface();
         }
 
         public enum WindowMode {
@@ -826,6 +799,11 @@ public final class Config {
         public final ForgeConfigSpec.BooleanValue mComputeDeviceFontSize;
         public final ForgeConfigSpec.BooleanValue mAllowSDFTextIn2D;
 
+        public final ForgeConfigSpec.BooleanValue mAntiAliasing;
+        public final ForgeConfigSpec.BooleanValue mLinearMetrics;
+        public final ForgeConfigSpec.IntValue mMinPixelDensityForSDF;
+        //public final ModConfigSpec.BooleanValue mLinearSampling;
+
         //private final ForgeConfigSpec.BooleanValue antiAliasing;
         //private final ForgeConfigSpec.BooleanValue highPrecision;
         //private final ForgeConfigSpec.BooleanValue enableMipmap;
@@ -853,16 +831,16 @@ public final class Config {
                             "Control base font size, in GUI scaled pixels. The default and vanilla value is 8.",
                             "For bitmap fonts, 8 represents a glyph size of 8x or 16x if fixed resolution.",
                             "This option only applies to TrueType fonts.")
-                    .defineInRange("baseFontSize", TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE,
+                    .defineInRange("baseFontSize", (double) TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE,
                             BASE_FONT_SIZE_MIN, BASE_FONT_SIZE_MAX);
             mBaselineShift = builder.comment(
                             "Control vertical baseline for vanilla text layout, in GUI scaled pixels.",
                             "The vanilla default value is 7.")
-                    .defineInRange("baselineShift", TextLayout.STANDARD_BASELINE_OFFSET,
+                    .defineInRange("baselineShift", (double) TextLayout.STANDARD_BASELINE_OFFSET,
                             BASELINE_MIN, BASELINE_MAX);
             mShadowOffset = builder.comment(
                             "Control the text shadow offset for vanilla text rendering, in GUI scaled pixels.")
-                    .defineInRange("shadowOffset", 0.8, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
+                    .defineInRange("shadowOffset", 0.67, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
             mOutlineOffset = builder.comment(
                             "Control the text outline offset for vanilla text rendering, in GUI scaled pixels.")
                     .defineInRange("outlineOffset", 0.5, OUTLINE_OFFSET_MIN, OUTLINE_OFFSET_MAX);
@@ -880,7 +858,7 @@ public final class Config {
             /*mRehashThreshold = builder.comment("Set the rehash threshold of layout cache")
                     .defineInRange("rehashThreshold", 100, REHASH_MIN, REHASH_MAX);*/
             mTextDirection = builder.comment(
-                            "The bidirectional text heuristic algorithm.",
+                            "The bidirectional text heuristic algorithm. The default is FirstStrong (Locale).",
                             "This will affect which BiDi algorithm to use during text layout.")
                     .defineEnum("textDirection", TextDirection.FIRST_STRONG);
             /*mBitmapReplacement = builder.comment(
@@ -934,8 +912,7 @@ public final class Config {
                             "Modern UI will use another cache strategy if this is disabled.")
                     .define("useComponentCache", !ModernUIMod.isUntranslatedItemsLoaded());
             mAllowAsyncLayout = builder.comment(
-                            "Allow text layout to be computed from background threads, which may lead to " +
-                                    "inconsistency issues.",
+                            "Allow text layout to be computed from background threads (not cached).",
                             "Otherwise, block the current thread and wait for main thread.")
                     .define("allowAsyncLayout", true);
             mLineBreakStyle = builder.comment(
@@ -964,6 +941,23 @@ public final class Config {
                             "Otherwise, it uses nearest-neighbor or bilinear sampling based on texel density.",
                             "This option only applies to TrueType fonts.")
                     .define("allowSDFTextIn2D", true);
+            mAntiAliasing = builder.comment(
+                            "Control the anti-aliasing of raw glyph rasterization.")
+                    .define("antiAliasing", true);
+            mLinearMetrics = builder.comment(
+                            "Control the FreeType linear metrics and font hinting of raw glyph metrics.",
+                            "Disable if on low-res monitor; enable for linear text.")
+                    .define("linearMetrics", true);
+            mMinPixelDensityForSDF = builder.comment(
+                            "Control the minimum pixel density for SDF text and text in 3D world rendering.",
+                            "This value will be no less than current GUI scale.",
+                            "Recommend setting a higher value on high-res monitor and powerful PC hardware.")
+                    .defineInRange("minPixelDensityForSDF", TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF,
+                            TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF, MuiModApi.MAX_GUI_SCALE);
+            /*mLinearSampling = builder.comment(
+                            "Enable linear sampling for font atlases with mipmaps, mag filter will be always NEAREST.",
+                            "If your fonts are not bitmap fonts, then you should keep this setting true.")
+                    .define("linearSampling", true);*/
             /*antiAliasing = builder.comment(
                     "Enable font anti-aliasing.")
                     .define("antiAliasing", true);
@@ -1048,6 +1042,23 @@ public final class Config {
 
             ModernTextRenderer.sComputeDeviceFontSize = mComputeDeviceFontSize.get();
             ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();
+
+            if (GlyphManager.sAntiAliasing != mAntiAliasing.get()) {
+                GlyphManager.sAntiAliasing = mAntiAliasing.get();
+                reloadStrike = true;
+            }
+            if (GlyphManager.sFractionalMetrics != mLinearMetrics.get()) {
+                GlyphManager.sFractionalMetrics = mLinearMetrics.get();
+                reloadStrike = true;
+            }
+            if (TextLayoutEngine.sMinPixelDensityForSDF != mMinPixelDensityForSDF.get()) {
+                TextLayoutEngine.sMinPixelDensityForSDF = mMinPixelDensityForSDF.get();
+                reload = true;
+            }
+            /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
+                GLFontAtlas.sLinearSampling = mLinearSampling.get();
+                reload = true;
+            }*/
 
             if (reloadStrike) {
                 Minecraft.getInstance().submit(

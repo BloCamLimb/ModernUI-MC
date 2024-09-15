@@ -23,19 +23,21 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import icyllis.arc3d.core.RefCnt;
 import icyllis.arc3d.core.SharedPtr;
-import icyllis.arc3d.engine.SamplerState;
-import icyllis.arc3d.opengl.*;
+import icyllis.arc3d.engine.ImmediateContext;
+import icyllis.arc3d.engine.SamplerDesc;
+import icyllis.arc3d.opengl.GLCaps;
+import icyllis.arc3d.opengl.GLSampler;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.text.mixin.AccessRenderBuffers;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.*;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceProvider;
+import org.lwjgl.opengl.GL33C;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -43,7 +45,8 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 
-import static icyllis.modernui.ModernUI.*;
+import static icyllis.modernui.ModernUI.LOGGER;
+import static icyllis.modernui.mc.text.TextLayoutEngine.MARKER;
 
 /**
  * Fast and modern text render type.
@@ -88,17 +91,19 @@ public class TextRenderType extends RenderType {
     private static final ImmutableList<RenderStateShard> NORMAL_STATES;
     private static final ImmutableList<RenderStateShard> SDF_FILL_STATES;
     private static final ImmutableList<RenderStateShard> SDF_STROKE_STATES;
+    private static final ImmutableList<RenderStateShard> VANILLA_STATES;
     private static final ImmutableList<RenderStateShard> SEE_THROUGH_STATES;
     private static final ImmutableList<RenderStateShard> POLYGON_OFFSET_STATES;
 
     /**
      * Texture id to render type map
      */
-    private static final Int2ObjectMap<TextRenderType> sNormalTypes = new Int2ObjectOpenHashMap<>();
-    private static final Int2ObjectMap<TextRenderType> sSDFFillTypes = new Int2ObjectOpenHashMap<>();
-    private static final Int2ObjectMap<TextRenderType> sSDFStrokeTypes = new Int2ObjectOpenHashMap<>();
-    private static final Int2ObjectMap<TextRenderType> sSeeThroughTypes = new Int2ObjectOpenHashMap<>();
-    private static final Int2ObjectMap<TextRenderType> sPolygonOffsetTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sNormalTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sSDFFillTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sSDFStrokeTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sVanillaTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sSeeThroughTypes = new Int2ObjectOpenHashMap<>();
+    private static final Int2ObjectOpenHashMap<TextRenderType> sPolygonOffsetTypes = new Int2ObjectOpenHashMap<>();
 
     private static TextRenderType sFirstSDFFillType;
     private static final BufferBuilder sFirstSDFFillBuffer = new BufferBuilder(131072);
@@ -150,6 +155,19 @@ public class TextRenderType extends RenderType {
                 COLOR_DEPTH_WRITE,
                 DEFAULT_LINE
         );
+        VANILLA_STATES = ImmutableList.of(
+                RENDERTYPE_TEXT_SHADER,
+                TRANSLUCENT_TRANSPARENCY,
+                LEQUAL_DEPTH_TEST,
+                CULL,
+                LIGHTMAP,
+                NO_OVERLAY,
+                NO_LAYERING,
+                MAIN_TARGET,
+                DEFAULT_TEXTURING,
+                COLOR_DEPTH_WRITE,
+                DEFAULT_LINE
+        );
         SEE_THROUGH_STATES = ImmutableList.of(
                 RENDERTYPE_TEXT_SEE_THROUGH_SHADER,
                 TRANSLUCENT_TRANSPARENCY,
@@ -186,20 +204,22 @@ public class TextRenderType extends RenderType {
     @Nonnull
     public static TextRenderType getOrCreate(int texture, int mode) {
         return switch (mode) {
-            default -> sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
             case MODE_SDF_FILL -> sSDFFillTypes.computeIfAbsent(texture, TextRenderType::makeSDFFillType);
             case MODE_SDF_STROKE -> sSDFStrokeTypes.computeIfAbsent(texture, TextRenderType::makeSDFStrokeType);
             case MODE_SEE_THROUGH -> sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
+            default -> sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
         };
     }
 
     // compatibility
     @Nonnull
-    public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode) {
+    public static TextRenderType getOrCreate(int texture, Font.DisplayMode mode, boolean isBitmapFont) {
         return switch (mode) {
-            default -> sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
             case SEE_THROUGH -> sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
             case POLYGON_OFFSET -> sPolygonOffsetTypes.computeIfAbsent(texture, TextRenderType::makePolygonOffsetType);
+            default -> isBitmapFont
+                    ? sVanillaTypes.computeIfAbsent(texture, TextRenderType::makeVanillaType)
+                    : sNormalTypes.computeIfAbsent(texture, TextRenderType::makeNormalType);
         };
     }
 
@@ -213,10 +233,10 @@ public class TextRenderType extends RenderType {
 
     private static void ensureLinearFontSampler() {
         if (sLinearFontSampler == null) {
-            GLDevice device = (GLDevice) Core.requireDirectContext().getDevice();
+            ImmediateContext context = Core.requireImmediateContext();
             // default state is bilinear
-            sLinearFontSampler = device.getResourceProvider().findOrCreateCompatibleSampler(
-                    SamplerState.DEFAULT);
+            sLinearFontSampler = (GLSampler) context.getResourceProvider().findOrCreateCompatibleSampler(
+                    SamplerDesc.make(SamplerDesc.FILTER_LINEAR, SamplerDesc.MIPMAP_MODE_LINEAR));
             Objects.requireNonNull(sLinearFontSampler, "Failed to create sampler object");
         }
     }
@@ -228,12 +248,12 @@ public class TextRenderType extends RenderType {
             SDF_FILL_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
+                GL33C.glBindSampler(0, sLinearFontSampler.getHandle());
             }
         }, () -> {
             SDF_FILL_STATES.forEach(RenderStateShard::clearRenderState);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GLCore.glBindSampler(0, 0);
+                GL33C.glBindSampler(0, 0);
             }
         });
         if (sFirstSDFFillType == null) {
@@ -258,12 +278,12 @@ public class TextRenderType extends RenderType {
             SDF_STROKE_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GLCore.glBindSampler(0, sLinearFontSampler.getHandle());
+                GL33C.glBindSampler(0, sLinearFontSampler.getHandle());
             }
         }, () -> {
             SDF_STROKE_STATES.forEach(RenderStateShard::clearRenderState);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
-                GLCore.glBindSampler(0, 0);
+                GL33C.glBindSampler(0, 0);
             }
         });
         if (sFirstSDFStrokeType == null) {
@@ -279,6 +299,14 @@ public class TextRenderType extends RenderType {
             }
         }
         return renderType;
+    }
+
+    @Nonnull
+    private static TextRenderType makeVanillaType(int texture) {
+        return new TextRenderType("modern_text_vanilla", 256, () -> {
+            VANILLA_STATES.forEach(RenderStateShard::setupRenderState);
+            RenderSystem.setShaderTexture(0, texture);
+        }, () -> VANILLA_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
     @Nonnull
@@ -317,27 +345,59 @@ public class TextRenderType extends RenderType {
         return sFirstSDFStrokeType;
     }
 
-    public static void clear(boolean cleanup) {
+    public static synchronized void clear(boolean cleanup) {
         if (sFirstSDFFillType != null) {
             assert (!sSDFFillTypes.isEmpty());
             var access = (AccessRenderBuffers) Minecraft.getInstance().renderBuffers();
-            access.getFixedBuffers().remove(sFirstSDFFillType, sFirstSDFFillBuffer);
+            try {
+                access.getFixedBuffers().remove(sFirstSDFFillType, sFirstSDFFillBuffer);
+            } catch (Exception ignored) {
+            }
             sFirstSDFFillType = null;
         }
         if (sFirstSDFStrokeType != null) {
             assert (!sSDFStrokeTypes.isEmpty());
             var access = (AccessRenderBuffers) Minecraft.getInstance().renderBuffers();
-            access.getFixedBuffers().remove(sFirstSDFStrokeType, sFirstSDFStrokeBuffer);
+            try {
+                access.getFixedBuffers().remove(sFirstSDFStrokeType, sFirstSDFStrokeBuffer);
+            } catch (Exception ignored) {
+            }
             sFirstSDFStrokeType = null;
         }
         sNormalTypes.clear();
         sSDFFillTypes.clear();
         sSDFStrokeTypes.clear();
+        sVanillaTypes.clear();
         sSeeThroughTypes.clear();
+        sPolygonOffsetTypes.clear();
         sFirstSDFFillBuffer.clear();
         sFirstSDFStrokeBuffer.clear();
         if (cleanup) {
             sLinearFontSampler = RefCnt.move(sLinearFontSampler);
+            if (sShaderNormal != null) {
+                sShaderNormal.close();
+            }
+            if (sShaderSDFFill != null) {
+                sShaderSDFFill.close();
+            }
+            if (sShaderSDFStroke != null) {
+                sShaderSDFStroke.close();
+            }
+            if (sShaderSDFFillSmart != null) {
+                //noinspection DataFlowIssue
+                sShaderSDFFillSmart.close();
+            }
+            if (sShaderSDFStrokeSmart != null) {
+                //noinspection DataFlowIssue
+                sShaderSDFStrokeSmart.close();
+            }
+            sShaderNormal = null;
+            sShaderSDFFill = null;
+            sShaderSDFStroke = null;
+            sShaderSDFFillSmart = null;
+            sShaderSDFStrokeSmart = null;
+            sCurrentShaderSDFFill = null;
+            sCurrentShaderSDFStroke = null;
         }
     }
 
@@ -364,7 +424,7 @@ public class TextRenderType extends RenderType {
         if (smart) {
             if (!sSmartShadersLoaded) {
                 sSmartShadersLoaded = true;
-                if (((GLCaps) Core.requireDirectContext()
+                if (((GLCaps) Core.requireImmediateContext()
                         .getCaps()).getGLSLVersion() >= 400) {
                     var provider = obtainResourceProvider();
                     try {

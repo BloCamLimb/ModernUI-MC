@@ -19,7 +19,7 @@
 package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.font.SpaceProvider;
-import icyllis.arc3d.core.Strike;
+import icyllis.arc3d.core.Typeface;
 import icyllis.modernui.graphics.Rect;
 import icyllis.modernui.graphics.text.*;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
@@ -146,7 +146,7 @@ public class SpaceFont implements Font {
     }
 
     @Override
-    public Strike findOrCreateStrike(FontPaint paint) {
+    public Typeface getNativeTypeface() {
         return null;
     }
 

@@ -334,7 +334,7 @@ public class TextLayoutProcessor {
     }
 
     public static int computeFontSize(float resLevel) {
-        // Note max font size is 96, see FontPaint, font size will be (8 * res) in Minecraft by default
+        // Note max font size is 96, font size will be (8 * res) in Minecraft by default
         return Math.min((int) (sBaseFontSize * resLevel + 0.5), 96);
     }
 
@@ -410,7 +410,7 @@ public class TextLayoutProcessor {
         TextLayout layout = createNewLayout(resLevel, computeFlags);
         if (DEBUG) {
             ModernUI.LOGGER.info("Performed Vanilla Layout: {}, {}, {}",
-                    mBuilder.toString(), text, layout);
+                    mBuilder.toString(), text, layout.toDetailedString());
         }
         reset();
         return layout;
@@ -423,7 +423,7 @@ public class TextLayoutProcessor {
         TextLayout layout = createNewLayout(resLevel, computeFlags);
         if (DEBUG) {
             ModernUI.LOGGER.info("Performed Text Layout: {}, {}, {}",
-                    mBuilder.toString(), text, layout);
+                    mBuilder.toString(), text, layout.toDetailedString());
         }
         reset();
         return layout;
@@ -436,7 +436,7 @@ public class TextLayoutProcessor {
         TextLayout layout = createNewLayout(resLevel, computeFlags);
         if (DEBUG) {
             ModernUI.LOGGER.info("Performed Sequence Layout: {}, {}, {}",
-                    mBuilder.toString(), sequence, layout);
+                    mBuilder.toString(), sequence, layout.toDetailedString());
         }
         reset();
         return layout;
@@ -543,6 +543,8 @@ public class TextLayoutProcessor {
 
             int fontSize = computeFontSize(resLevel);
             mFontPaint.setFontSize(fontSize);
+            mFontPaint.setAntiAlias(GlyphManager.sAntiAliasing);
+            mFontPaint.setLinearMetrics(GlyphManager.sFractionalMetrics);
 
             // pre allocate memory
             if (mComputeAdvances) {
@@ -691,6 +693,7 @@ public class TextLayoutProcessor {
      * @see #handleStyleRun(char[], int, int, boolean, int, ResourceLocation)
      */
     private void handleBidiRun(@Nonnull char[] text, int start, int limit, boolean isRtl) {
+        assert start < limit;
         final IntArrayList styles = mStyles;
         final List<ResourceLocation> fonts = mFontNames;
         int lastPos, currPos;
@@ -698,37 +701,33 @@ public class TextLayoutProcessor {
         ResourceLocation lastFont, currFont;
         // Style runs are in visual order
         if (isRtl) {
-            lastPos = limit;
-            currPos = limit - 1;
-            lastStyle = styles.getInt(currPos);
-            lastFont = fonts.get(currPos);
-            currStyle = lastStyle;
-            currFont = lastFont;
-            while (currPos > start) {
-                if ((currStyle = styles.getInt(currPos - 1)) != lastStyle ||
-                        (currFont = fonts.get(currPos - 1)) != lastFont) {
-                    handleStyleRun(text, currPos, lastPos, true,
+            lastPos = limit - 1;
+            currPos = limit - 2;
+            lastStyle = styles.getInt(lastPos);
+            lastFont = fonts.get(lastPos);
+            for (; currPos >= start; currPos--) {
+                currStyle = styles.getInt(currPos);
+                currFont = fonts.get(currPos);
+                if (currStyle != lastStyle || !currFont.equals(lastFont)) {
+                    handleStyleRun(text, currPos + 1, lastPos + 1, true,
                             lastStyle, lastFont);
                     lastPos = currPos;
                     lastStyle = currStyle;
                     lastFont = currFont;
                 }
-                currPos--;
             }
-            assert currPos == start;
-            handleStyleRun(text, currPos, lastPos, true,
-                    currStyle, currFont);
+            assert currPos + 1 == start;
+            handleStyleRun(text, currPos + 1, lastPos + 1, true,
+                    lastStyle, lastFont);
         } else {
             lastPos = start;
-            currPos = start;
-            lastStyle = styles.getInt(currPos);
-            lastFont = fonts.get(currPos);
-            currStyle = lastStyle;
-            currFont = lastFont;
-            while (currPos + 1 < limit) {
-                currPos++;
-                if ((currStyle = styles.getInt(currPos)) != lastStyle ||
-                        (currFont = fonts.get(currPos)) != lastFont) {
+            currPos = start + 1;
+            lastStyle = styles.getInt(lastPos);
+            lastFont = fonts.get(lastPos);
+            for (; currPos < limit; currPos++) {
+                currStyle = styles.getInt(currPos);
+                currFont = fonts.get(currPos);
+                if (currStyle != lastStyle || !currFont.equals(lastFont)) {
                     handleStyleRun(text, lastPos, currPos, false,
                             lastStyle, lastFont);
                     lastPos = currPos;
@@ -736,9 +735,9 @@ public class TextLayoutProcessor {
                     lastFont = currFont;
                 }
             }
-            assert currPos + 1 == limit;
-            handleStyleRun(text, lastPos, currPos + 1, false,
-                    currStyle, currFont);
+            assert currPos == limit;
+            handleStyleRun(text, lastPos, currPos, false,
+                    lastStyle, lastFont);
         }
 
         /*float lastAdvance = mAdvance;
@@ -875,6 +874,11 @@ public class TextLayoutProcessor {
                 int runStart = run.start();
                 int runLimit = run.limit();
 
+                int glyphFlags = styleFlags;
+                if (font instanceof BitmapFont) {
+                    glyphFlags |= CharacterStyle.BITMAP_REPLACEMENT;
+                }
+
                 float adv = font.doSimpleLayout(new char[]{'0'},
                         0, 1, mFontPaint, null, null, 0, 0);
                 if (adv > 0) {
@@ -893,7 +897,7 @@ public class TextLayoutProcessor {
                         mPositions.add(pos);
                         mPositions.add(0);
                         mFontIndices.add(fontIdx);
-                        mGlyphFlags.add(styleFlags);
+                        mGlyphFlags.add(glyphFlags);
                         mHasEffect |= (styleFlags & CharacterStyle.EFFECT_MASK) != 0;
 
                         offset += adv;

@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.testforge.shader;
 
-import icyllis.arc3d.opengl.GLCore;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
@@ -32,7 +31,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import static icyllis.arc3d.opengl.GLCore.*;
+import static org.lwjgl.opengl.GL33C.*;
 
 /**
  * This class helps you create shaders and programs.
@@ -74,7 +73,7 @@ public class GLShaderManager {
         Core.checkRenderThread();
         for (var map : mShaders.values()) {
             for (int stage : map.values()) {
-                GLCore.glDeleteShader(stage);
+                glDeleteShader(stage);
             }
         }
         mShaders.clear();
@@ -83,7 +82,7 @@ public class GLShaderManager {
         }
         for (var map : mShaders.values()) {
             for (int stage : map.values()) {
-                GLCore.glDeleteShader(stage);
+                glDeleteShader(stage);
             }
         }
         mShaders.clear();
@@ -151,9 +150,9 @@ public class GLShaderManager {
         }
         if (type == 0) {
             if (path.endsWith(".vert")) {
-                type = GLCore.GL_VERTEX_SHADER;
+                type = GL_VERTEX_SHADER;
             } else if (path.endsWith(".frag")) {
-                type = GLCore.GL_FRAGMENT_SHADER;
+                type = GL_FRAGMENT_SHADER;
             } else if (path.endsWith(".geom")) {
                 type = GL_GEOMETRY_SHADER;
             } else {
@@ -165,17 +164,17 @@ public class GLShaderManager {
         try (var stream = ModernUI.getInstance().getResourceStream(namespace, path);
              var stack = MemoryStack.stackPush()) {
             source = Core.readIntoNativeBuffer(stream);
-            shader = GLCore.glCreateShader(type);
+            shader = glCreateShader(type);
             var pLength = stack.mallocInt(1);
             pLength.put(0, source.position());
             var pString = stack.mallocPointer(1);
             pString.put(0, MemoryUtil.memAddress0(source));
-            GLCore.glShaderSource(shader, pString, pLength);
-            GLCore.glCompileShader(shader);
-            if (GLCore.glGetShaderi(shader, GLCore.GL_COMPILE_STATUS) == GL_FALSE) {
-                String log = GLCore.glGetShaderInfoLog(shader, 8192).trim();
+            glShaderSource(shader, pString, pLength);
+            glCompileShader(shader);
+            if (glGetShaderi(shader, GL_COMPILE_STATUS) == GL_FALSE) {
+                String log = glGetShaderInfoLog(shader, 8192).trim();
                 ModernUI.LOGGER.error(ModernUI.MARKER, "Failed to compile shader {}:{}\n{}", namespace, path, log);
-                GLCore.glDeleteShader(shader);
+                glDeleteShader(shader);
                 mShaders.get(namespace).putIfAbsent(path, 0);
                 return 0;
             }
@@ -205,22 +204,22 @@ public class GLShaderManager {
         if (t.mProgram != 0) {
             program = t.mProgram;
         } else {
-            program = GLCore.glCreateProgram();
+            program = glCreateProgram();
         }
         for (int s : stages) {
-            GLCore.glAttachShader(program, s);
+            glAttachShader(program, s);
         }
-        GLCore.glLinkProgram(program);
-        if (GLCore.glGetProgrami(program, GLCore.GL_LINK_STATUS) == GL_FALSE) {
-            String log = GLCore.glGetProgramInfoLog(program, 8192);
+        glLinkProgram(program);
+        if (glGetProgrami(program, GL_LINK_STATUS) == GL_FALSE) {
+            String log = glGetProgramInfoLog(program, 8192);
             ModernUI.LOGGER.error(ModernUI.MARKER, "Failed to link shader program\n{}", log);
             // also detaches all shaders
-            GLCore.glDeleteProgram(program);
+            glDeleteProgram(program);
             program = 0;
         } else {
             // clear attachment states, for further re-creation
             for (int s : stages) {
-                GLCore.glDetachShader(program, s);
+                glDetachShader(program, s);
             }
         }
         t.mProgram = program;

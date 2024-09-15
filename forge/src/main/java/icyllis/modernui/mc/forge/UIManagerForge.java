@@ -19,18 +19,15 @@
 package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import icyllis.arc3d.opengl.GLDevice;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.lifecycle.LifecycleOwner;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessNativeImage;
-import icyllis.modernui.mc.testforge.TestPauseFragment;
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.text.TextUtils;
-import icyllis.modernui.view.KeyEvent;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -48,15 +45,14 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
-import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.*;
+import org.lwjgl.opengl.GL45C;
 
 import javax.annotation.Nonnull;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.util.Map;
 
-import static icyllis.arc3d.opengl.GLCore.*;
 import static icyllis.modernui.ModernUI.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -117,43 +113,40 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         minecraft.setScreen(new SimpleScreen(this, fragment, null, null, null));
     }
 
-    @SubscribeEvent
-    void onScreenOpen(@Nonnull ScreenEvent.Opening event) {
-        final Screen newScreen = event.getNewScreen();
-
-        if (!mFirstScreenOpened && !(newScreen instanceof LoadingErrorScreen)) {
-            if (sDingEnabled) {
-                glfwRequestWindowAttention(minecraft.getWindow().getWindow());
-                minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f));
+    @Override
+    protected void onScreenChange(@Nullable Screen oldScreen, @Nullable Screen newScreen) {
+        if (newScreen != null) {
+            if (!mFirstScreenOpened && !(newScreen instanceof LoadingErrorScreen)) {
+                if (sDingEnabled) {
+                    glfwRequestWindowAttention(minecraft.getWindow().getWindow());
+                    minecraft.getSoundManager().play(
+                            SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f)
+                    );
+                }
+                if (ModernUIMod.isOptiFineLoaded() &&
+                        ModernUIMod.isTextEngineEnabled()) {
+                    OptiFineIntegration.setFastRender(false);
+                    LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
+                }
+                // ensure it's applied and positioned
+                Config.CLIENT.mLastWindowMode.apply();
+                mFirstScreenOpened = true;
             }
-            if (ModernUIMod.isOptiFineLoaded() &&
-                    ModernUIMod.isTextEngineEnabled()) {
-                OptiFineIntegration.setFastRender(false);
-                LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
+
+            if (mScreen != newScreen && newScreen instanceof MuiScreen) {
+                //mTicks = 0;
+                mElapsedTimeMillis = 0;
             }
-            // ensure it's applied and positioned
-            Config.CLIENT.mLastWindowMode.apply();
-            mFirstScreenOpened = true;
+            if (mScreen != newScreen && mScreen != null) {
+                onHoverMove(false);
+            }
+            // for non-mui screens
+            if (mScreen == null && minecraft.screen == null) {
+                //mTicks = 0;
+                mElapsedTimeMillis = 0;
+            }
         }
-
-        // true if there will be no screen to open
-        if (newScreen == null) {
-            removed();
-            return;
-        }
-
-        if (mScreen != newScreen && newScreen instanceof MuiScreen) {
-            //mTicks = 0;
-            mElapsedTimeMillis = 0;
-        }
-        if (mScreen != newScreen && mScreen != null) {
-            onHoverMove(false);
-        }
-        // for non-mui screens
-        if (mScreen == null && minecraft.screen == null) {
-            //mTicks = 0;
-            mElapsedTimeMillis = 0;
-        }
+        super.onScreenChange(oldScreen, newScreen);
     }
 
     /**
@@ -166,70 +159,20 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         super.onPostMouseInput(event.getButton(), event.getAction(), event.getModifiers());
     }
 
-    @SubscribeEvent
-    void onPostKeyInput(@Nonnull InputEvent.Key event) {
-        if (mScreen != null) {
-            int action = event.getAction() == GLFW_RELEASE ? KeyEvent.ACTION_UP : KeyEvent.ACTION_DOWN;
-            KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), action, event.getKey(), 0,
-                    event.getModifiers(), event.getScanCode(), 0);
-            mRoot.enqueueInputEvent(keyEvent);
-        }
-        if (event.getAction() == GLFW_PRESS) {
+    @Override
+    protected void onPreKeyInput(int keyCode, int scanCode, int action, int mods) {
+        if (action == GLFW_PRESS) {
             if (minecraft.screen == null ||
                     minecraft.screen.shouldCloseOnEsc() ||
                     minecraft.screen instanceof TitleScreen) {
-                InputConstants.Key key = InputConstants.getKey(event.getKey(), event.getScanCode());
+                InputConstants.Key key = InputConstants.getKey(keyCode, scanCode);
                 if (OPEN_CENTER_KEY.isActiveAndMatches(key)) {
                     open(new CenterFragment2());
                     return;
                 }
             }
         }
-        if (!Screen.hasControlDown() || !Screen.hasShiftDown() || !ModernUIMod.isDeveloperMode()) {
-            return;
-        }
-        if (event.getAction() == GLFW_PRESS) {
-            switch (event.getKey()) {
-                case GLFW_KEY_Y -> takeScreenshot();
-                //case GLFW_KEY_H -> open(new TestFragment());
-                case GLFW_KEY_J -> open(new TestPauseFragment());
-                case GLFW_KEY_U -> {
-                    mClearNextMainTarget = true;
-                }
-                case GLFW_KEY_N -> mDecor.postInvalidate();
-                case GLFW_KEY_P -> dump();
-                case GLFW_KEY_M -> changeRadialBlur();
-                case GLFW_KEY_T -> {
-                    /*String text = "\u09b9\u09cd\u09af\u09be\n\u09b2\u09cb" + ChatFormatting.RED + "\uD83E\uDD14" +
-                            ChatFormatting.BOLD + "\uD83E\uDD14\uD83E\uDD14";
-                    for (int i = 1; i <= 10; i++) {
-                        float width = i * 5;
-                        int index = ModernStringSplitter.breakText(text, width, Style.EMPTY, true);
-                        LOGGER.info("Break forwards: width {} index:{}", width, index);
-                        index = ModernStringSplitter.breakText(text, width, Style.EMPTY, false);
-                        LOGGER.info("Break backwards: width {} index:{}", width, index);
-                    }
-                    LOGGER.info(TextLayoutEngine.getInstance().lookupVanillaLayout(text));*/
-                }
-                case GLFW_KEY_G ->
-                /*if (minecraft.screen == null && minecraft.isLocalServer() &&
-                        minecraft.getSingleplayerServer() != null && !minecraft.getSingleplayerServer().isPublished()) {
-                    start(new TestPauseUI());
-                }*/
-                /*minecraft.getLanguageManager().getLanguages().forEach(l ->
-                        ModernUI.LOGGER.info(MARKER, "Locale {} RTL {}", l.getCode(), ULocale.forLocale(l
-                        .getJavaLocale()).isRightToLeft()));*/
-                        GlyphManager.getInstance().debug();
-                case GLFW_KEY_V -> {
-                    if (ModernUIMod.isTextEngineEnabled()) {
-                        //TextLayoutEngine.getInstance().dumpEmojiAtlas();
-                        TextLayoutEngine.getInstance().dumpBitmapFonts();
-                    }
-                }
-                case GLFW_KEY_O -> mNoRender = !mNoRender;
-                case GLFW_KEY_F -> System.gc();
-            }
-        }
+        super.onPreKeyInput(keyCode, scanCode, action, mods);
     }
 
     @SuppressWarnings("unchecked")
@@ -241,7 +184,8 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
-        if (textureMap != null && mDevice.getCaps().hasDSASupport()) {
+        GLDevice device = (GLDevice) Core.requireImmediateContext().getDevice();
+        if (textureMap != null && device.getCaps().hasDSASupport()) {
             long gpuSize = 0;
             long cpuSize = 0;
             int dynamicTextures = 0;
@@ -250,15 +194,16 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             for (var texture : textureMap.values()) {
                 try {
                     int tex = TEXTURE_ID.getInt(texture);
-                    if (glIsTexture(tex)) {
-                        int internalFormat = glGetTextureLevelParameteri(tex, 0, GL_TEXTURE_INTERNAL_FORMAT);
-                        long width = glGetTextureLevelParameteri(tex, 0, GL_TEXTURE_WIDTH);
-                        long height = glGetTextureLevelParameteri(tex, 0, GL_TEXTURE_HEIGHT);
-                        int maxLevel = glGetTextureParameteri(tex, GL_TEXTURE_MAX_LEVEL);
+                    if (GL45C.glIsTexture(tex)) {
+                        int internalFormat = GL45C.glGetTextureLevelParameteri(tex, 0,
+                                GL45C.GL_TEXTURE_INTERNAL_FORMAT);
+                        long width = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_WIDTH);
+                        long height = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_HEIGHT);
+                        int maxLevel = GL45C.glGetTextureParameteri(tex, GL45C.GL_TEXTURE_MAX_LEVEL);
                         int bpp = switch (internalFormat) {
-                            case GL_R8, GL_RED -> 1;
-                            case GL_RG8, GL_RG -> 2;
-                            case GL_RGB8, GL_RGBA8, GL_RGB, GL_RGBA -> 4;
+                            case GL45C.GL_R8, GL45C.GL_RED -> 1;
+                            case GL45C.GL_RG8, GL45C.GL_RG -> 2;
+                            case GL45C.GL_RGB8, GL45C.GL_RGBA8, GL45C.GL_RGB, GL45C.GL_RGBA -> 4;
                             default -> 0;
                         };
                         long size = width * height * bpp;

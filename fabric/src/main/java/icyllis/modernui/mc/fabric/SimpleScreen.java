@@ -69,10 +69,6 @@ final class SimpleScreen extends Screen implements MuiScreen {
     protected void init() {
         super.init();
         mHost.initScreen(this);
-        ScreenCallback callback = getCallback();
-        if (callback == null || callback.shouldBlurBackground()) {
-            BlurHandler.INSTANCE.forceBlur();
-        }
     }
 
     @Override
@@ -86,13 +82,13 @@ final class SimpleScreen extends Screen implements MuiScreen {
         if (callback == null || callback.hasDefaultBackground()) {
             BlurHandler.INSTANCE.drawScreenBackground(gr, 0, 0, this.width, this.height);
         }
-        mHost.render();
+        mHost.render(gr, mouseX, mouseY, deltaTick);
     }
 
     @Override
     public void removed() {
         super.removed();
-        mHost.removed();
+        mHost.removed(this);
     }
 
     @Override
@@ -164,11 +160,13 @@ final class SimpleScreen extends Screen implements MuiScreen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        mHost.onKeyPress(keyCode, scanCode, modifiers);
         return false;
     }
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        mHost.onKeyRelease(keyCode, scanCode, modifiers);
         return false;
     }
 

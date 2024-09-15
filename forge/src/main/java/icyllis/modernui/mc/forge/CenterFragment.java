@@ -624,8 +624,8 @@ public class CenterFragment extends Fragment implements ScreenCallback {
             float inner = mStrokeWidth * 0.5f;
             canvas.drawRoundRect(bounds.left + inner, bounds.top + inner, bounds.right - inner,
                     bounds.bottom - inner, mRadius, paint);
-            ((GLSurfaceCanvas) canvas).drawGlowWave(bounds.left + inner * 1.5f, bounds.top + inner * 1.5f,
-                    bounds.right - inner, bounds.bottom - inner);
+            /*((GLSurfaceCanvas) canvas).drawGlowWave(bounds.left + inner * 1.5f, bounds.top + inner * 1.5f,
+                    bounds.right - inner, bounds.bottom - inner);*/
             paint.setStyle(Paint.STROKE);
             paint.setColor(THEME_COLOR);
             paint.setStrokeWidth(mStrokeWidth);

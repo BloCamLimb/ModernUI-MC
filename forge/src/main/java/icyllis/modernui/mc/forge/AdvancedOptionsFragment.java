@@ -24,9 +24,9 @@ import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.ui.ThemeControl;
 import icyllis.modernui.text.InputFilter;
@@ -55,7 +55,8 @@ public class AdvancedOptionsFragment extends Fragment {
 
     ViewGroup mContent;
     TextView mUIManagerDump;
-    TextView mGPUResourceDump;
+    TextView mMainGPUResourceDump;
+    TextView mUIGPUResourceDump;
     TextView mPSOStatsDump;
     TextView mGPUStatsDump;
 
@@ -141,7 +142,7 @@ public class AdvancedOptionsFragment extends Fragment {
             {
                 var button = createDebugButton(context, "Take UI screenshot (Y)");
                 button.setOnClickListener((__) ->
-                        Core.executeOnRenderThread(() -> UIManager.getInstance().takeScreenshot()));
+                        Core.executeOnMainThread(() -> UIManager.getInstance().takeScreenshot()));
                 category.addView(button);
             }
             {
@@ -150,13 +151,13 @@ public class AdvancedOptionsFragment extends Fragment {
                         Core.executeOnMainThread(() -> UIManager.getInstance().dump()));
                 category.addView(button);
             }
-            {
-                var button = createDebugButton(context, "Dump font atlases (G)");
-                button.setOnClickListener((__) ->
-                        Core.executeOnMainThread(() -> GlyphManager.getInstance().debug()));
-                category.addView(button);
-            }
             if (ModernUIMod.isTextEngineEnabled()) {
+                {
+                    var button = createDebugButton(context, "Dump font atlases (G)");
+                    button.setOnClickListener((__) ->
+                            Core.executeOnMainThread(() -> GlyphManager.getInstance().debug()));
+                    category.addView(button);
+                }
                 {
                     var button = createDebugButton(context, "Dump bitmap fonts (V)");
                     button.setOnClickListener((__) ->
@@ -167,17 +168,32 @@ public class AdvancedOptionsFragment extends Fragment {
                     category.addView(button);
                 }
                 {
+                    var button = createDebugButton(context, "Dump text layout cache");
+                    button.setOnClickListener((__) -> {
+                        Core.executeOnMainThread(() -> {
+                            TextLayoutEngine.getInstance().dumpLayoutCache();
+                        });
+                    });
+                    category.addView(button);
+                }
+                {
+                    var button = createDebugButton(context, "Reload glyph manager");
+                    button.setOnClickListener((__) ->
+                            Core.executeOnMainThread(() -> GlyphManager.getInstance().reload()));
+                    category.addView(button);
+                }
+                {
                     var button = createDebugButton(context, "Reload text layout (MC)");
                     button.setOnClickListener((__) ->
                             Core.executeOnMainThread(() -> TextLayoutEngine.getInstance().reload()));
                     category.addView(button);
                 }
-            }
-            {
-                var button = createDebugButton(context, "Reload glyph manager");
-                button.setOnClickListener((__) ->
-                        Core.executeOnMainThread(() -> GlyphManager.getInstance().reload()));
-                category.addView(button);
+                {
+                    var button = createDebugButton(context, "Reload full text engine");
+                    button.setOnClickListener((__) ->
+                            ModernUIClient.getInstance().reloadFontStrike());
+                    category.addView(button);
+                }
             }
             {
                 var button = createDebugButton(context, "Reset layout cache");
@@ -186,9 +202,16 @@ public class AdvancedOptionsFragment extends Fragment {
                 category.addView(button);
             }
             {
-                var button = createDebugButton(context, "Reload full text engine");
+                var button = createDebugButton(context, "Purge GPU resources on immediate context");
                 button.setOnClickListener((__) ->
-                        ModernUIClient.getInstance().reloadFontStrike());
+                        Core.executeOnMainThread(() ->
+                                Core.requireImmediateContext().freeGpuResources()));
+                category.addView(button);
+            }
+            {
+                var button = createDebugButton(context, "Purge GPU resources on UI recording context");
+                button.setOnClickListener((__) ->
+                        Core.requireUiRecordingContext().freeGpuResources());
                 category.addView(button);
             }
             {
@@ -245,7 +268,15 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            mGPUResourceDump = tv;
+            mMainGPUResourceDump = tv;
+            content.addView(tv);
+        }
+
+        {
+            var tv = new TextView(context);
+            tv.setTextSize(12);
+            tv.setPadding(dp6, dp6, dp6, dp6);
+            mUIGPUResourceDump = tv;
             content.addView(tv);
         }
 
@@ -269,11 +300,9 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            Core.executeOnRenderThread(() -> {
-                var caps = (GLCaps) Core.requireDirectContext().getCaps();
-                var s = caps.toString(/*includeFormatTable*/false);
-                tv.post(() -> tv.setText(s));
-            });
+            var caps = (GLCaps) Core.requireUiRecordingContext().getCaps();
+            var s = caps.toString(/*includeFormatTable*/false);
+            tv.setText(s);
             content.addView(tv);
         }
 
@@ -284,7 +313,7 @@ public class AdvancedOptionsFragment extends Fragment {
 
     void refreshPage() {
         if (mUIManagerDump != null) {
-            Core.executeOnRenderThread(() -> {
+            Core.executeOnMainThread(() -> {
                 StringBuilder builder = new StringBuilder();
                 try (var w = new PrintWriter(new StringBuilderWriter(builder))) {
                     UIManager.getInstance().dump(w, false);
@@ -293,8 +322,26 @@ public class AdvancedOptionsFragment extends Fragment {
                 mUIManagerDump.post(() -> mUIManagerDump.setText(s));
             });
         }
-        if (mGPUResourceDump != null) {
-            Core.executeOnRenderThread(() -> {
+        if (mMainGPUResourceDump != null) {
+            Core.executeOnMainThread(() -> {
+                var content = Core.requireImmediateContext();
+                var s = "GPU Resource Cache (Immediate Context):\n" +
+                        String.format("Current budgeted resource bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(content.getCurrentBudgetedBytes()),
+                                content.getCurrentBudgetedBytes()) +
+                        "\n" +
+                        String.format("Current purgeable resource bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(content.getCurrentPurgeableBytes()),
+                                content.getCurrentPurgeableBytes()) +
+                        "\n" +
+                        String.format("Max budgeted resource bytes: %s (%s bytes)",
+                                TextUtils.binaryCompact(content.getMaxBudgetedBytes()),
+                                content.getMaxBudgetedBytes());
+                mMainGPUResourceDump.post(() -> mMainGPUResourceDump.setText(s));
+            });
+        }
+        if (mUIGPUResourceDump != null) {
+            /*Core.executeOnRenderThread(() -> {
                 var rc = Core.requireDirectContext().getResourceCache();
                 var s = "GPU Resource Cache:\n" +
                         String.format("Resource bytes: %s (%s bytes)",
@@ -319,9 +366,23 @@ public class AdvancedOptionsFragment extends Fragment {
                                 TextUtils.binaryCompact(rc.getMaxResourceBytes()),
                                 rc.getMaxResourceBytes());
                 mGPUResourceDump.post(() -> mGPUResourceDump.setText(s));
-            });
+            });*/
+            var content = Core.requireUiRecordingContext();
+            var s = "GPU Resource Cache (UI Recording Context):\n" +
+                    String.format("Current budgeted resource bytes: %s (%s bytes)",
+                            TextUtils.binaryCompact(content.getCurrentBudgetedBytes()),
+                            content.getCurrentBudgetedBytes()) +
+                    "\n" +
+                    String.format("Current purgeable resource bytes: %s (%s bytes)",
+                            TextUtils.binaryCompact(content.getCurrentPurgeableBytes()),
+                            content.getCurrentPurgeableBytes()) +
+                    "\n" +
+                    String.format("Max budgeted resource bytes: %s (%s bytes)",
+                            TextUtils.binaryCompact(content.getMaxBudgetedBytes()),
+                            content.getMaxBudgetedBytes());
+            mUIGPUResourceDump.setText(s);
         }
-        if (mPSOStatsDump != null) {
+        /*if (mPSOStatsDump != null) {
             mPSOStatsDump.setText(
                     Core.requireUiRecordingContext()
                             .getPipelineStateCache()
@@ -334,9 +395,9 @@ public class AdvancedOptionsFragment extends Fragment {
                 var s = Core.requireDirectContext().getDevice().getStats().toString();
                 mGPUStatsDump.post(() -> mGPUStatsDump.setText(s));
             });
-        }
+        }*/
         if (mContent != null) {
-            mContent.postDelayed(this::refreshPage, 10_000);
+            mContent.postDelayed(this::refreshPage, 5_000);
         }
     }
 }

@@ -94,7 +94,7 @@ final class MenuScreen<T extends AbstractContainerMenu>
         if (callback == null || callback.hasDefaultBackground()) {
             renderBackground(gr);
         }
-        mHost.render();
+        mHost.render(gr, mouseX, mouseY, deltaTick);
     }
 
     @Override
@@ -104,7 +104,7 @@ final class MenuScreen<T extends AbstractContainerMenu>
     @Override
     public void removed() {
         super.removed();
-        mHost.removed();
+        mHost.removed(this);
     }
 
     @Nonnull
@@ -170,11 +170,13 @@ final class MenuScreen<T extends AbstractContainerMenu>
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        mHost.onKeyPress(keyCode, scanCode, modifiers);
         return false;
     }
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        mHost.onKeyRelease(keyCode, scanCode, modifiers);
         return false;
     }
 

@@ -115,23 +115,17 @@ public final class UIManagerFabric extends UIManager {
     }
 
     @Override
-    public void onPostKeyInput(int key, int scanCode, int action, int mods) {
-        if (mScreen != null) {
-            int ac = action == GLFW_RELEASE ? KeyEvent.ACTION_UP : KeyEvent.ACTION_DOWN;
-            KeyEvent keyEvent = KeyEvent.obtain(Core.timeNanos(), ac, key, 0,
-                    mods, scanCode, 0);
-            mRoot.enqueueInputEvent(keyEvent);
-        }
+    protected void onPreKeyInput(int keyCode, int scanCode, int action, int mods) {
         if (action == GLFW_PRESS) {
             if (minecraft.screen == null ||
                     minecraft.screen.shouldCloseOnEsc() ||
                     minecraft.screen instanceof TitleScreen) {
-                if (Screen.hasControlDown() && OPEN_CENTER_KEY.matches(key, scanCode)) {
+                if (Screen.hasControlDown() && OPEN_CENTER_KEY.matches(keyCode, scanCode)) {
                     open(new CenterFragment2());
                     return;
                 }
             }
         }
-        super.onPostKeyInput(key, scanCode, action, mods);
+        super.onPreKeyInput(keyCode, scanCode, action, mods);
     }
 }

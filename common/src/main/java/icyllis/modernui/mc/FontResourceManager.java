@@ -21,8 +21,8 @@ package icyllis.modernui.mc;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
+import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
@@ -56,14 +56,13 @@ public class FontResourceManager implements PreparableReloadListener {
     /**
      * Gui scale = 8.
      * <p>
+     * Bitmap fonts are not scalable, use a canonical font size for measuring.
      * This is because our emoji is 72px. Let emoji be 72px / 8(scale) = 9px,
-     * which is close to Minecraft base font size 8px.
+     * which is close to Minecraft base font size 8px and font designer.
      *
      * @see GlyphManager
      */
     public static final int BITMAP_SCALE = 8;
-
-    protected final GlyphManager mGlyphManager;
 
     protected EmojiFont mEmojiFont;
 
@@ -73,8 +72,6 @@ public class FontResourceManager implements PreparableReloadListener {
     protected final HashMap<String, String> mEmojiShortcodes = new HashMap<>();
 
     protected FontResourceManager() {
-        // init first
-        mGlyphManager = GlyphManager.getInstance();
     }
 
     /**
@@ -99,8 +96,6 @@ public class FontResourceManager implements PreparableReloadListener {
     }
 
     public void reloadAll() {
-        mGlyphManager.reload();
-        LOGGER.info(GlyphManager.MARKER, "Reloaded glyph manager");
         LayoutCache.clear();
     }
 

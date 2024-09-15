@@ -72,10 +72,6 @@ final class SimpleScreen extends Screen implements MuiScreen {
     protected void init() {
         super.init();
         mHost.initScreen(this);
-        ScreenCallback callback = getCallback();
-        if (callback == null || callback.shouldBlurBackground()) {
-            BlurHandler.INSTANCE.forceBlur();
-        }
     }
 
     @Override
@@ -90,13 +86,13 @@ final class SimpleScreen extends Screen implements MuiScreen {
             BlurHandler.INSTANCE.drawScreenBackground(gr, 0, 0, this.width, this.height);
             MinecraftForge.EVENT_BUS.post(new ScreenEvent.BackgroundRendered(this, gr));
         }
-        mHost.render();
+        mHost.render(gr, mouseX, mouseY, deltaTick);
     }
 
     @Override
     public void removed() {
         super.removed();
-        mHost.removed();
+        mHost.removed(this);
     }
 
     @Override
@@ -168,11 +164,13 @@ final class SimpleScreen extends Screen implements MuiScreen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        mHost.onKeyPress(keyCode, scanCode, modifiers);
         return false;
     }
 
     @Override
     public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        mHost.onKeyRelease(keyCode, scanCode, modifiers);
         return false;
     }
 

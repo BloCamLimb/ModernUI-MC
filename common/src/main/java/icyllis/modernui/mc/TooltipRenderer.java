@@ -22,6 +22,8 @@ import com.mojang.blaze3d.shaders.AbstractUniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.modernui.graphics.Color;
+import icyllis.modernui.mc.mixin.AccessClientTextTooltip;
+import icyllis.modernui.mc.text.CharacterStyle;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -29,7 +31,7 @@ import net.minecraft.client.gui.screens.inventory.tooltip.*;
 import net.minecraft.client.renderer.*;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.util.StringDecomposer;
+import net.minecraft.util.*;
 import net.minecraft.world.item.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix4f;
@@ -42,7 +44,7 @@ import java.util.*;
  * An extension that replaces vanilla tooltip style.
  */
 @ApiStatus.Internal
-public final class TooltipRenderer {
+public final class TooltipRenderer implements ScrollController.IListener {
 
     // config value
     public static volatile boolean sTooltip = true;
@@ -50,9 +52,9 @@ public final class TooltipRenderer {
     public static final int[] sFillColor = new int[4];
     public static final int[] sStrokeColor = new int[4];
     public static volatile float sBorderWidth = 4 / 3f;
-    public static volatile float sCornerRadius = 3;
+    public static volatile float sCornerRadius = 4;
     public static volatile float sShadowRadius = 10;
-    public static volatile float sShadowAlpha = 0.35f;
+    public static volatile float sShadowAlpha = 0.3f;
     public static volatile boolean sAdaptiveColors = true;
 
     // space between mouse and tooltip
@@ -75,6 +77,7 @@ public final class TooltipRenderer {
     public static volatile boolean sRoundedShapes = true;
     public static volatile boolean sCenterTitle = true;
     public static volatile boolean sTitleBreak = true;
+    public static volatile int sArrowScrollFactor = 60;
 
     public volatile boolean mLayoutRTL;
 
@@ -86,6 +89,10 @@ public final class TooltipRenderer {
     private int mMarqueeDir;
     // the time point when marquee is at top or bottom
     private long mMarqueeEndMillis;
+
+    // arrow key movement
+    private int mPendingArrowMove;
+    private final ScrollController mScroller = new ScrollController(this);
 
     private static final long MARQUEE_DELAY_MILLIS = 1200;
 
@@ -116,17 +123,33 @@ public final class TooltipRenderer {
         if (mDraw) {
             mDraw = false;
             if (mFrameGap) {
+                mScroller.scrollTo(0);
+                mScroller.abortAnimation();
                 mMarqueeEndMillis = timeMillis;
+                // default is auto scrolling
                 mMarqueeDir = 1;
-                mScroll = 0;
             }
             mFrameGap = false;
         } else {
             mFrameGap = true;
             mLastSeenItem = null;
+            mPendingArrowMove = 0;
         }
         mCurrTimeMillis = timeMillis;
         mCurrDeltaMillis = deltaMillis;
+    }
+
+    public void updateArrowMovement(int move) {
+        if (sArrowScrollFactor > 0) {
+            mPendingArrowMove += move;
+        }
+    }
+
+    @Override
+    public void onScrollAmountUpdated(ScrollController controller, float amount) {
+        // stop auto scrolling
+        mMarqueeDir = 0;
+        mScroll = amount;
     }
 
     // compute a gradient for the given item
@@ -275,6 +298,31 @@ public final class TooltipRenderer {
             result |= Math.round(v * 255.0f) << (i << 3);
         }
         return result;
+    }
+
+    // return style if the line contains a single style, or it's too long to determine;
+    // return null if the line is empty, or multi style
+    @Nullable
+    static Style findSingleStyle(@Nonnull ClientTextTooltip line) {
+        FormattedCharSequence text = ((AccessClientTextTooltip) line).getText();
+        class StyleFinder implements FormattedCharSink {
+            Style style = null;
+            int count = 0;
+
+            @Override
+            public boolean accept(int index, @Nonnull Style style, int codePoint) {
+                if (this.style == null) {
+                    this.style = style;
+                } else if (!CharacterStyle.equalsForTextLayout(this.style, style)) {
+                    this.style = null;
+                    return false;
+                }
+                return ++count <= 50;
+            }
+        }
+        var finder = new StyleFinder();
+        text.accept(finder);
+        return finder.style;
     }
 
     /*public static void drawTooltip(@Nonnull GLCanvas canvas, @Nonnull List<? extends FormattedText> texts,
@@ -486,15 +534,38 @@ public final class TooltipRenderer {
         } else {
             tooltipWidth = 0;
             tooltipHeight = 0;
+            Style singleStyle = null;
             for (int i = 0; i < list.size(); i++) {
                 ClientTooltipComponent component = list.get(i);
                 tooltipWidth = Math.max(tooltipWidth, component.getWidth(font));
                 int componentHeight = component.getHeight();
                 tooltipHeight += componentHeight;
-                if (i == 0 && !itemStack.isEmpty() &&
-                        component instanceof ClientTextTooltip) {
-                    titleGap = true;
+                if (i == 0) {
                     titleBreakHeight = componentHeight;
+                    if (component instanceof ClientTextTooltip) {
+                        if (!itemStack.isEmpty()) {
+                            // item stack provided, always add title gap
+                            titleGap = true;
+                        } else {
+                            singleStyle = findSingleStyle((ClientTextTooltip) component);
+                            if (singleStyle == null) {
+                                // multi-style, add title gap
+                                titleGap = true;
+                            }
+                        }
+                    }
+                } else if (i <= 2 && !titleGap && component instanceof ClientTextTooltip) {
+                    // check first three lines to see if title gap is needed
+                    final Style lineStyle = findSingleStyle((ClientTextTooltip) component);
+                    if (lineStyle == null) {
+                        // multi-style, add title gap
+                        titleGap = true;
+                    } else if (singleStyle == null) {
+                        singleStyle = lineStyle;
+                    } else if (!CharacterStyle.equalsForTextLayout(singleStyle, lineStyle)) {
+                        // multi-style, add title gap
+                        titleGap = true;
+                    }
                 }
             }
             if (!titleGap) {
@@ -539,6 +610,17 @@ public final class TooltipRenderer {
         }
 
         if (maxScroll > 0) {
+            mScroller.setMaxScroll(maxScroll);
+            if (mPendingArrowMove != 0) {
+                if (mMarqueeDir != 0) {
+                    mScroller.scrollTo(mScroll);
+                    mScroller.abortAnimation();
+                }
+                mScroller.scrollBy(mPendingArrowMove * sArrowScrollFactor);
+                mPendingArrowMove = 0;
+            }
+            mScroller.update(MuiModApi.getElapsedTime());
+
             mScroll = MathUtil.clamp(mScroll, 0, maxScroll);
 
             if (mMarqueeDir != 0 && mCurrTimeMillis - mMarqueeEndMillis >= MARQUEE_DELAY_MILLIS) {
@@ -560,6 +642,7 @@ public final class TooltipRenderer {
             }
         } else {
             mScroll = 0;
+            mPendingArrowMove = 0;
         }
 
         if (sBorderColorCycle > 0) {
@@ -595,7 +678,10 @@ public final class TooltipRenderer {
         RenderSystem.defaultBlendFunc();
 
         final MultiBufferSource.BufferSource source = gr.bufferSource();
-        gr.pose().translate(partialX, partialY, 0);
+        // With rounded borders, we create a new matrix and do not perform matrix * vector
+        // on the CPU side. There are floating-point errors, and we found that this can cause
+        // text to be discarded by LEqual depth test on some GPUs, so lift it up by 0.1.
+        gr.pose().translate(partialX, partialY, sRoundedShapes ? 0.1f : 0);
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
             if (titleGap && i == 0 && sCenterTitle) {
@@ -656,7 +742,7 @@ public final class TooltipRenderer {
             }
         }
         shader.safeGetUniform("u_PushData1")
-                .set(sShadowAlpha, 4f / shadowRadius, (sFillColor[0] >>> 24) / 255f, rainbowOffset);
+                .set(sShadowAlpha, 1.25f / shadowRadius, (sFillColor[0] >>> 24) / 255f, rainbowOffset);
         if (rainbowOffset == 0) {
             chooseBorderColor(0, shader.safeGetUniform("u_PushData2"));
             chooseBorderColor(1, shader.safeGetUniform("u_PushData3"));

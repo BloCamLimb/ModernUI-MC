@@ -44,8 +44,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Locale;
 
-import static icyllis.arc3d.opengl.GLCore.*;
-
 /**
  * Find matching fonts and glyphs, measure glyph metrics and draw them of
  * different sizes and styles, and upload them to generated OpenGL textures.

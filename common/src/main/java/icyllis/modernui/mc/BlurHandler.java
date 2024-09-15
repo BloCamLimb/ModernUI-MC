@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.animation.ColorEvaluator;
@@ -43,7 +44,8 @@ public enum BlurHandler {
     INSTANCE;
 
     // minecraft namespace
-    private static final ResourceLocation BLUR_POST_EFFECT = new ResourceLocation("shaders/post/blur_fast.json");
+    private static final ResourceLocation GAUSSIAN_BLUR =
+            new ResourceLocation("shaders/post/modern_gaussian_blur.json");
 
     /**
      * Config values
@@ -88,6 +90,14 @@ public enum BlurHandler {
      */
     private boolean mHasScreen;
 
+    @Nullable
+    private PostChain mBlurEffect;
+
+    /**
+     * True if blur post-processing shader is loaded, though it may fail.
+     */
+    private boolean mBlurEffectLoaded;
+
     private float mVolumeMultiplier = 1;
 
     /**
@@ -121,21 +131,32 @@ public enum BlurHandler {
             if (mBlurLoaded) {
                 minecraft.gameRenderer.shutdownEffect();
             }
-            mFadingIn = false;
             mBlurring = false;
             mBlurLoaded = false;
         }
 
         GameRenderer gr = minecraft.gameRenderer;
         if (hasScreen && !mHasScreen) {
-            if (!blocked && sBlurEffect && !mBlurring && gr.currentEffect() == null && sBlurRadius >= 1) {
-                mBlurring = true;
-                if (sBackgroundDuration > 0 && sBlurWithBackground) {
-                    updateRadius(1);
-                } else {
-                    MuiModApi.get().loadEffect(minecraft.gameRenderer, BLUR_POST_EFFECT);
-                    updateRadius(sBlurRadius);
+            if (!blocked && sBlurEffect && !mBlurring && sBlurRadius >= 1) {
+                if (sBlurWithBackground) {
+                    if (!mBlurEffectLoaded) {
+                        loadEffect();
+                        assert mBlurEffectLoaded;
+                    }
+                    if (mBlurEffect != null) {
+                        mBlurring = true;
+                    }
+                } else if (gr.currentEffect() == null) {
+                    mBlurring = true;
                     mBlurLoaded = true;
+                    MuiModApi.get().loadEffect(minecraft.gameRenderer, GAUSSIAN_BLUR);
+                }
+                if (mBlurring) {
+                    if (sBackgroundDuration > 0) {
+                        updateRadius(1);
+                    } else {
+                        updateRadius(sBlurRadius);
+                    }
                 }
             }
             if (sBackgroundDuration > 0) {
@@ -150,32 +171,41 @@ public enum BlurHandler {
                 if (mBlurLoaded) {
                     gr.shutdownEffect();
                 }
-                mBlurLoaded = false;
                 mBlurring = false;
+                mBlurLoaded = false;
             }
             mFadingIn = false;
         }
         mHasScreen = hasScreen;
     }
 
-    /**
-     * Internal method, to re-blur after resources (including shaders) reloaded in the pause menu.
-     */
-    public void forceBlur() {
-        // no need to check if is excluded, this method is only called by opened ModernUI Screen
-        if (!sBlurEffect) {
-            return;
+    public void closeEffect() {
+        if (mBlurEffect != null) {
+            mBlurEffect.close();
         }
-        if (minecraft.level != null && mBlurring) {
-            GameRenderer gr = minecraft.gameRenderer;
-            if (gr.currentEffect() == null) {
-                MuiModApi.get().loadEffect(gr, BLUR_POST_EFFECT);
-                mFadingIn = true;
-                mBlurring = true;
-                mBlurLoaded = true;
-            } else {
-                mBlurLoaded = false;
+        mBlurEffect = null;
+    }
+
+    public void loadEffect() {
+        closeEffect();
+        if (sBlurEffect && sBlurWithBackground) {
+            mBlurEffectLoaded = true;
+            try {
+                mBlurEffect = new PostChain(minecraft.getTextureManager(),
+                        minecraft.getResourceManager(), minecraft.getMainRenderTarget(), GAUSSIAN_BLUR);
+                mBlurEffect.resize(minecraft.getWindow().getWidth(), minecraft.getWindow().getHeight());
+            } catch (Exception e) {
+                ModernUI.LOGGER.warn(ModernUI.MARKER, "Failed to load blur effect", e);
             }
+            if (mBlurEffect == null) {
+                mBlurring = false;
+            }
+        }
+    }
+
+    public void resize(int width, int height) {
+        if (mBlurEffect != null) {
+            mBlurEffect.resize(width, height);
         }
     }
 
@@ -223,9 +253,18 @@ public enum BlurHandler {
 
     private void updateRadius(float radius) {
         mBlurRadius = radius;
-        PostChain effect = minecraft.gameRenderer.currentEffect();
+        PostChain effect;
+        if (sBlurWithBackground) {
+            return;
+        } else {
+            effect = minecraft.gameRenderer.currentEffect();
+        }
         if (effect == null)
             return;
+        updateRadius(effect, radius);
+    }
+
+    private void updateRadius(@Nonnull PostChain effect, float radius) {
         List<PostPass> passes = ((AccessPostChain) effect).getPasses();
         for (PostPass s : passes) {
             s.getEffect().safeGetUniform("Progress").set(radius);
@@ -267,18 +306,22 @@ public enum BlurHandler {
         int z = 0;
         if (minecraft.level == null) {
             consumer.vertex(pose, x2, y1, z)
-                    .color(25, 25, 25, 255).endVertex();
+                    .color(30, 31, 34, 255).endVertex();
             consumer.vertex(pose, x1, y1, z)
-                    .color(25, 25, 25, 255).endVertex();
+                    .color(30, 31, 34, 255).endVertex();
             consumer.vertex(pose, x1, y2, z)
-                    .color(25, 25, 25, 255).endVertex();
+                    .color(30, 31, 34, 255).endVertex();
             consumer.vertex(pose, x2, y2, z)
-                    .color(25, 25, 25, 255).endVertex();
+                    .color(30, 31, 34, 255).endVertex();
         } else {
-            if (mBlurring && !mBlurLoaded) {
-                MuiModApi.get().loadEffect(minecraft.gameRenderer, BLUR_POST_EFFECT);
-                updateRadius(mBlurRadius);
-                mBlurLoaded = true;
+            if (mBlurring && sBlurWithBackground && mBlurEffect != null) {
+                updateRadius(mBlurEffect, mBlurRadius);
+                // depth test needs to be disabled for Minecraft <1.20
+                // and for Forge <1.20.6, because GuiFarPlane changed
+                RenderSystem.disableDepthTest();
+                // we don't use time, pass deltaTicks = 0
+                mBlurEffect.process(0);
+                minecraft.getMainRenderTarget().bindWrite(false);
             }
             int color = mBackgroundColor[1];
             consumer.vertex(pose, x2, y1, z)

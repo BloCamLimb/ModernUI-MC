@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,18 +16,16 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.fabric;
+package icyllis.modernui.mc.mixin;
 
-import icyllis.modernui.core.Core;
-import icyllis.modernui.mc.StillAlive;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTextTooltip;
+import net.minecraft.util.FormattedCharSequence;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-final class EventHandler {
+@Mixin(ClientTextTooltip.class)
+public interface AccessClientTextTooltip {
 
-    static class Client {
-
-        static void onRenderTick() {
-            Core.flushMainCalls();
-            StillAlive.tick();
-        }
-    }
+    @Accessor("text")
+    FormattedCharSequence getText();
 }

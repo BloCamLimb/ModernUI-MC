@@ -30,8 +30,10 @@ import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Unmodifiable;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.*;
-import java.util.function.*;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 
 /**
  * This class is used only for <b>compatibility</b>.
@@ -88,6 +90,8 @@ public class StandardFontSet extends FontSet {
         }
         int fontSize = TextLayoutProcessor.computeFontSize(newResLevel);
         mStandardPaint.setFontSize(fontSize);
+        mStandardPaint.setAntiAlias(GlyphManager.sAntiAliasing);
+        mStandardPaint.setLinearMetrics(GlyphManager.sFractionalMetrics);
         mResLevel = newResLevel;
     }
 
@@ -101,7 +105,7 @@ public class StandardFontSet extends FontSet {
             // we must check BitmapFont first,
             // because codePoint may be an invalid Unicode code point
             if (font instanceof BitmapFont bitmapFont) {
-                var glyph = bitmapFont.getGlyphInfo(codePoint);
+                var glyph = bitmapFont.getGlyph(codePoint);
                 if (glyph != null) {
                     return glyph;
                 }
@@ -146,17 +150,21 @@ public class StandardFontSet extends FontSet {
             // because codePoint may be an invalid Unicode code point
             // but vanilla doesn't validate that
             if (font instanceof BitmapFont bitmapFont) {
-                // auto bake
-                var glyph = bitmapFont.getGlyph(codePoint);
+                // bake glyph ourselves
+                var glyph = GlyphManager.getInstance().lookupGlyph(
+                        bitmapFont,
+                        (int) mStandardPaint.getFontSize(),
+                        codePoint
+                );
                 if (glyph != null) {
                     // convert to Minecraft, bearing Y is 3, see SheetGlyphInfo
-                    float up = 3F + bitmapFont.getAscent() +
+                    float up = 3F + TextLayout.STANDARD_BASELINE_OFFSET +
                             (float) glyph.y / TextLayoutEngine.BITMAP_SCALE;
                     float left = (float) glyph.x / TextLayoutEngine.BITMAP_SCALE;
-                    float right = (float) (glyph.x + glyph.width) / TextLayoutEngine.BITMAP_SCALE;
+                    float right = left + (float) glyph.width / TextLayoutEngine.BITMAP_SCALE;
                     float down = up + (float) glyph.height / TextLayoutEngine.BITMAP_SCALE;
                     return new StandardBakedGlyph(
-                            bitmapFont::getCurrentTexture,
+                            bitmapFont,
                             glyph.u1,
                             glyph.u2,
                             glyph.v1,
@@ -167,6 +175,8 @@ public class StandardFontSet extends FontSet {
                             down
                     );
                 }
+                // no pixels
+                return EmptyGlyph.INSTANCE;
             } else if (font instanceof SpaceFont) {
                 return EmptyGlyph.INSTANCE;
             } else if (font instanceof OutlineFont outlineFont) {
@@ -181,19 +191,20 @@ public class StandardFontSet extends FontSet {
                 if (glyphs.size() == 1 &&
                         glyphs.getInt(0) != 0) { // 0 is the missing glyph for TTF
                     // bake glyph ourselves
-                    var glyph = TextLayoutEngine.getInstance().lookupGlyph(
+                    var glyph = GlyphManager.getInstance().lookupGlyph(
                             outlineFont,
-                            mStandardPaint.getFontSize(),
+                            (int) mStandardPaint.getFontSize(),
                             glyphs.getInt(0)
                     );
                     if (glyph != null) {
                         // convert to Minecraft, bearing Y is 3, see SheetGlyphInfo
-                        float up = 3F + TextLayout.STANDARD_BASELINE_OFFSET + glyph.y / mResLevel;
-                        float left = glyph.x / mResLevel;
-                        float right = (glyph.x + glyph.width) / mResLevel;
-                        float down = up + glyph.height / mResLevel;
+                        float up = 3F + TextLayout.STANDARD_BASELINE_OFFSET +
+                                (float) glyph.y / mResLevel;
+                        float left = (float) glyph.x / mResLevel;
+                        float right = left + (float) glyph.width / mResLevel;
+                        float down = up + (float) glyph.height / mResLevel;
                         return new StandardBakedGlyph(
-                                () -> TextLayoutEngine.getInstance().getStandardTexture(), // <- singleton
+                                null,
                                 glyph.u1,
                                 glyph.u2,
                                 glyph.v1,
@@ -261,26 +272,37 @@ public class StandardFontSet extends FontSet {
         private static final GlyphRenderTypes EMPTY_TYPES =
                 GlyphRenderTypes.createForColorTexture(new ResourceLocation(""));
 
-        // OpenGL texture ID can be changing
-        private final IntSupplier mCurrentTexture;
+        // null for TTF fonts, non-null for bitmap fonts
+        @Nullable
+        private final BitmapFont mBitmapFont;
 
-        public StandardBakedGlyph(IntSupplier currentTexture,
+        public StandardBakedGlyph(@Nullable BitmapFont bitmapFont,
                                   float u0, float u1, float v0, float v1,
                                   float left, float right, float up, float down) {
             super(EMPTY_TYPES,
                     u0, u1, v0, v1,
                     left, right, up, down);
-            mCurrentTexture = currentTexture;
+            mBitmapFont = bitmapFont;
         }
 
         @Nonnull
         @Override
         public RenderType renderType(
                 @Nonnull net.minecraft.client.gui.Font.DisplayMode mode) {
-            return TextRenderType.getOrCreate(
-                    mCurrentTexture.getAsInt(),
-                    mode
-            );
+            // OpenGL texture ID can be changing
+            if (mBitmapFont != null) {
+                return TextRenderType.getOrCreate(
+                        GlyphManager.getInstance().getCurrentTexture(mBitmapFont),
+                        mode,
+                        /*isBitmap*/true
+                );
+            } else {
+                return TextRenderType.getOrCreate(
+                        GlyphManager.getInstance().getFontTexture(),
+                        mode,
+                        /*isBitmap*/false
+                );
+            }
         }
     }
 }

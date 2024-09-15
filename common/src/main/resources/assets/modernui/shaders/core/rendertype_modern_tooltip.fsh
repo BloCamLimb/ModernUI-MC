@@ -21,6 +21,31 @@ in vec2 f_Position;
 
 out vec4 fragColor;
 
+float noise1(float seed1, float seed2) {
+    return(
+    fract(seed1+12.34567*
+    fract(100.*(abs(seed1*0.91)+seed2+94.68)*
+    fract((abs(seed2*0.41)+45.46)*
+    fract((abs(seed2)+757.21)*
+    fract(seed1*0.0171))))))
+    * 1.0038 - 0.00185;
+}
+
+vec4 dither(vec4 color) {
+    // Unrolled 8x8 Bayer matrix
+    vec2 A = gl_FragCoord.xy;
+    vec2 B = floor(A);
+    float U = fract(B.x * 0.5 + B.y * B.y * 0.75);
+    vec2 C = A * 0.5;
+    vec2 D = floor(C);
+    float V = fract(D.x * 0.5 + D.y * D.y * 0.75);
+    vec2 E = C * 0.5;
+    vec2 F = floor(E);
+    float W = fract(F.x * 0.5 + F.y * F.y * 0.75);
+    float dithering = ((W * 0.25 + V) * 0.25 + U) - (63.0 / 128.0);
+    return vec4(clamp(color.rgb + dithering * (1.0 / 255.0), 0.0, 1.0), color.a);
+}
+
 void main() {
     vec2 pos = f_Position;
     vec2 d = abs(pos) - u_Size + u_Radius;
@@ -46,15 +71,17 @@ void main() {
         border = vec4(rgb*vec3(0.9,0.85,0.9),1.0);
     }
 
-    float shadow = u_ShadowAlpha * exp(-u_ShadowSpread * abs(dis-u_Thickness));
+    //float shadow = u_ShadowAlpha * exp(-u_ShadowSpread * abs(dis-u_Thickness));
+    float shadow = pow(1.0-(u_ShadowSpread*clamp(dis-u_Thickness,0.0,1.0/u_ShadowSpread)),3.0);
+    shadow = u_ShadowAlpha * (shadow + (noise1(gl_FragCoord.x,gl_FragCoord.y)-1.0) * 0.05);
     float dstA = max(shadow, step(dis,0.0)) * u_BackgroundAlpha;
     float f = abs(dis)-u_Thickness;
-    float afwidth = 0.7 * length(vec2(dFdx(f),dFdy(f)));
-    float srcA = border.a * (1.0-smoothstep(-afwidth, afwidth, f));
+    float afwidth = fwidth(f);
+    float srcA = border.a * (1.0-clamp(f/afwidth+0.5, 0.0, 1.0));
     float alpha = srcA + (1.0-srcA) * dstA;
     if (alpha < 0.002) {
         discard;
     }
     // minecraft uses non-premultiplied alpha
-    fragColor = vec4(border.rgb * srcA / alpha, alpha);
+    fragColor = dither(vec4(border.rgb * srcA / alpha, alpha));
 }

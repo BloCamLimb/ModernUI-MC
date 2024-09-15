@@ -25,7 +25,6 @@ import com.vladsch.flexmark.parser.Parser;
 import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.util.ast.Node;
 import icyllis.arc3d.core.Matrix4;
-import icyllis.arc3d.opengl.GLCore;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.audio.*;
 import icyllis.modernui.core.Window;
@@ -58,7 +57,7 @@ import java.util.List;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static icyllis.arc3d.opengl.GLCore.*;
+import static org.lwjgl.opengl.GL33C.*;
 import static icyllis.modernui.ModernUI.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -372,7 +371,7 @@ public class TestMain {
         window.makeCurrent();
         Core.initOpenGL();
         Core.glShowCapsErrorDialog();
-        GLSurfaceCanvas canvas = GLSurfaceCanvas.initialize();
+        Canvas canvas = null;
         GLShaderManager.getInstance().reload();
         Matrix4 projection = new Matrix4();
         //projection = Matrix4.makePerspective(MathUtil.PI_DIV_2, window.getAspectRatio(), 0.01f, 1000);
@@ -461,12 +460,12 @@ public class TestMain {
 
         //sTrack.play();
 
-        GLCore.glEnable(GL_CULL_FACE);
-        GLCore.glEnable(GL_BLEND);
-        GLCore.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-        GLCore.glEnable(GL_STENCIL_TEST);
-        GLCore.glEnable(GL_MULTISAMPLE);
-        GLCore.glDisable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_BLEND);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_STENCIL_TEST);
+        glEnable(GL_MULTISAMPLE);
+        glDisable(GL_DEPTH_TEST);
 
         TextPaint tps = new TextPaint();
         tps.setColor(0xff40ddee);
@@ -491,12 +490,12 @@ public class TestMain {
             /*Core.resetFrame(window);*/
 
             if (window.getWidth() > 0) {
-                canvas.reset(window.getWidth(), window.getHeight());
+                //canvas.reset(window.getWidth(), window.getHeight());
 
                 // UI thread
                 Paint paint = Paint.obtain();
 
-                paint.setRGB(160, 160, 160);
+                paint.setRGBA(160, 160, 160, 255);
 
                 int stackAlpha = (int) (255 * ((time - 2500) / 300F));
                 if (stackAlpha < 255) {
@@ -522,8 +521,8 @@ public class TestMain {
 
                 paint.setStrokeWidth(8);
                 paint.setRGBA(120, 220, 240, 192);
-                canvas.drawRoundLine(20, 20, 140, 60, paint);
-                canvas.drawRoundLine(120, 30, 60, 80, paint);
+                canvas.drawLine(20, 20, 140, 60, paint);
+                canvas.drawLine(120, 30, 60, 80, paint);
 
                 canvas.drawBezier(300, 100, 410, 210 + 100 * sin, 480, 170, paint);
 
@@ -572,10 +571,10 @@ public class TestMain {
                 // render thread, wait UI thread
                 //canvas.executeDrawOps(framebuffer);
 
-                if (!note) {
+                /*if (!note) {
                     LOGGER.info(TextUtils.binaryCompact(canvas.getNativeMemoryUsage()));
                     note = true;
-                }
+                }*/
             }
 
             /*glBlitNamedFramebuffer(framebuffer.get(), 0, 0, 0, window.getWidth(), window.getHeight(),

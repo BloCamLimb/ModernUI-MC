@@ -18,10 +18,9 @@
 
 package icyllis.modernui.mc.mixin;
 
-import icyllis.modernui.mc.UIManager;
+import icyllis.modernui.mc.MuiModApi;
 import net.minecraft.client.KeyboardHandler;
-import net.minecraft.client.Minecraft;
-import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -29,14 +28,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(KeyboardHandler.class)
 public class MixinKeyboardHandler {
 
-    @Shadow
-    @Final
-    private Minecraft minecraft;
-
-    @Inject(method = "keyPress", at = @At("TAIL"))
-    private void onKeyInputPost(long handle, int key, int scanCode, int action, int mods, CallbackInfo ci) {
-        if (handle == minecraft.getWindow().getWindow()) {
-            UIManager.getInstance().onPostKeyInput(key, scanCode, action, mods);
-        }
+    @Inject(method = "keyPress", at = @At("HEAD"))
+    private void onKeyInputPost(long window, int keyCode, int scanCode, int action, int mods,
+                                CallbackInfo ci) {
+        MuiModApi.dispatchOnPreKeyInput(window, keyCode, scanCode, action, mods);
     }
 }

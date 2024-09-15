@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,13 +23,10 @@ import com.ibm.icu.text.Bidi;
 import com.mojang.blaze3d.font.SpaceProvider;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.serialization.JsonOps;
-import icyllis.arc3d.engine.Engine;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
-import icyllis.modernui.graphics.font.BakedGlyph;
-import icyllis.modernui.graphics.font.GlyphManager;
 import icyllis.modernui.graphics.text.*;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.text.mixin.AccessFontManager;
@@ -57,7 +54,8 @@ import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.*;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -116,7 +114,7 @@ public class TextLayoutEngine extends FontResourceManager
     public static volatile boolean sUseTextShadersInWorld = true;
 
     /**
-     * The raw config value of {@link #sUseTextShadersInWorld}.
+     * The raw user config value of {@link #sUseTextShadersInWorld}.
      */
     public static volatile boolean sRawUseTextShadersInWorld = true;
 
@@ -126,12 +124,20 @@ public class TextLayoutEngine extends FontResourceManager
     public static final ResourceLocation SANS_SERIF = ModernUIMod.location("sans-serif");
     public static final ResourceLocation SERIF = ModernUIMod.location("serif");
     public static final ResourceLocation MONOSPACED = ModernUIMod.location("monospace"); // no -d
+    /**
+     * We never load Unicode fonts, they will be ModernUI default typeface list and can be
+     * dynamically reloaded. However, if other fonts contain UNIHEX or refer to Unicode fonts,
+     * we use this placeholder and redirect it to the <em>current</em> ModernUI default typeface list.
+     */
+    private static final ResourceLocation INTERNAL_DEFAULT = ModernUIMod.location("internal-default");
 
     /*
      * Draw and cache all glyphs of all fonts needed
      * Lazy-loading because we are waiting for render system to initialize
      */
     //private GlyphManagerForge glyphManager;
+
+    private final GlyphManager mGlyphManager;
 
     /*
      * A cache of recently seen strings to their fully laid-out state, complete with color changes and texture
@@ -257,17 +263,6 @@ public class TextLayoutEngine extends FontResourceManager
      */
     private final Pools.Pool<TextLayoutProcessor> mProcessorPool = Pools.newSynchronizedPool(3);
 
-    private record FontStrikeDesc(Font font, int resLevel) {
-    }
-
-    /**
-     * For fast digit replacement and obfuscated char rendering.
-     * Map from 'derived font' to 'ASCII 33(!) to 126(~) characters with their standard advances and relative advances'.
-     */
-    private final Map<FontStrikeDesc, FastCharSet> mFastCharMap = new HashMap<>();
-    // it's necessary to cache the lambda
-    private final Function<FontStrikeDesc, FastCharSet> mCacheFastChars = this::cacheFastChars;
-
     /**
      * All the fonts to use. Maps typeface name to FontCollection.
      */
@@ -277,7 +272,9 @@ public class TextLayoutEngine extends FontResourceManager
 
     private final ConcurrentHashMap<ResourceLocation, FontCollection> mRegisteredFonts = new ConcurrentHashMap<>();
 
-    public static final int MIN_PIXEL_DENSITY_FOR_SDF = 4;
+    public static final int DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF = 4;
+
+    public static volatile int sMinPixelDensityForSDF = 4;
 
     /*
      * Emoji sequence to sprite index (used as glyph code in emoji atlas).
@@ -326,11 +323,13 @@ public class TextLayoutEngine extends FontResourceManager
         /* Pre-cache the ASCII digits to allow for fast glyph substitution */
         //cacheDigitGlyphs();
 
+        // init first
+        mGlyphManager = GlyphManager.getInstance();
+
         mGlyphManager.addAtlasInvalidationCallback(invalidationInfo -> {
             if (invalidationInfo.resize()) {
-                // When OpenGL texture ID changed (atlas resized), we want to use the new first atlas
-                // for batch rendering, we need to clear any existing TextRenderType instances
-                TextRenderType.clear(false);
+                // texture atlas is resized to a larger size, but no glyphs are evicted
+                invalidateStrikeCache();
             } else {
                 // called by compact(), need to lookupGlyph() and cacheGlyph() again
                 reload();
@@ -355,14 +354,6 @@ public class TextLayoutEngine extends FontResourceManager
         return (TextLayoutEngine) FontResourceManager.getInstance();
     }
 
-    /**
-     * @return the glyph manager
-     */
-    @Nonnull
-    public GlyphManager getGlyphManager() {
-        return mGlyphManager;
-    }
-
     @Nonnull
     public ModernTextRenderer getTextRenderer() {
         return mTextRenderer;
@@ -378,6 +369,28 @@ public class TextLayoutEngine extends FontResourceManager
     }
 
     /**
+     * Called when font atlas is just resized to a larger size.
+     * {@link #reload()} method will do this invalidation equivalently.
+     */
+    @RenderThread
+    public void invalidateStrikeCache() {
+        // When OpenGL texture ID changed (atlas resized), we want to use the new first atlas
+        // for batch rendering, we need to clear any existing TextRenderType instances
+        TextRenderType.clear(/*cleanup*/ false);
+        if (mVanillaFontManager != null) {
+            // We reuse baked glyphs for TextLayout, but don't reuse StandardBakedGlyph in
+            // the compatibility layer for Minecraft text system, then we have to invalidate
+            // the glyph cache (because normalized texture coordinates are changed)
+            var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
+            for (var fontSet : fontSets.values()) {
+                if (fontSet instanceof StandardFontSet standardFontSet) {
+                    standardFontSet.invalidateCache(mResLevel);
+                }
+            }
+        }
+    }
+
+    /**
      * Cleanup layout cache.
      */
     public void clear() {
@@ -390,9 +403,9 @@ public class TextLayoutEngine extends FontResourceManager
         mComponentCache = new HashMap<>();
         mFormattedCache = new HashMap<>();
         // Metrics change with resolution level
-        mFastCharMap.clear();
+        GlyphManager.getInstance().clearFastCharMap();
         // Just clear TextRenderType instances, font textures are remained
-        TextRenderType.clear(false);
+        TextRenderType.clear(/*cleanup*/ false);
         if (count > 0) {
             LOGGER.debug(MARKER, "Cleanup {} text layout entries", count);
         }
@@ -404,16 +417,20 @@ public class TextLayoutEngine extends FontResourceManager
      */
     @RenderThread
     public void reload() {
-        clear();
-
-        var ctx = ModernUI.getInstance();
+        var window = Minecraft.getInstance().getWindow();
         final int scale;
-        if (ctx != null) {
-            scale = Math.round(ctx.getResources()
-                    .getDisplayMetrics().density * 2);
+        //noinspection ConstantValue
+        if (window != null) { // this can be null on Fabric, because this class loads too early
+            scale = Math.round((float) window.getGuiScale());
         } else {
             scale = 2;
         }
+        internalReload(scale);
+    }
+
+    private void internalReload(int scale) {
+        clear();
+
         final int oldLevel = mResLevel;
         if (sFixedResolution) {
             // make font size to 16 (8 * 2)
@@ -481,13 +498,22 @@ public class TextLayoutEngine extends FontResourceManager
             if (fontSets.get(Minecraft.DEFAULT_FONT) instanceof StandardFontSet standardFontSet) {
                 standardFontSet.reload(mFontCollections.get(Minecraft.DEFAULT_FONT), mResLevel);
             }
+            if (fontSets.get(Minecraft.UNIFORM_FONT) instanceof StandardFontSet standardFontSet) {
+                standardFontSet.reload(ModernUI.getSelectedTypeface(), mResLevel);
+            }
             for (var e : fontSets.entrySet()) {
-                if (e.getKey().equals(Minecraft.DEFAULT_FONT)) {
+                if (e.getKey().equals(Minecraft.DEFAULT_FONT) ||
+                        e.getKey().equals(Minecraft.UNIFORM_FONT)) {
                     continue;
                 }
                 if (e.getValue() instanceof StandardFontSet standardFontSet) {
                     standardFontSet.invalidateCache(mResLevel);
                 }
+            }
+            if (!fontSets.containsKey(Minecraft.UNIFORM_FONT)) {
+                var fontSet = new StandardFontSet(Minecraft.getInstance().getTextureManager(), Minecraft.UNIFORM_FONT);
+                fontSet.reload(ModernUI.getSelectedTypeface(), mResLevel);
+                fontSets.put(Minecraft.UNIFORM_FONT, fontSet);
             }
         }
 
@@ -502,6 +528,8 @@ public class TextLayoutEngine extends FontResourceManager
     @RenderThread
     public void reloadAll() {
         super.reloadAll();
+        mGlyphManager.reload();
+        LOGGER.info(GlyphManager.MARKER, "Reloaded glyph manager");
         reload();
     }
 
@@ -514,7 +542,7 @@ public class TextLayoutEngine extends FontResourceManager
                 reload = !Objects.equals(mForceUnicodeFont, forceUnicodeFont);
             }
             if (reload) {
-                reload();
+                internalReload(newScale);
             }
         }
     }
@@ -569,9 +597,9 @@ public class TextLayoutEngine extends FontResourceManager
             for (FontFamily family : mRawDefaultFontCollection.getFamilies()) {
                 switch (family.getFamilyName()) {
                     case "minecraft:font/nonlatin_european.png",
-                            "minecraft:font/accented.png",
-                            "minecraft:font/ascii.png",
-                            "minecraft:include/space / minecraft:space" -> {
+                         "minecraft:font/accented.png",
+                         "minecraft:font/ascii.png",
+                         "minecraft:include/space / minecraft:space" -> {
                         if ((behavior & DEFAULT_FONT_BEHAVIOR_KEEP_ASCII) != 0) {
                             set.add(family);
                         }
@@ -651,11 +679,6 @@ public class TextLayoutEngine extends FontResourceManager
                 fontSet.reload(fontCollection, mResLevel);
                 fontSets.put(fontName, fontSet);
             });
-            {
-                var fontSet = new StandardFontSet(textureManager, Minecraft.UNIFORM_FONT);
-                fontSet.reload(ModernUI.getSelectedTypeface(), mResLevel);
-                fontSets.put(Minecraft.UNIFORM_FONT, fontSet);
-            }
         } else {
             LOGGER.warn(MARKER, "Where is font manager?");
         }
@@ -667,9 +690,11 @@ public class TextLayoutEngine extends FontResourceManager
 
     @Override
     public void close() {
+        mGlyphManager.closeAtlases();
         closeFonts();
         // do final cleanup
-        TextRenderType.clear(true);
+        TextRenderType.clear(/*cleanup*/ true);
+        EffectRenderType.clear();
     }
 
     private void closeFonts() {
@@ -803,6 +828,7 @@ public class TextLayoutEngine extends FontResourceManager
             sorter.addEntry(bundle.name, bundle);
         }
         final var map = new HashMap<ResourceLocation, FontCollection>();
+        map.put(INTERNAL_DEFAULT, ModernUI.getSelectedTypeface());
         sorter.orderByDependencies((name, bundle) -> {
             if (isUnicodeFont(name)) {
                 return;
@@ -873,11 +899,16 @@ public class TextLayoutEngine extends FontResourceManager
                         new FontFamily(spaceFont)
                 );
             }
+            case UNIHEX -> {
+                bundle.families.add(INTERNAL_DEFAULT);
+            }
             case REFERENCE -> {
                 ResourceLocation reference = ((ProviderReferenceDefinition) definition).id();
                 if (!isUnicodeFont(reference)) {
                     bundle.families.add(reference);
                     bundle.dependencies.add(reference);
+                } else if (!name.equals(Minecraft.DEFAULT_FONT)) {
+                    bundle.families.add(INTERNAL_DEFAULT);
                 }
             }
             default -> LOGGER.info(MARKER, "Unknown provider type '{}' in font '{}' in pack: '{}'",
@@ -908,7 +939,7 @@ public class TextLayoutEngine extends FontResourceManager
      * @param resLevel current resolution level
      */
     public static int adjustPixelDensityForSDF(int resLevel) {
-        return Math.max(resLevel, MIN_PIXEL_DENSITY_FOR_SDF);
+        return Math.max(resLevel, sMinPixelDensityForSDF);
     }
 
 
@@ -1205,31 +1236,14 @@ public class TextLayoutEngine extends FontResourceManager
                 var font = family.getClosestMatch(FontPaint.NORMAL);
                 if (font instanceof BitmapFont bmf) {
                     if (basePath != null) {
-                        bmf.dumpAtlas(basePath + "_" + index + ".png");
-                        index++;
+                        bmf.dumpAtlas(index, basePath + "_" + index + ".png");
                     } else {
-                        bmf.dumpAtlas(null);
+                        bmf.dumpAtlas(index, null);
                     }
+                    index++;
                 }
             }
         }
-    }
-
-    @Nullable
-    public BakedGlyph lookupGlyph(Font font, int devSize, int glyphId) {
-        if (font instanceof BitmapFont bitmapFont) {
-            // auto bake
-            return bitmapFont.getGlyph(glyphId);
-        }
-        return mGlyphManager.lookupGlyph(font, devSize, glyphId);
-    }
-
-    public int getEmojiTexture() {
-        return mGlyphManager.getCurrentTexture(Engine.MASK_FORMAT_ARGB);
-    }
-
-    public int getStandardTexture() {
-        return mGlyphManager.getCurrentTexture(Engine.MASK_FORMAT_A8);
     }
 
     /**
@@ -1244,7 +1258,7 @@ public class TextLayoutEngine extends FontResourceManager
      */
     @Deprecated
     @Nullable
-    private BakedGlyph lookupEmoji(@Nonnull char[] buf, int start, int end) {
+    private GLBakedGlyph lookupEmoji(@Nonnull char[] buf, int start, int end) {
         return null;
     }
 
@@ -1321,6 +1335,22 @@ public class TextLayoutEngine extends FontResourceManager
         return size;
     }
 
+    public void dumpLayoutCache() {
+        int i = 0;
+        for (var e : mVanillaCache.entrySet()) {
+            LOGGER.info(MARKER, "VanillaCache {}\n{}\n{}", i, e.getKey(), e.getValue().toDetailedString());
+            i++;
+        }
+        for (var e : mComponentCache.entrySet()) {
+            LOGGER.info(MARKER, "ComponentCache {}\n{}\n{}", i, e.getKey(), e.getValue().toDetailedString());
+            i++;
+        }
+        for (var e : mFormattedCache.entrySet()) {
+            LOGGER.info(MARKER, "FormattedCache {}\n{}\n{}", i, e.getKey(), e.getValue().toDetailedString());
+            i++;
+        }
+    }
+
     public int getResLevel() {
         return mResLevel;
     }
@@ -1333,167 +1363,6 @@ public class TextLayoutEngine extends FontResourceManager
     @Nonnull
     public TextDirectionHeuristic getTextDirectionHeuristic() {
         return mTextDirectionHeuristic;
-    }
-
-    /**
-     * Lookup fast char glyph with given font.
-     * The pair right is the offsetX to standard '0' advance alignment (already scaled by GUI factor).
-     * Because we assume FAST digit glyphs are monospaced, no matter whether it's a monospaced font.
-     *
-     * @param font     derived font including style
-     * @param resLevel resolution level
-     * @return array of all fast char glyphs, and others, or null if not supported
-     */
-    @Nullable
-    public FastCharSet lookupFastChars(@Nonnull Font font, int resLevel) {
-        if (font == mEmojiFont) {
-            // Emojis are supported for obfuscated rendering
-            return null;
-        }
-        if (font instanceof BitmapFont) {
-            resLevel = 1;
-        }
-        return mFastCharMap.computeIfAbsent(
-                new FontStrikeDesc(font, resLevel),
-                mCacheFastChars
-        );
-    }
-
-    @Nullable
-    private FastCharSet cacheFastChars(@Nonnull FontStrikeDesc desc) {
-        java.awt.Font awtFont = null;
-        BitmapFont bitmapFont = null;
-        int deviceFontSize = 1;
-        if (desc.font instanceof OutlineFont) {
-            deviceFontSize = TextLayoutProcessor.computeFontSize(desc.resLevel);
-            awtFont = ((OutlineFont) desc.font).chooseFont(deviceFontSize);
-        } else if (desc.font instanceof BitmapFont) {
-            bitmapFont = (BitmapFont) desc.font;
-        } else {
-            return null;
-        }
-
-        // initial table
-        BakedGlyph[] glyphs = new BakedGlyph[189]; // 126 - 33 + 1 + 255 - 161 + 1
-        // normalized offsets
-        float[] offsets = new float[glyphs.length];
-
-        char[] chars = new char[1];
-        int n = 0;
-
-        // 48 to 57, always cache all digits for fast digit replacement
-        for (int i = 0; i < 10; i++) {
-            chars[0] = (char) ('0' + i);
-            float advance;
-            BakedGlyph glyph;
-            // no text shaping
-            if (awtFont != null) {
-                GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
-                if (vector.getNumGlyphs() == 0) {
-                    if (i == 0) {
-                        LOGGER.warn(MARKER, awtFont + " does not support ASCII digits");
-                        return null;
-                    }
-                    continue;
-                }
-                advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
-                glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
-                if (glyph == null) {
-                    if (i == 0) {
-                        LOGGER.warn(MARKER, awtFont + " does not support ASCII digits");
-                        return null;
-                    }
-                    continue;
-                }
-            } else {
-                var gl = bitmapFont.getGlyph(chars[0]);
-                if (gl == null) {
-                    if (i == 0) {
-                        LOGGER.warn(MARKER, bitmapFont + " does not support ASCII digits");
-                        return null;
-                    }
-                    continue;
-                }
-                advance = gl.advance;
-                glyph = gl;
-            }
-            glyphs[i] = glyph;
-            // '0' is standard, because it's wider than other digits in general
-            if (i == 0) {
-                // 0 is standard advance
-                offsets[n] = advance;
-            } else {
-                // relative offset to standard advance, to center the glyph
-                offsets[n] = (offsets[0] - advance) / 2f;
-            }
-            n++;
-        }
-
-        char[][] ranges = {{33, 48}, {58, 127}, {161, 256}};
-
-        // cache only narrow chars
-        for (char[] range : ranges) {
-            for (char c = range[0], e = range[1]; c < e; c++) {
-                chars[0] = c;
-                float advance;
-                BakedGlyph glyph;
-                // no text shaping
-                if (awtFont != null) {
-                    GlyphVector vector = mGlyphManager.createGlyphVector(awtFont, chars);
-                    if (vector.getNumGlyphs() == 0) {
-                        continue;
-                    }
-                    advance = (float) vector.getGlyphPosition(1).getX() / desc.resLevel;
-                    // too wide
-                    if (advance - 1f > offsets[0]) {
-                        continue;
-                    }
-                    glyph = mGlyphManager.lookupGlyph(desc.font, deviceFontSize, vector.getGlyphCode(0));
-                } else {
-                    var gl = bitmapFont.getGlyph(chars[0]);
-                    // allow empty
-                    if (gl == null) {
-                        continue;
-                    }
-                    advance = gl.advance;
-                    // too wide
-                    if (advance - 1f > offsets[0]) {
-                        continue;
-                    }
-                    glyph = gl;
-                }
-                // allow empty
-                if (glyph != null) {
-                    glyphs[n] = glyph;
-                    offsets[n] = (offsets[0] - advance) / 2f;
-                    n++;
-                }
-            }
-        }
-
-        if (n < glyphs.length) {
-            glyphs = Arrays.copyOf(glyphs, n);
-            offsets = Arrays.copyOf(offsets, n);
-        }
-        return new FastCharSet(glyphs, offsets);
-    }
-
-    /**
-     * FastCharSet have uniform advances. Offset[0] is the advance for all glyphs.
-     * Other offsets is the relative X offset to center the glyph. Normalized to
-     * Minecraft GUI system.
-     * <p>
-     * This is used to render fast digits and obfuscated chars.
-     */
-    public static class FastCharSet extends BakedGlyph {
-
-        public final BakedGlyph[] glyphs;
-        public final float[] offsets;
-
-        public FastCharSet(BakedGlyph[] glyphs, float[] offsets) {
-            this.glyphs = glyphs;
-            this.offsets = offsets;
-        }
     }
 
     /**

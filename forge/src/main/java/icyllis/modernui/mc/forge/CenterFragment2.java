@@ -24,6 +24,8 @@ import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.*;
+import icyllis.modernui.graphics.LinearGradient;
+import icyllis.modernui.graphics.Shader;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.ui.ThemeControl;
 import icyllis.modernui.text.Typeface;
@@ -88,6 +90,23 @@ public class CenterFragment2 extends Fragment {
             title.setText(I18n.get("modernui.center.title"));
             title.setTextSize(22);
             title.setTextStyle(Typeface.BOLD);
+            title.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+                int height = bottom - top;
+                int oldHeight = oldBottom - oldTop;
+                if (height != oldHeight) {
+                    var tv = (TextView) v;
+                    tv.getPaint().setShader(new LinearGradient(0, 0, height * 2, height,
+                            // Minato Aqua
+                            new int[]{
+                                    0xFFB8DFF4,
+                                    0xFFF8C5CE,
+                                    0xFFFEFDF0
+                            },
+                            null,
+                            Shader.TileMode.MIRROR,
+                            null));
+                }
+            });
 
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER;

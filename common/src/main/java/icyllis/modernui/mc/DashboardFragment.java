@@ -38,7 +38,7 @@ import javax.annotation.Nonnull;
 public class DashboardFragment extends Fragment {
 
     public static final String CREDIT_TEXT = """
-            Modern UI 3.10.1
+            Modern UI 3.11.0
             by
             BloCamLimb
             (Icyllis Milica)
@@ -96,18 +96,16 @@ public class DashboardFragment extends Fragment {
                         .setBufferType(TextView.BufferType.SPANNABLE)
                         .build()
                         .setMarkdown(tv, """
-                                What's New in Modern UI 3.10.1
+                                What's New in Modern UI 3.11.0
                                 ----
-                                * Brand-New Tooltip Style
-                                * Better Font Management
+                                * Brand-New Graphics Engine
+                                * Better Text Rendering
                                 * Better Mod Compatibility
-                                * Rendering Optimization
-                                * New Shader Compiler
-                                * New UI Components & Text Styles
-                                * Unicode 15.1 Emoji List
+                                * New UI Components & Rendering API
+                                * Rendering Optimizations
                                 * [Full Changelog…](https://github.com/BloCamLimb/ModernUI/blob/master/changelogs.md)
                                 * [Full Changelog…](https://github.com/BloCamLimb/ModernUI-MC/blob/master/changelogs.md)
-                                                                
+                                \s
                                 > Author: BloCamLimb \s
                                   Source Code: [Modern UI](https://github.com/BloCamLimb/ModernUI) \s
                                   Source Code: [Modern UI (MC)](https://github.com/BloCamLimb/ModernUI-MC)""");
@@ -195,11 +193,11 @@ public class DashboardFragment extends Fragment {
 
         @Override
         public void draw(@Nonnull Canvas canvas) {
-            if (canvas instanceof GLSurfaceCanvas) {
+            //if (canvas instanceof GLSurfaceCanvas) {
                 var bounds = getBounds();
                 var inner = mStrokeWidth * 0.5f;
-                ((GLSurfaceCanvas) canvas).drawGlowWave(bounds.left + inner * 1.5f, bounds.top + inner * 1.5f,
-                        bounds.right - inner, bounds.bottom - inner);
+                /*((GLSurfaceCanvas) canvas).drawGlowWave(bounds.left + inner * 1.5f, bounds.top + inner * 1.5f,
+                        bounds.right - inner, bounds.bottom - inner);*/
                 var paint = Paint.obtain();
                 paint.setStyle(Paint.STROKE);
                 paint.setColor(ThemeControl.THEME_COLOR);
@@ -208,7 +206,7 @@ public class DashboardFragment extends Fragment {
                         bounds.bottom - inner, mStrokeWidth * 2, paint);
                 paint.recycle();
                 invalidateSelf();
-            }
+            //}
         }
 
         @Override

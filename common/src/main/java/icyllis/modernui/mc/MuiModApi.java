@@ -113,6 +113,15 @@ public abstract class MuiModApi {
         void onDebugDump(@Nonnull PrintWriter writer);
     }
 
+    @FunctionalInterface
+    public interface OnPreKeyInputListener {
+
+        /**
+         * Called when {@link org.lwjgl.glfw.GLFWKeyCallbackI} invoked.
+         */
+        void onPreKeyInput(long window, int keyCode, int scanCode, int action, int mods);
+    }
+
     static final CopyOnWriteArrayList<OnScrollListener> sOnScrollListeners =
             new CopyOnWriteArrayList<>();
     static final CopyOnWriteArrayList<OnScreenChangeListener> sOnScreenChangeListeners =
@@ -120,6 +129,8 @@ public abstract class MuiModApi {
     static final CopyOnWriteArrayList<OnWindowResizeListener> sOnWindowResizeListeners =
             new CopyOnWriteArrayList<>();
     static final CopyOnWriteArrayList<OnDebugDumpListener> sOnDebugDumpListeners =
+            new CopyOnWriteArrayList<>();
+    static final CopyOnWriteArrayList<OnPreKeyInputListener> sOnPreKeyInputListeners =
             new CopyOnWriteArrayList<>();
 
     static final MuiModApi INSTANCE = ServiceLoader.load(MuiModApi.class).findFirst()
@@ -464,6 +475,14 @@ public abstract class MuiModApi {
         sOnDebugDumpListeners.remove(listener);
     }
 
+    public static void addOnPreKeyInputListener(@Nonnull OnPreKeyInputListener listener) {
+        sOnPreKeyInputListeners.addIfAbsent(listener);
+    }
+
+    public static void removeOnPreKeyInputListener(@Nonnull OnPreKeyInputListener listener) {
+        sOnPreKeyInputListeners.remove(listener);
+    }
+
     // INTERNAL HOOK
     public static void dispatchOnScroll(double scrollX, double scrollY) {
         for (var l : sOnScrollListeners) {
@@ -489,6 +508,13 @@ public abstract class MuiModApi {
     public static void dispatchOnDebugDump(@Nonnull PrintWriter writer) {
         for (var l : sOnDebugDumpListeners) {
             l.onDebugDump(writer);
+        }
+    }
+
+    // INTERNAL HOOK
+    public static void dispatchOnPreKeyInput(long window, int keyCode, int scanCode, int action, int mods) {
+        for (var l : sOnPreKeyInputListeners) {
+            l.onPreKeyInput(window, keyCode, scanCode, action, mods);
         }
     }
 }
