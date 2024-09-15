@@ -623,7 +623,9 @@ public final class Config {
             ModernUIClient.sFontRegistrationList = mFontRegistrationList.get();
 
             // scan and preload typeface in background thread
-            //ModernUIClient.getInstance().loadTypeface();
+            // only on Forge, config is loaded when reloading resources
+            // on NeoForge 1.21 and Fabric, config is preloaded and loadTypeface() is trigger by FontResourceManager
+            ModernUIClient.getInstance().loadTypeface();
         }
 
         public enum WindowMode {

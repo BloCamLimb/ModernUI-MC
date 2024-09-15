@@ -646,8 +646,10 @@ public class TextLayoutEngine extends FontResourceManager
     private CompletableFuture<LoadResults> prepareResources(@Nonnull ResourceManager resourceManager,
                                                             @Nonnull Executor preparationExecutor) {
         final var results = new LoadResults();
-        final var loadFonts = CompletableFuture.runAsync(() ->
-                        loadFonts(resourceManager, results),
+        final var loadFonts = CompletableFuture.runAsync(() -> {
+                    ModernUIClient.getInstance().loadTypeface();
+                    loadFonts(resourceManager, results);
+                },
                 preparationExecutor);
         final var loadEmojis = CompletableFuture.runAsync(() ->
                         loadEmojis(resourceManager, results),

@@ -114,13 +114,16 @@ public class FontResourceManager implements PreparableReloadListener {
         CompletableFuture<LoadResults> preparation;
         {
             final var results = new LoadResults();
+            final var loadFonts = CompletableFuture.runAsync(() ->
+                            ModernUIClient.getInstance().loadTypeface(),
+                    preparationExecutor);
             final var loadEmojis = CompletableFuture.runAsync(() ->
                             loadEmojis(resourceManager, results),
                     preparationExecutor);
             final var loadShortcodes = CompletableFuture.runAsync(() ->
                             loadShortcodes(resourceManager, results),
                     preparationExecutor);
-            preparation = CompletableFuture.allOf(loadEmojis, loadShortcodes)
+            preparation = CompletableFuture.allOf(loadFonts, loadEmojis, loadShortcodes)
                     .thenApply(__ -> results);
         }
         preparationProfiler.endTick();

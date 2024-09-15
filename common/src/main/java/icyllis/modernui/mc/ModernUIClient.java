@@ -321,10 +321,17 @@ public abstract class ModernUIClient extends ModernUI {
         return super.onGetSelectedTypeface();
     }
 
-    // called from worker thread on Forge
-    // called from main thread on NeoForge
-    // never called on Fabric, will use reloadTypeface()
-    /*public void loadTypeface() {
+    // called from worker thread or resource reload thread
+    // this must be called after config is loaded and resource packs are loaded
+    // on Forge, config and resources are loaded together, so there's race
+    // on NeoForge and Fabric, this is called by FontResourceManager
+    public void loadTypeface() {
+        if (sFontRegistrationList == null ||
+                sFallbackFontFamilyList == null ||
+                sFirstFontFamily == null) {
+            // possible on Forge, there's race
+            return;
+        }
         synchronized (this) {
             if (mTypeface == null) {
                 assert mFirstFontFamily == null;
@@ -332,7 +339,7 @@ public abstract class ModernUIClient extends ModernUI {
                 LOGGER.info(MARKER, "Loaded typeface: {}", mTypeface);
             }
         }
-    }*/
+    }
 
     // reload just Typeface on main thread, called after loaded
     public void reloadTypeface() {
