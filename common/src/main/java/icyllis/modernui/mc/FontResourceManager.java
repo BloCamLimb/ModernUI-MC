@@ -114,14 +114,22 @@ public class FontResourceManager implements PreparableReloadListener {
         CompletableFuture<LoadResults> preparation;
         {
             final var results = new LoadResults();
-            final var loadFonts = CompletableFuture.runAsync(() ->
-                            ModernUIClient.getInstance().loadTypeface(),
+            final var loadFonts = CompletableFuture.runAsync(() -> {
+                        // under certain circumstances (or mods), ModernUI bundled resources are not loaded
+                        // when the method is first called, this ensures bundled resources will be registered
+                        if (resourceManager.getNamespaces().contains(ModernUI.ID)) {
+                            ModernUIClient.getInstance().loadTypeface();
+                        }
+                    },
                     preparationExecutor);
             final var loadEmojis = CompletableFuture.runAsync(() ->
                             loadEmojis(resourceManager, results),
                     preparationExecutor);
-            final var loadShortcodes = CompletableFuture.runAsync(() ->
-                            loadShortcodes(resourceManager, results),
+            final var loadShortcodes = CompletableFuture.runAsync(() -> {
+                        if (resourceManager.getNamespaces().contains(ModernUI.ID)) {
+                            loadShortcodes(resourceManager, results);
+                        }
+                    },
                     preparationExecutor);
             preparation = CompletableFuture.allOf(loadFonts, loadEmojis, loadShortcodes)
                     .thenApply(__ -> results);
