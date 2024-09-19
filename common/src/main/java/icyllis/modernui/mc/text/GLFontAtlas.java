@@ -371,7 +371,7 @@ public class GLFontAtlas implements AutoCloseable {
                 if (glyph.u1 >= cu1 && glyph.u2 < cu2 &&
                         glyph.v1 >= cv1 && glyph.v2 < cv2) {
                     // invalidate glyph image
-                    glyph.x = Short.MIN_VALUE;
+                    glyph.x = Integer.MIN_VALUE;
                 }
             }
             cleared = true;
@@ -458,7 +458,7 @@ public class GLFontAtlas implements AutoCloseable {
         for (var glyph : mGlyphs.values()) {
             if (glyph == null) {
                 emptyGlyphs++;
-            } else if (glyph.x == Short.MIN_VALUE) {
+            } else if (glyph.x == Integer.MIN_VALUE) {
                 evictedGlyphs++;
             } else {
                 validGlyphs++;

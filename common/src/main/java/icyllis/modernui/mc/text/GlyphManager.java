@@ -292,7 +292,7 @@ public class GlyphManager {
                 mDevice = (GLDevice) context.getDevice();
             }
             GLBakedGlyph glyph = mFontAtlas.getGlyph(key);
-            if (glyph != null && glyph.x == Short.MIN_VALUE) {
+            if (glyph != null && glyph.x == Integer.MIN_VALUE) {
                 return cacheGlyph(
                         awtFont,
                         glyphId,
@@ -311,7 +311,7 @@ public class GlyphManager {
                 mDevice = (GLDevice) context.getDevice();
             }
             GLBakedGlyph glyph = mEmojiAtlas.getGlyph(key);
-            if (glyph != null && glyph.x == Short.MIN_VALUE) {
+            if (glyph != null && glyph.x == Integer.MIN_VALUE) {
                 return cacheEmoji(
                         emojiFont,
                         glyphId,
@@ -333,7 +333,7 @@ public class GlyphManager {
                     mDevice = (GLDevice) context.getDevice();
                 }
                 GLBakedGlyph glyph = mBitmapAtlas.getGlyph(key);
-                if (glyph != null && glyph.x == Short.MIN_VALUE) {
+                if (glyph != null && glyph.x == Integer.MIN_VALUE) {
                     return cacheBitmapGlyph(
                             bitmapFont,
                             glyphId,
@@ -460,8 +460,8 @@ public class GlyphManager {
         }
 
         //glyph.advance = vector.getGlyphMetrics(0).getAdvanceX();
-        glyph.x = (short) bounds.x;
-        glyph.y = (short) bounds.y;
+        glyph.x = bounds.x;
+        glyph.y = bounds.y;
         glyph.width = (short) bounds.width;
         glyph.height = (short) bounds.height;
         int borderedWidth = bounds.width + GLYPH_BORDER * 2;

@@ -68,6 +68,11 @@ public class BitmapFont implements Font, AutoCloseable {
      * This value must be less than {@link GlyphManager#IMAGE_SIZE}.
      */
     public static final int MAX_ATLAS_DIMENSION = 128;
+    /**
+     * @see net.minecraft.client.gui.font.FontTexture#SIZE
+     */
+    @SuppressWarnings("JavadocReference")
+    public static final int FONT_TEXTURE_SIZE = 256;
 
     private final ResourceLocation mName;
 
@@ -287,11 +292,14 @@ public class BitmapFont implements Font, AutoCloseable {
         return mBakedGlyphs == null;
     }
 
+    @SuppressWarnings("ConstantValue")
     public void setGlyphMetrics(@Nonnull GLBakedGlyph glyph) {
         // bearing x, bearing y
         glyph.x = 0;
-        glyph.y = (short) MathUtil.clamp(-mAscent * TextLayoutEngine.BITMAP_SCALE,
-                Short.MIN_VALUE, Short.MAX_VALUE);
+        // there shouldn't be any overflow, because vanilla uses float,
+        // integers between −16777216 and 16777216 can be exactly represented
+        assert (16777216 * TextLayoutEngine.BITMAP_SCALE) <= Integer.MAX_VALUE;
+        glyph.y = -mAscent * TextLayoutEngine.BITMAP_SCALE;
         glyph.width = (short) MathUtil.clamp(
                 Math.round(mSpriteWidth * mScaleFactor * TextLayoutEngine.BITMAP_SCALE),
                 0, Short.MAX_VALUE);
@@ -477,8 +485,8 @@ public class BitmapFont implements Font, AutoCloseable {
         /**
          * Pixel location in bitmap.
          */
-        public final int offsetX;
-        public final int offsetY;
+        public final short offsetX;
+        public final short offsetY;
         /**
          * True if the glyph is fully transparent.
          */
@@ -486,8 +494,8 @@ public class BitmapFont implements Font, AutoCloseable {
 
         public Glyph(int advance, int offsetX, int offsetY, boolean isEmpty) {
             this.advance = advance;
-            this.offsetX = offsetX;
-            this.offsetY = offsetY;
+            this.offsetX = (short) offsetX;
+            this.offsetY = (short) offsetY;
             this.isEmpty = isEmpty;
         }
 
