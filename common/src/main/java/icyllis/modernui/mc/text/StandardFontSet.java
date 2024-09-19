@@ -51,6 +51,7 @@ import java.util.function.IntFunction;
  * @author BloCamLimb
  * @since 3.8
  */
+@SuppressWarnings("JavadocReference")
 public class StandardFontSet extends FontSet {
 
     @Unmodifiable

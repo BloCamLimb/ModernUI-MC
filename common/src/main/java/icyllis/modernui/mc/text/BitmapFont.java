@@ -106,8 +106,7 @@ public class BitmapFont implements Font, AutoCloseable {
 
         // height <= 0 means nothing to render
         boolean isEmpty = height <= 0 || mSpriteWidth <= 0 || mSpriteHeight <= 0 ||
-                // drop if out of screen
-                Math.abs(ascent) > 3000;
+                bitmap.getWidth() > FONT_TEXTURE_SIZE || bitmap.getHeight() > FONT_TEXTURE_SIZE;
         boolean useDedicatedTexture = !isEmpty &&
                 (mSpriteWidth > MAX_ATLAS_DIMENSION || mSpriteHeight > MAX_ATLAS_DIMENSION);
         if (useDedicatedTexture) {
@@ -139,10 +138,11 @@ public class BitmapFont implements Font, AutoCloseable {
                 if (useDedicatedTexture) {
                     GLBakedGlyph bakedGlyph = new GLBakedGlyph();
                     setGlyphMetrics(bakedGlyph);
-                    bakedGlyph.u1 = (float) (c * mSpriteWidth) / bitmap.getWidth();
-                    bakedGlyph.v1 = (float) (r * mSpriteHeight) / bitmap.getHeight();
-                    bakedGlyph.u2 = (float) (c * mSpriteWidth + mSpriteWidth) / bitmap.getWidth();
-                    bakedGlyph.v2 = (float) (r * mSpriteHeight + mSpriteHeight) / bitmap.getHeight();
+                    // always create 256x256 texture
+                    bakedGlyph.u1 = (float) (c * mSpriteWidth) / FONT_TEXTURE_SIZE;
+                    bakedGlyph.v1 = (float) (r * mSpriteHeight) / FONT_TEXTURE_SIZE;
+                    bakedGlyph.u2 = (float) (c * mSpriteWidth + mSpriteWidth) / FONT_TEXTURE_SIZE;
+                    bakedGlyph.v2 = (float) (r * mSpriteHeight + mSpriteHeight) / FONT_TEXTURE_SIZE;
                     mBakedGlyphs.put(ch, bakedGlyph);
                 }
             }
@@ -203,11 +203,12 @@ public class BitmapFont implements Font, AutoCloseable {
     private void createTexture() {
         assert mBitmap != null;
         ImmediateContext context = Core.requireImmediateContext();
+        // always create 256x256 texture
         ImageDesc desc = context.getCaps().getDefaultColorImageDesc(
                 Engine.ImageType.k2D,
                 mBitmap.getColorType(),
-                mBitmap.getWidth(),
-                mBitmap.getHeight(),
+                FONT_TEXTURE_SIZE,
+                FONT_TEXTURE_SIZE,
                 1,
                 ISurface.FLAG_SAMPLED_IMAGE
         );
@@ -219,7 +220,10 @@ public class BitmapFont implements Font, AutoCloseable {
                         true,
                         mName.toString()
                 );
-        Objects.requireNonNull(mTexture, "Failed to create font texture");
+        if (mTexture == null) {
+            ModernUI.LOGGER.error(GlyphManager.MARKER, "Failed to create font texture for {}", mName);
+            return;
+        }
         boolean res = ((GLDevice) context.getDevice()).writePixels(
                 mTexture, 0, 0, mBitmap.getWidth(), mBitmap.getHeight(),
                 mBitmap.getColorType(), mBitmap.getColorType(),
@@ -317,11 +321,11 @@ public class BitmapFont implements Font, AutoCloseable {
         PixelUtils.copyImage(
                 mBitmap.getAddress() +
                         (long) src.offsetY * mBitmap.getRowStride() +
-                        (long) src.offsetX * 4,
+                        (long) src.offsetX * mBitmap.getFormat().getBytesPerPixel(),
                 mBitmap.getRowStride(),
                 dst,
-                mSpriteWidth * 4L,
-                mSpriteWidth * 4L,
+                (long) mSpriteWidth * mBitmap.getFormat().getBytesPerPixel(),
+                (long) mSpriteWidth * mBitmap.getFormat().getBytesPerPixel(),
                 mSpriteHeight
         );
         return true;
