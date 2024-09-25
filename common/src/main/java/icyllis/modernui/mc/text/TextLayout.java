@@ -249,14 +249,15 @@ public class TextLayout {
     }
 
     @Nonnull
-    private GLBakedGlyph[] prepareGlyphs(int resLevel, int fontSize) {
+    private GLBakedGlyph[] prepareGlyphs(int fontSize) {
         GlyphManager glyphManager = GlyphManager.getInstance();
         GLBakedGlyph[] glyphs = new GLBakedGlyph[mGlyphs.length];
         for (int i = 0; i < glyphs.length; i++) {
             if ((mGlyphFlags[i] & CharacterStyle.OBFUSCATED_MASK) != 0) {
                 glyphs[i] = glyphManager.lookupFastChars(
                         getFont(i),
-                        resLevel
+                        fontSize,
+                        mGlyphs[i]
                 );
             } else {
                 glyphs[i] = glyphManager.lookupGlyph(
@@ -274,13 +275,13 @@ public class TextLayout {
         if (resLevel == mCreatedResLevel) {
             if (mBakedGlyphs == null) {
                 int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
-                mBakedGlyphs = prepareGlyphs(resLevel, fontSize);
+                mBakedGlyphs = prepareGlyphs(fontSize);
             }
             return mBakedGlyphs;
         } else {
             if (mBakedGlyphsForSDF == null) {
                 int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
-                mBakedGlyphsForSDF = prepareGlyphs(resLevel, fontSize);
+                mBakedGlyphsForSDF = prepareGlyphs(fontSize);
             }
             return mBakedGlyphsForSDF;
         }
@@ -294,7 +295,7 @@ public class TextLayout {
         int fontSize = TextLayoutProcessor.computeFontSize(density);
         GLBakedGlyph[] glyphs = mBakedGlyphsArray.get(fontSize);
         if (glyphs == null) {
-            glyphs = prepareGlyphs(mCreatedResLevel, fontSize);
+            glyphs = prepareGlyphs(fontSize);
             mBakedGlyphsArray.put(fontSize, glyphs);
         }
         return glyphs;
@@ -368,7 +369,7 @@ public class TextLayout {
                 continue;
             }
             final int bits = flags[i];
-            float rx = 0;
+            float rx;
             float ry;
             final float w;
             final float h;
@@ -380,12 +381,8 @@ public class TextLayout {
             boolean isBitmapFont = false;
             if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
                 var chars = (GlyphManager.FastCharSet) glyph;
-                int fastIndex = RANDOM.nextInt(chars.glyphs.length);
-                glyph = chars.glyphs[fastIndex];
-                // 0 is standard, no additional offset
-                if (fastIndex != 0) {
-                    rx += chars.offsets[fastIndex];
-                }
+                int fastIndex = RANDOM.nextInt(chars.glyphs.size());
+                glyph = chars.glyphs.get(fastIndex);
             }
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 final float scaleFactor;
@@ -404,7 +401,7 @@ public class TextLayout {
                     scaleFactor = TextLayoutProcessor.sBaseFontSize / GlyphManager.EMOJI_BASE;
                 }
                 fakeItalic = (bits & CharacterStyle.ITALIC_MASK) != 0;
-                rx += x + positions[i << 1] + glyph.x * scaleFactor;
+                rx = x + positions[i << 1] + glyph.x * scaleFactor;
                 ry = baseline + positions[i << 1 | 1] + glyph.y * scaleFactor;
                 if (isShadow) {
                     // bitmap font shadow offset is always 1 pixel
@@ -425,7 +422,7 @@ public class TextLayout {
                 }
             } else {
                 mode = preferredMode;
-                rx += x + positions[i << 1] + glyph.x * invDensity;
+                rx = x + positions[i << 1] + glyph.x * invDensity;
                 ry = baseline + positions[i << 1 | 1] + glyph.y * invDensity;
 
                 w = glyph.width * invDensity;
@@ -589,7 +586,7 @@ public class TextLayout {
                 continue;
             }
             final int bits = flags[i];
-            float rx = 0;
+            final float rx;
             final float ry;
             final float w;
             final float h;
@@ -599,14 +596,10 @@ public class TextLayout {
             } else {
                 if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
                     var chars = (GlyphManager.FastCharSet) glyph;
-                    int fastIndex = RANDOM.nextInt(chars.glyphs.length);
-                    glyph = chars.glyphs[fastIndex];
-                    // 0 is standard, no additional offset
-                    if (fastIndex != 0) {
-                        rx += chars.offsets[fastIndex];
-                    }
+                    int fastIndex = RANDOM.nextInt(chars.glyphs.size());
+                    glyph = chars.glyphs.get(fastIndex);
                 }
-                rx += x + positions[i << 1] + glyph.x / resLevel;
+                rx = x + positions[i << 1] + glyph.x / resLevel;
                 ry = baseline + positions[i << 1 | 1] + glyph.y / resLevel;
 
                 w = glyph.width / resLevel;

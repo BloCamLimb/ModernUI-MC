@@ -401,8 +401,6 @@ public class TextLayoutEngine extends FontResourceManager
         mVanillaCache = new HashMap<>();
         mComponentCache = new HashMap<>();
         mFormattedCache = new HashMap<>();
-        // Metrics change with resolution level
-        GlyphManager.getInstance().clearFastCharMap();
         // Just clear TextRenderType instances, font textures are remained
         TextRenderType.clear(/*cleanup*/ false);
         if (count > 0) {

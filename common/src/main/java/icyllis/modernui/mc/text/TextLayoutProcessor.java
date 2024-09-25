@@ -18,10 +18,14 @@
 
 package icyllis.modernui.mc.text;
 
-import com.ibm.icu.text.*;
+import com.ibm.icu.text.Bidi;
+import com.ibm.icu.text.BidiRun;
+import com.ibm.icu.text.BreakIterator;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.text.*;
-import icyllis.modernui.mc.text.mixin.*;
+import icyllis.modernui.mc.text.mixin.MixinBidiReorder;
+import icyllis.modernui.mc.text.mixin.MixinClientLanguage;
+import icyllis.modernui.mc.text.mixin.MixinLanguage;
 import icyllis.modernui.text.TextDirectionHeuristic;
 import icyllis.modernui.text.TextDirectionHeuristics;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
@@ -30,7 +34,10 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.*;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.FormattedCharSink;
+import net.minecraft.util.StringDecomposer;
+import net.minecraft.util.Unit;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -831,37 +838,37 @@ public class TextLayoutProcessor {
         mFontPaint.setFont(mEngine.getFontCollection(fontName));
         mFontPaint.setFontStyle(fontStyle);
 
-        if ((styleFlags & CharacterStyle.OBFUSCATED_MASK) == 0) {
-            int glyphStart = mGlyphs.size();
+        //if ((styleFlags & CharacterStyle.OBFUSCATED_MASK) == 0) {
+        int glyphStart = mGlyphs.size();
 
-            float advance = ShapedText.doLayoutRun(
-                    text, start, limit, start, limit,
-                    isRtl, mFontPaint, 0, // <- text array starts at 0
-                    mComputeAdvances ? mAdvances.elements() : null,
-                    mTotalAdvance, mGlyphs, mPositions,
-                    mFontIndices, f -> mFontMap.computeIfAbsent(f, mNextID),
-                    null, null
-            );
+        float advance = ShapedText.doLayoutRun(
+                text, start, limit, start, limit,
+                isRtl, mFontPaint, 0, // <- text array starts at 0
+                mComputeAdvances ? mAdvances.elements() : null,
+                mTotalAdvance, mGlyphs, mPositions,
+                mFontIndices, f -> mFontMap.computeIfAbsent(f, mNextID),
+                null, null
+        );
 
-            for (int glyphIndex = glyphStart,
-                 glyphEnd = mGlyphs.size();
-                 glyphIndex < glyphEnd;
-                 glyphIndex++) {
-                mHasEffect |= (styleFlags & CharacterStyle.EFFECT_MASK) != 0;
-                int glyphFlags = styleFlags;
-                var font = mFontVec.get(mFontIndices.getByte(glyphIndex));
-                if (font instanceof BitmapFont) {
-                    glyphFlags |= CharacterStyle.BITMAP_REPLACEMENT;
-                } else if (font instanceof EmojiFont) {
-                    glyphFlags |= CharacterStyle.COLOR_EMOJI_REPLACEMENT | 0xFFFFFF;
-                    glyphFlags &= ~CharacterStyle.IMPLICIT_COLOR_MASK;
-                    mHasColorEmoji = true;
-                }
-                mGlyphFlags.add(glyphFlags);
+        for (int glyphIndex = glyphStart,
+             glyphEnd = mGlyphs.size();
+             glyphIndex < glyphEnd;
+             glyphIndex++) {
+            mHasEffect |= (styleFlags & CharacterStyle.EFFECT_MASK) != 0;
+            int glyphFlags = styleFlags;
+            var font = mFontVec.get(mFontIndices.getByte(glyphIndex));
+            if (font instanceof BitmapFont) {
+                glyphFlags |= CharacterStyle.BITMAP_REPLACEMENT;
+            } else if (font instanceof EmojiFont) {
+                glyphFlags |= CharacterStyle.COLOR_EMOJI_REPLACEMENT | 0xFFFFFF;
+                glyphFlags &= ~CharacterStyle.IMPLICIT_COLOR_MASK;
+                mHasColorEmoji = true;
             }
+            mGlyphFlags.add(glyphFlags);
+        }
 
-            mTotalAdvance += advance;
-        } else {
+        mTotalAdvance += advance;
+        /*} else {
             final var items = mFontPaint.getFont()
                     .itemize(text, start, limit);
             // Font runs are in visual order
@@ -919,7 +926,7 @@ public class TextLayoutProcessor {
                     runIndex++;
                 }
             }
-        }
+        }*/
 
         if (mComputeLineBoundaries) {
             // Compute line break boundaries, will be sorted into logical order.

@@ -23,12 +23,13 @@ import icyllis.arc3d.engine.ImmediateContext;
 import icyllis.arc3d.opengl.GLDevice;
 import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.annotation.*;
+import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.BitmapFactory;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.graphics.text.*;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
@@ -36,6 +37,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.awt.*;
 import java.awt.font.GlyphVector;
 import java.awt.image.BufferedImage;
@@ -108,17 +110,38 @@ public class GlyphManager {
     /**
      * Font (with size and style) to int key.
      */
-    private final Object2IntOpenHashMap<java.awt.Font> mFontTable = new Object2IntOpenHashMap<>();
-
-    private final ToIntFunction<java.awt.Font> mFontTableMapper = f -> mFontTable.size() + 1;
+    private HashMap<java.awt.Font, GlyphStrike> mFontTable = new HashMap<>();
+    private final Function<java.awt.Font, GlyphStrike> mFontTableMapper =
+            f -> new GlyphStrike(mFontTable.size() + 1);
 
     private final Object2IntOpenHashMap<EmojiFont> mEmojiFontTable = new Object2IntOpenHashMap<>();
+    private final ToIntFunction<EmojiFont> mEmojiFontTableMapper =
+            f -> mEmojiFontTable.size() + 1;
 
-    private final ToIntFunction<EmojiFont> mEmojiFontTableMapper = f -> mEmojiFontTable.size() + 1;
+    private HashMap<BitmapFont, GlyphStrike> mBitmapFontTable = new HashMap<>();
+    private final Function<BitmapFont, GlyphStrike> mBitmapFontTableMapper =
+            f -> new GlyphStrike(mBitmapFontTable.size() + 1);
 
-    private final Object2IntOpenHashMap<BitmapFont> mBitmapFontTable = new Object2IntOpenHashMap<>();
+    private static class GlyphStrike {
 
-    private final ToIntFunction<BitmapFont> mBitmapFontTableMapper = f -> mBitmapFontTable.size() + 1;
+        final int mStrikeId; // by font face, style, font size; AA setting is global
+        /**
+         * For obfuscated char rendering.
+         * Map from standard width to a set of pointers to glyphs that
+         * have the same pixel width (for outline fonts),
+         * or have the same advance (for Minecraft bitmap fonts).
+         * The number of glyphs in each set can be dynamically changed.
+         */
+        final Int2ObjectOpenHashMap<FastCharSet> mFastCharMap = new Int2ObjectOpenHashMap<>(1);
+        /**
+         * Preload some random characters or glyphs in case there is no glyphs to sample.
+         */
+        boolean mPreloadedFastChars = false;
+
+        GlyphStrike(int strikeId) {
+            mStrikeId = strikeId;
+        }
+    }
 
     /**
      * Draw a single glyph onto this image and then loaded from here into an OpenGL texture.
@@ -154,23 +177,12 @@ public class GlyphManager {
     public record AtlasInvalidationInfo(int maskFormat, boolean resize) {
     }
 
-    private record FontStrikeDesc(Font font, int resLevel) {
-    }
-
-    /**
-     * For fast digit replacement and obfuscated char rendering.
-     * Map from 'derived font' to 'ASCII 33(!) to 126(~) characters with their standard advances and relative advances'.
-     */
-    private final Map<FontStrikeDesc, FastCharSet> mFastCharMap = new HashMap<>();
-    // it's necessary to cache the lambda
-    private final Function<FontStrikeDesc, FastCharSet> mCacheFastChars = this::cacheFastChars;
-
     private GlyphManager() {
         // init
         reload();
     }
 
-    @NonNull
+    @Nonnull
     public static GlyphManager getInstance() {
         if (sInstance == null) {
             synchronized (GlyphManager.class) {
@@ -204,18 +216,15 @@ public class GlyphManager {
     @RenderThread
     public void reload() {
         closeAtlases();
+        mFontTable.values().forEach(s -> s.mFastCharMap.clear());
         mFontTable.clear();
-        mFontTable.trim();
+        mFontTable = new HashMap<>();
         mEmojiFontTable.clear();
         mEmojiFontTable.trim();
+        mBitmapFontTable.values().forEach(s -> s.mFastCharMap.clear());
         mBitmapFontTable.clear();
-        mBitmapFontTable.trim();
-        clearFastCharMap();
+        mBitmapFontTable = new HashMap<>();
         allocateImage();
-    }
-
-    public void clearFastCharMap() {
-        mFastCharMap.clear();
     }
 
     /**
@@ -227,8 +236,8 @@ public class GlyphManager {
      * @param isRtl whether the text should layout right-to-left
      * @return the newly laid-out GlyphVector
      */
-    @NonNull
-    public GlyphVector layoutGlyphVector(@NonNull java.awt.Font awtFont, @NonNull char[] text,
+    @Nonnull
+    public GlyphVector layoutGlyphVector(@Nonnull java.awt.Font awtFont, @Nonnull char[] text,
                                          int start, int limit, boolean isRtl) {
         return awtFont.layoutGlyphVector(mGraphics.getFontRenderContext(), text, start, limit,
                 isRtl ? java.awt.Font.LAYOUT_RIGHT_TO_LEFT : java.awt.Font.LAYOUT_LEFT_TO_RIGHT);
@@ -241,8 +250,8 @@ public class GlyphManager {
      * @param text the U16 text to layout
      * @return the newly created GlyphVector
      */
-    @NonNull
-    public GlyphVector createGlyphVector(@NonNull java.awt.Font awtFont, @NonNull char[] text) {
+    @Nonnull
+    public GlyphVector createGlyphVector(@Nonnull java.awt.Font awtFont, @Nonnull char[] text) {
         return awtFont.createGlyphVector(mGraphics.getFontRenderContext(), text);
     }
 
@@ -253,18 +262,20 @@ public class GlyphManager {
      * @param glyphCode the font specific glyph code
      * @return a key
      */
-    private long computeGlyphKey(@NonNull java.awt.Font awtFont, int glyphCode) {
-        long fontKey = mFontTable.computeIfAbsent(awtFont, mFontTableMapper);
+    private long computeGlyphKey(@Nonnull java.awt.Font awtFont, int glyphCode) {
+        long fontKey = mFontTable.computeIfAbsent(awtFont, mFontTableMapper)
+                .mStrikeId;
         return (fontKey << 32) | glyphCode;
     }
 
-    private long computeEmojiKey(@NonNull EmojiFont font, int glyphId) {
+    private long computeEmojiKey(@Nonnull EmojiFont font, int glyphId) {
         long fontKey = mEmojiFontTable.computeIfAbsent(font, mEmojiFontTableMapper);
         return (fontKey << 32) | glyphId;
     }
 
-    private long computeBitmapGlyphKey(@NonNull BitmapFont font, int glyphId) {
-        long fontKey = mBitmapFontTable.computeIfAbsent(font, mBitmapFontTableMapper);
+    private long computeBitmapGlyphKey(@Nonnull BitmapFont font, int glyphId) {
+        long fontKey = mBitmapFontTable.computeIfAbsent(font, mBitmapFontTableMapper)
+                .mStrikeId;
         return (fontKey << 32) | glyphId;
     }
 
@@ -281,7 +292,7 @@ public class GlyphManager {
      */
     @Nullable
     @RenderThread
-    public GLBakedGlyph lookupGlyph(@NonNull Font font, int fontSize, int glyphId) {
+    public GLBakedGlyph lookupGlyph(@Nonnull Font font, int fontSize, int glyphId) {
         if (font instanceof OutlineFont) {
             java.awt.Font awtFont = ((OutlineFont) font).chooseFont(fontSize);
             long key = computeGlyphKey(awtFont, glyphId);
@@ -398,22 +409,39 @@ public class GlyphManager {
      */
     @RenderThread
     public void compact() {
+        boolean didWork = false;
         if (mFontAtlas != null && mFontAtlas.compact()) {
             var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_A8, false);
             for (var callback : mAtlasInvalidationCallbacks) {
                 callback.accept(info);
             }
+            didWork = true;
         }
         if (mEmojiAtlas != null && mEmojiAtlas.compact()) {
             var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_ARGB, false);
             for (var callback : mAtlasInvalidationCallbacks) {
                 callback.accept(info);
             }
+            didWork = true;
         }
         if (mBitmapAtlas != null && mBitmapAtlas.compact()) {
             var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_ARGB, false);
             for (var callback : mAtlasInvalidationCallbacks) {
                 callback.accept(info);
+            }
+            didWork = true;
+        }
+        if (didWork) {
+            // Some glyph have been evicted, also remove them from fast char sets
+            for (var glyphStrike : mFontTable.values()) {
+                for (var fastCharSet : glyphStrike.mFastCharMap.values()) {
+                    fastCharSet.glyphs.removeIf(glyph -> glyph.x == Integer.MIN_VALUE);
+                }
+            }
+            for (var glyphStrike : mBitmapFontTable.values()) {
+                for (var fastCharSet : glyphStrike.mFastCharMap.values()) {
+                    fastCharSet.glyphs.removeIf(glyph -> glyph.x == Integer.MIN_VALUE);
+                }
             }
         }
     }
@@ -445,8 +473,8 @@ public class GlyphManager {
 
     @Nullable
     @RenderThread
-    private GLBakedGlyph cacheGlyph(@NonNull java.awt.Font font, int glyphCode,
-                                    @NonNull GLFontAtlas atlas, @NonNull GLBakedGlyph glyph,
+    private GLBakedGlyph cacheGlyph(@Nonnull java.awt.Font font, int glyphCode,
+                                    @Nonnull GLFontAtlas atlas, @Nonnull GLBakedGlyph glyph,
                                     long key) {
         // there's no need to layout glyph vector, we only draw the specific glyphCode
         // which is already laid-out in LayoutEngine
@@ -500,6 +528,10 @@ public class GlyphManager {
                 callback.accept(info);
             }
         }
+        int standardWidth = computeStandardWidth(glyph, font.getSize());
+        mFontTable.get(font).mFastCharMap
+                .computeIfAbsent(standardWidth, __ -> new FastCharSet())
+                .glyphs.add(glyph);
 
         mGraphics.clearRect(0, 0, mImage.getWidth(), mImage.getHeight());
         mImageBuffer.clear();
@@ -508,8 +540,8 @@ public class GlyphManager {
 
     @Nullable
     @RenderThread
-    private GLBakedGlyph cacheEmoji(@NonNull EmojiFont font, int glyphId,
-                                    @NonNull GLFontAtlas atlas, @NonNull GLBakedGlyph glyph,
+    private GLBakedGlyph cacheEmoji(@Nonnull EmojiFont font, int glyphId,
+                                    @Nonnull GLFontAtlas atlas, @Nonnull GLBakedGlyph glyph,
                                     long key) {
         if (glyphId == 0) {
             atlas.setNoPixels(key);
@@ -549,8 +581,8 @@ public class GlyphManager {
 
     @Nullable
     @RenderThread
-    private GLBakedGlyph cacheBitmapGlyph(@NonNull BitmapFont font, int glyphId,
-                                          @NonNull GLFontAtlas atlas, @NonNull GLBakedGlyph glyph,
+    private GLBakedGlyph cacheBitmapGlyph(@Nonnull BitmapFont font, int glyphId,
+                                          @Nonnull GLFontAtlas atlas, @Nonnull GLBakedGlyph glyph,
                                           long key) {
         long src = MemoryUtil.memAddress(mImageBuffer);
         if (!font.getGlyphImage(glyphId, src)) {
@@ -569,6 +601,13 @@ public class GlyphManager {
                 callback.accept(info);
             }
         }
+        BitmapFont.Glyph glyphInfo = font.getGlyph(glyphId);
+        assert glyphInfo != null;
+        int standardWidth = (int) glyphInfo.advance;
+        mBitmapFontTable.get(font).mFastCharMap
+                .computeIfAbsent(standardWidth, __ -> new FastCharSet())
+                .glyphs.add(glyph);
+
         return glyph;
     }
 
@@ -609,26 +648,75 @@ public class GlyphManager {
      * The pair right is the offsetX to standard '0' advance alignment (already scaled by GUI factor).
      * Because we assume FAST digit glyphs are monospaced, no matter whether it's a monospaced font.
      *
-     * @param font     derived font including style
-     * @param resLevel resolution level
+     * @param font derived font including style
      * @return array of all fast char glyphs, and others, or null if not supported
      */
     @Nullable
-    public FastCharSet lookupFastChars(@Nonnull Font font, int resLevel) {
-        if (font instanceof EmojiFont || font instanceof SpaceFont) {
-            // Emojis are supported for obfuscated rendering
+    public FastCharSet lookupFastChars(@Nonnull Font font, int fontSize, int glyphId) {
+        if (!(font instanceof OutlineFont || font instanceof BitmapFont)) {
+            // Emojis are not supported for obfuscated rendering
             return null;
         }
-        if (font instanceof BitmapFont) {
-            resLevel = 1;
+        GLBakedGlyph glyph = lookupGlyph(font, fontSize, glyphId);
+        if (glyph == null) {
+            // The original glyph is empty
+            return null;
         }
-        return mFastCharMap.computeIfAbsent(
-                new FontStrikeDesc(font, resLevel),
-                mCacheFastChars
-        );
+        if (font instanceof OutlineFont) {
+            java.awt.Font awtFont = ((OutlineFont) font).chooseFont(fontSize);
+            GlyphStrike strike = mFontTable.get(awtFont);
+            if (!strike.mPreloadedFastChars) {
+                cacheFastChars(font, fontSize, awtFont);
+                strike.mPreloadedFastChars = true;
+            }
+            int standardWidth = computeStandardWidth(glyph, awtFont.getSize());
+            return strike.mFastCharMap.get(standardWidth);
+        } else {
+            BitmapFont bitmapFont = (BitmapFont) font;
+            GlyphStrike strike = mBitmapFontTable.get(bitmapFont);
+            if (!strike.mPreloadedFastChars) {
+                cacheFastChars(bitmapFont);
+                strike.mPreloadedFastChars = true;
+            }
+            BitmapFont.Glyph glyphInfo = bitmapFont.getGlyph(glyphId);
+            assert glyphInfo != null;
+            int standardWidth = (int) glyphInfo.advance;
+            return strike.mFastCharMap.get(standardWidth);
+        }
     }
 
-    @Nullable
+    private void cacheFastChars(@Nonnull Font font, int fontSize,
+                                @Nonnull java.awt.Font awtFont) {
+        // cache some ASCII characters
+        forEachRandomGlyph(33, 127, 62, ch -> {
+            char[] chars = {(char) ch};
+            GlyphVector vector = createGlyphVector(awtFont, chars);
+            if (vector.getNumGlyphs() == 1 &&
+                    vector.getGlyphCode(0) != awtFont.getMissingGlyphCode()) {
+                lookupGlyph(font, fontSize, vector.getGlyphCode(0));
+            }
+        });
+        // cache some random glyphs
+        forEachRandomGlyph(0, awtFont.getNumGlyphs(), 127, glyph -> {
+            if (glyph != awtFont.getMissingGlyphCode()) {
+                lookupGlyph(font, fontSize, glyph);
+            }
+        });
+    }
+
+    private void cacheFastChars(@Nonnull BitmapFont font) {
+        int[][] grid = font.getCodepointGrid();
+        int cols = grid[0].length;
+        // cache some random characters
+        forEachRandomGlyph(0, grid.length * cols, 160, idx -> {
+            int ch = grid[idx / cols][idx % cols];
+            if (ch != '\u0000') {
+                lookupGlyph(font, TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE, ch);
+            }
+        });
+    }
+
+    /*@Nullable
     private FastCharSet cacheFastChars(@Nonnull FontStrikeDesc desc) {
         java.awt.Font awtFont = null;
         BitmapFont bitmapFont = null;
@@ -752,23 +840,43 @@ public class GlyphManager {
             offsets = Arrays.copyOf(offsets, n);
         }
         return new FastCharSet(glyphs, offsets);
-    }
+    }*/
 
     /**
-     * FastCharSet have uniform advances. Offset[0] is the advance for all glyphs.
-     * Other offsets is the relative X offset to center the glyph. Normalized to
-     * Minecraft GUI system.
+     * FastCharSet have uniform widths.
      * <p>
-     * This is used to render fast digits and obfuscated chars.
+     * This is used to render obfuscated chars.
      */
     public static class FastCharSet extends GLBakedGlyph {
 
-        public final GLBakedGlyph[] glyphs;
-        public final float[] offsets;
+        // The size of this list would dynamically change, we set the initial capacity to 1
+        public final ArrayList<GLBakedGlyph> glyphs = new ArrayList<>(1);
 
-        public FastCharSet(GLBakedGlyph[] glyphs, float[] offsets) {
-            this.glyphs = glyphs;
-            this.offsets = offsets;
+        public FastCharSet() {
+            super();
+        }
+    }
+
+    // We store glyphs with similar widths into the same FastCharSet
+    static int computeStandardWidth(@Nonnull GLBakedGlyph glyph, int fontSize) {
+        int multiple = (fontSize + (TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE / 2)) /
+                TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE;
+        return Math.round((float) glyph.width / multiple) * multiple;
+    }
+
+    static void forEachRandomGlyph(int start, int end, int needed, IntConsumer action) {
+        assert needed > 0;
+        var rand = new Random();
+        int remaining = end - start;
+        for (int glyph = start; glyph < end; glyph++) {
+            if (rand.nextInt(remaining) < needed) {
+                action.accept(glyph);
+                needed--;
+                if (needed == 0) {
+                    break;
+                }
+            }
+            remaining--;
         }
     }
 
@@ -785,8 +893,8 @@ public class GlyphManager {
     }
 
     /*@SuppressWarnings("MagicConstant")
-    public void measure(@NonNull char[] text, int contextStart, int contextEnd, @NonNull FontPaint paint, boolean isRtl,
-                        @NonNull BiConsumer<GraphemeMetrics, FontPaint> consumer) {
+    public void measure(@Nonnull char[] text, int contextStart, int contextEnd, @Nonnull FontPaint paint, boolean isRtl,
+                        @Nonnull BiConsumer<GraphemeMetrics, FontPaint> consumer) {
         final List<FontRun> runs = paint.mTypeface.itemize(text, contextStart, contextEnd);
         float advance = 0;
         final FontMetricsInt fm = new FontMetricsInt();

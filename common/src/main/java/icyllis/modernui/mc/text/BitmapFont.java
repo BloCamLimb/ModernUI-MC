@@ -37,6 +37,7 @@ import net.minecraft.client.gui.font.glyphs.EmptyGlyph;
 import net.minecraft.client.gui.font.providers.BitmapProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
+import org.jetbrains.annotations.Unmodifiable;
 import org.lwjgl.opengl.GL33C;
 
 import javax.annotation.Nonnull;
@@ -373,6 +374,11 @@ public class BitmapFont implements Font, AutoCloseable {
 
     public float getScaleFactor() {
         return mScaleFactor;
+    }
+
+    @Unmodifiable
+    public int[][] getCodepointGrid() {
+        return mCodepointGrid;
     }
 
     @Override
