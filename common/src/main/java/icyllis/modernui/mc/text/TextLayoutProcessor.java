@@ -856,7 +856,7 @@ public class TextLayoutProcessor {
              glyphIndex++) {
             mHasEffect |= (styleFlags & CharacterStyle.EFFECT_MASK) != 0;
             int glyphFlags = styleFlags;
-            var font = mFontVec.get(mFontIndices.getByte(glyphIndex));
+            var font = mFontVec.get(mFontIndices.getByte(glyphIndex) & 0xFF);
             if (font instanceof BitmapFont) {
                 glyphFlags |= CharacterStyle.BITMAP_REPLACEMENT;
             } else if (font instanceof EmojiFont) {
