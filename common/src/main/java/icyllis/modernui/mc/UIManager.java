@@ -24,11 +24,9 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.arc3d.core.*;
-import icyllis.arc3d.engine.Engine;
-import icyllis.arc3d.engine.ImmediateContext;
+import icyllis.arc3d.engine.*;
 import icyllis.arc3d.granite.*;
-import icyllis.arc3d.opengl.GLDevice;
-import icyllis.arc3d.opengl.GLTexture;
+import icyllis.arc3d.opengl.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
 import icyllis.modernui.animation.LayoutTransition;
@@ -908,6 +906,14 @@ public abstract class UIManager implements LifecycleOwner {
                 // draw off-screen target to Minecraft mainTarget (not the default framebuffer)
                 ShaderInstance blitShader = minecraft.gameRenderer.blitShader;
                 blitShader.setSampler("DiffuseSampler", layer.getHandle());
+                // using the nearest sampler is performant
+                @SharedPtr
+                GLSampler sampler = (GLSampler) context.getResourceProvider()
+                        .findOrCreateCompatibleSampler(SamplerDesc.NEAREST);
+                if (sampler != null) {
+                    // XXX: we assume the binding unit is 0 since 'DiffuseSampler' is the only sampler
+                    GL33C.glBindSampler(0, sampler.getHandle());
+                }
                 // z is 0
                 Matrix4f projection = new Matrix4f()
                         .setOrtho(0.0F, width, height, 0.0F, 1000.0F, 3000.0F);
@@ -933,6 +939,10 @@ public abstract class UIManager implements LifecycleOwner {
                 bufferBuilder.addVertex(0, 0, 0).setUv(0, 1).setColor(~0);
                 BufferUploader.draw(bufferBuilder.buildOrThrow());
                 blitShader.clear();
+                if (sampler != null) {
+                    GL33C.glBindSampler(0, 0);
+                    sampler.unref();
+                }
             }
         }
         RenderSystem.defaultBlendFunc();
