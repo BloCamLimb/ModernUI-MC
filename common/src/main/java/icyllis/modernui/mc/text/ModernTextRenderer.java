@@ -18,7 +18,11 @@
 
 package icyllis.modernui.mc.text;
 
+import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.VertexSorting;
 import icyllis.modernui.graphics.MathUtil;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.Sheets;
@@ -84,92 +88,44 @@ public final class ModernTextRenderer {
     }
 
     public float drawText(@Nonnull String text, float x, float y, int color, boolean dropShadow,
-                          @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
-                          int colorBackground, int packedLight) {
+                          @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
+                          Font.DisplayMode displayMode, int colorBackground, int packedLight) {
         if (text.isEmpty()) {
             return x;
         }
 
-        // ensure alpha, color can be ARGB, or can be RGB
-        // we check if alpha <= 1, then make alpha = 255 (fully opaque)
-        /*if ((color & 0xfe000000) == 0) {
-            color |= 0xff000000;
-        }*/
-
-        int a = color >>> 24;
-        if (a <= 2) a = 255;
-        int r = color >> 16 & 0xff;
-        int g = color >> 8 & 0xff;
-        int b = color & 0xff;
-
-        int mode = chooseMode(matrix, displayMode);
-        boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
         TextLayout layout = mEngine.lookupVanillaLayout(text);
-        if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
-            // performance impact
-            ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
-        }
-        if (dropShadow && sAllowShadow) {
-            float offset = sShadowOffset;
-            layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, polygonOffset, colorBackground, packedLight);
-            matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
-            matrix.translate(SHADOW_OFFSET);
-        }
-
-        x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, polygonOffset, colorBackground, packedLight);
+        x += drawText(layout, x, y, color, dropShadow, matrix, source, displayMode, colorBackground, packedLight);
         return x;
     }
 
     public float drawText(@Nonnull FormattedText text, float x, float y, int color, boolean dropShadow,
                           @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
-                          Font.DisplayMode displayMode,
-                          int colorBackground, int packedLight) {
+                          Font.DisplayMode displayMode, int colorBackground, int packedLight) {
         if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
             return x;
         }
 
-        // ensure alpha, color can be ARGB, or can be RGB
-        // we check if alpha <= 1, then make alpha = 255 (fully opaque)
-        /*if ((color & 0xfe000000) == 0) {
-            color |= 0xff000000;
-        }*/
-
-        int a = color >>> 24;
-        if (a <= 2) a = 255;
-        int r = color >> 16 & 0xff;
-        int g = color >> 8 & 0xff;
-        int b = color & 0xff;
-
-        int mode = chooseMode(matrix, displayMode);
-        boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
         TextLayout layout = mEngine.lookupFormattedLayout(text);
-        if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
-            // performance impact
-            ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
-        }
-        if (dropShadow && sAllowShadow) {
-            float offset = sShadowOffset;
-            layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, polygonOffset, colorBackground, packedLight);
-            matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
-            matrix.translate(SHADOW_OFFSET);
-        }
-
-        x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, polygonOffset, colorBackground, packedLight);
+        x += drawText(layout, x, y, color, dropShadow, matrix, source, displayMode, colorBackground, packedLight);
         return x;
     }
 
     public float drawText(@Nonnull FormattedCharSequence text, float x, float y, int color, boolean dropShadow,
                           @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
-                          Font.DisplayMode displayMode,
-                          int colorBackground, int packedLight) {
+                          Font.DisplayMode displayMode, int colorBackground, int packedLight) {
         if (text == FormattedCharSequence.EMPTY) {
             return x;
         }
 
+        TextLayout layout = mEngine.lookupFormattedLayout(text);
+        x += drawText(layout, x, y, color, dropShadow, matrix, source, displayMode, colorBackground, packedLight);
+        return x;
+    }
+
+    public float drawText(@Nonnull TextLayout layout, float x, float y, int color, boolean dropShadow,
+                          @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
+                          Font.DisplayMode displayMode, int colorBackground, int packedLight) {
         // ensure alpha, color can be ARGB, or can be RGB
         // we check if alpha <= 1, then make alpha = 255 (fully opaque)
         /*if ((color & 0xfe000000) == 0) {
@@ -184,22 +140,69 @@ public final class ModernTextRenderer {
 
         int mode = chooseMode(matrix, displayMode);
         boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
-        TextLayout layout = mEngine.lookupFormattedLayout(text);
+
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
             ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
+        // copy the matrix when needed
+        boolean matrixIsCopied = false;
+        // compute exact font size and position
+        float uniformScale = 1;
+        if (sComputeDeviceFontSize &&
+                ((mode == TextRenderType.MODE_NORMAL && (matrix.properties() & Matrix4f.PROPERTY_TRANSLATION) != 0) ||
+                        mode == TextRenderType.MODE_UNIFORM_SCALE)) {
+            // here we are in 2D, and have scale/translate only ctm (not bilinear fallback)
+            Matrix4f projection = RenderSystem.getProjectionMatrix();
+            if (RenderSystem.getVertexSorting() == VertexSorting.ORTHOGRAPHIC_Z &&
+                    projection.m23() == 0.0f) { // fast check it's a 2D projection
+                // find additional scaling in projection
+                Window window = Minecraft.getInstance().getWindow();
+                float projScaleX = (projection.m00() * window.getWidth()) / (2.0f * layout.mCreatedResLevel);
+                float projScaleY = Math.abs((projection.m11() * window.getHeight()) / (2.0f * layout.mCreatedResLevel));
+                if (MathUtil.isApproxEqual(projScaleX, projScaleY)) {
+                    // uniform scale case
+                    matrix = new Matrix4f(matrix);
+                    matrixIsCopied = true;
+                    // extract the translation vector for snapping to pixel grid
+                    x += matrix.m30() / matrix.m00();
+                    y += matrix.m31() / matrix.m11();
+                    matrix.m30(0);
+                    matrix.m31(0);
+                    // total scale
+                    uniformScale = matrix.m00() * projScaleX;
+                    if (MathUtil.isApproxEqual(uniformScale, 1)) {
+                        mode = TextRenderType.MODE_NORMAL;
+                    } else {
+                        float upperLimit = Math.max(1.0f,
+                                (float) TextLayoutEngine.sMinPixelDensityForSDF / mEngine.getResLevel());
+                        if (uniformScale <= upperLimit) {
+                            // uniform scale smaller and not too large
+                            mode = TextRenderType.MODE_UNIFORM_SCALE;
+                        } else {
+                            mode = sAllowSDFTextIn2D ? TextRenderType.MODE_SDF_FILL : TextRenderType.MODE_NORMAL;
+                        }
+                    }
+                } else {
+                    // projection is boring
+                    mode = sAllowSDFTextIn2D ? TextRenderType.MODE_SDF_FILL : TextRenderType.MODE_NORMAL;
+                }
+            } else {
+                // 3D projection
+                mode = sAllowSDFTextIn2D ? TextRenderType.MODE_SDF_FILL : TextRenderType.MODE_NORMAL;
+            }
+        }
         if (dropShadow && sAllowShadow) {
-            float offset = sShadowOffset;
-            layout.drawText(matrix, source, x + offset, y + offset, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, polygonOffset, colorBackground, packedLight);
-            matrix = new Matrix4f(matrix); // if not drop shadow, we don't need to copy the matrix
+            layout.drawText(matrix, source, x, y, r >> 2, g >> 2, b >> 2, a, true,
+                    mode, polygonOffset, uniformScale, colorBackground, packedLight);
+            if (!matrixIsCopied) {
+                matrix = new Matrix4f(matrix);
+            }
             matrix.translate(SHADOW_OFFSET);
         }
 
-        x += layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, polygonOffset, colorBackground, packedLight);
-        return x;
+        return layout.drawText(matrix, source, x, y, r, g, b, a, false,
+                mode, polygonOffset, uniformScale, colorBackground, packedLight);
     }
 
     public int chooseMode(Matrix4f ctm, Font.DisplayMode displayMode) {
@@ -210,35 +213,22 @@ public final class ModernTextRenderer {
         } else {
             if ((ctm.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0 &&
                     (sComputeDeviceFontSize || sAllowSDFTextIn2D)) {
-                // JOML can report fake values, compute again
-                if (MathUtil.isApproxZero(ctm.m01()) &&
+                if (sComputeDeviceFontSize &&
+                        MathUtil.isApproxZero(ctm.m01()) &&
                         MathUtil.isApproxZero(ctm.m02()) &&
                         MathUtil.isApproxZero(ctm.m03()) &&
                         MathUtil.isApproxZero(ctm.m10()) &&
                         MathUtil.isApproxZero(ctm.m12()) &&
                         MathUtil.isApproxZero(ctm.m13()) &&
-                        MathUtil.isApproxZero(ctm.m20()) &&
-                        MathUtil.isApproxZero(ctm.m21()) &&
-                        MathUtil.isApproxZero(ctm.m23()) &&
-                        MathUtil.isApproxEqual(ctm.m33(), 1)) {
-                    if (MathUtil.isApproxEqual(ctm.m00(), 1) &&
-                            MathUtil.isApproxEqual(ctm.m11(), 1)) {
-                        // pure translation
-                        return TextRenderType.MODE_NORMAL;
-                    } else if (sComputeDeviceFontSize && MathUtil.isApproxEqual(ctm.m00(), ctm.m11())) {
-                        float upperLimit = Math.max(1.0f,
-                                (float) TextLayoutEngine.sMinPixelDensityForSDF / mEngine.getResLevel());
-                        if (ctm.m00() <= upperLimit) {
-                            // uniform scale smaller and not too large
-                            return TextRenderType.MODE_UNIFORM_SCALE;
-                        }
-                    }
+                        MathUtil.isApproxEqual(ctm.m33(), 1) &&
+                        MathUtil.isApproxEqual(ctm.m00(), ctm.m11())) {
+                    return TextRenderType.MODE_UNIFORM_SCALE;
                 }
                 if (sAllowSDFTextIn2D) {
                     return TextRenderType.MODE_SDF_FILL;
                 }
             }
-            // pure translation
+            // pure translation, or fallback
             return TextRenderType.MODE_NORMAL;
         }
     }
@@ -302,7 +292,7 @@ public final class ModernTextRenderer {
         }
 
         layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                TextRenderType.MODE_SDF_FILL, false, 0, packedLight);
+                TextRenderType.MODE_SDF_FILL, false, 1, 0, packedLight);
 
         // disable outline if either text color is BLACK or SDF shader is unavailable
         if (isBlack ||

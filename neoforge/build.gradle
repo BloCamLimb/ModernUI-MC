@@ -29,6 +29,7 @@ repositories {
             includeGroup 'org.parchmentmc.data'
         }
     }
+    maven { url 'https://modmaven.dev/' }
     maven {
         url 'https://maven.izzel.io/releases/'
     }
@@ -71,6 +72,8 @@ dependencies {
 
     implementation(forgeDependencies("com.github.ben-manes.caffeine:caffeine:${caffeine_version}"))
     implementation(forgeDependencies("com.vladsch.flexmark:flexmark:${flexmark_version}"))
+
+    //modRuntimeOnly("mekanism:Mekanism:1.21.1-10.7.7.64")
 
     include "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
     include "com.vladsch.flexmark:flexmark:${flexmark_version}"

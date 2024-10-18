@@ -64,7 +64,8 @@ public class TextLayout {
         @Override
         public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
                               float x, float top, int r, int g, int b, int a, boolean isShadow,
-                              int preferredMode, boolean polygonOffset, int bgColor, int packedLight) {
+                              int preferredMode, boolean polygonOffset, float uniformScale,
+                              int bgColor, int packedLight) {
             return 0;
         }
 
@@ -315,16 +316,17 @@ public class TextLayout {
      * @param isShadow      whether to use a darker color to draw?
      * @param preferredMode a render mode, normal, see through or SDF
      * @param polygonOffset polygon offset layering requested?
+     * @param uniformScale  additional scale factor if uniform scale
      * @param bgColor       the background color of the text in 0xAARRGGBB format
      * @param packedLight   see {@link net.minecraft.client.renderer.LightTexture}
      * @return the total advance, always positive
      */
     public float drawText(@Nonnull final Matrix4f matrix,
                           @Nonnull final MultiBufferSource source,
-                          final float x, final float top,
+                          float x, float top,
                           int r, int g, int b, int a,
                           final boolean isShadow, int preferredMode,
-                          final boolean polygonOffset,
+                          final boolean polygonOffset, final float uniformScale,
                           final int bgColor, final int packedLight) {
         final int startR = r;
         final int startG = g;
@@ -336,11 +338,11 @@ public class TextLayout {
             glyphs = getGlyphs(resLevel);
             density = resLevel;
         } else if (preferredMode == TextRenderType.MODE_UNIFORM_SCALE) {
-            float devS = matrix.m00();
-            if (devS == 0) {
+            if (uniformScale <= 0.001f) {
+                // drop if flipped or too small
                 return mTotalAdvance;
             }
-            density = mCreatedResLevel * devS;
+            density = mCreatedResLevel * uniformScale;
             glyphs = getGlyphsUniformScale(density);
             preferredMode = TextRenderType.MODE_NORMAL;
         } else {
@@ -348,6 +350,15 @@ public class TextLayout {
             density = mCreatedResLevel;
         }
         final float invDensity = 1.0f / density;
+        if (isShadow) {
+            float offset = ModernTextRenderer.sShadowOffset;
+            if (preferredMode == TextRenderType.MODE_NORMAL) {
+                // align to screen pixel center in 2D
+                offset = Math.round(offset * density) * invDensity;
+            }
+            x += offset;
+            top += offset;
+        }
 
         final var positions = mPositions;
         final var flags = mGlyphFlags;
@@ -432,8 +443,7 @@ public class TextLayout {
                 }
                 texture = fontTexture;
             }
-            if (mode == TextRenderType.MODE_NORMAL &&
-                    !TextLayoutEngine.sCurrentInWorldRendering) {
+            if (preferredMode == TextRenderType.MODE_NORMAL) {
                 // align to screen pixel center in 2D
                 rx = Math.round(rx * density) * invDensity;
                 ry = Math.round(ry * density) * invDensity;
@@ -903,6 +913,8 @@ public class TextLayout {
         }
         b.append("total advance: ");
         b.append(mTotalAdvance);
+        b.append(", created res level: ");
+        b.append(mCreatedResLevel);
 
         return b.toString();
     }
