@@ -350,14 +350,15 @@ public class TextLayout {
             density = mCreatedResLevel;
         }
         final float invDensity = 1.0f / density;
+        float shadowOffset = 0;
         if (isShadow) {
-            float offset = ModernTextRenderer.sShadowOffset;
+            shadowOffset = ModernTextRenderer.sShadowOffset;
             if (preferredMode == TextRenderType.MODE_NORMAL) {
                 // align to screen pixel center in 2D
-                offset = Math.round(offset * density) * invDensity;
+                shadowOffset = Math.round(shadowOffset * density) * invDensity;
             }
-            x += offset;
-            top += offset;
+            x += shadowOffset;
+            top += shadowOffset;
         }
 
         final var positions = mPositions;
@@ -416,8 +417,8 @@ public class TextLayout {
                 ry = baseline + positions[i << 1 | 1] + glyph.y * scaleFactor;
                 if (isShadow) {
                     // bitmap font shadow offset is always 1 pixel
-                    rx += 1.0f - ModernTextRenderer.sShadowOffset;
-                    ry += 1.0f - ModernTextRenderer.sShadowOffset;
+                    rx += 1.0f - shadowOffset;
+                    ry += 1.0f - shadowOffset;
                 }
 
                 w = glyph.width * scaleFactor;

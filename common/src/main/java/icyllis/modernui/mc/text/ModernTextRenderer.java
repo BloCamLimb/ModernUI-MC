@@ -159,6 +159,7 @@ public final class ModernTextRenderer {
                 // find additional scaling in projection
                 Window window = Minecraft.getInstance().getWindow();
                 float projScaleX = (projection.m00() * window.getWidth()) / (2.0f * layout.mCreatedResLevel);
+                // in OpenGL this is negative, in Vulkan this is positive
                 float projScaleY = Math.abs((projection.m11() * window.getHeight()) / (2.0f * layout.mCreatedResLevel));
                 if (MathUtil.isApproxEqual(projScaleX, projScaleY)) {
                     // uniform scale case
@@ -175,7 +176,7 @@ public final class ModernTextRenderer {
                         mode = TextRenderType.MODE_NORMAL;
                     } else {
                         float upperLimit = Math.max(1.0f,
-                                (float) TextLayoutEngine.sMinPixelDensityForSDF / mEngine.getResLevel());
+                                (float) TextLayoutEngine.sMinPixelDensityForSDF / layout.mCreatedResLevel);
                         if (uniformScale <= upperLimit) {
                             // uniform scale smaller and not too large
                             mode = TextRenderType.MODE_UNIFORM_SCALE;
@@ -184,7 +185,7 @@ public final class ModernTextRenderer {
                         }
                     }
                 } else {
-                    // projection is boring
+                    // projection is not uniformly scaled
                     mode = sAllowSDFTextIn2D ? TextRenderType.MODE_SDF_FILL : TextRenderType.MODE_NORMAL;
                 }
             } else {
@@ -211,14 +212,11 @@ public final class ModernTextRenderer {
         } else if (TextLayoutEngine.sCurrentInWorldRendering) {
             return TextRenderType.MODE_SDF_FILL;
         } else {
-            if ((ctm.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0 &&
-                    (sComputeDeviceFontSize || sAllowSDFTextIn2D)) {
-                if (sComputeDeviceFontSize &&
+            if ((ctm.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {
+                if (sComputeDeviceFontSize && ctm.m23() == 0.0f &&
                         MathUtil.isApproxZero(ctm.m01()) &&
-                        MathUtil.isApproxZero(ctm.m02()) &&
                         MathUtil.isApproxZero(ctm.m03()) &&
                         MathUtil.isApproxZero(ctm.m10()) &&
-                        MathUtil.isApproxZero(ctm.m12()) &&
                         MathUtil.isApproxZero(ctm.m13()) &&
                         MathUtil.isApproxEqual(ctm.m33(), 1) &&
                         MathUtil.isApproxEqual(ctm.m00(), ctm.m11())) {
