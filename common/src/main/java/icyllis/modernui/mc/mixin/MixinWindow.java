@@ -34,8 +34,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
 
-import static org.lwjgl.glfw.GLFW.glfwGetMonitorPhysicalSize;
-
 @Mixin(Window.class)
 public abstract class MixinWindow {
 
@@ -84,11 +82,16 @@ public abstract class MixinWindow {
 
         Monitor monitor = findBestMonitor();
         if (monitor != null) {
-            int[] w = {0}, h = {0};
-            glfwGetMonitorPhysicalSize(monitor.getMonitor(), w, h);
-            VideoMode mode = monitor.getCurrentMode();
-            metrics.xdpi = 25.4f * mode.getWidth() / w[0];
-            metrics.ydpi = 25.4f * mode.getHeight() / h[0];
+            // physical DPI is usually not necessary...
+            try {
+                int[] w = {0}, h = {0};
+                org.lwjgl.glfw.GLFW.glfwGetMonitorPhysicalSize(monitor.getMonitor(), w, h);
+                VideoMode mode = monitor.getCurrentMode();
+                metrics.xdpi = 25.4f * mode.getWidth() / w[0];
+                metrics.ydpi = 25.4f * mode.getHeight() / h[0];
+            } catch (NoSuchMethodError ignored) {
+                // the method is missing in PojavLauncher-modified GLFW
+            }
         }
         var ctx = ModernUI.getInstance();
         if (ctx != null) {
