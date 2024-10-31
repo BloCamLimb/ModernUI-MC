@@ -19,6 +19,7 @@
 package icyllis.modernui.mc;
 
 import net.minecraft.resources.ResourceLocation;
+import org.apache.logging.log4j.*;
 
 import javax.annotation.Nonnull;
 
@@ -28,6 +29,9 @@ import static icyllis.modernui.ModernUI.*;
  * Mod class, common only.
  */
 public abstract class ModernUIMod {
+
+    public static final Logger LOGGER = LogManager.getLogger("ModernUI-MC");
+    public static final Marker MARKER = MarkerManager.getMarker("Init");
 
     // false to disable extensions
     public static final String BOOTSTRAP_DISABLE_TEXT_ENGINE = "modernui_mc_disableTextEngine";
