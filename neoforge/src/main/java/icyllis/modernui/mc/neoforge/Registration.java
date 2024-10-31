@@ -62,7 +62,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-import static icyllis.modernui.ModernUI.*;
+import static icyllis.modernui.mc.ModernUIMod.*;
 
 /**
  * This class handles mod loading events, all registry entries are only available under the development mode.

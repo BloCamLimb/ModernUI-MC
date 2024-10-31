@@ -37,8 +37,6 @@ import javax.annotation.Nonnull;
 import java.util.Locale;
 import java.util.function.Consumer;
 
-import static icyllis.modernui.ModernUI.*;
-
 /**
  * Mod class. INTERNAL.
  *
