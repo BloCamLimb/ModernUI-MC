@@ -26,7 +26,6 @@ import icyllis.modernui.annotation.*;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.text.TextUtils;
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.lwjgl.opengl.GL45C;
 
@@ -276,6 +275,8 @@ public class GLFontAtlas implements AutoCloseable {
         int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
         glBindTexture(GL_TEXTURE_2D, mTexture.getHandle());
 
+        // this is a fallback sampling method, generally used for direct mask, NEAREST is performant
+        // when used for SDF, a sampler object will override this setting
         glTexParameteri(
                 GL_TEXTURE_2D,
                 GL_TEXTURE_MAG_FILTER,
@@ -284,7 +285,7 @@ public class GLFontAtlas implements AutoCloseable {
         glTexParameteri(
                 GL_TEXTURE_2D,
                 GL_TEXTURE_MIN_FILTER,
-                mLinearSampling
+                mLinearSampling && mMaskFormat == Engine.MASK_FORMAT_ARGB   // color emoji requires linear sampling
                         ? GL_LINEAR_MIPMAP_LINEAR
                         : GL_NEAREST
         );
