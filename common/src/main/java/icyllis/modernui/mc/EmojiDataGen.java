@@ -33,14 +33,14 @@ import java.util.stream.Collectors;
 /**
  * Generate emoji_data.json, the code is dirty.
  *
- * @version Unicode 15.1
+ * @version Unicode 16.0
  */
 public class EmojiDataGen {
 
     public static void main(String[] args) {
         // https://raw.githubusercontent.com/iamcal/emoji-data/master/emoji.json
         // https://raw.githubusercontent.com/joypixels/emoji-toolkit/master/emoji.json
-        // https://raw.githubusercontent.com/googlefonts/emoji-metadata/main/emoji_15_1_ordering.json
+        // https://raw.githubusercontent.com/googlefonts/emoji-metadata/main/emoji_16_0_ordering.json
         final String iam_cal, joy_pixels, google_fonts, output;
         try (MemoryStack stack = MemoryStack.stackPush()) {
             PointerBuffer filters = stack.mallocPointer(1);

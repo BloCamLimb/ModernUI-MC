@@ -73,12 +73,10 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
-import java.nio.ByteOrder;
 import java.util.*;
 
 import static icyllis.modernui.ModernUI.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11C.GL_TEXTURE_BINDING_2D;
 
 /**
  * Manage UI thread and connect Minecraft to Modern UI view system at most bottom level.
@@ -645,30 +643,35 @@ public abstract class UIManager implements LifecycleOwner {
         final int width = layer.getWidth();
         final int height = layer.getHeight();
         final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
+        bitmap.setPremultiplied(true);
         GL33C.glPixelStorei(GL33C.GL_PACK_ROW_LENGTH, 0);
         GL33C.glPixelStorei(GL33C.GL_PACK_SKIP_ROWS, 0);
         GL33C.glPixelStorei(GL33C.GL_PACK_SKIP_PIXELS, 0);
         GL33C.glPixelStorei(GL33C.GL_PACK_ALIGNMENT, 1);
         // SYNC GPU TODO (use transfer buffer?)
         GL33C.glBindBuffer(GL33C.GL_PIXEL_PACK_BUFFER, 0);
-        int boundTexture = GL33C.glGetInteger(GL_TEXTURE_BINDING_2D);
+        int boundTexture = GL33C.glGetInteger(GL33C.GL_TEXTURE_BINDING_2D);
         GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, layer.getHandle());
         GL33C.glGetTexImage(GL33C.GL_TEXTURE_2D, 0, GL33C.GL_RGBA, GL33C.GL_UNSIGNED_BYTE,
                 bitmap.getAddress());
         GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);
         surface.unref();
         Util.ioPool().execute(() -> {
+            Bitmap converted = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Format.RGBA_8888);
+            converted.setPremultiplied(false);
             try (bitmap) {
-                Bitmap.flipVertically(bitmap);
-                unpremulAlpha(bitmap);
-                bitmap.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
+                // unpremul and flip
+                PixelUtils.convertPixels(bitmap.getPixmap(), converted.getPixmap(), true);
+            }
+            try (converted) {
+                converted.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
             } catch (IOException e) {
                 LOGGER.warn(MARKER, "Failed to save UI screenshot", e);
             }
         });
     }
 
-    @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
+    /*@SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     static void unpremulAlpha(Bitmap bitmap) {
         final int width = bitmap.getWidth();
         final int height = bitmap.getHeight();
@@ -697,7 +700,7 @@ public abstract class UIManager implements LifecycleOwner {
             }
             addr += rowStride;
         }
-    }
+    }*/
 
     protected void changeRadialBlur() {
         if (minecraft.gameRenderer.currentEffect() == null) {

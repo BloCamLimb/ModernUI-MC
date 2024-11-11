@@ -228,7 +228,7 @@ public class BitmapFont implements Font, AutoCloseable {
         boolean res = ((GLDevice) context.getDevice()).writePixels(
                 mTexture, 0, 0, mBitmap.getWidth(), mBitmap.getHeight(),
                 mBitmap.getColorType(), mBitmap.getColorType(),
-                mBitmap.getRowStride(), mBitmap.getAddress()
+                mBitmap.getRowBytes(), mBitmap.getAddress()
         );
         assert res;
 
@@ -319,14 +319,13 @@ public class BitmapFont implements Font, AutoCloseable {
         if (src == null || src.isEmpty) {
             return false;
         }
+        int dstRowBytes = mSpriteWidth * mBitmap.getFormat().getBytesPerPixel();
         PixelUtils.copyImage(
-                mBitmap.getAddress() +
-                        (long) src.offsetY * mBitmap.getRowStride() +
-                        (long) src.offsetX * mBitmap.getFormat().getBytesPerPixel(),
-                mBitmap.getRowStride(),
+                mBitmap.getPixmap().getAddress(src.offsetX, src.offsetY),
+                mBitmap.getRowBytes(),
                 dst,
-                (long) mSpriteWidth * mBitmap.getFormat().getBytesPerPixel(),
-                (long) mSpriteWidth * mBitmap.getFormat().getBytesPerPixel(),
+                dstRowBytes,
+                dstRowBytes,
                 mSpriteHeight
         );
         return true;

@@ -194,7 +194,8 @@ public class FontResourceManager implements PreparableReloadListener {
                         continue CYCLE;
                     }
                     boolean ec = Emoji.isEmoji(c);
-                    if (i == 0 && !ec) {
+                    boolean ecc = isEmoji_Unicode16_workaround(c);
+                    if (i == 0 && !ec && !ecc) {
                         continue CYCLE;
                     }
                     cps[n++] = c;
@@ -228,6 +229,15 @@ public class FontResourceManager implements PreparableReloadListener {
         } else {
             LOGGER.info(GlyphManager.MARKER, "No Emoji font was found");
         }
+    }
+
+    //FIXME Minecraft 1.21.1 still uses ICU-73.2, but Unicode 16 CLDR was added in ICU-76
+    // remove once Minecraft's ICU updated
+    static boolean isEmoji_Unicode16_workaround(int codePoint) {
+        return codePoint == 0x1FAE9 || codePoint == 0x1FAC6 ||
+                codePoint == 0x1FABE || codePoint == 0x1FADC ||
+                codePoint == 0x1FA89 || codePoint == 0x1FA8F ||
+                codePoint == 0x1FADF;
     }
 
     /**
