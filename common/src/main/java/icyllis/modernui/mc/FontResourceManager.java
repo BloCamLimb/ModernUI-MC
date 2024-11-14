@@ -148,7 +148,7 @@ public class FontResourceManager implements PreparableReloadListener {
 
     public static class LoadResults {
         public volatile EmojiFont mEmojiFont;
-        public volatile Map<String, String> mEmojiShortcodes;
+        public volatile Map<String, String> mEmojiShortcodes = Collections.emptyMap();
     }
 
     // SYNC
