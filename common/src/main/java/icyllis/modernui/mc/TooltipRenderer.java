@@ -774,6 +774,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
             fillGrad(gr, pose,
                     tooltipX, tooltipY + titleBreakHeight - 0.5f,
                     tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f,
+                    0.08f, // lift it up by 0.08
                     0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8);
         }
     }
@@ -788,69 +789,69 @@ public final class TooltipRenderer implements ScrollController.IListener {
         float bottom = tooltipY + tooltipHeight + V_BORDER;
 
         // top
-        fillGrad(gr, pose, left, top - 1, right, top,
+        fillGrad(gr, pose, left, top - 1, right, top, 0,
                 sFillColor[0], sFillColor[1], sFillColor[1], sFillColor[0]);
         // bottom
-        fillGrad(gr, pose, left, bottom, right, bottom + 1,
+        fillGrad(gr, pose, left, bottom, right, bottom + 1, 0,
                 sFillColor[3], sFillColor[2], sFillColor[2], sFillColor[3]);
         // center
-        fillGrad(gr, pose, left, top, right, bottom,
+        fillGrad(gr, pose, left, top, right, bottom, 0,
                 sFillColor[0], sFillColor[1], sFillColor[2], sFillColor[3]);
         // left
-        fillGrad(gr, pose, left - 1, top, left, bottom,
+        fillGrad(gr, pose, left - 1, top, left, bottom, 0,
                 sFillColor[0], sFillColor[0], sFillColor[3], sFillColor[3]);
         // right
-        fillGrad(gr, pose, right, top, right + 1, bottom,
+        fillGrad(gr, pose, right, top, right + 1, bottom, 0,
                 sFillColor[1], sFillColor[1], sFillColor[2], sFillColor[2]);
 
         if (titleGap && sTitleBreak) {
             fillGrad(gr, pose,
                     tooltipX, tooltipY + titleBreakHeight - 0.5f,
-                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f,
+                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f, 0,
                     0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8);
         }
 
         // top
         fillGrad(gr, pose,
-                left, top, right, top + 1,
+                left, top, right, top + 1, 0,
                 chooseBorderColor(0), chooseBorderColor(1),
                 chooseBorderColor(1), chooseBorderColor(0));
         // right
         fillGrad(gr, pose,
-                right - 1, top, right, bottom,
+                right - 1, top, right, bottom, 0,
                 chooseBorderColor(1), chooseBorderColor(1),
                 chooseBorderColor(2), chooseBorderColor(2));
         // bottom
         fillGrad(gr, pose,
-                left, bottom - 1, right, bottom,
+                left, bottom - 1, right, bottom, 0,
                 chooseBorderColor(3), chooseBorderColor(2),
                 chooseBorderColor(2), chooseBorderColor(3));
         // left
-        fillGrad(gr, pose, left, top, left + 1, bottom,
+        fillGrad(gr, pose, left, top, left + 1, bottom, 0,
                 chooseBorderColor(0), chooseBorderColor(0),
                 chooseBorderColor(3), chooseBorderColor(3));
     }
 
     private static void fillGrad(GuiGraphics gr, Matrix4f pose,
-                                 float left, float top, float right, float bottom,
+                                 float left, float top, float right, float bottom, float z,
                                  int colorUL, int colorUR, int colorLR, int colorLL) {
         var buffer = gr.bufferSource().getBuffer(RenderType.gui());
 
         // CCW
         int color = colorLR;
-        buffer.addVertex(pose, right, bottom, 0)
+        buffer.addVertex(pose, right, bottom, z)
                 .setColor(color);
 
         color = colorUR;
-        buffer.addVertex(pose, right, top, 0)
+        buffer.addVertex(pose, right, top, z)
                 .setColor(color);
 
         color = colorUL;
-        buffer.addVertex(pose, left, top, 0)
+        buffer.addVertex(pose, left, top, z)
                 .setColor(color);
 
         color = colorLL;
-        buffer.addVertex(pose, left, bottom, 0)
+        buffer.addVertex(pose, left, bottom, z)
                 .setColor(color);
 
         gr.flush();
