@@ -962,7 +962,7 @@ public final class Config {
                             "This value will be no less than current GUI scale.",
                             "Recommend setting a higher value on high-res monitor and powerful PC hardware.")
                     .defineInRange("minPixelDensityForSDF", TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF,
-                            TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF, MuiModApi.MAX_GUI_SCALE);
+                            4, 10);
             mLinearSamplingA8Atlas = builder.comment(
                             "Enable linear sampling for A8 font atlases with mipmaps, mag filter will be always NEAREST.",
                             "We prefer computeDeviceFontSize and allowSDFTextIn2D, then setting this to false can improve performance.",

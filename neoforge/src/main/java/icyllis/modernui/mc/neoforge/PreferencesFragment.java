@@ -591,7 +591,7 @@ public class PreferencesFragment extends Fragment {
                 Config.TEXT.mComputeDeviceFontSize, saveFn));
 
         category.addView(createIntegerOption(context, "modernui.center.text.minPixelDensityForSDF",
-                TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF, MuiModApi.MAX_GUI_SCALE,
+                4, 10,
                 1, 1, Config.TEXT.mMinPixelDensityForSDF, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.font.linearSampling",
