@@ -88,6 +88,11 @@ public class GLFontAtlas implements AutoCloseable {
     private final int mBorderWidth;
     private final int mMaxTextureSize;
 
+    // we prefer sComputeDeviceFontSize and sAllowSDFTextIn2D (i.e. direct mask)
+    // then linear sampling on the font atlas is not necessary,
+    // unless either of them is disabled or Shaders (in 3D) are used
+    public static volatile boolean sLinearSamplingA8Atlas = false;
+
     /**
      * Linear sampling with mipmaps;
      */
@@ -285,7 +290,8 @@ public class GLFontAtlas implements AutoCloseable {
         glTexParameteri(
                 GL_TEXTURE_2D,
                 GL_TEXTURE_MIN_FILTER,
-                mLinearSampling && mMaskFormat == Engine.MASK_FORMAT_ARGB   // color emoji requires linear sampling
+                mLinearSampling && (sLinearSamplingA8Atlas ||
+                        mMaskFormat == Engine.MASK_FORMAT_ARGB)   // color emoji requires linear sampling
                         ? GL_LINEAR_MIPMAP_LINEAR
                         : GL_NEAREST
         );

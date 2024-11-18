@@ -594,6 +594,9 @@ public class PreferencesFragment extends Fragment {
                 TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF, MuiModApi.MAX_GUI_SCALE,
                 1, 1, Config.TEXT.mMinPixelDensityForSDF, saveFn));
 
+        category.addView(createBooleanOption(context, "modernui.center.font.linearSampling",
+                Config.TEXT.mLinearSamplingA8Atlas, saveFn));
+
         category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
                 Config.TEXT.mAllowShadow, saveFn));
 

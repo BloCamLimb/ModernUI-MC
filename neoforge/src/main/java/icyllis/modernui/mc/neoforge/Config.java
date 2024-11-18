@@ -810,6 +810,7 @@ public final class Config {
         public final ModConfigSpec.BooleanValue mAntiAliasing;
         public final ModConfigSpec.BooleanValue mLinearMetrics;
         public final ModConfigSpec.IntValue mMinPixelDensityForSDF;
+        public final ModConfigSpec.BooleanValue mLinearSamplingA8Atlas;
         //public final ModConfigSpec.BooleanValue mLinearSampling;
 
         //private final ModConfigSpec.BooleanValue antiAliasing;
@@ -848,7 +849,7 @@ public final class Config {
                             BASELINE_MIN, BASELINE_MAX);
             mShadowOffset = builder.comment(
                             "Control the text shadow offset for vanilla text rendering, in GUI scaled pixels.")
-                    .defineInRange("shadowOffset", 0.67, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
+                    .defineInRange("shadowOffset", 0.5, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
             mOutlineOffset = builder.comment(
                             "Control the text outline offset for vanilla text rendering, in GUI scaled pixels.")
                     .defineInRange("outlineOffset", 0.5, OUTLINE_OFFSET_MIN, OUTLINE_OFFSET_MAX);
@@ -962,6 +963,11 @@ public final class Config {
                     "Recommend setting a higher value on high-res monitor and powerful PC hardware.")
                     .defineInRange("minPixelDensityForSDF", TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF,
                             TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF, MuiModApi.MAX_GUI_SCALE);
+            mLinearSamplingA8Atlas = builder.comment(
+                    "Enable linear sampling for A8 font atlases with mipmaps, mag filter will be always NEAREST.",
+                    "We prefer computeDeviceFontSize and allowSDFTextIn2D, then setting this to false can improve performance.",
+                    "If either of the above two is false or Shaders are active, then setting this to true can improve quality.")
+                    .define("linearSamplingA8Atlas", false);
             /*mLinearSampling = builder.comment(
                             "Enable linear sampling for font atlases with mipmaps, mag filter will be always NEAREST.",
                             "If your fonts are not bitmap fonts, then you should keep this setting true.")
@@ -1062,6 +1068,10 @@ public final class Config {
             if (TextLayoutEngine.sMinPixelDensityForSDF != mMinPixelDensityForSDF.get()) {
                 TextLayoutEngine.sMinPixelDensityForSDF = mMinPixelDensityForSDF.get();
                 reload = true;
+            }
+            if (GLFontAtlas.sLinearSamplingA8Atlas != mLinearSamplingA8Atlas.get()) {
+                GLFontAtlas.sLinearSamplingA8Atlas = mLinearSamplingA8Atlas.get();
+                reloadStrike = true;
             }
             /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
                 GLFontAtlas.sLinearSampling = mLinearSampling.get();
