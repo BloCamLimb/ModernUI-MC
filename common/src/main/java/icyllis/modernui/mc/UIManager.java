@@ -54,9 +54,11 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.tooltip.*;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import org.apache.commons.io.output.StringBuilderWriter;
@@ -162,7 +164,7 @@ public abstract class UIManager implements LifecycleOwner {
     @Nullable
     protected volatile MuiScreen mScreen;
 
-    protected boolean mFirstScreenOpened = false;
+    //protected boolean mFirstScreenOpened = false;
     protected boolean mZoomMode = false;
     protected boolean mZoomSmoothCamera;
 
@@ -624,6 +626,20 @@ public abstract class UIManager implements LifecycleOwner {
         }
     }
 
+    public void onGameLoadFinished() {
+        if (sDingEnabled) {
+            glfwRequestWindowAttention(minecraft.getWindow().getWindow());
+            minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f)
+            );
+        }
+        if (ModernUIMod.isOptiFineLoaded() &&
+                ModernUIMod.isTextEngineEnabled()) {
+            OptiFineIntegration.setFastRender(false);
+            LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
+        }
+    }
+
     @SuppressWarnings("resource")
     public void takeScreenshot() {
         @SharedPtr
@@ -829,8 +845,8 @@ public abstract class UIManager implements LifecycleOwner {
             return;
         }
 
-        final int oldVertexArray = GL33C.glGetInteger(GL33C.GL_VERTEX_ARRAY_BINDING);
-        final int oldProgram = GL33C.glGetInteger(GL33C.GL_CURRENT_PROGRAM);
+        int oldVertexArray = 0;
+        int oldProgram = 0;
 
 
         @RawPtr
@@ -843,6 +859,8 @@ public abstract class UIManager implements LifecycleOwner {
         Surface surface = frameTask.getRight();
 
         if (rootTask != null) {
+            oldVertexArray = GL33C.glGetInteger(GL33C.GL_VERTEX_ARRAY_BINDING);
+            oldProgram = GL33C.glGetInteger(GL33C.GL_CURRENT_PROGRAM);
             boolean added = context.addTask(rootTask);
             rootTask.unref();
             if (!added) {
@@ -855,12 +873,12 @@ public abstract class UIManager implements LifecycleOwner {
         if (rootTask != null) {
             context.submit();
             GL33C.glBindFramebuffer(GL33C.GL_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);
+            GL33C.glBindVertexArray(oldVertexArray);
+            GL33C.glUseProgram(oldProgram);
         } else {
             context.checkForFinishedWork();
         }
 
-        GL33C.glBindVertexArray(oldVertexArray);
-        GL33C.glUseProgram(oldProgram);
         BufferUploader.invalidate();
 
         // force changing Blaze3D state

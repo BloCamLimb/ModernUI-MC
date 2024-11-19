@@ -369,7 +369,7 @@ public final class Config {
                     .defineInRange("shadowRadius", 10.0, TOOLTIP_SHADOW_RADIUS_MIN, TOOLTIP_SHADOW_RADIUS_MAX);
             mTooltipShadowAlpha = builder.comment(
                             "The shadow opacity of tooltip, if rounded. No impact on performance.")
-                    .defineInRange("shadowOpacity", 0.3, 0d, 1d);
+                    .defineInRange("shadowOpacity", 0.25, 0d, 1d);
             mAdaptiveTooltipColors = builder.comment(
                             "When true, tooltip border colors adapt to item's name and rarity.")
                     .define("adaptiveColors", true);

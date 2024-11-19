@@ -592,7 +592,7 @@ public class PreferencesFragment extends Fragment {
 
         category.addView(createIntegerOption(context, "modernui.center.text.minPixelDensityForSDF",
                 4, 10,
-                1, 1, Config.TEXT.mMinPixelDensityForSDF, saveFn));
+                2, 1, Config.TEXT.mMinPixelDensityForSDF, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.font.linearSampling",
                 Config.TEXT.mLinearSamplingA8Atlas, saveFn));
