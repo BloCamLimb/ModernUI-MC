@@ -325,14 +325,14 @@ public final class Config {
                             "True to exactly position tooltip to pixel grid, smoother movement.")
                     .define("exactPositioning", true);
             mTooltipFill = builder.comment(
-                            "The tooltip background color in #RRGGBB or #AARRGGBB format. Default: #E0000000",
+                            "The tooltip background color in #RRGGBB or #AARRGGBB format. Default: #E6000000",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
                             "Multiple values produce a gradient effect, whereas one value produces a solid color.",
                             "If less than 4 are provided, repeat the last value.")
                     .defineList("colorFill", () -> {
                         List<String> list = new ArrayList<>();
-                        list.add("#E0000000");
+                        list.add("#E6000000");
                         return list;
                     }, $ -> true);
             mTooltipStroke = builder.comment(

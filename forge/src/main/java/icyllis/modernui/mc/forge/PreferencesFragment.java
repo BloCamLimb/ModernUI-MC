@@ -29,7 +29,6 @@ import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.mc.*;
-import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.ui.FourColorPicker;
 import icyllis.modernui.mc.ui.ThemeControl;
 import icyllis.modernui.text.*;
@@ -985,7 +984,7 @@ public class PreferencesFragment extends Fragment {
             if (colors != null && !colors.isEmpty()) {
                 try {
                     int color = Color.parseColor(colors.get(0));
-                    return (color >>> 24) / 255.0;
+                    return (double) ((color >>> 24) / 255.0f);
                 } catch (IllegalArgumentException e) {
                     e.printStackTrace();
                 }
@@ -993,7 +992,7 @@ public class PreferencesFragment extends Fragment {
             return 1.0;
         };
         Consumer<Double> setter = (d) -> {
-            int alpha = (int) (d * 255.0 + 0.5);
+            int alpha = (int) (d.floatValue() * 255.0f + 0.5f);
             var newList = new ArrayList<String>(config.get());
             if (newList.isEmpty()) {
                 newList.add("#FF000000");
@@ -1020,6 +1019,10 @@ public class PreferencesFragment extends Fragment {
                 config, config::set, denominator, saveFn);
     }
 
+    private static String floatValueToString(float value, float denominator) {
+        return Float.toString(Math.round(value * denominator) / denominator);
+    }
+
     public static LinearLayout createFloatOption(Context context, String name,
                                                  float minValue, float maxValue, int maxLength,
                                                  Supplier<Double> getter, Consumer<Double> setter,
@@ -1031,14 +1034,14 @@ public class PreferencesFragment extends Fragment {
         input.setFilters(DigitsInputFilter.getInstance(null, minValue < 0, true),
                 new InputFilter.LengthFilter(maxLength));
         float curValue = getter.get().floatValue();
-        input.setText(Float.toString(curValue));
+        input.setText(floatValueToString(curValue, denominator));
         input.setOnFocusChangeListener((view, hasFocus) -> {
             if (!hasFocus) {
                 EditText v = (EditText) view;
                 float newValue = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
                         minValue, maxValue);
-                replaceText(v, Float.toString(newValue));
-                if (newValue != getter.get()) {
+                replaceText(v, floatValueToString(newValue, denominator));
+                if (newValue != getter.get().floatValue()) {
                     setter.accept((double) newValue);
                     int curProgress = Math.round((newValue - minValue) * denominator);
                     slider.setProgress(curProgress, true);
@@ -1054,16 +1057,16 @@ public class PreferencesFragment extends Fragment {
         slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                double newValue = seekBar.getProgress() / denominator + minValue;
-                replaceText(input, Float.toString((float) newValue));
+                float newValue = seekBar.getProgress() / denominator + minValue;
+                replaceText(input, floatValueToString(newValue, denominator));
             }
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                double newValue = seekBar.getProgress() / denominator + minValue;
-                if (newValue != getter.get()) {
-                    setter.accept((double) (float) newValue);
-                    replaceText(input, Float.toString((float) newValue));
+                float newValue = seekBar.getProgress() / denominator + minValue;
+                if (newValue != getter.get().floatValue()) {
+                    setter.accept((double) newValue);
+                    replaceText(input, floatValueToString(newValue, denominator));
                     saveFn.run();
                 }
             }

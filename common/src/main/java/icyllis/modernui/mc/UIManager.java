@@ -412,6 +412,9 @@ public abstract class UIManager implements LifecycleOwner {
         mFragmentLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START);
         mFragmentController.dispatchStart();
 
+        mFragmentLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME);
+        mFragmentController.dispatchResume();
+
         LOGGER.info(MARKER, "UI thread initialized in {}ms", (System.nanoTime() - startTime) / 1000000);
 
         // test stuff
