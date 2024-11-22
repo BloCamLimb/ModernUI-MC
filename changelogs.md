@@ -1,5 +1,97 @@
 Changelogs
 ===
+### Modern UI 3.11.1.4
+#### NeoForge Extension 1.21.1
+* Fix lifecycle bug, improve UI slider
+* Fix game loading complete sound "DING" not working
+* Fix tooltip title break not showing up on certain GPUs
+* Fix startup crash on dedicated server
+* Fix crash in PojavLauncher
+* Use point sampling for layer blit (optimization)
+* Change the first font loading behavior to ensure bundled fonts are loaded
+#### Forge Extension 1.21.1
+* Equivalent to NeoForge version
+#### Fabric Extension 1.21.1
+* Functionally equivalent to NeoForge version
+#### Modern Text Engine 1.21.1
+* Update to Emoji 16.0
+* Set max allowed value for minPixelDensityForSDF to 10
+* Use point sampling for A8 atlas by default as an optimization
+  - We prefer computeDeviceFontSize and allowSDFTextIn2D, if some mods use `RenderSystem.getModelViewMatrix()` to
+    scale, or either of the above two options is false, or Shaders are active, you can set linearSamplingA8Atlas to
+    true to get better quality
+* Align text shadow to pixel grid to improve rendering, change default shadow offset to 0.5
+* Further improve text rendering quality at any scale (such as for Mekanism, JourneyMap), you can disable this
+  by setting computeDeviceFontSize to false
+* Rework obfuscated char rendering, improve quality, balance performance and compatibility
+* Fix a bug in handling hover and click events with styleAtWidth() (which can cause single char after SPACE char
+  not clickable)
+* Fix font index is not unsigned during layout
+* Always create 256x256 font texture for bitmap font when using dedicated texture
+* Use 32-bit int for bearing X and bearing Y, allow large metrics for bitmap fonts
+#### Core Framework
+* Allow to use MENU key to open/close context menu
+* Add option to create mutable Bitmap from encoded data
+* Add method to explicitly release Shader
+* Add method to clear a rectangle of Bitmap to some color
+* Add a number of methods to access/convert pixels in bulk
+* Add Bitmap.getColor4f() and Bitmap.setColor4f() to access pixel value at high precision
+* Add Bitmap.setFormat() and Bitmap.setPremultiplied() to reinterpret existing pixel data with a new type
+* Add a large number of pixel formats for Bitmap, and add methods for converting between different pixel formats,
+  these new formats can also be used to create textures
+* Add density for Image, allowing it to be scaled in ImageDrawable/ImageView/ImageSpan
+* Replace some copy-on-read list with copy-on-write list
+* Disable default scroll bar for AbsListView
+* Not force skipping OpenGL error checks, always print GLCaps
+* Add fallback method to compute font metrics
+* Add method to create Bitmap by wrapping an existing address
+* Remove dimension restriction on Bitmap creation
+* Temporarily fix lifecycle never reaches RESUME state
+* Many other optimizations and internal changes
+#### Core Framework - Kotlin Extension
+* No changes
+#### Markdown Extension
+* No changes
+#### Arc3D Graphics Engine
+* Change Shader and ColorFilter to sealed interface (and RefCounted)
+* Add Pixmap.clear() to clear a rectangle of pixels
+* Add low precision pixel load function
+* Add half float support
+* Add 16-bit per channel pixel format conversion
+* Optimize pixel ops and loops
+* Refactor color types and optimize pixel format conversion
+* Rename rowStride to rowBytes, limit rowBytes to Int32.Max
+* Add method for access/convert pixels in bulk
+* Engine
+  - Update the initialization of image format capabilities
+  - Improve caps dump
+  - Add named methods to Swizzle
+* OpenGL backend
+  - Workaround Intel driver bug that causes rendering broken
+  - Improve GLCaps initialization
+  - Some other internal changes
+* Shader Compiler
+  - Add initializer list grammar
+  - Add vertex_id and instance_id builtin for OpenGL
+  - Update SPIR-V generator for sampler operations
+  - Add array stride decoration for all supported types for type matching
+  - Update descriptor set validation
+  - Initially add switch statement parsing
+  - Tons of updates on SPIR-V code generator, SPIR-V generation is now basically functional,
+    but not yet used in production
+  - Add struct declaration grammar
+  - Add scoped block grammar
+* Granite Renderer
+  - Add workaround when there is no clamp_to_border support
+  - Split up universal blend shader snippet
+* Vulkan backend
+  - Add full method to create VulkanImage
+  - Refactor some class structures
+  - Add VulkanImageView
+  - Add VulkanMemoryAllocator to allocate memory for images/buffers
+  - Some other internal changes
+* Some other internal changes
+
 ### Modern UI 3.11.0.4
 #### NeoForge Extension 1.21.1
 * Change default typeface/font loading behavior
