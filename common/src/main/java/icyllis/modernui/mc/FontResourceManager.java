@@ -30,6 +30,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.profiling.ProfilerFiller;
+import org.jetbrains.annotations.Unmodifiable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -70,6 +71,7 @@ public class FontResourceManager implements PreparableReloadListener {
      * Shortcodes to Emoji char sequences.
      */
     protected final HashMap<String, String> mEmojiShortcodes = new HashMap<>();
+    protected final HashMap<Character, List<String>> mPrefixedEmojiShortcodes = new HashMap<>();
 
     protected FontResourceManager() {
     }
@@ -149,6 +151,7 @@ public class FontResourceManager implements PreparableReloadListener {
     public static class LoadResults {
         public volatile EmojiFont mEmojiFont;
         public volatile Map<String, String> mEmojiShortcodes = Collections.emptyMap();
+        public volatile Map<Character, List<String>> mPrefixedEmojiShortcodes = Collections.emptyMap();
     }
 
     // SYNC
@@ -157,6 +160,8 @@ public class FontResourceManager implements PreparableReloadListener {
         mEmojiFont = results.mEmojiFont;
         mEmojiShortcodes.clear();
         mEmojiShortcodes.putAll(results.mEmojiShortcodes);
+        mPrefixedEmojiShortcodes.clear();
+        mPrefixedEmojiShortcodes.putAll(results.mPrefixedEmojiShortcodes);
         // reload the whole engine
         ModernUIClient.getInstance().reloadTypeface();
         reloadAll();
@@ -247,16 +252,23 @@ public class FontResourceManager implements PreparableReloadListener {
     protected static void loadShortcodes(@Nonnull ResourceManager resources,
                                          @Nonnull LoadResults results) {
         final var map = new HashMap<String, String>();
+        final var prefixedMap = new HashMap<Character, HashSet<String>>();
         try (var reader = resources.openAsReader(ModernUIMod.location("emoji_data.json"))) {
             for (var entry : new Gson().fromJson(reader, JsonArray.class)) {
                 var row = entry.getAsJsonArray();
                 var sequence = row.get(0).getAsString();
                 // map shortcodes -> emoji sequence
                 var shortcodes = row.get(2).getAsJsonArray();
-                if (!shortcodes.isEmpty()) {
-                    map.put(shortcodes.get(0).getAsString(), sequence);
-                    for (int i = 1; i < shortcodes.size(); i++) {
-                        map.putIfAbsent(shortcodes.get(i).getAsString(), sequence);
+                for (int i = 0; i < shortcodes.size(); i++) {
+                    String sc = shortcodes.get(i).getAsString();
+                    String key = ":" + sc + ":";
+                    char prefix = Character.toLowerCase(sc.charAt(0));
+                    prefixedMap.computeIfAbsent(prefix, $ -> new HashSet<>())
+                            .add(key);
+                    if (i == 0) {
+                        map.put(key, sequence);
+                    } else {
+                        map.putIfAbsent(key, sequence);
                     }
                 }
             }
@@ -266,6 +278,13 @@ public class FontResourceManager implements PreparableReloadListener {
         LOGGER.info(GlyphManager.MARKER, "Scanned emoji shortcodes: {}",
                 map.size());
         results.mEmojiShortcodes = map;
+        final var finalPrefixedMap = new HashMap<Character, List<String>>();
+        for (var e : prefixedMap.entrySet()) {
+            var list = new ArrayList<>(e.getValue());
+            list.sort(null);
+            finalPrefixedMap.put(e.getKey(), Collections.unmodifiableList(list));
+        }
+        results.mPrefixedEmojiShortcodes = finalPrefixedMap;
     }
 
     // ASYNC
@@ -278,14 +297,20 @@ public class FontResourceManager implements PreparableReloadListener {
     }
 
     /**
-     * Lookup Emoji char sequence from shortcode.
+     * Lookup Emoji char sequence from shortcode with colons.
      *
-     * @param shortcode the shortcode, e.g. cheese
+     * @param shortcode the shortcode, e.g. :cheese:
      * @return the Emoji sequence
      */
     @Nullable
     public String lookupEmojiShortcode(@Nonnull String shortcode) {
         return mEmojiShortcodes.get(shortcode);
+    }
+
+    @Nonnull
+    @Unmodifiable
+    public List<String> getEmojiShortcodes(char prefix) {
+        return mPrefixedEmojiShortcodes.getOrDefault(Character.toLowerCase(prefix), Collections.emptyList());
     }
 
     static class EmojiData {

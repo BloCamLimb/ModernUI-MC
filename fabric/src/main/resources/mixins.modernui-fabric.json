@@ -13,6 +13,7 @@
     "MixinChatFormatting",
     "MixinChatScreen",
     "MixinClientTelemetryManager",
+    "MixinCommandSuggestions",
     "MixinContainerScreen",
     "MixinEditBox",
     "MixinGameRenderer",

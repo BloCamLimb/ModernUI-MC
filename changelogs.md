@@ -2,9 +2,11 @@ Changelogs
 ===
 ### Modern UI 3.11.1.4
 #### NeoForge Extension 1.21.1
+* Add emoji shortcode suggestions
 * Fix lifecycle bug, improve UI slider
 * Fix game loading complete sound "DING" not working
 * Fix tooltip title break not showing up on certain GPUs
+* Update to Emoji 16.0
 * Fix startup crash on dedicated server
 * Fix crash in PojavLauncher
 * Use point sampling for layer blit (optimization)
@@ -14,7 +16,6 @@ Changelogs
 #### Fabric Extension 1.21.1
 * Functionally equivalent to NeoForge version
 #### Modern Text Engine 1.21.1
-* Update to Emoji 16.0
 * Set max allowed value for minPixelDensityForSDF to 10
 * Use point sampling for A8 atlas by default as an optimization
   - We prefer computeDeviceFontSize and allowSDFTextIn2D, if some mods use `RenderSystem.getModelViewMatrix()` to
