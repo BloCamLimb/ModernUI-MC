@@ -19,14 +19,12 @@
 package icyllis.modernui.mc.neoforge;
 
 import icyllis.modernui.mc.MuiModApi;
-import icyllis.modernui.mc.text.MuiTextCommand;
-import icyllis.modernui.mc.text.TextLayoutEngine;
+import icyllis.modernui.mc.text.*;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
+import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.common.NeoForge;
 
 import javax.annotation.Nonnull;
@@ -74,10 +72,9 @@ public final class ModernUIText {
         event.enqueueWork(() -> TextLayoutEngine.getInstance().clear());
     }*/
 
-    /*@OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     static void registerShaders(@Nonnull RegisterShadersEvent event) {
-        ResourceProvider provider = event.getResourceManager();
+        /*ResourceProvider provider = event.getResourceManager();
         try {
             event.registerShader(new ShaderInstance(provider, TextRenderType.SHADER_RL,
                     DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), TextRenderType::setShader);
@@ -85,8 +82,12 @@ public final class ModernUIText {
                     DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), TextRenderType::setShaderSeeThrough);
         } catch (IOException e) {
             throw new RuntimeException("Bad shaders", e);
-        }
-    }*/
+        }*/
+        // these three are required shaders, let them preload
+        event.registerShader(TextRenderType.SHADER_NORMAL);
+        event.registerShader(TextRenderType.SHADER_SDF_FILL);
+        event.registerShader(TextRenderType.SHADER_SDF_STROKE);
+    }
 
     static class EventHandler {
 

@@ -29,22 +29,16 @@ import icyllis.arc3d.opengl.GLCaps;
 import icyllis.arc3d.opengl.GLSampler;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIMod;
-import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.text.mixin.AccessBufferSource;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.*;
-import net.minecraft.server.packs.resources.Resource;
-import net.minecraft.server.packs.resources.ResourceProvider;
 import org.lwjgl.opengl.GL33C;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.Objects;
-import java.util.Optional;
 
 import static icyllis.modernui.ModernUI.LOGGER;
 import static icyllis.modernui.mc.text.TextLayoutEngine.MARKER;
@@ -66,25 +60,41 @@ public class TextRenderType extends RenderType {
      */
     public static final int MODE_UNIFORM_SCALE = 4; // <- must be power of 2
 
-    private static volatile ShaderInstance sShaderNormal;
+    public static final ShaderProgram SHADER_NORMAL = new ShaderProgram(
+            ModernUIMod.location("core/rendertype_modern_text_normal"),
+            DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
+            ShaderDefines.EMPTY
+    );
 
-    private static volatile ShaderInstance sCurrentShaderSDFFill;
-    private static volatile ShaderInstance sCurrentShaderSDFStroke;
+    public static final ShaderProgram SHADER_SDF_FILL = new ShaderProgram(
+            ModernUIMod.location("core/rendertype_modern_text_sdf_fill"),
+            DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
+            ShaderDefines.EMPTY
+    );
+    public static final ShaderProgram SHADER_SDF_STROKE = new ShaderProgram(
+            ModernUIMod.location("core/rendertype_modern_text_sdf_stroke"),
+            DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
+            ShaderDefines.EMPTY
+    );
 
-    private static volatile ShaderInstance sShaderSDFFill;
-    private static volatile ShaderInstance sShaderSDFStroke;
+    private static volatile ShaderProgram sCurrentShaderSDFFill = SHADER_SDF_FILL;
+    private static volatile ShaderProgram sCurrentShaderSDFStroke = SHADER_SDF_STROKE;
 
-    @Nullable
-    private static volatile ShaderInstance sShaderSDFFillSmart;
-    @Nullable
-    private static volatile ShaderInstance sShaderSDFStrokeSmart;
+    private static final ShaderProgram SHADER_SDF_FILL_SMART = new ShaderProgram(
+            ModernUIMod.location("core/rendertype_modern_text_sdf_fill_400"),
+            DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
+            ShaderDefines.EMPTY
+    );
+    private static final ShaderProgram SHADER_SDF_STROKE_SMART = new ShaderProgram(
+            ModernUIMod.location("core/rendertype_modern_text_sdf_stroke_400"),
+            DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
+            ShaderDefines.EMPTY
+    );
 
-    private static boolean sSmartShadersLoaded = false;
-
-    static final ShaderStateShard
+    /*static final ShaderStateShard
             RENDERTYPE_MODERN_TEXT_NORMAL = new ShaderStateShard(TextRenderType::getShaderNormal),
             RENDERTYPE_MODERN_TEXT_SDF_FILL = new ShaderStateShard(TextRenderType::getShaderSDFFill),
-            RENDERTYPE_MODERN_TEXT_SDF_STROKE = new ShaderStateShard(TextRenderType::getShaderSDFStroke);
+            RENDERTYPE_MODERN_TEXT_SDF_STROKE = new ShaderStateShard(TextRenderType::getShaderSDFStroke);*/
 
     /**
      * Only the texture id is different, the rest state are same
@@ -118,7 +128,7 @@ public class TextRenderType extends RenderType {
 
     static {
         NORMAL_STATES = ImmutableList.of(
-                RENDERTYPE_MODERN_TEXT_NORMAL,
+                //RENDERTYPE_MODERN_TEXT_NORMAL,
                 TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,
@@ -131,7 +141,7 @@ public class TextRenderType extends RenderType {
                 DEFAULT_LINE
         );
         SDF_FILL_STATES = ImmutableList.of(
-                RENDERTYPE_MODERN_TEXT_SDF_FILL,
+                //RENDERTYPE_MODERN_TEXT_SDF_FILL,
                 TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,
@@ -144,7 +154,7 @@ public class TextRenderType extends RenderType {
                 DEFAULT_LINE
         );
         SDF_STROKE_STATES = ImmutableList.of(
-                RENDERTYPE_MODERN_TEXT_SDF_STROKE,
+                //RENDERTYPE_MODERN_TEXT_SDF_STROKE,
                 TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,
@@ -227,6 +237,7 @@ public class TextRenderType extends RenderType {
     @Nonnull
     private static TextRenderType makeNormalType(int texture) {
         return new TextRenderType("modern_text_normal", 256, () -> {
+            RenderSystem.setShader(getShaderNormal());
             NORMAL_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
         }, () -> NORMAL_STATES.forEach(RenderStateShard::clearRenderState));
@@ -246,6 +257,7 @@ public class TextRenderType extends RenderType {
     private static TextRenderType makeSDFFillType(int texture) {
         ensureLinearFontSampler();
         TextRenderType renderType = new TextRenderType("modern_text_sdf_fill", 256, () -> {
+            RenderSystem.setShader(getShaderSDFFill());
             SDF_FILL_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
@@ -276,6 +288,7 @@ public class TextRenderType extends RenderType {
     private static TextRenderType makeSDFStrokeType(int texture) {
         ensureLinearFontSampler();
         TextRenderType renderType = new TextRenderType("modern_text_sdf_stroke", 256, () -> {
+            RenderSystem.setShader(getShaderSDFStroke());
             SDF_STROKE_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, texture);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
@@ -375,107 +388,55 @@ public class TextRenderType extends RenderType {
         sFirstSDFStrokeBuffer.clear();
         if (cleanup) {
             sLinearFontSampler = RefCnt.move(sLinearFontSampler);
-            if (sShaderNormal != null) {
-                sShaderNormal.close();
-            }
-            if (sShaderSDFFill != null) {
-                sShaderSDFFill.close();
-            }
-            if (sShaderSDFStroke != null) {
-                sShaderSDFStroke.close();
-            }
-            if (sShaderSDFFillSmart != null) {
-                //noinspection DataFlowIssue
-                sShaderSDFFillSmart.close();
-            }
-            if (sShaderSDFStrokeSmart != null) {
-                //noinspection DataFlowIssue
-                sShaderSDFStrokeSmart.close();
-            }
-            sShaderNormal = null;
-            sShaderSDFFill = null;
-            sShaderSDFStroke = null;
-            sShaderSDFFillSmart = null;
-            sShaderSDFStrokeSmart = null;
             sCurrentShaderSDFFill = null;
             sCurrentShaderSDFStroke = null;
         }
     }
 
-    public static ShaderInstance getShaderNormal() {
+    public static ShaderProgram getShaderNormal() {
         if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
-            return GameRenderer.getRendertypeTextShader();
+            return CoreShaders.RENDERTYPE_TEXT;
         }
-        return sShaderNormal;
+        return SHADER_NORMAL;
     }
 
-    public static ShaderInstance getShaderSDFFill() {
+    public static ShaderProgram getShaderSDFFill() {
         if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
-            return GameRenderer.getRendertypeTextShader();
+            return CoreShaders.RENDERTYPE_TEXT;
         }
         return sCurrentShaderSDFFill;
     }
 
-    public static ShaderInstance getShaderSDFStroke() {
+    public static ShaderProgram getShaderSDFStroke() {
         return sCurrentShaderSDFStroke;
     }
 
     // RT only
     public static synchronized void toggleSDFShaders(boolean smart) {
         if (smart) {
-            if (!sSmartShadersLoaded) {
-                sSmartShadersLoaded = true;
-                if (((GLCaps) Core.requireImmediateContext()
-                        .getCaps()).getGLSLVersion() >= 400) {
-                    var provider = obtainResourceProvider();
-                    try {
-                        sShaderSDFFillSmart = MuiModApi.get().makeShaderInstance(provider,
-                                ModernUIMod.location("rendertype_modern_text_sdf_fill_400"),
-                                DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
-                        sShaderSDFStrokeSmart = MuiModApi.get().makeShaderInstance(provider,
-                                ModernUIMod.location("rendertype_modern_text_sdf_stroke_400"),
-                                DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
-                        LOGGER.info(MARKER, "Loaded smart SDF text shaders");
-                    } catch (IOException e) {
-                        LOGGER.error(MARKER, "Failed to load smart SDF text shaders", e);
-                    }
-                } else {
-                    LOGGER.info(MARKER, "No GLSL 400, smart SDF text shaders disabled");
-                }
-            }
-            if (sShaderSDFStrokeSmart != null) {
-                sCurrentShaderSDFFill = sShaderSDFFillSmart;
-                sCurrentShaderSDFStroke = sShaderSDFStrokeSmart;
+            if (((GLCaps) Core.requireImmediateContext()
+                    .getCaps()).getGLSLVersion() >= 400) {
+                sCurrentShaderSDFFill = SHADER_SDF_FILL_SMART;
+                sCurrentShaderSDFStroke = SHADER_SDF_STROKE_SMART;
                 return;
+            } else {
+                LOGGER.info(MARKER, "No GLSL 400, smart SDF text shaders disabled");
             }
         }
-        sCurrentShaderSDFFill = sShaderSDFFill;
-        sCurrentShaderSDFStroke = sShaderSDFStroke;
+        sCurrentShaderSDFFill = SHADER_SDF_FILL;
+        sCurrentShaderSDFStroke = SHADER_SDF_STROKE;
     }
 
-    /**
-     * Preload Modern UI text shaders for early text rendering. These shaders are loaded only once
-     * and cannot be overridden by other resource packs or reloaded.
-     * <p>
-     * Note that Minecraft vanilla will delete OpenGL shader objects when reloading resources, but
-     * since we do not delete OpenGL program object (ShaderInstance), they will remain valid.
+    /*
+     * Preload Modern UI text shaders for early text rendering.
      */
-    public static synchronized void preloadShaders() {
-        if (sShaderNormal != null) {
-            return;
-        }
+    /*public static synchronized void preloadShaders() {
         var provider = obtainResourceProvider();
         try {
-            sShaderNormal = MuiModApi.get().makeShaderInstance(provider,
-                    ModernUIMod.location("rendertype_modern_text_normal"),
-                    DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
-            sShaderSDFFill = MuiModApi.get().makeShaderInstance(provider,
-                    ModernUIMod.location("rendertype_modern_text_sdf_fill"),
-                    DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
-            sShaderSDFStroke = MuiModApi.get().makeShaderInstance(provider,
-                    ModernUIMod.location("rendertype_modern_text_sdf_stroke"),
-                    DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
-        } catch (IOException e) {
+            Minecraft.getInstance().getShaderManager().preloadForStartup(
+                    provider, SHADER_NORMAL, SHADER_SDF_FILL, SHADER_SDF_STROKE
+            );
+        } catch (IOException | ShaderManager.CompilationException e) {
             throw new IllegalStateException("Bad text shaders", e);
         }
         toggleSDFShaders(false);
@@ -487,7 +448,7 @@ public class TextRenderType extends RenderType {
         final var source = Minecraft.getInstance().getVanillaPackResources();
         final var fallback = source.asProvider();
         return location -> {
-            // don't worry, ShaderInstance ctor will close it
+            // don't worry, ShaderManager will close it
             @SuppressWarnings("resource") final var stream = TextRenderType.class
                     .getResourceAsStream("/assets/" + location.getNamespace() + "/" + location.getPath());
             if (stream == null) {
@@ -496,5 +457,5 @@ public class TextRenderType extends RenderType {
             }
             return Optional.of(new Resource(source, () -> stream));
         };
-    }
+    }*/
 }

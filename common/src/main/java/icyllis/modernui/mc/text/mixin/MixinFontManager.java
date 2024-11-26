@@ -22,7 +22,6 @@ import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraft.client.gui.font.FontManager;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.util.profiling.ProfilerFiller;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
@@ -40,15 +39,11 @@ public class MixinFontManager {
     @Overwrite
     public CompletableFuture<Void> reload(@Nonnull PreparableReloadListener.PreparationBarrier preparationBarrier,
                                           @Nonnull ResourceManager resourceManager,
-                                          @Nonnull ProfilerFiller preparationProfiler,
-                                          @Nonnull ProfilerFiller reloadProfiler,
                                           @Nonnull Executor preparationExecutor,
                                           @Nonnull Executor reloadExecutor) {
         return TextLayoutEngine.getInstance().injectFontManager((FontManager) (Object) this)
                 .reload(preparationBarrier,
                         resourceManager,
-                        preparationProfiler,
-                        reloadProfiler,
                         preparationExecutor,
                         reloadExecutor);
     }

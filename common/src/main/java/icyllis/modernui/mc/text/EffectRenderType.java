@@ -51,7 +51,7 @@ public class EffectRenderType extends RenderType {
 
     static {
         STATES = ImmutableList.of(
-                TextRenderType.RENDERTYPE_MODERN_TEXT_NORMAL,
+                RENDERTYPE_TEXT_SHADER,
                 TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,

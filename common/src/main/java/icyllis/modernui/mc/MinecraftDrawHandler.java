@@ -68,7 +68,6 @@ public class MinecraftDrawHandler {
         Matrix4fStack mvs = RenderSystem.getModelViewStack();
         mvs.pushMatrix();
         mvs.translate((float) (p.mPositionLeft / guiScale), (float) (p.mPositionTop / guiScale), 0.0f);
-        RenderSystem.applyModelViewMatrix();
         //XXX: the parent should not have a scissor test
         RenderSystem.enableScissor(p.mPositionLeft,
                 rtHeight - (p.mPositionTop + p.mSurfaceHeight),
@@ -77,7 +76,6 @@ public class MinecraftDrawHandler {
             renderer.onDraw(gr, mouseX, mouseY, deltaTick, guiScale, p.mAlpha);
         } finally {
             mvs.popMatrix();
-            RenderSystem.applyModelViewMatrix();
             RenderSystem.disableScissor();
         }
     }

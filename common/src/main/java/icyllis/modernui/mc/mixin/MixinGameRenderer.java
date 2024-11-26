@@ -20,15 +20,10 @@ package icyllis.modernui.mc.mixin;
 
 import icyllis.modernui.mc.BlurHandler;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.PostChain;
-import net.minecraft.server.packs.resources.ResourceProvider;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import javax.annotation.Nullable;
 
 /**
  * Although we already have a window resize callback in {@link MixinWindow},
@@ -37,30 +32,10 @@ import javax.annotation.Nullable;
 @Mixin(GameRenderer.class)
 public class MixinGameRenderer {
 
-    @Shadow
-    @Nullable
-    private PostChain blurEffect;
-
-    @Inject(method = "resize", at = @At("TAIL"))
-    private void onResize(int width, int height, CallbackInfo ci) {
-        BlurHandler.INSTANCE.resize(width, height);
-    }
-
-    @Inject(method = "loadBlurEffect", at = @At("HEAD"), cancellable = true)
-    private void onLoadBlurEffect(ResourceProvider resourceProvider, CallbackInfo ci) {
-        if (BlurHandler.sOverrideVanillaBlur) {
-            if (blurEffect != null) {
-                blurEffect.close();
-            }
-            blurEffect = null;
-            ci.cancel();
-        }
-    }
-
     @Inject(method = "processBlurEffect", at = @At("HEAD"), cancellable = true)
-    private void onProcessBlurEffect(float partialTick, CallbackInfo ci) {
+    private void onProcessBlurEffect(CallbackInfo ci) {
         if (BlurHandler.sOverrideVanillaBlur) {
-            BlurHandler.INSTANCE.processBlurEffect(partialTick);
+            BlurHandler.INSTANCE.processBlurEffect((GameRenderer) (Object) this);
             ci.cancel();
         }
     }

@@ -94,6 +94,7 @@ final class MenuScreen<T extends AbstractContainerMenu>
         if (callback == null || callback.hasDefaultBackground()) {
             renderBackground(gr, mouseX, mouseY, deltaTick);
         }
+        gr.flush();
         mHost.render(gr, mouseX, mouseY, deltaTick);
     }
 

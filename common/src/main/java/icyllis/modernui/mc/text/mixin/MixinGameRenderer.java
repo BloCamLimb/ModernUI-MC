@@ -19,10 +19,8 @@
 package icyllis.modernui.mc.text.mixin;
 
 import icyllis.modernui.mc.text.TextLayoutEngine;
-import icyllis.modernui.mc.text.TextRenderType;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.server.packs.resources.ResourceProvider;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -34,10 +32,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GameRenderer.class)
 public class MixinGameRenderer {
 
-    @Inject(method = "preloadUiShader", at = @At("TAIL"))
+    /*@Inject(method = "preloadUiShader", at = @At("TAIL"))
     private void onPreloadUiShader(ResourceProvider vanillaProvider, CallbackInfo ci) {
         TextRenderType.preloadShaders();
-    }
+    }*/
 
     @Inject(method = "renderLevel", at = @At("HEAD"))
     private void renderLevelStart(DeltaTracker deltaTracker, CallbackInfo ci) {

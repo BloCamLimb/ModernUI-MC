@@ -30,10 +30,13 @@ import org.jetbrains.annotations.ApiStatus;
 @ApiStatus.Internal
 public class TooltipRenderType extends RenderType {
 
-    private static ShaderInstance sShaderTooltip;
+    public static final ShaderProgram SHADER_TOOLTIP = new ShaderProgram(
+            ModernUIMod.location("core/rendertype_modern_tooltip"),
+            DefaultVertexFormat.POSITION,
+            ShaderDefines.EMPTY);
 
     static final ShaderStateShard
-            RENDERTYPE_MODERN_TOOLTIP = new ShaderStateShard(TooltipRenderType::getShaderTooltip);
+            RENDERTYPE_MODERN_TOOLTIP = new ShaderStateShard(SHADER_TOOLTIP);
 
     private static final ImmutableList<RenderStateShard> STATES = ImmutableList.of(
             RENDERTYPE_MODERN_TOOLTIP,
@@ -62,13 +65,5 @@ public class TooltipRenderType extends RenderType {
 
     public static RenderType tooltip() {
         return TOOLTIP;
-    }
-
-    public static ShaderInstance getShaderTooltip() {
-        return sShaderTooltip;
-    }
-
-    public static void setShaderTooltip(ShaderInstance shaderTooltip) {
-        sShaderTooltip = shaderTooltip;
     }
 }

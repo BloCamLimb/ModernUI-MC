@@ -18,9 +18,9 @@
 
 package icyllis.modernui.mc.text;
 
+import com.mojang.blaze3d.ProjectionType;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.VertexSorting;
 import icyllis.modernui.graphics.MathUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -154,7 +154,7 @@ public final class ModernTextRenderer {
                         mode == TextRenderType.MODE_UNIFORM_SCALE)) {
             // here we are in 2D, and have scale/translate only ctm (not bilinear fallback)
             Matrix4f projection = RenderSystem.getProjectionMatrix();
-            if (RenderSystem.getVertexSorting() == VertexSorting.ORTHOGRAPHIC_Z &&
+            if (RenderSystem.getProjectionType() == ProjectionType.ORTHOGRAPHIC &&
                     projection.m23() == 0.0f) { // fast check it's a 2D projection
                 // find additional scaling in projection
                 Window window = Minecraft.getInstance().getWindow();

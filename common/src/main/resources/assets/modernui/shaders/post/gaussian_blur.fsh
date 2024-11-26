@@ -1,6 +1,9 @@
+// This file is part of Modern UI.
+// Copyright (C) 2024 BloCamLimb.
+// Licensed under LGPL-3.0-or-later.
 #version 150
 
-uniform sampler2D DiffuseSampler;
+uniform sampler2D InSampler;
 
 in vec2 texCoord;
 in vec2 oneTexel;
@@ -26,7 +29,7 @@ void main() {
     float wsum = 0.0, w;
     for (int r = -radius; r <= radius; r += 1) {
         w = exp(r * r * base) * factor;
-        blur += texelFetch(DiffuseSampler, clamp(basePos + r * blurDir, ivec2(0), bound), 0) * w;
+        blur += texelFetch(InSampler, clamp(basePos + r * blurDir, ivec2(0), bound), 0) * w;
         wsum += w;
     }
 

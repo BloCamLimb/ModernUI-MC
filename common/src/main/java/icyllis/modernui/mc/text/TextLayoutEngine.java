@@ -42,6 +42,7 @@ import net.minecraft.network.chat.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.*;
+import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
@@ -618,20 +619,15 @@ public class TextLayoutEngine extends FontResourceManager
     @Override
     public CompletableFuture<Void> reload(@Nonnull PreparationBarrier preparationBarrier,
                                           @Nonnull ResourceManager resourceManager,
-                                          @Nonnull ProfilerFiller preparationProfiler,
-                                          @Nonnull ProfilerFiller reloadProfiler,
                                           @Nonnull Executor preparationExecutor,
                                           @Nonnull Executor reloadExecutor) {
-        preparationProfiler.startTick();
-        preparationProfiler.endTick();
         return prepareResources(resourceManager, preparationExecutor)
                 .thenCompose(preparationBarrier::wait)
                 .thenAcceptAsync(results -> {
-                    reloadProfiler.startTick();
+                    ProfilerFiller reloadProfiler = Profiler.get();
                     reloadProfiler.push("reload");
                     applyResources(results);
                     reloadProfiler.pop();
-                    reloadProfiler.endTick();
                 }, reloadExecutor);
     }
 

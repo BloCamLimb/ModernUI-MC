@@ -596,7 +596,7 @@ public final class Config {
             WindowMode windowMode = mWindowMode.get();
             if (mLastWindowMode != windowMode) {
                 mLastWindowMode = windowMode;
-                Minecraft.getInstance().tell(() -> mLastWindowMode.apply());
+                Minecraft.getInstance().schedule(() -> mLastWindowMode.apply());
             }
 
             //TestHUD.sBars = hudBars.get();

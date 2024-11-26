@@ -45,8 +45,8 @@ public final class ModernUIText {
     private ModernUIText() {
     }
 
-    public static void init() {
-        FMLJavaModLoadingContext.get().getModEventBus().register(ModernUIText.class);
+    public static void init(FMLJavaModLoadingContext context) {
+        context.getModEventBus().register(ModernUIText.class);
     }
 
     /*@SubscribeEvent

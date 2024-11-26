@@ -1,14 +1,6 @@
 {
-  "blend": {
-    "func": "add",
-    "srcrgb": "srcalpha",
-    "dstrgb": "1-srcalpha"
-  },
-  "vertex": "modernui:rendertype_modern_tooltip",
-  "fragment": "modernui:rendertype_modern_tooltip",
-  "attributes": [
-    "Position"
-  ],
+  "vertex": "modernui:core/rendertype_modern_tooltip",
+  "fragment": "modernui:core/rendertype_modern_tooltip",
   "samplers": [
   ],
   "uniforms": [

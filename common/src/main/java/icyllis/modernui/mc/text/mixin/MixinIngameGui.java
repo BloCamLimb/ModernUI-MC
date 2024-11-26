@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.text.mixin;
 
+import icyllis.modernui.mc.mixin.AccessGuiGraphics;
 import icyllis.modernui.mc.text.ModernTextRenderer;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraft.client.DeltaTracker;
@@ -63,7 +64,7 @@ public abstract class MixinIngameGui {
             float offset = ModernTextRenderer.sOutlineOffset;
             Matrix4f pose = gr.pose().last().pose();
             // end batch for each draw to prevent transparency sorting
-            MultiBufferSource.BufferSource source = gr.bufferSource();
+            MultiBufferSource.BufferSource source = ((AccessGuiGraphics) gr).getBufferSource();
             engine.getTextRenderer().drawText(s, x + offset, y, 0xff000000, false,
                     pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             source.endBatch();

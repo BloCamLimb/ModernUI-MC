@@ -329,7 +329,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                 minecraft.levelRenderer.needsUpdate();
             }
             event.setFOV(
-                    event.getFOV() * 0.25
+                    event.getFOV() * 0.25f
             );
         } else if (mZoomMode) {
             mZoomMode = false;

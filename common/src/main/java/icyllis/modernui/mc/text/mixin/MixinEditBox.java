@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.text.mixin;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import icyllis.modernui.mc.mixin.AccessGuiGraphics;
 import icyllis.modernui.mc.text.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
@@ -144,7 +145,7 @@ public abstract class MixinEditBox extends AbstractWidget {
         float hori = baseX;
 
         final Matrix4f matrix = gr.pose().last().pose();
-        final MultiBufferSource.BufferSource bufferSource = gr.bufferSource();
+        final MultiBufferSource.BufferSource bufferSource = ((AccessGuiGraphics) gr).getBufferSource();
 
         final boolean separate;
         if (!viewText.isEmpty()) {
@@ -235,7 +236,7 @@ public abstract class MixinEditBox extends AbstractWidget {
                 endX = getX() + width;
             }
 
-            VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.guiOverlay());
+            VertexConsumer consumer = bufferSource.getBuffer(RenderType.guiOverlay());
             consumer.addVertex(matrix, startX, baseY + 10, 0)
                     .setColor(51, 181, 229, 56);
             consumer.addVertex(matrix, endX, baseY + 10, 0)
@@ -249,7 +250,7 @@ public abstract class MixinEditBox extends AbstractWidget {
             if (cursorNotAtEnd) {
                 gr.flush();
 
-                VertexConsumer consumer = gr.bufferSource().getBuffer(RenderType.guiOverlay());
+                VertexConsumer consumer = bufferSource.getBuffer(RenderType.guiOverlay());
                 consumer.addVertex(matrix, cursorX - 0.5f, baseY + 10, 0)
                         .setColor(208, 208, 208, 255);
                 consumer.addVertex(matrix, cursorX + 0.5f, baseY + 10, 0)

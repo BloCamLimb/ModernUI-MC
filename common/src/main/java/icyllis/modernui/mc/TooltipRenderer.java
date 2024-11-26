@@ -23,6 +23,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.mc.mixin.AccessClientTextTooltip;
+import icyllis.modernui.mc.mixin.AccessGuiGraphics;
 import icyllis.modernui.mc.text.CharacterStyle;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.gui.Font;
@@ -156,7 +157,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
     void computeWorkingColor(@Nonnull ItemStack item) {
         if (sAdaptiveColors && !item.isEmpty()) {
             if (sRoundedShapes && (item.is(Items.DRAGON_EGG) ||
-                    item.is(Items.MOJANG_BANNER_PATTERN))) {
+                    item.is(Items.DEBUG_STICK))) {
                 mUseSpectrum = true;
                 return;
             }
@@ -512,6 +513,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
         uniform.set(r / 255f, g / 255f, b / 255f, a / 255f);
     }
 
+    //TODO make use of vanilla "ResourceLocation tooltipStyle"
     public void drawTooltip(@Nonnull ItemStack itemStack, @Nonnull GuiGraphics gr,
                             @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
                             @Nonnull Font font, int screenWidth, int screenHeight,
@@ -530,7 +532,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
         if (list.size() == 1) {
             ClientTooltipComponent component = list.get(0);
             tooltipWidth = component.getWidth(font);
-            tooltipHeight = component.getHeight() - TITLE_GAP;
+            tooltipHeight = component.getHeight(font) - TITLE_GAP;
         } else {
             tooltipWidth = 0;
             tooltipHeight = 0;
@@ -538,7 +540,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
             for (int i = 0; i < list.size(); i++) {
                 ClientTooltipComponent component = list.get(i);
                 tooltipWidth = Math.max(tooltipWidth, component.getWidth(font));
-                int componentHeight = component.getHeight();
+                int componentHeight = component.getHeight(font);
                 tooltipHeight += componentHeight;
                 if (i == 0) {
                     titleBreakHeight = componentHeight;
@@ -677,7 +679,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
 
-        final MultiBufferSource.BufferSource source = gr.bufferSource();
+        final MultiBufferSource.BufferSource source = ((AccessGuiGraphics) gr).getBufferSource();
         // With rounded borders, we create a new matrix and do not perform matrix * vector
         // on the CPU side. There are floating-point errors, and we found that this can cause
         // text to be discarded by LEqual depth test on some GPUs, so lift it up by 0.1.
@@ -694,7 +696,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
             if (titleGap && i == 0) {
                 drawY += TITLE_GAP;
             }
-            drawY += component.getHeight();
+            drawY += component.getHeight(font);
         }
         gr.flush();
 
@@ -703,14 +705,14 @@ public final class TooltipRenderer implements ScrollController.IListener {
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
             if (mLayoutRTL) {
-                component.renderImage(font, drawX + tooltipWidth - component.getWidth(font), drawY, gr);
+                component.renderImage(font, drawX + tooltipWidth - component.getWidth(font), drawY, tooltipWidth, tooltipHeight, gr);
             } else {
-                component.renderImage(font, drawX, drawY, gr);
+                component.renderImage(font, drawX, drawY, tooltipWidth, tooltipHeight, gr);
             }
             if (titleGap && i == 0) {
                 drawY += TITLE_GAP;
             }
-            drawY += component.getHeight();
+            drawY += component.getHeight(font);
         }
         gr.pose().popPose();
     }
@@ -727,7 +729,10 @@ public final class TooltipRenderer implements ScrollController.IListener {
         float sizeY = halfHeight + V_BORDER;
         float shadowRadius = Math.max(sShadowRadius, 0.00001f);
 
-        ShaderInstance shader = TooltipRenderType.getShaderTooltip();
+        CompiledShaderProgram shader = RenderSystem.setShader(TooltipRenderType.SHADER_TOOLTIP);
+        if (shader == null) {
+            return;
+        }
         shader.safeGetUniform("u_PushData0")
                 .set(sizeX, sizeY, sCornerRadius, sBorderWidth / 2f);
         float rainbowOffset = 0;
@@ -750,13 +755,12 @@ public final class TooltipRenderer implements ScrollController.IListener {
             chooseBorderColor(2, shader.safeGetUniform("u_PushData5"));
         }
 
-        var buffer = gr.bufferSource().getBuffer(TooltipRenderType.tooltip());
+        var buffer = ((AccessGuiGraphics) gr).getBufferSource().getBuffer(TooltipRenderType.tooltip());
 
         // we expect local coordinates, concat pose with model view
         RenderSystem.getModelViewStack().pushMatrix();
         RenderSystem.getModelViewStack().mul(pose);
         RenderSystem.getModelViewStack().translate(centerX, centerY, 0);
-        RenderSystem.applyModelViewMatrix();
         // estimate the draw bounds, half stroke width + 0.5 AA bloat + shadow spread
         float extent = sBorderWidth / 2f + 0.5f + shadowRadius * 1.2f;
         float extentX = sizeX + extent;
@@ -768,7 +772,6 @@ public final class TooltipRenderer implements ScrollController.IListener {
 
         gr.flush();
         RenderSystem.getModelViewStack().popMatrix();
-        RenderSystem.applyModelViewMatrix();
 
         if (titleGap && sTitleBreak) {
             fillGrad(gr, pose,
@@ -835,7 +838,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
     private static void fillGrad(GuiGraphics gr, Matrix4f pose,
                                  float left, float top, float right, float bottom, float z,
                                  int colorUL, int colorUR, int colorLR, int colorLL) {
-        var buffer = gr.bufferSource().getBuffer(RenderType.gui());
+        var buffer = ((AccessGuiGraphics) gr).getBufferSource().getBuffer(RenderType.gui());
 
         // CCW
         int color = colorLR;

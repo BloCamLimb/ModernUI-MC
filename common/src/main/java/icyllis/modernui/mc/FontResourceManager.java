@@ -29,6 +29,7 @@ import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.profiling.Profiler;
 import net.minecraft.util.profiling.ProfilerFiller;
 import org.jetbrains.annotations.Unmodifiable;
 
@@ -108,11 +109,8 @@ public class FontResourceManager implements PreparableReloadListener {
     @Override
     public CompletableFuture<Void> reload(@Nonnull PreparationBarrier preparationBarrier,
                                           @Nonnull ResourceManager resourceManager,
-                                          @Nonnull ProfilerFiller preparationProfiler,
-                                          @Nonnull ProfilerFiller reloadProfiler,
                                           @Nonnull Executor preparationExecutor,
                                           @Nonnull Executor reloadExecutor) {
-        preparationProfiler.startTick();
         CompletableFuture<LoadResults> preparation;
         {
             final var results = new LoadResults();
@@ -136,15 +134,13 @@ public class FontResourceManager implements PreparableReloadListener {
             preparation = CompletableFuture.allOf(loadFonts, loadEmojis, loadShortcodes)
                     .thenApply(__ -> results);
         }
-        preparationProfiler.endTick();
         return preparation
                 .thenCompose(preparationBarrier::wait)
                 .thenAcceptAsync(results -> {
-                    reloadProfiler.startTick();
+                    ProfilerFiller reloadProfiler = Profiler.get();
                     reloadProfiler.push("reload");
                     applyResources(results);
                     reloadProfiler.pop();
-                    reloadProfiler.endTick();
                 }, reloadExecutor);
     }
 
@@ -236,7 +232,7 @@ public class FontResourceManager implements PreparableReloadListener {
         }
     }
 
-    //FIXME Minecraft 1.21.1 still uses ICU-73.2, but Unicode 16 CLDR was added in ICU-76
+    //FIXME Minecraft 1.21.3 still uses ICU-73.2, but Unicode 16 CLDR was added in ICU-76
     // remove once Minecraft's ICU updated
     static boolean isEmoji_Unicode16_workaround(int codePoint) {
         return codePoint == 0x1FAE9 || codePoint == 0x1FAC6 ||

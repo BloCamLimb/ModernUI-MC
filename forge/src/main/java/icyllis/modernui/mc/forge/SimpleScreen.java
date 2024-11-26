@@ -89,6 +89,7 @@ final class SimpleScreen extends Screen implements MuiScreen {
                 MinecraftForge.EVENT_BUS.post(new ScreenEvent.BackgroundRendered(this, gr));
             }
         }
+        gr.flush();
         mHost.render(gr, mouseX, mouseY, deltaTick);
     }
 

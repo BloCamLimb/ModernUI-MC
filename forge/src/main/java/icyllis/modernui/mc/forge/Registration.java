@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.forge;
 
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import icyllis.modernui.ModernUI;
@@ -33,11 +32,12 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.MenuType;
@@ -58,7 +58,6 @@ import net.minecraftforge.registries.RegisterEvent;
 import org.apache.commons.io.output.StringBuilderWriter;
 
 import javax.annotation.Nonnull;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -90,6 +89,7 @@ final class Registration {
 
     static void registerItems(@Nonnull RegisterEvent.RegisterHelper<Item> helper) {
         Item.Properties properties = new Item.Properties().stacksTo(1);
+        properties.setId(ResourceKey.create(Registries.ITEM, MuiRegistries.PROJECT_BUILDER_ITEM_KEY));
         helper.register(MuiRegistries.PROJECT_BUILDER_ITEM_KEY, new ProjectBuilderItem(properties));
     }
 
@@ -183,7 +183,7 @@ final class Registration {
                     // Call in lambda, not in creating the lambda
                     handler.post(() -> UIManager.getInstance().updateLayoutDir(Config.CLIENT.mForceRtl.get()));
                 }
-                BlurHandler.INSTANCE.loadEffect();
+                //BlurHandler.INSTANCE.loadEffect();
             });
             if (!ModernUIMod.isTextEngineEnabled()) {
                 event.registerReloadListener(FontResourceManager.getInstance());
@@ -277,7 +277,7 @@ final class Registration {
                         /*initialValue*/ 0,
                         /*onValueUpdate*/ value -> {
                     // execute in next tick, prevent transient GUI scale change
-                    Minecraft.getInstance().tell(() -> {
+                    Minecraft.getInstance().schedule(() -> {
                         Minecraft minecraft = Minecraft.getInstance();
                         if ((int) minecraft.getWindow().getGuiScale() !=
                                 minecraft.getWindow().calculateScale(value, false)) {
@@ -399,7 +399,8 @@ final class Registration {
             }
         }
 
-        @SubscribeEvent
+        // tooltip is not a required shader, let it lazy init
+        /*@SubscribeEvent
         static void onRegisterShaders(@Nonnull RegisterShadersEvent event) {
             try {
                 event.registerShader(
@@ -410,7 +411,7 @@ final class Registration {
             } catch (IOException e) {
                 LOGGER.error(MARKER, "Bad tooltip shader", e);
             }
-        }
+        }*/
     }
 
     static class ModClientDev {
@@ -422,11 +423,11 @@ final class Registration {
         private ModClientDev() {
         }
 
-        @SubscribeEvent
+        /*@SubscribeEvent
         static void onRegistryModel(@Nonnull ModelEvent.RegisterAdditional event) {
             event.register(new ModelResourceLocation(ModernUIMod.location("item/project_builder_main"), "standalone"));
             event.register(new ModelResourceLocation(ModernUIMod.location("item/project_builder_cube"), "standalone"));
-        }
+        }*/
 
         @SubscribeEvent
         static void onBakeModel(@Nonnull ModelEvent.ModifyBakingResult event) {

@@ -19,28 +19,23 @@
 package icyllis.modernui.mc.fabric;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessGameRenderer;
-import net.fabricmc.fabric.impl.client.rendering.FabricShaderProgram;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Rarity;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 
 public final class MuiFabricApi extends MuiModApi {
 
@@ -80,15 +75,15 @@ public final class MuiFabricApi extends MuiModApi {
 
     @Override
     public void loadEffect(GameRenderer gr, ResourceLocation effect) {
-        ((AccessGameRenderer) gr).callLoadEffect(effect);
+        ((AccessGameRenderer) gr).invokeSetPostEffect(effect);
     }
 
-    @Override
+    /*@Override
     public ShaderInstance makeShaderInstance(ResourceProvider resourceProvider,
                                              ResourceLocation resourceLocation,
                                              VertexFormat vertexFormat) throws IOException {
         return new FabricShaderProgram(resourceProvider, resourceLocation, vertexFormat);
-    }
+    }*/
 
     @Override
     public boolean isKeyBindingMatches(KeyMapping keyMapping, InputConstants.Key key) {

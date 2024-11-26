@@ -19,25 +19,23 @@
 package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.mixin.AccessGameRenderer;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -53,7 +51,6 @@ import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.function.Consumer;
 
 /**
@@ -169,15 +166,16 @@ public final class MuiForgeApi extends MuiModApi {
 
     @Override
     public void loadEffect(GameRenderer gr, ResourceLocation effect) {
-        gr.loadEffect(effect);
+        // this method is no longer public in Forge patches...
+        ((AccessGameRenderer) gr).invokeSetPostEffect(effect);
     }
 
-    @Override
+    /*@Override
     public ShaderInstance makeShaderInstance(ResourceProvider resourceProvider,
                                              ResourceLocation resourceLocation,
                                              VertexFormat vertexFormat) throws IOException {
         return new ShaderInstance(resourceProvider, resourceLocation, vertexFormat);
-    }
+    }*/
 
     @Override
     public boolean isKeyBindingMatches(KeyMapping keyMapping, InputConstants.Key key) {

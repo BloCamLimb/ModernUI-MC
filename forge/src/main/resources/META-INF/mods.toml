@@ -20,12 +20,12 @@ license="LGPL-3.0-or-later"
 [[dependencies.modernui]]
     modId="forge"
     mandatory=true
-    versionRange="[51.0.25,)"
+    versionRange="[53.0.20,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.modernui]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.21, 1.22)"
+    versionRange="[1.21.3, 1.22)"
     ordering="NONE"
     side="BOTH"

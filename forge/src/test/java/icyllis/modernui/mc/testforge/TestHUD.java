@@ -85,13 +85,13 @@ public class TestHUD {
 
         float partialTicks = 0;//Minecraft.getInstance().getFrameTime();
 
-        float f = player.walkDist - player.walkDistO;
+        /*float f = player.walkDist - player.walkDistO;
         float f1 = -(player.walkDist + f * partialTicks);
         float f2 = Mth.lerp(partialTicks, player.oBob, player.bob);
         GL11.glTranslatef(Mth.sin(f1 * (float) Math.PI) * f2 * 0.5f,
                 Math.abs(Mth.cos(f1 * (float) Math.PI) * f2), 0.0f);
         GL11.glRotatef(Mth.sin(f1 * (float) Math.PI) * f2 * 3.0f, 0, 0, 1);
-        GL11.glRotatef(Math.abs(Mth.cos(f1 * (float) Math.PI - 0.2f) * f2) * 5.0f, 1, 0, 0);
+        GL11.glRotatef(Math.abs(Mth.cos(f1 * (float) Math.PI - 0.2f) * f2) * 5.0f, 1, 0, 0);*/
 
         FoodData foodData = player.getFoodData();
 

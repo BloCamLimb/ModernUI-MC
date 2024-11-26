@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2024 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,15 +16,16 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.neoforge;
+package icyllis.modernui.mc.mixin;
 
-import net.minecraft.world.item.Item;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.MultiBufferSource;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 
-import javax.annotation.Nonnull;
+@Mixin(GuiGraphics.class)
+public interface AccessGuiGraphics {
 
-final class ProjectBuilderItem extends Item {
-
-    ProjectBuilderItem(@Nonnull Properties props) {
-        super(props);
-    }
+    @Accessor("bufferSource")
+    MultiBufferSource.BufferSource getBufferSource();
 }

@@ -414,7 +414,7 @@ public final class StillAlive {
     void playNode(NoteBlockInstrument instrument, float volume, double x, double z, int key) {
         var pitch = (float) Math.pow(2.0, (key - 18) / 12.0);
         var soundInstance = new SimpleSoundInstance(
-                instrument.getSoundEvent().value().getLocation(), SoundSource.MASTER,
+                instrument.getSoundEvent().value().location(), SoundSource.MASTER,
                 volume, pitch, SoundInstance.createUnseededRandom(),
                 /*looping*/false, /*delay*/0, SoundInstance.Attenuation.NONE,
                 x, /*y*/0, z, /*relative*/true);

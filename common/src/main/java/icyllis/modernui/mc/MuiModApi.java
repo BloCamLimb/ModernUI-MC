@@ -20,7 +20,6 @@ package icyllis.modernui.mc;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
@@ -36,18 +35,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Rarity;
+import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ServiceLoader;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -389,11 +386,12 @@ public abstract class MuiModApi {
 
     public abstract boolean isGLVersionPromoted();
 
+    @ApiStatus.Internal
     public abstract void loadEffect(GameRenderer gr, ResourceLocation effect);
 
-    public abstract ShaderInstance makeShaderInstance(ResourceProvider resourceProvider,
+    /*public abstract ShaderInstance makeShaderInstance(ResourceProvider resourceProvider,
                                                       ResourceLocation resourceLocation,
-                                                      VertexFormat vertexFormat) throws IOException;
+                                                      VertexFormat vertexFormat) throws IOException;*/
 
     public abstract boolean isKeyBindingMatches(KeyMapping keyMapping, InputConstants.Key key);
 
