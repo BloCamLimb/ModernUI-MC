@@ -470,13 +470,6 @@ public class TextLayoutEngine extends FontResourceManager
                 Typeface.SERIF);
         mFontCollections.putIfAbsent(MONOSPACED,
                 Typeface.MONOSPACED);
-        // register logical fonts in default namespace
-        mFontCollections.putIfAbsent(ResourceLocation.withDefaultNamespace(SANS_SERIF.getPath()),
-                Typeface.SANS_SERIF);
-        mFontCollections.putIfAbsent(ResourceLocation.withDefaultNamespace(SERIF.getPath()),
-                Typeface.SERIF);
-        mFontCollections.putIfAbsent(ResourceLocation.withDefaultNamespace(MONOSPACED.getPath()),
-                Typeface.MONOSPACED);
 
         if (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL || // exclude everything
                 (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_ONLY_INCLUDE && // include nothing
@@ -728,8 +721,6 @@ public class TextLayoutEngine extends FontResourceManager
             var location = ModernUIMod.location(newName);
             if (mRegisteredFonts.putIfAbsent(location, fc) == null) {
                 LOGGER.info(MARKER, "Redirect registered font '{}' to '{}'", name, location);
-                // also register in minecraft namespace
-                mRegisteredFonts.putIfAbsent(ResourceLocation.withDefaultNamespace(newName), fc);
             }
         } catch (Exception e) {
             LOGGER.warn(MARKER, "Failed to redirect registered font '{}'", name);
