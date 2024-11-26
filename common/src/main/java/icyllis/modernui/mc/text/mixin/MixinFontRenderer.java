@@ -65,7 +65,7 @@ public abstract class MixinFontRenderer {
                            @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
                            int colorBackground, int packedLight) {
         return (int) modernUI_MC$textRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
-                displayMode, colorBackground, packedLight) + (dropShadow ? 1 : 0);
+                displayMode, colorBackground, packedLight, true) + (dropShadow ? 1 : 0);
     }
 
     /**
@@ -76,9 +76,8 @@ public abstract class MixinFontRenderer {
     public int drawInBatch(@Nonnull Component text, float x, float y, int color, boolean dropShadow,
                            @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
                            int colorBackground, int packedLight, boolean inverseDepth) {
-        //TODO make use of inverseDepth for background and effect
         return (int) modernUI_MC$textRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
-                displayMode, colorBackground, packedLight) + (dropShadow ? 1 : 0);
+                displayMode, colorBackground, packedLight, inverseDepth) + (dropShadow ? 1 : 0);
     }
 
     /**

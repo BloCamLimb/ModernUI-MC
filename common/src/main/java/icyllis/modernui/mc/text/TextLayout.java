@@ -65,7 +65,7 @@ public class TextLayout {
         public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
                               float x, float top, int r, int g, int b, int a, boolean isShadow,
                               int preferredMode, boolean polygonOffset, float uniformScale,
-                              int bgColor, int packedLight) {
+                              int bgColor, int packedLight, boolean inverseDepth) {
             return 0;
         }
 
@@ -319,15 +319,17 @@ public class TextLayout {
      * @param uniformScale  additional scale factor if uniform scale
      * @param bgColor       the background color of the text in 0xAARRGGBB format
      * @param packedLight   see {@link net.minecraft.client.renderer.LightTexture}
+     * @param inverseDepth  inverse depth for background and effect
      * @return the total advance, always positive
      */
     public float drawText(@Nonnull final Matrix4f matrix,
                           @Nonnull final MultiBufferSource source,
                           float x, float top,
-                          int r, int g, int b, int a,
+                          int r, int g, int b, final int a,
                           final boolean isShadow, int preferredMode,
                           final boolean polygonOffset, final float uniformScale,
-                          final int bgColor, final int packedLight) {
+                          final int bgColor, final int packedLight,
+                          final boolean inverseDepth) {
         final int startR = r;
         final int startG = g;
         final int startB = b;
@@ -375,6 +377,20 @@ public class TextLayout {
         int fontTexture = -1;
 
         final boolean seeThrough = preferredMode == TextRenderType.MODE_SEE_THROUGH;
+        if ((bgColor & 0xFF000000) != 0) {
+            builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough, polygonOffset));
+            float effectDepth = inverseDepth ? -TextRenderEffect.EFFECT_DEPTH : TextRenderEffect.EFFECT_DEPTH;
+            builder.addVertex(matrix, x - 1, top + 9, effectDepth)
+                    .setColor(bgColor).setUv(0, 1).setLight(packedLight);
+            builder.addVertex(matrix, x + mTotalAdvance + 1, top + 9, effectDepth)
+                    .setColor(bgColor).setUv(1, 1).setLight(packedLight);
+            builder.addVertex(matrix, x + mTotalAdvance + 1, top - 1, effectDepth)
+                    .setColor(bgColor).setUv(1, 0).setLight(packedLight);
+            builder.addVertex(matrix, x - 1, top - 1, effectDepth)
+                    .setColor(bgColor).setUv(0, 0).setLight(packedLight);
+            builder = null;
+        }
+
         for (int i = 0, e = glyphs.length; i < e; i++) {
             var glyph = glyphs[i];
             if (glyph == null) {
@@ -497,10 +513,8 @@ public class TextLayout {
                     .setLight(packedLight);
         }
 
-        builder = null;
-
         if (mHasEffect) {
-            builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough));
+            builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough, polygonOffset));
             for (int i = 0, e = glyphs.length; i < e; i++) {
                 final int bits = flags[i];
                 if ((bits & CharacterStyle.EFFECT_MASK) == 0) {
@@ -524,31 +538,13 @@ public class TextLayout {
                 final float rx2 = x + ((i + 1 == e) ? mTotalAdvance : positions[(i + 1) << 1]);
                 if ((bits & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
                     TextRenderEffect.drawStrikethrough(matrix, builder, rx1, rx2, baseline,
-                            r, g, b, a, packedLight);
+                            r, g, b, a, packedLight, inverseDepth);
                 }
                 if ((bits & CharacterStyle.UNDERLINE_MASK) != 0) {
                     TextRenderEffect.drawUnderline(matrix, builder, rx1, rx2, baseline,
-                            r, g, b, a, packedLight);
+                            r, g, b, a, packedLight, inverseDepth);
                 }
             }
-        }
-
-        if ((bgColor & 0xFF000000) != 0) {
-            a = bgColor >>> 24;
-            r = bgColor >> 16 & 0xff;
-            g = bgColor >> 8 & 0xff;
-            b = bgColor & 0xff;
-            if (builder == null) {
-                builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough));
-            }
-            builder.addVertex(matrix, x - 1, top + 9, TextRenderEffect.EFFECT_DEPTH)
-                    .setColor(r, g, b, a).setUv(0, 1).setLight(packedLight);
-            builder.addVertex(matrix, x + mTotalAdvance + 1, top + 9, TextRenderEffect.EFFECT_DEPTH)
-                    .setColor(r, g, b, a).setUv(1, 1).setLight(packedLight);
-            builder.addVertex(matrix, x + mTotalAdvance + 1, top - 1, TextRenderEffect.EFFECT_DEPTH)
-                    .setColor(r, g, b, a).setUv(1, 0).setLight(packedLight);
-            builder.addVertex(matrix, x - 1, top - 1, TextRenderEffect.EFFECT_DEPTH)
-                    .setColor(r, g, b, a).setUv(0, 0).setLight(packedLight);
         }
 
         return mTotalAdvance;

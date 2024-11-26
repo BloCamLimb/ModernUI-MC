@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.text;
 
-import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
@@ -32,6 +31,7 @@ import icyllis.modernui.core.Core;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
+import org.lwjgl.opengl.GL33C;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
@@ -43,47 +43,23 @@ public class EffectRenderType extends RenderType {
 
     private static GLTexture WHITE;
 
-    private static final ImmutableList<RenderStateShard> STATES;
-    private static final ImmutableList<RenderStateShard> SEE_THROUGH_STATES;
-
     private static final EffectRenderType TYPE;
     private static final EffectRenderType SEE_THROUGH_TYPE;
+    private static final EffectRenderType POLYGON_OFFSET_TYPE;
 
     static {
-        STATES = ImmutableList.of(
-                RENDERTYPE_TEXT_SHADER,
-                TRANSLUCENT_TRANSPARENCY,
-                LEQUAL_DEPTH_TEST,
-                CULL,
-                LIGHTMAP,
-                NO_OVERLAY,
-                NO_LAYERING,
-                MAIN_TARGET,
-                DEFAULT_TEXTURING,
-                COLOR_DEPTH_WRITE,
-                DEFAULT_LINE
-        );
-        SEE_THROUGH_STATES = ImmutableList.of(
-                RENDERTYPE_TEXT_SEE_THROUGH_SHADER,
-                TRANSLUCENT_TRANSPARENCY,
-                NO_DEPTH_TEST,
-                CULL,
-                LIGHTMAP,
-                NO_OVERLAY,
-                NO_LAYERING,
-                MAIN_TARGET,
-                DEFAULT_TEXTURING,
-                COLOR_WRITE,
-                DEFAULT_LINE
-        );
         TYPE = new EffectRenderType("modern_text_effect", 256, () -> {
-            STATES.forEach(RenderStateShard::setupRenderState);
+            TextRenderType.VANILLA_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, WHITE.getHandle());
-        }, () -> STATES.forEach(RenderStateShard::clearRenderState));
+        }, () -> TextRenderType.VANILLA_STATES.forEach(RenderStateShard::clearRenderState));
         SEE_THROUGH_TYPE = new EffectRenderType("modern_text_effect_see_through", 256, () -> {
-            SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
+            TextRenderType.SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
             RenderSystem.setShaderTexture(0, WHITE.getHandle());
-        }, () -> SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
+        }, () -> TextRenderType.SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
+        POLYGON_OFFSET_TYPE = new EffectRenderType("modern_text_effect_polygon_offset", 256, () -> {
+            TextRenderType.POLYGON_OFFSET_STATES.forEach(RenderStateShard::setupRenderState);
+            RenderSystem.setShaderTexture(0, WHITE.getHandle());
+        }, () -> TextRenderType.POLYGON_OFFSET_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
     private EffectRenderType(String name, int bufferSize, Runnable setupState, Runnable clearState) {
@@ -93,16 +69,20 @@ public class EffectRenderType extends RenderType {
 
     @RenderThread
     @Nonnull
-    public static EffectRenderType getRenderType(boolean seeThrough) {
+    public static EffectRenderType getRenderType(boolean seeThrough, boolean polygonOffset) {
         if (WHITE == null)
             makeWhiteTexture();
-        return seeThrough ? SEE_THROUGH_TYPE : TYPE;
+        return polygonOffset ? POLYGON_OFFSET_TYPE : seeThrough ? SEE_THROUGH_TYPE : TYPE;
     }
 
     @RenderThread
     @Nonnull
     public static EffectRenderType getRenderType(Font.DisplayMode mode) {
-        throw new IllegalStateException();
+        return switch (mode) {
+            case SEE_THROUGH -> SEE_THROUGH_TYPE;
+            case POLYGON_OFFSET -> POLYGON_OFFSET_TYPE;
+            default -> TYPE;
+        };
     }
 
     public static void clear() {
@@ -111,7 +91,7 @@ public class EffectRenderType extends RenderType {
 
     private static void makeWhiteTexture() {
         ImmediateContext context = Core.requireImmediateContext();
-        final int width = 2, height = 2;
+        final int width = 8, height = 8;
         final int colorType = ColorInfo.CT_RGBA_8888;
         ImageDesc desc = context.getCaps().getDefaultColorImageDesc(
                 Engine.ImageType.k2D,
@@ -126,16 +106,13 @@ public class EffectRenderType extends RenderType {
                 .findOrCreateImage(
                         desc,
                         /*budgeted*/ false,
-                        "MinecraftTextEffect"
+                        "WhiteTexture"
                 );
         Objects.requireNonNull(WHITE);
         try (MemoryStack stack = MemoryStack.stackPush()) {
             int bpp = ColorInfo.bytesPerPixel(colorType);
             ByteBuffer pixels = stack.malloc(width * height * bpp);
-            while (pixels.hasRemaining()) {
-                pixels.put((byte) 0xff);
-            }
-            pixels.flip();
+            MemoryUtil.memSet(pixels, 0xff);
             boolean res = ((GLDevice) context.getDevice()).writePixels(
                     WHITE, 0, 0, width, height,
                     colorType, colorType,
@@ -143,6 +120,14 @@ public class EffectRenderType extends RenderType {
                     MemoryUtil.memAddress(pixels)
             );
             assert res;
+
+            int boundTexture = GL33C.glGetInteger(GL33C.GL_TEXTURE_BINDING_2D);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, WHITE.getHandle());
+
+            GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MAG_FILTER, GL33C.GL_NEAREST);
+            GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MIN_FILTER, GL33C.GL_NEAREST);
+
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);
         }
     }
 }

@@ -102,9 +102,9 @@ public class TextRenderType extends RenderType {
     private static final ImmutableList<RenderStateShard> NORMAL_STATES;
     private static final ImmutableList<RenderStateShard> SDF_FILL_STATES;
     private static final ImmutableList<RenderStateShard> SDF_STROKE_STATES;
-    private static final ImmutableList<RenderStateShard> VANILLA_STATES;
-    private static final ImmutableList<RenderStateShard> SEE_THROUGH_STATES;
-    private static final ImmutableList<RenderStateShard> POLYGON_OFFSET_STATES;
+    static final ImmutableList<RenderStateShard> VANILLA_STATES;
+    static final ImmutableList<RenderStateShard> SEE_THROUGH_STATES;
+    static final ImmutableList<RenderStateShard> POLYGON_OFFSET_STATES;
 
     /**
      * Texture id to render type map

@@ -167,10 +167,10 @@ public abstract class GlyphRender {
         if ((mFlags & CharacterStyle.EFFECT_MASK) != 0) {
             x += mOffsetX;
             if ((mFlags & CharacterStyle.UNDERLINE_MASK) != 0) {
-                TextRenderEffect.drawUnderline(matrix, builder, x, x + mAdvance, y, r, g, b, a, light);
+                TextRenderEffect.drawUnderline(matrix, builder, x, x + mAdvance, y, r, g, b, a, light, true);
             }
             if ((mFlags & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
-                TextRenderEffect.drawStrikethrough(matrix, builder, x, x + mAdvance, y, r, g, b, a, light);
+                TextRenderEffect.drawStrikethrough(matrix, builder, x, x + mAdvance, y, r, g, b, a, light, true);
             }
         }
     }
