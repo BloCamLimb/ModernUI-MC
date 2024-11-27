@@ -316,12 +316,12 @@ public class PreferencesFragment extends Fragment {
                     Config.Client.WindowMode.values(), Config.CLIENT.mWindowMode, saveFn));
 
             list.addView(createIntegerOption(context, "modernui.center.screen.framerateInactive",
-                    0, 255, 3, 5,
+                    0, 250, 3, 10,
                     Config.CLIENT.mFramerateInactive, saveFn));
 
-            list.addView(createIntegerOption(context, "modernui.center.screen.framerateMinimized",
+            /*list.addView(createIntegerOption(context, "modernui.center.screen.framerateMinimized",
                     0, 255, 3, 5,
-                    Config.CLIENT.mFramerateMinimized, saveFn));
+                    Config.CLIENT.mFramerateMinimized, saveFn));*/
 
             list.addView(createFloatOption(context, "modernui.center.screen.masterVolumeInactive",
                     0, 1, 4,

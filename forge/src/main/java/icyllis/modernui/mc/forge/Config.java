@@ -214,7 +214,7 @@ public final class Config {
         public final ForgeConfigSpec.BooleanValue mRemoveTelemetry;
         //public final ForgeConfigSpec.BooleanValue mSecurePublicKey;
         public final ForgeConfigSpec.IntValue mFramerateInactive;
-        public final ForgeConfigSpec.IntValue mFramerateMinimized;
+        //public final ForgeConfigSpec.IntValue mFramerateMinimized;
         public final ForgeConfigSpec.DoubleValue mMasterVolumeInactive;
         public final ForgeConfigSpec.DoubleValue mMasterVolumeMinimized;
 
@@ -288,12 +288,12 @@ public final class Config {
                             "(Beta) Pause the game when inventory (also includes creative mode) opened.")
                     .define("inventoryPause", false);
             mFramerateInactive = builder.comment(
-                            "Framerate limit on window inactive (out of focus or minimized), 0 = no change.")
-                    .defineInRange("framerateInactive", 30, 0, 255);
-            mFramerateMinimized = builder.comment(
+                            "Framerate limit on window inactive (out of focus), 0 = no change.")
+                    .defineInRange("framerateInactive", 60, 0, 250);
+            /*mFramerateMinimized = builder.comment(
                             "Framerate limit on window minimized, 0 = same as framerate inactive.",
                             "This value will be no greater than framerate inactive.")
-                    .defineInRange("framerateMinimized", 0, 0, 255);
+                    .defineInRange("framerateMinimized", 0, 0, 255);*/
             mMasterVolumeInactive = builder.comment(
                             "Master volume multiplier on window inactive (out of focus or minimized), 1 = no change.")
                     .defineInRange("masterVolumeInactive", 0.5, 0, 1);
@@ -516,10 +516,10 @@ public final class Config {
             BlurHandler.sBlurRadius = mBlurRadius.get();
 
             BlurHandler.sFramerateInactive = mFramerateInactive.get();
-            BlurHandler.sFramerateMinimized = Math.min(
+            /*BlurHandler.sFramerateMinimized = Math.min(
                     mFramerateMinimized.get(),
                     BlurHandler.sFramerateInactive
-            );
+            );*/
             BlurHandler.sMasterVolumeInactive = mMasterVolumeInactive.get().floatValue();
             BlurHandler.sMasterVolumeMinimized = Math.min(
                     mMasterVolumeMinimized.get().floatValue(),

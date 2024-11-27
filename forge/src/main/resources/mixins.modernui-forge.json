@@ -16,6 +16,7 @@
     "MixinClientTelemetryManager",
     "MixinCommandSuggestions",
     "MixinEditBox",
+    "MixinFramerateLimitTracker",
     "MixinGameRenderer",
     "MixinInventoryScreen",
     "MixinKeyboardHandler",

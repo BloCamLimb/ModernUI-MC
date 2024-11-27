@@ -17,6 +17,7 @@
     "MixinCommandSuggestions",
     "MixinContainerScreen",
     "MixinEditBox",
+    "MixinFramerateLimitTracker",
     "MixinGameRenderer",
     "MixinGuiGraphics",
     "MixinInventoryScreen",

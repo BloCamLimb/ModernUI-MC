@@ -56,9 +56,8 @@ public enum BlurHandler {
     public static volatile int sBackgroundDuration; // milliseconds
     public static volatile int[] sBackgroundColor = new int[4];
 
-    //TODO make framerate work
     public static volatile int sFramerateInactive;
-    public static volatile int sFramerateMinimized;
+    //public static volatile int sFramerateMinimized;
     public static volatile float sMasterVolumeInactive = 1;
     public static volatile float sMasterVolumeMinimized = 1;
 
