@@ -20,10 +20,8 @@ package icyllis.modernui.mc.text.mixin;
 
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.text.TextRenderType;
-import net.minecraft.client.Camera;
-import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.renderer.*;
-import org.joml.Matrix4f;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.RenderBuffers;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -39,17 +37,17 @@ public class MixinLevelRenderer {
     @Final
     private RenderBuffers renderBuffers;
 
-    @Inject(method = "renderLevel",
+    // neoforge has lambda$addMainPass$1 but different signature from forge
+    @Inject(method = {"method_62214", "lambda$addMainPass$2", "lambda$addMainPass$1" +
+            "(Lnet/minecraft/client/renderer/FogParameters;Lnet/minecraft/client/DeltaTracker;" +
+            "Lnet/minecraft/client/Camera;Lnet/minecraft/util/profiling/ProfilerFiller;Lorg/joml/Matrix4f;" +
+            "Lorg/joml/Matrix4f;Lcom/mojang/blaze3d/resource/ResourceHandle;" +
+            "Lcom/mojang/blaze3d/resource/ResourceHandle;Lcom/mojang/blaze3d/resource/ResourceHandle;" +
+            "Lcom/mojang/blaze3d/resource/ResourceHandle;Lnet/minecraft/client/renderer/culling/Frustum;" +
+            "ZLcom/mojang/blaze3d/resource/ResourceHandle;)V"},
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/OutlineBufferSource;endOutlineBatch()V"))
-    private void endTextBatch(DeltaTracker deltaTracker,
-                              boolean renderBlockOutline,
-                              Camera camera,
-                              GameRenderer gameRenderer,
-                              LightTexture lightTexture,
-                              Matrix4f modelViewMatrix,
-                              Matrix4f projectionMatrix,
-                              CallbackInfo ci) {
+    private void endTextBatch(CallbackInfo ci) {
         if (TextLayoutEngine.sUseTextShadersInWorld) {
             TextRenderType firstSDFFillType = TextRenderType.getFirstSDFFillType();
             TextRenderType firstSDFStrokeType = TextRenderType.getFirstSDFStrokeType();
