@@ -73,7 +73,7 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
                 UIManager.getInstance().drawExtTooltip(modernUI_MC$tooltipStack,
                         (GuiGraphics) (Object) this,
                         transformedComponents, x, y, font,
-                        guiWidth(), guiHeight(), DefaultTooltipPositioner.INSTANCE);
+                        guiWidth(), guiHeight(), DefaultTooltipPositioner.INSTANCE, tooltipStyle);
             }
             ci.cancel();
         }
@@ -132,7 +132,7 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
                 UIManager.getInstance().drawExtTooltip(modernUI_MC$tooltipStack,
                         (GuiGraphics) (Object) this,
                         components, x, y, font,
-                        guiWidth(), guiHeight(), positioner);
+                        guiWidth(), guiHeight(), positioner, tooltipStyle);
             }
             ci.cancel();
         }

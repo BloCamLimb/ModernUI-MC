@@ -67,6 +67,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL33C;
 import org.lwjgl.system.MemoryUtil;
@@ -1011,7 +1012,8 @@ public abstract class UIManager implements LifecycleOwner {
                                List<ClientTooltipComponent> components,
                                int x, int y, Font font,
                                int screenWidth, int screenHeight,
-                               ClientTooltipPositioner positioner) {
+                               ClientTooltipPositioner positioner,
+                               ResourceLocation tooltipStyle) {
         // screen coordinates to pixels for rendering
         final Window window = mWindow;
         final MouseHandler mouseHandler = minecraft.mouseHandler;
@@ -1041,7 +1043,7 @@ public abstract class UIManager implements LifecycleOwner {
                 components,
                 x, y, font,
                 screenWidth, screenHeight,
-                partialX, partialY, positioner);
+                partialX, partialY, positioner, tooltipStyle);
     }
 
     private static boolean isIdentity(Matrix4f ctm) {

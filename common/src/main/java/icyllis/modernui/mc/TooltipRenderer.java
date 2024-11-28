@@ -32,6 +32,7 @@ import net.minecraft.client.gui.screens.inventory.tooltip.*;
 import net.minecraft.client.renderer.*;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.*;
 import net.minecraft.world.item.*;
 import org.jetbrains.annotations.ApiStatus;
@@ -513,11 +514,11 @@ public final class TooltipRenderer implements ScrollController.IListener {
         uniform.set(r / 255f, g / 255f, b / 255f, a / 255f);
     }
 
-    //TODO make use of vanilla "ResourceLocation tooltipStyle"
     public void drawTooltip(@Nonnull ItemStack itemStack, @Nonnull GuiGraphics gr,
                             @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
                             @Nonnull Font font, int screenWidth, int screenHeight,
-                            float partialX, float partialY, @Nullable ClientTooltipPositioner positioner) {
+                            float partialX, float partialY, @Nullable ClientTooltipPositioner positioner,
+                            @Nullable ResourceLocation tooltipStyle) {
         mDraw = true;
 
         if (itemStack != mLastSeenItem) {
@@ -657,19 +658,21 @@ public final class TooltipRenderer implements ScrollController.IListener {
         gr.pose().translate(0, -mScroll, 400);
         final Matrix4f pose = gr.pose().last().pose();
 
-        // we should disable depth test, because texts may be translucent
-        // for compatibility reasons, we keep this enabled, and it doesn't seem to be a big problem
-        RenderSystem.enableDepthTest();
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        if (sRoundedShapes) {
-            drawRoundedBackground(gr, pose,
-                    tooltipX, tooltipY, tooltipWidth, tooltipHeight,
-                    titleGap, titleBreakHeight);
-        } else {
-            drawVanillaBackground(gr, pose,
-                    tooltipX, tooltipY, tooltipWidth, tooltipHeight,
-                    titleGap, titleBreakHeight);
+        if (tooltipStyle == null) {
+            // we should disable depth test, because texts may be translucent
+            // for compatibility reasons, we keep this enabled, and it doesn't seem to be a big problem
+            RenderSystem.enableDepthTest();
+            RenderSystem.enableBlend();
+            RenderSystem.defaultBlendFunc();
+            if (sRoundedShapes) {
+                drawRoundedBackground(gr, pose,
+                        tooltipX, tooltipY, tooltipWidth, tooltipHeight,
+                        titleGap, titleBreakHeight);
+            } else {
+                drawVanillaBackground(gr, pose,
+                        tooltipX, tooltipY, tooltipWidth, tooltipHeight,
+                        titleGap, titleBreakHeight);
+            }
         }
 
         final int drawX = (int) tooltipX;
@@ -683,7 +686,11 @@ public final class TooltipRenderer implements ScrollController.IListener {
         // With rounded borders, we create a new matrix and do not perform matrix * vector
         // on the CPU side. There are floating-point errors, and we found that this can cause
         // text to be discarded by LEqual depth test on some GPUs, so lift it up by 0.1.
-        gr.pose().translate(partialX, partialY, sRoundedShapes ? 0.1f : 0);
+        gr.pose().translate(partialX, partialY, tooltipStyle == null && sRoundedShapes ? 0.1f : 0);
+        if (tooltipStyle != null) {
+            TooltipRenderUtil.renderTooltipBackground(gr, drawX, drawY,
+                    tooltipWidth, tooltipHeight, 0, tooltipStyle);
+        }
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
             if (titleGap && i == 0 && sCenterTitle) {

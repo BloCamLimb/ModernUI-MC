@@ -18,6 +18,7 @@
     "MixinEditBox",
     "MixinFramerateLimitTracker",
     "MixinGameRenderer",
+    "MixinGuiGraphics",
     "MixinInventoryScreen",
     "MixinKeyboardHandler",
     "MixinLevelRendererDBG",
