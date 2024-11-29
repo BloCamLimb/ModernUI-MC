@@ -736,7 +736,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
         float sizeY = halfHeight + V_BORDER;
         float shadowRadius = Math.max(sShadowRadius, 0.00001f);
 
-        CompiledShaderProgram shader = RenderSystem.setShader(TooltipRenderType.SHADER_TOOLTIP);
+        CompiledShaderProgram shader = RenderSystem.setShader(GuiRenderType.SHADER_TOOLTIP);
         if (shader == null) {
             return;
         }
@@ -762,7 +762,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
             chooseBorderColor(2, shader.safeGetUniform("u_PushData5"));
         }
 
-        var buffer = ((AccessGuiGraphics) gr).getBufferSource().getBuffer(TooltipRenderType.tooltip());
+        var buffer = ((AccessGuiGraphics) gr).getBufferSource().getBuffer(GuiRenderType.tooltip());
 
         // we expect local coordinates, concat pose with model view
         RenderSystem.getModelViewStack().pushMatrix();
