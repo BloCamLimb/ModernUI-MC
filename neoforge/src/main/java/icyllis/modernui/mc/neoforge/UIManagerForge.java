@@ -82,6 +82,9 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     public static final Field TEXTURE_ID =
             ObfuscationReflectionHelper.findField(AbstractTexture.class, "id");
 
+    // captured tooltip style from MixinGuiGraphics
+    public static ResourceLocation sTooltipStyle;
+
     private UIManagerForge() {
         super();
         // events
@@ -268,29 +271,33 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         }
     }
 
-    /*@SubscribeEvent(priority = EventPriority.HIGH)
+    // Other mods using HIGHEST priority can completely override modern tooltip.
+    // We use HIGH priority to render the background and border, and other mods can draw
+    // additional content using NORMAL priority event, finally, we use LOW priority to cancel
+    // the event to override the vanilla tooltip style.
+    @SubscribeEvent(priority = EventPriority.HIGH)
     void onRenderTooltipH(@Nonnull RenderTooltipEvent.Pre event) {
         if (TooltipRenderer.sTooltip) {
-            *//*if (!(minecraft.font instanceof ModernFontRenderer)) {
+            /*if (!(minecraft.font instanceof ModernFontRenderer)) {
                 ModernUI.LOGGER.fatal(MARKER, "Failed to hook FontRenderer, tooltip disabled");
                 TestHUD.sTooltip = false;
                 return;
-            }*//*
+            }*/
 
             drawExtTooltip(event.getItemStack(), event.getGraphics(),
                     event.getComponents(),
                     event.getX(), event.getY(), event.getFont(),
                     event.getScreenWidth(), event.getScreenHeight(),
-                    event.getTooltipPositioner(), );
+                    event.getTooltipPositioner(), sTooltipStyle);
+            sTooltipStyle = null;
 
             // our tooltip is translucent, need transparency sorting
             // we will cancel this event later, see below
         }
-    }*/
+    }
 
     @SubscribeEvent(priority = EventPriority.LOW)
     void onRenderTooltipL(@Nonnull RenderTooltipEvent.Pre event) {
-        // see MixinGuiGraphics
         if (TooltipRenderer.sTooltip) {
             event.setCanceled(true);
         }
