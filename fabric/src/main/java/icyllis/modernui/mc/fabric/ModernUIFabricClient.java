@@ -43,6 +43,7 @@ import net.fabricmc.fabric.api.resource.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -60,6 +61,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.IntStream;
+
+import static icyllis.modernui.mc.ModernUIMod.*;
 
 @Environment(EnvType.CLIENT)
 public class ModernUIFabricClient extends ModernUIClient implements ClientModInitializer {
@@ -116,9 +119,17 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                 context.register(
                         ModernUIMod.location("rendertype_modern_tooltip"),
                         DefaultVertexFormat.POSITION,
-                        TooltipRenderType::setShaderTooltip);
+                        GuiRenderType::setShaderTooltip);
             } catch (IOException e) {
                 LOGGER.error(MARKER, "Bad tooltip shader", e);
+            }
+            try {
+                context.register(
+                        ModernUIMod.location("rendertype_round_rect"),
+                        DefaultVertexFormat.POSITION_COLOR,
+                        GuiRenderType::setShaderRoundRect);
+            } catch (IOException e) {
+                LOGGER.error(MARKER, "Bad round rect shader", e);
             }
         });
 

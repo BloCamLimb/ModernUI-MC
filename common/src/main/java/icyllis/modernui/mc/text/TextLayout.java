@@ -324,7 +324,7 @@ public class TextLayout {
     public float drawText(@Nonnull final Matrix4f matrix,
                           @Nonnull final MultiBufferSource source,
                           float x, float top,
-                          int r, int g, int b, int a,
+                          int r, int g, int b, final int a,
                           final boolean isShadow, int preferredMode,
                           final boolean polygonOffset, final float uniformScale,
                           final int bgColor, final int packedLight) {
@@ -500,7 +500,7 @@ public class TextLayout {
         builder = null;
 
         if (mHasEffect) {
-            builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough));
+            builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough, polygonOffset));
             for (int i = 0, e = glyphs.length; i < e; i++) {
                 final int bits = flags[i];
                 if ((bits & CharacterStyle.EFFECT_MASK) == 0) {
@@ -534,21 +534,17 @@ public class TextLayout {
         }
 
         if ((bgColor & 0xFF000000) != 0) {
-            a = bgColor >>> 24;
-            r = bgColor >> 16 & 0xff;
-            g = bgColor >> 8 & 0xff;
-            b = bgColor & 0xff;
             if (builder == null) {
-                builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough));
+                builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough, polygonOffset));
             }
             builder.addVertex(matrix, x - 1, top + 9, TextRenderEffect.EFFECT_DEPTH)
-                    .setColor(r, g, b, a).setUv(0, 1).setLight(packedLight);
+                    .setColor(bgColor).setUv(0, 1).setLight(packedLight);
             builder.addVertex(matrix, x + mTotalAdvance + 1, top + 9, TextRenderEffect.EFFECT_DEPTH)
-                    .setColor(r, g, b, a).setUv(1, 1).setLight(packedLight);
+                    .setColor(bgColor).setUv(1, 1).setLight(packedLight);
             builder.addVertex(matrix, x + mTotalAdvance + 1, top - 1, TextRenderEffect.EFFECT_DEPTH)
-                    .setColor(r, g, b, a).setUv(1, 0).setLight(packedLight);
+                    .setColor(bgColor).setUv(1, 0).setLight(packedLight);
             builder.addVertex(matrix, x - 1, top - 1, TextRenderEffect.EFFECT_DEPTH)
-                    .setColor(r, g, b, a).setUv(0, 0).setLight(packedLight);
+                    .setColor(bgColor).setUv(0, 0).setLight(packedLight);
         }
 
         return mTotalAdvance;

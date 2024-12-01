@@ -230,7 +230,7 @@ public abstract class UIManager implements LifecycleOwner {
         try {
             init();
         } catch (Throwable e) {
-            LOGGER.fatal(MARKER, "UI manager failed to initialize");
+            LOGGER.fatal(MARKER, "UI manager failed to initialize", e);
             return;
         }
         while (mRunning) {

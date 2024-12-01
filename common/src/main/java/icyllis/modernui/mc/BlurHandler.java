@@ -313,13 +313,18 @@ public enum BlurHandler {
 
     // INTERNAL HOOK
     public void processBlurEffect(float partialTick) {
-        if (!mBlurEffectLoaded) {
-            loadEffect();
-            assert mBlurEffectLoaded;
-        }
-        if (mBlurEffect != null && sBlurRadius >= 1) {
-            updateRadius(mBlurEffect, sBlurRadius);
-            mBlurEffect.process(partialTick);
+        // Vanilla 3-pass box blur to ModernUI 1-pass gaussian blur
+        // radius is approximately 1.8 times, performance is better
+        float radius = minecraft.options.getMenuBackgroundBlurriness() * 1.8f;
+        if (radius >= 1.0f) {
+            if (!mBlurEffectLoaded) {
+                loadEffect();
+                assert mBlurEffectLoaded;
+            }
+            if (mBlurEffect != null) {
+                updateRadius(mBlurEffect, radius);
+                mBlurEffect.process(partialTick);
+            }
         }
     }
 }
