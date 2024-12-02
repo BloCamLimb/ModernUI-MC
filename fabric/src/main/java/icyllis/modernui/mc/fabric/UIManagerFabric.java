@@ -23,13 +23,12 @@ import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.MuiScreen;
+import icyllis.modernui.mc.UIManager;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.sounds.SoundEvents;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,23 +79,6 @@ public final class UIManagerFabric extends UIManager {
     @Override
     protected void onScreenChange(@Nullable Screen oldScreen, @Nullable Screen newScreen) {
         if (newScreen != null) {
-            if (!mFirstScreenOpened) {
-                if (sDingEnabled) {
-                    glfwRequestWindowAttention(minecraft.getWindow().getWindow());
-                    minecraft.getSoundManager().play(
-                            SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f)
-                    );
-                }
-                if (ModernUIMod.isOptiFineLoaded() &&
-                        ModernUIMod.isTextEngineEnabled()) {
-                    OptiFineIntegration.setFastRender(false);
-                    LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
-                }
-                // ensure it's applied and positioned
-                Config.CLIENT.mLastWindowMode.apply();
-                mFirstScreenOpened = true;
-            }
-
             if (mScreen != newScreen && newScreen instanceof MuiScreen) {
                 //mTicks = 0;
                 mElapsedTimeMillis = 0;
@@ -126,5 +108,12 @@ public final class UIManagerFabric extends UIManager {
             }
         }
         super.onPreKeyInput(keyCode, scanCode, action, mods);
+    }
+
+    @Override
+    public void onGameLoadFinished() {
+        super.onGameLoadFinished();
+        // ensure it's applied and positioned
+        Config.CLIENT.mLastWindowMode.apply();
     }
 }

@@ -42,8 +42,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static icyllis.modernui.ModernUI.*;
-
 /**
  * Mod class. INTERNAL.
  *

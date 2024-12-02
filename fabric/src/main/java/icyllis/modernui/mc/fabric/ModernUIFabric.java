@@ -26,8 +26,6 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraftforge.fml.config.ModConfig;
 
-import static icyllis.modernui.ModernUI.*;
-
 public class ModernUIFabric extends ModernUIMod implements ModInitializer {
 
     // main thread
@@ -43,10 +41,10 @@ public class ModernUIFabric extends ModernUIMod implements ModInitializer {
         sLegendaryTooltipsLoaded = FabricLoader.getInstance().isModLoaded("legendarytooltips");
         sUntranslatedItemsLoaded = FabricLoader.getInstance().isModLoaded("untranslateditems");
 
-        ForgeModConfigEvents.loading(ID).register(Config::reloadCommon);
-        ForgeModConfigEvents.reloading(ID).register(Config::reloadCommon);
+        ForgeModConfigEvents.loading(ModernUI.ID).register(Config::reloadCommon);
+        ForgeModConfigEvents.reloading(ModernUI.ID).register(Config::reloadCommon);
         Config.initCommonConfig(
-                spec -> ForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.COMMON, spec,
+                spec -> ForgeConfigRegistry.INSTANCE.register(ModernUI.ID, ModConfig.Type.COMMON, spec,
                         ModernUI.NAME_CPT + "/common.toml")
         );
 

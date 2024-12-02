@@ -25,18 +25,23 @@ import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.lifecycle.LifecycleOwner;
-import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.MuiScreen;
+import icyllis.modernui.mc.TooltipRenderer;
+import icyllis.modernui.mc.UIManager;
 import icyllis.modernui.mc.mixin.AccessNativeImage;
 import icyllis.modernui.text.TextUtils;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.renderer.texture.*;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraftforge.client.event.*;
-import net.minecraftforge.client.gui.LoadingErrorScreen;
+import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.client.event.RenderTooltipEvent;
+import net.minecraftforge.client.event.ViewportEvent;
 import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.common.MinecraftForge;
@@ -44,7 +49,9 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL45C;
 
 import javax.annotation.Nonnull;
@@ -115,23 +122,6 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     @Override
     protected void onScreenChange(@Nullable Screen oldScreen, @Nullable Screen newScreen) {
         if (newScreen != null) {
-            if (!mFirstScreenOpened && !(newScreen instanceof LoadingErrorScreen)) {
-                if (sDingEnabled) {
-                    glfwRequestWindowAttention(minecraft.getWindow().getWindow());
-                    minecraft.getSoundManager().play(
-                            SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f)
-                    );
-                }
-                if (ModernUIMod.isOptiFineLoaded() &&
-                        ModernUIMod.isTextEngineEnabled()) {
-                    OptiFineIntegration.setFastRender(false);
-                    LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
-                }
-                // ensure it's applied and positioned
-                Config.CLIENT.mLastWindowMode.apply();
-                mFirstScreenOpened = true;
-            }
-
             if (mScreen != newScreen && newScreen instanceof MuiScreen) {
                 //mTicks = 0;
                 mElapsedTimeMillis = 0;
@@ -172,6 +162,13 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             }
         }
         super.onPreKeyInput(keyCode, scanCode, action, mods);
+    }
+
+    @Override
+    public void onGameLoadFinished() {
+        super.onGameLoadFinished();
+        // ensure it's applied and positioned
+        Config.CLIENT.mLastWindowMode.apply();
     }
 
     @SuppressWarnings("unchecked")

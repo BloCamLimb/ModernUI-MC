@@ -24,13 +24,13 @@ import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.Fragment;
+import icyllis.modernui.graphics.BlendMode;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.ui.ThemeControl;
-import icyllis.modernui.text.InputFilter;
-import icyllis.modernui.text.TextUtils;
+import icyllis.modernui.text.*;
 import icyllis.modernui.text.method.DigitsInputFilter;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
@@ -80,6 +80,8 @@ public class AdvancedOptionsFragment extends Fragment {
         sv.addView(createPage(context), MATCH_PARENT, WRAP_CONTENT);
 
         sv.setEdgeEffectColor(ThemeControl.THEME_COLOR);
+        sv.setTopEdgeEffectBlendMode(BlendMode.SRC_OVER);
+        sv.setBottomEdgeEffectBlendMode(BlendMode.SRC_OVER);
 
         var params = new FrameLayout.LayoutParams(sv.dp(720), MATCH_PARENT, Gravity.CENTER);
         var dp6 = sv.dp(6);
@@ -240,10 +242,18 @@ public class AdvancedOptionsFragment extends Fragment {
             content.addView(category);
         }
 
+        Typeface monoFont = Typeface.getSystemFont("JetBrains Mono Medium");
+        if (monoFont == Typeface.SANS_SERIF) {
+            monoFont = null;
+        }
+
         {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
+            if (monoFont != null) {
+                tv.setTypeface(monoFont);
+            }
             mUIManagerDump = tv;
             content.addView(tv);
         }
@@ -252,7 +262,10 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
-            tv.setText("Rendering pipeline: Arc 3D OpenGL");
+            if (monoFont != null) {
+                tv.setTypeface(monoFont);
+            }
+            tv.setText("Rendering pipeline: Arc3D Granite (OpenGL)");
             content.addView(tv);
         }
 
@@ -260,6 +273,9 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
+            if (monoFont != null) {
+                tv.setTypeface(monoFont);
+            }
             tv.setText("Rectangle packing algorithm: Skyline (silhouette)");
             content.addView(tv);
         }
@@ -268,6 +284,9 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
+            if (monoFont != null) {
+                tv.setTypeface(monoFont);
+            }
             mMainGPUResourceDump = tv;
             content.addView(tv);
         }
@@ -276,6 +295,9 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
+            if (monoFont != null) {
+                tv.setTypeface(monoFont);
+            }
             mUIGPUResourceDump = tv;
             content.addView(tv);
         }
@@ -284,6 +306,9 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
+            if (monoFont != null) {
+                tv.setTypeface(monoFont);
+            }
             mPSOStatsDump = tv;
             content.addView(tv);
         }
@@ -292,6 +317,9 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
+            if (monoFont != null) {
+                tv.setTypeface(monoFont);
+            }
             mGPUStatsDump = tv;
             content.addView(tv);
         }
@@ -300,9 +328,13 @@ public class AdvancedOptionsFragment extends Fragment {
             var tv = new TextView(context);
             tv.setTextSize(12);
             tv.setPadding(dp6, dp6, dp6, dp6);
+            if (monoFont != null) {
+                tv.setTypeface(monoFont);
+            }
             var caps = (GLCaps) Core.requireUiRecordingContext().getCaps();
-            var s = caps.toString(/*includeFormatTable*/false);
-            tv.setText(s);
+            StringBuilder sb = new StringBuilder("GL Capabilities:\n");
+            caps.dump(sb, /*includeFormatTable*/false);
+            tv.setText(sb);
             content.addView(tv);
         }
 

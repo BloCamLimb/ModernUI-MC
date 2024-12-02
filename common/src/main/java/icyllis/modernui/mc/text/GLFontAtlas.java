@@ -26,7 +26,6 @@ import icyllis.modernui.annotation.*;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.text.TextUtils;
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.lwjgl.opengl.GL45C;
 
@@ -88,6 +87,11 @@ public class GLFontAtlas implements AutoCloseable {
     private final int mMaskFormat;
     private final int mBorderWidth;
     private final int mMaxTextureSize;
+
+    // we prefer sComputeDeviceFontSize and sAllowSDFTextIn2D (i.e. direct mask)
+    // then linear sampling on the font atlas is not necessary,
+    // unless either of them is disabled or Shaders (in 3D) are used
+    public static volatile boolean sLinearSamplingA8Atlas = false;
 
     /**
      * Linear sampling with mipmaps;
@@ -276,6 +280,8 @@ public class GLFontAtlas implements AutoCloseable {
         int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
         glBindTexture(GL_TEXTURE_2D, mTexture.getHandle());
 
+        // this is a fallback sampling method, generally used for direct mask, NEAREST is performant
+        // when used for SDF, a sampler object will override this setting
         glTexParameteri(
                 GL_TEXTURE_2D,
                 GL_TEXTURE_MAG_FILTER,
@@ -284,7 +290,8 @@ public class GLFontAtlas implements AutoCloseable {
         glTexParameteri(
                 GL_TEXTURE_2D,
                 GL_TEXTURE_MIN_FILTER,
-                mLinearSampling
+                mLinearSampling && (sLinearSamplingA8Atlas ||
+                        mMaskFormat == Engine.MASK_FORMAT_ARGB)   // color emoji requires linear sampling
                         ? GL_LINEAR_MIPMAP_LINEAR
                         : GL_NEAREST
         );
@@ -371,7 +378,7 @@ public class GLFontAtlas implements AutoCloseable {
                 if (glyph.u1 >= cu1 && glyph.u2 < cu2 &&
                         glyph.v1 >= cv1 && glyph.v2 < cv2) {
                     // invalidate glyph image
-                    glyph.x = Short.MIN_VALUE;
+                    glyph.x = Integer.MIN_VALUE;
                 }
             }
             cleared = true;
@@ -458,7 +465,7 @@ public class GLFontAtlas implements AutoCloseable {
         for (var glyph : mGlyphs.values()) {
             if (glyph == null) {
                 emptyGlyphs++;
-            } else if (glyph.x == Short.MIN_VALUE) {
+            } else if (glyph.x == Integer.MIN_VALUE) {
                 evictedGlyphs++;
             } else {
                 validGlyphs++;

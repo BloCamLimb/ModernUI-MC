@@ -727,7 +727,10 @@ public final class TooltipRenderer implements ScrollController.IListener {
         float sizeY = halfHeight + V_BORDER;
         float shadowRadius = Math.max(sShadowRadius, 0.00001f);
 
-        ShaderInstance shader = TooltipRenderType.getShaderTooltip();
+        ShaderInstance shader = GuiRenderType.getShaderTooltip();
+        if (shader == null) {
+            return;
+        }
         shader.safeGetUniform("u_PushData0")
                 .set(sizeX, sizeY, sCornerRadius, sBorderWidth / 2f);
         float rainbowOffset = 0;
@@ -750,7 +753,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
             chooseBorderColor(2, shader.safeGetUniform("u_PushData5"));
         }
 
-        var buffer = gr.bufferSource().getBuffer(TooltipRenderType.tooltip());
+        var buffer = gr.bufferSource().getBuffer(GuiRenderType.tooltip());
 
         // we expect local coordinates, concat pose with model view
         RenderSystem.getModelViewStack().pushMatrix();
@@ -774,6 +777,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
             fillGrad(gr, pose,
                     tooltipX, tooltipY + titleBreakHeight - 0.5f,
                     tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f,
+                    0.08f, // lift it up by 0.08
                     0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8);
         }
     }
@@ -788,86 +792,70 @@ public final class TooltipRenderer implements ScrollController.IListener {
         float bottom = tooltipY + tooltipHeight + V_BORDER;
 
         // top
-        fillGrad(gr, pose, left, top - 1, right, top,
+        fillGrad(gr, pose, left, top - 1, right, top, 0,
                 sFillColor[0], sFillColor[1], sFillColor[1], sFillColor[0]);
         // bottom
-        fillGrad(gr, pose, left, bottom, right, bottom + 1,
+        fillGrad(gr, pose, left, bottom, right, bottom + 1, 0,
                 sFillColor[3], sFillColor[2], sFillColor[2], sFillColor[3]);
         // center
-        fillGrad(gr, pose, left, top, right, bottom,
+        fillGrad(gr, pose, left, top, right, bottom, 0,
                 sFillColor[0], sFillColor[1], sFillColor[2], sFillColor[3]);
         // left
-        fillGrad(gr, pose, left - 1, top, left, bottom,
+        fillGrad(gr, pose, left - 1, top, left, bottom, 0,
                 sFillColor[0], sFillColor[0], sFillColor[3], sFillColor[3]);
         // right
-        fillGrad(gr, pose, right, top, right + 1, bottom,
+        fillGrad(gr, pose, right, top, right + 1, bottom, 0,
                 sFillColor[1], sFillColor[1], sFillColor[2], sFillColor[2]);
 
         if (titleGap && sTitleBreak) {
             fillGrad(gr, pose,
                     tooltipX, tooltipY + titleBreakHeight - 0.5f,
-                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f,
+                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f, 0,
                     0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8);
         }
 
         // top
         fillGrad(gr, pose,
-                left, top, right, top + 1,
+                left, top, right, top + 1, 0,
                 chooseBorderColor(0), chooseBorderColor(1),
                 chooseBorderColor(1), chooseBorderColor(0));
         // right
         fillGrad(gr, pose,
-                right - 1, top, right, bottom,
+                right - 1, top, right, bottom, 0,
                 chooseBorderColor(1), chooseBorderColor(1),
                 chooseBorderColor(2), chooseBorderColor(2));
         // bottom
         fillGrad(gr, pose,
-                left, bottom - 1, right, bottom,
+                left, bottom - 1, right, bottom, 0,
                 chooseBorderColor(3), chooseBorderColor(2),
                 chooseBorderColor(2), chooseBorderColor(3));
         // left
-        fillGrad(gr, pose, left, top, left + 1, bottom,
+        fillGrad(gr, pose, left, top, left + 1, bottom, 0,
                 chooseBorderColor(0), chooseBorderColor(0),
                 chooseBorderColor(3), chooseBorderColor(3));
     }
 
     private static void fillGrad(GuiGraphics gr, Matrix4f pose,
-                                 float left, float top, float right, float bottom,
+                                 float left, float top, float right, float bottom, float z,
                                  int colorUL, int colorUR, int colorLR, int colorLL) {
         var buffer = gr.bufferSource().getBuffer(RenderType.gui());
 
         // CCW
         int color = colorLR;
-        int a = (color >>> 24);
-        int r = ((color >> 16) & 0xff);
-        int g = ((color >> 8) & 0xff);
-        int b = (color & 0xff);
-        buffer.vertex(pose, right, bottom, 0)
-                .color(r, g, b, a).endVertex();
+        buffer.vertex(pose, right, bottom, z)
+                .color(color).endVertex();
 
         color = colorUR;
-        a = (color >>> 24);
-        r = ((color >> 16) & 0xff);
-        g = ((color >> 8) & 0xff);
-        b = (color & 0xff);
-        buffer.vertex(pose, right, top, 0)
-                .color(r, g, b, a).endVertex();
+        buffer.vertex(pose, right, top, z)
+                .color(color).endVertex();
 
         color = colorUL;
-        a = (color >>> 24);
-        r = ((color >> 16) & 0xff);
-        g = ((color >> 8) & 0xff);
-        b = (color & 0xff);
-        buffer.vertex(pose, left, top, 0)
-                .color(r, g, b, a).endVertex();
+        buffer.vertex(pose, left, top, z)
+                .color(color).endVertex();
 
         color = colorLL;
-        a = (color >>> 24);
-        r = ((color >> 16) & 0xff);
-        g = ((color >> 8) & 0xff);
-        b = (color & 0xff);
-        buffer.vertex(pose, left, bottom, 0)
-                .color(r, g, b, a).endVertex();
+        buffer.vertex(pose, left, bottom, z)
+                .color(color).endVertex();
 
         gr.flush();
     }

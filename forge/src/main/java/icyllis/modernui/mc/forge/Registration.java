@@ -65,7 +65,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-import static icyllis.modernui.ModernUI.*;
+import static icyllis.modernui.mc.ModernUIMod.*;
 
 /**
  * This class handles mod loading events, all registry entries are only available under the development mode.
@@ -406,9 +406,18 @@ final class Registration {
                         new ShaderInstance(event.getResourceProvider(),
                                 ModernUIMod.location("rendertype_modern_tooltip"),
                                 DefaultVertexFormat.POSITION),
-                        TooltipRenderType::setShaderTooltip);
+                        GuiRenderType::setShaderTooltip);
             } catch (IOException e) {
                 LOGGER.error(MARKER, "Bad tooltip shader", e);
+            }
+            try {
+                event.registerShader(
+                        new ShaderInstance(event.getResourceProvider(),
+                                ModernUIMod.location("rendertype_round_rect"),
+                                DefaultVertexFormat.POSITION_COLOR),
+                        GuiRenderType::setShaderRoundRect);
+            } catch (IOException e) {
+                LOGGER.error(MARKER, "Bad round rect shader", e);
             }
         }
     }
