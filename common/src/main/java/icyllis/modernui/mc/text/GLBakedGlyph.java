@@ -30,22 +30,24 @@ package icyllis.modernui.mc.text;
 public class GLBakedGlyph {
 
     /**
-     * The horizontal offset to baseline in pixels.
+     * The horizontal offset to baseline in pixels, i.e. bearing X.
      */
-    public short x; // x = Short.MIN_VALUE means invalid
+    public int x; // x = Integer.MIN_VALUE means invalid
 
     /**
-     * The vertical offset to baseline in pixels.
+     * The vertical offset to baseline in pixels, i.e. bearing Y.
      */
-    public short y;
+    public int y;
 
     /**
      * The width of this glyph image in pixels (w/o padding).
+     * For bitmap font, this is not one-to-one mapped to texture coordinates.
      */
     public short width;
 
     /**
      * The height of this glyph image in pixels (w/o padding).
+     * For bitmap font, this is not one-to-one mapped to texture coordinates.
      */
     public short height;
 
@@ -70,7 +72,7 @@ public class GLBakedGlyph {
     public float v2;
 
     public GLBakedGlyph() {
-        x = Short.MIN_VALUE;
+        x = Integer.MIN_VALUE;
     }
 
     @Override

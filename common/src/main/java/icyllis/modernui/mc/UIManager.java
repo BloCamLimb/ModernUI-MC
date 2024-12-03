@@ -26,8 +26,10 @@ import icyllis.arc3d.core.MathUtil;
 import icyllis.arc3d.core.*;
 import icyllis.arc3d.engine.Engine;
 import icyllis.arc3d.engine.ImmediateContext;
+import icyllis.arc3d.engine.SamplerDesc;
 import icyllis.arc3d.granite.*;
 import icyllis.arc3d.opengl.GLDevice;
+import icyllis.arc3d.opengl.GLSampler;
 import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
@@ -56,9 +58,11 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.tooltip.*;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import org.apache.commons.io.output.StringBuilderWriter;
@@ -75,12 +79,10 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
-import java.nio.ByteOrder;
 import java.util.*;
 
 import static icyllis.modernui.ModernUI.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11C.GL_TEXTURE_BINDING_2D;
 
 /**
  * Manage UI thread and connect Minecraft to Modern UI view system at most bottom level.
@@ -166,7 +168,7 @@ public abstract class UIManager implements LifecycleOwner {
     @Nullable
     protected volatile MuiScreen mScreen;
 
-    protected boolean mFirstScreenOpened = false;
+    //protected boolean mFirstScreenOpened = false;
     protected boolean mZoomMode = false;
     protected boolean mZoomSmoothCamera;
 
@@ -232,7 +234,7 @@ public abstract class UIManager implements LifecycleOwner {
         try {
             init();
         } catch (Throwable e) {
-            LOGGER.fatal(MARKER, "UI manager failed to initialize");
+            LOGGER.fatal(MARKER, "UI manager failed to initialize", e);
             return;
         }
         while (mRunning) {
@@ -413,6 +415,9 @@ public abstract class UIManager implements LifecycleOwner {
 
         mFragmentLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START);
         mFragmentController.dispatchStart();
+
+        mFragmentLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME);
+        mFragmentController.dispatchResume();
 
         LOGGER.info(MARKER, "UI thread initialized in {}ms", (System.nanoTime() - startTime) / 1000000);
 
@@ -628,6 +633,20 @@ public abstract class UIManager implements LifecycleOwner {
         }
     }
 
+    public void onGameLoadFinished() {
+        if (sDingEnabled) {
+            glfwRequestWindowAttention(minecraft.getWindow().getWindow());
+            minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f)
+            );
+        }
+        if (ModernUIMod.isOptiFineLoaded() &&
+                ModernUIMod.isTextEngineEnabled()) {
+            OptiFineIntegration.setFastRender(false);
+            LOGGER.info(MARKER, "Disabled OptiFine Fast Render");
+        }
+    }
+
     @SuppressWarnings("resource")
     public void takeScreenshot() {
         @SharedPtr
@@ -647,30 +666,35 @@ public abstract class UIManager implements LifecycleOwner {
         final int width = layer.getWidth();
         final int height = layer.getHeight();
         final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
+        bitmap.setPremultiplied(true);
         GL33C.glPixelStorei(GL33C.GL_PACK_ROW_LENGTH, 0);
         GL33C.glPixelStorei(GL33C.GL_PACK_SKIP_ROWS, 0);
         GL33C.glPixelStorei(GL33C.GL_PACK_SKIP_PIXELS, 0);
         GL33C.glPixelStorei(GL33C.GL_PACK_ALIGNMENT, 1);
         // SYNC GPU TODO (use transfer buffer?)
         GL33C.glBindBuffer(GL33C.GL_PIXEL_PACK_BUFFER, 0);
-        int boundTexture = GL33C.glGetInteger(GL_TEXTURE_BINDING_2D);
+        int boundTexture = GL33C.glGetInteger(GL33C.GL_TEXTURE_BINDING_2D);
         GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, layer.getHandle());
         GL33C.glGetTexImage(GL33C.GL_TEXTURE_2D, 0, GL33C.GL_RGBA, GL33C.GL_UNSIGNED_BYTE,
                 bitmap.getAddress());
         GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);
         surface.unref();
         Util.ioPool().execute(() -> {
+            Bitmap converted = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Format.RGBA_8888);
+            converted.setPremultiplied(false);
             try (bitmap) {
-                Bitmap.flipVertically(bitmap);
-                unpremulAlpha(bitmap);
-                bitmap.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
+                // unpremul and flip
+                PixelUtils.convertPixels(bitmap.getPixmap(), converted.getPixmap(), true);
+            }
+            try (converted) {
+                converted.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
             } catch (IOException e) {
                 LOGGER.warn(MARKER, "Failed to save UI screenshot", e);
             }
         });
     }
 
-    @SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
+    /*@SuppressWarnings("IntegerMultiplicationImplicitCastToLong")
     static void unpremulAlpha(Bitmap bitmap) {
         final int width = bitmap.getWidth();
         final int height = bitmap.getHeight();
@@ -699,7 +723,7 @@ public abstract class UIManager implements LifecycleOwner {
             }
             addr += rowStride;
         }
-    }
+    }*/
 
     protected void changeRadialBlur() {
         if (minecraft.gameRenderer.currentEffect() == null) {
@@ -828,8 +852,8 @@ public abstract class UIManager implements LifecycleOwner {
             return;
         }
 
-        final int oldVertexArray = GL33C.glGetInteger(GL33C.GL_VERTEX_ARRAY_BINDING);
-        final int oldProgram = GL33C.glGetInteger(GL33C.GL_CURRENT_PROGRAM);
+        int oldVertexArray = 0;
+        int oldProgram = 0;
 
 
         @RawPtr
@@ -842,6 +866,8 @@ public abstract class UIManager implements LifecycleOwner {
         Surface surface = frameTask.getRight();
 
         if (rootTask != null) {
+            oldVertexArray = GL33C.glGetInteger(GL33C.GL_VERTEX_ARRAY_BINDING);
+            oldProgram = GL33C.glGetInteger(GL33C.GL_CURRENT_PROGRAM);
             boolean added = context.addTask(rootTask);
             rootTask.unref();
             if (!added) {
@@ -854,12 +880,12 @@ public abstract class UIManager implements LifecycleOwner {
         if (rootTask != null) {
             context.submit();
             GL33C.glBindFramebuffer(GL33C.GL_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);
+            GL33C.glBindVertexArray(oldVertexArray);
+            GL33C.glUseProgram(oldProgram);
         } else {
             context.checkForFinishedWork();
         }
 
-        GL33C.glBindVertexArray(oldVertexArray);
-        GL33C.glUseProgram(oldProgram);
         BufferUploader.invalidate();
 
         // force changing Blaze3D state
@@ -908,6 +934,14 @@ public abstract class UIManager implements LifecycleOwner {
                 // draw off-screen target to Minecraft mainTarget (not the default framebuffer)
                 ShaderInstance blitShader = minecraft.gameRenderer.blitShader;
                 blitShader.setSampler("DiffuseSampler", layer.getHandle());
+                // using the nearest sampler is performant
+                @SharedPtr
+                GLSampler sampler = (GLSampler) context.getResourceProvider()
+                        .findOrCreateCompatibleSampler(SamplerDesc.NEAREST);
+                if (sampler != null) {
+                    // XXX: we assume the binding unit is 0 since 'DiffuseSampler' is the only sampler
+                    GL33C.glBindSampler(0, sampler.getHandle());
+                }
                 // z is 0
                 Matrix4f projection = new Matrix4f()
                         .setOrtho(0.0F, width, height, 0.0F, 1000.0F, 3000.0F);
@@ -933,6 +967,10 @@ public abstract class UIManager implements LifecycleOwner {
                 bufferBuilder.vertex(0, 0, 0).uv(0, 1).color(255, 255, 255, 255).endVertex();
                 BufferUploader.draw(bufferBuilder.end());
                 blitShader.clear();
+                if (sampler != null) {
+                    GL33C.glBindSampler(0, 0);
+                    sampler.unref();
+                }
             }
         }
         RenderSystem.defaultBlendFunc();

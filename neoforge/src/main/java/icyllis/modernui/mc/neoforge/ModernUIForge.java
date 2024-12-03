@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.neoforge;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.util.DataSet;
@@ -37,8 +36,6 @@ import net.neoforged.neoforge.client.ConfigScreenHandler;
 import javax.annotation.Nonnull;
 import java.util.Locale;
 import java.util.function.Consumer;
-
-import static icyllis.modernui.ModernUI.*;
 
 /**
  * Mod class. INTERNAL.

@@ -46,7 +46,7 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import static icyllis.modernui.ModernUI.*;
+import static icyllis.modernui.mc.ModernUIMod.*;
 
 @ApiStatus.Internal
 public final class Config {
@@ -320,14 +320,14 @@ public final class Config {
                             "True to exactly position tooltip to pixel grid, smoother movement.")
                     .define("exactPositioning", true);
             mTooltipFill = builder.comment(
-                            "The tooltip background color in #RRGGBB or #AARRGGBB format. Default: #E0000000",
+                            "The tooltip background color in #RRGGBB or #AARRGGBB format. Default: #E6000000",
                             "Can be one to four values representing top left, top right, bottom right and bottom left" +
                                     " color.",
                             "Multiple values produce a gradient effect, whereas one value produces a solid color.",
                             "If less than 4 are provided, repeat the last value.")
                     .defineList("colorFill", () -> {
                         List<String> list = new ArrayList<>();
-                        list.add("#E0000000");
+                        list.add("#E6000000");
                         return list;
                     }, $ -> true);
             mTooltipStroke = builder.comment(
@@ -364,7 +364,7 @@ public final class Config {
                     .defineInRange("shadowRadius", 10.0, TOOLTIP_SHADOW_RADIUS_MIN, TOOLTIP_SHADOW_RADIUS_MAX);
             mTooltipShadowAlpha = builder.comment(
                             "The shadow opacity of tooltip, if rounded. No impact on performance.")
-                    .defineInRange("shadowOpacity", 0.3, 0d, 1d);
+                    .defineInRange("shadowOpacity", 0.25, 0d, 1d);
             mAdaptiveTooltipColors = builder.comment(
                             "When true, tooltip border colors adapt to item's name and rarity.")
                     .define("adaptiveColors", true);
@@ -802,6 +802,7 @@ public final class Config {
         public final ModConfigSpec.BooleanValue mAntiAliasing;
         public final ModConfigSpec.BooleanValue mLinearMetrics;
         public final ModConfigSpec.IntValue mMinPixelDensityForSDF;
+        public final ModConfigSpec.BooleanValue mLinearSamplingA8Atlas;
         //public final ModConfigSpec.BooleanValue mLinearSampling;
 
         //private final ModConfigSpec.BooleanValue antiAliasing;
@@ -840,7 +841,7 @@ public final class Config {
                             BASELINE_MIN, BASELINE_MAX);
             mShadowOffset = builder.comment(
                             "Control the text shadow offset for vanilla text rendering, in GUI scaled pixels.")
-                    .defineInRange("shadowOffset", 0.67, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
+                    .defineInRange("shadowOffset", 0.5, SHADOW_OFFSET_MIN, SHADOW_OFFSET_MAX);
             mOutlineOffset = builder.comment(
                             "Control the text outline offset for vanilla text rendering, in GUI scaled pixels.")
                     .defineInRange("outlineOffset", 0.5, OUTLINE_OFFSET_MIN, OUTLINE_OFFSET_MAX);
@@ -953,7 +954,12 @@ public final class Config {
                     "This value will be no less than current GUI scale.",
                     "Recommend setting a higher value on high-res monitor and powerful PC hardware.")
                     .defineInRange("minPixelDensityForSDF", TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF,
-                            TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF, MuiModApi.MAX_GUI_SCALE);
+                            4, 10);
+            mLinearSamplingA8Atlas = builder.comment(
+                            "Enable linear sampling for A8 font atlases with mipmaps, mag filter will be always NEAREST.",
+                            "We prefer computeDeviceFontSize and allowSDFTextIn2D, then setting this to false can improve performance.",
+                            "If either of the above two is false or Shaders are active, then setting this to true can improve quality.")
+                    .define("linearSamplingA8Atlas", false);
             /*mLinearSampling = builder.comment(
                             "Enable linear sampling for font atlases with mipmaps, mag filter will be always NEAREST.",
                             "If your fonts are not bitmap fonts, then you should keep this setting true.")
@@ -1054,6 +1060,10 @@ public final class Config {
             if (TextLayoutEngine.sMinPixelDensityForSDF != mMinPixelDensityForSDF.get()) {
                 TextLayoutEngine.sMinPixelDensityForSDF = mMinPixelDensityForSDF.get();
                 reload = true;
+            }
+            if (GLFontAtlas.sLinearSamplingA8Atlas != mLinearSamplingA8Atlas.get()) {
+                GLFontAtlas.sLinearSamplingA8Atlas = mLinearSamplingA8Atlas.get();
+                reloadStrike = true;
             }
             /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
                 GLFontAtlas.sLinearSampling = mLinearSampling.get();

@@ -21,20 +21,38 @@ package icyllis.modernui.mc.neoforge;
 import com.ibm.icu.text.DateFormat;
 import com.ibm.icu.text.SimpleDateFormat;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.animation.*;
+import icyllis.modernui.animation.Animator;
+import icyllis.modernui.animation.AnimatorListener;
+import icyllis.modernui.animation.LayoutTransition;
+import icyllis.modernui.animation.ObjectAnimator;
+import icyllis.modernui.animation.TimeInterpolator;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.Canvas;
+import icyllis.modernui.graphics.Color;
+import icyllis.modernui.graphics.Image;
+import icyllis.modernui.graphics.Paint;
+import icyllis.modernui.graphics.Rect;
 import icyllis.modernui.graphics.drawable.Drawable;
 import icyllis.modernui.graphics.drawable.ShapeDrawable;
+import icyllis.modernui.mc.ExtendedGuiGraphics;
 import icyllis.modernui.mc.MinecraftSurfaceView;
 import icyllis.modernui.text.SpannableString;
 import icyllis.modernui.text.Spanned;
 import icyllis.modernui.text.style.ForegroundColorSpan;
-import icyllis.modernui.util.*;
-import icyllis.modernui.view.*;
-import icyllis.modernui.widget.*;
+import icyllis.modernui.util.DataSet;
+import icyllis.modernui.util.FloatProperty;
+import icyllis.modernui.util.IntProperty;
+import icyllis.modernui.view.Gravity;
+import icyllis.modernui.view.LayoutInflater;
+import icyllis.modernui.view.View;
+import icyllis.modernui.view.ViewGroup;
+import icyllis.modernui.widget.EditText;
+import icyllis.modernui.widget.FrameLayout;
+import icyllis.modernui.widget.LinearLayout;
+import icyllis.modernui.widget.Toast;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -363,7 +381,22 @@ public class TestPauseFragment extends Fragment {
                                        double guiScale, float alpha) {
                         int guiScaledWidth = (int) (mSurfaceWidth / guiScale);
                         int guiScaledHeight = (int) (mSurfaceHeight / guiScale);
-                        gr.renderItem(mItem, guiScaledWidth / 2 - 8, Math.round(guiScaledHeight * 0.120625F) - 8);
+                        int itemX = guiScaledWidth / 2 - 8;
+                        int itemY = Math.round(guiScaledHeight * 0.120625F) - 8;
+
+                        var exGr = new ExtendedGuiGraphics(gr);
+                        exGr.setGradient(ExtendedGuiGraphics.Orientation.TL_BR,
+                                Color.argb(128, 45, 212, 191),
+                                Color.argb(255, 14, 165, 233));
+                        exGr.fillRoundRect(
+                                itemX - 1, itemY - 1, itemX + 17, itemY + 17,
+                                3
+                        );
+                        // the text should not be clipped
+                        gr.drawString(Minecraft.getInstance().font,
+                                "A", itemX, itemY, ~0);
+
+                        gr.renderItem(mItem, itemX, itemY);
                     }
                 });
                 LayoutParams params = new LayoutParams(mSize * 4, mSize * 5, Gravity.CENTER);

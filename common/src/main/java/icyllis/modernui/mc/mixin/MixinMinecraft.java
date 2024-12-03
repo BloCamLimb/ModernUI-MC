@@ -27,6 +27,7 @@ import org.lwjgl.glfw.GLFW;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -56,6 +57,11 @@ public abstract class MixinMinecraft {
             opcode = Opcodes.PUTFIELD))
     private void onSetScreen(Screen guiScreen, CallbackInfo ci) {
         MuiModApi.dispatchOnScreenChange(screen, guiScreen);
+    }
+
+    @Inject(method = "onGameLoadFinished", at = @At("TAIL"))
+    private void onGameLoadFinished(@Coerce Object cookie, CallbackInfo ci) {
+        UIManager.getInstance().onGameLoadFinished();
     }
 
     @Inject(method = "allowsTelemetry", at = @At("HEAD"), cancellable = true)

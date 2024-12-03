@@ -99,7 +99,7 @@ dependencies {
     include "com.vladsch.flexmark:flexmark-util-sequence:${flexmark_version}"
     include "com.vladsch.flexmark:flexmark-util-visitor:${flexmark_version}"
 
-    shadow ':ModernUI-Fonts-3.0'
+    shadow ':ModernUI-Fonts-4.0'
 }
 
 tasks.withType(JavaCompile).configureEach {

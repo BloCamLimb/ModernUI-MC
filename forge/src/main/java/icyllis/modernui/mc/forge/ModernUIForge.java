@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.forge;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.util.DataSet;
@@ -42,8 +41,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
-
-import static icyllis.modernui.ModernUI.*;
 
 /**
  * Mod class. INTERNAL.

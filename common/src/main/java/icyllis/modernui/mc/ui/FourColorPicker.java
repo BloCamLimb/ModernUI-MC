@@ -93,7 +93,8 @@ public class FourColorPicker extends RelativeLayout {
                     }
                     if (idx != -1) {
                         invalidate();
-                        var newList = new ArrayList<String>(getter.get());
+                        var oldList = getter.get();
+                        var newList = new ArrayList<String>(oldList);
                         if (newList.isEmpty()) {
                             newList.add("#FFFFFFFF");
                         }
@@ -101,8 +102,10 @@ public class FourColorPicker extends RelativeLayout {
                             newList.add(newList.get(newList.size() - 1));
                         }
                         newList.set(idx, string);
-                        setter.accept(newList);
-                        saveFn.run();
+                        if (!newList.equals(oldList)) {
+                            setter.accept(newList);
+                            saveFn.run();
+                        }
                     }
                     input.setTextColor(0xFF000000 | color);
                 } catch (Exception e) {

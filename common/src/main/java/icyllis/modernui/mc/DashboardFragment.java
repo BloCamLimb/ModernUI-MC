@@ -38,7 +38,7 @@ import javax.annotation.Nonnull;
 public class DashboardFragment extends Fragment {
 
     public static final String CREDIT_TEXT = """
-            Modern UI 3.11.0
+            Modern UI 3.11.1
             by
             BloCamLimb
             (Icyllis Milica)
@@ -96,12 +96,12 @@ public class DashboardFragment extends Fragment {
                         .setBufferType(TextView.BufferType.SPANNABLE)
                         .build()
                         .setMarkdown(tv, """
-                                What's New in Modern UI 3.11.0
+                                What's New in Modern UI 3.11.1
                                 ----
                                 * Brand-New Graphics Engine
                                 * Better Text Rendering
                                 * Better Mod Compatibility
-                                * New UI Components & Rendering API
+                                * Emoji 16.0 Support
                                 * Rendering Optimizations
                                 * [Full Changelog…](https://github.com/BloCamLimb/ModernUI/blob/master/changelogs.md)
                                 * [Full Changelog…](https://github.com/BloCamLimb/ModernUI-MC/blob/master/changelogs.md)

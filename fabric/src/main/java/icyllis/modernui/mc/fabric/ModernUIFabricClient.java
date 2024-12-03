@@ -117,9 +117,17 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                 context.register(
                         ModernUIMod.location("rendertype_modern_tooltip"),
                         DefaultVertexFormat.POSITION,
-                        TooltipRenderType::setShaderTooltip);
+                        GuiRenderType::setShaderTooltip);
             } catch (IOException e) {
                 LOGGER.error(MARKER, "Bad tooltip shader", e);
+            }
+            try {
+                context.register(
+                        ModernUIMod.location("rendertype_round_rect"),
+                        DefaultVertexFormat.POSITION_COLOR,
+                        GuiRenderType::setShaderRoundRect);
+            } catch (IOException e) {
+                LOGGER.error(MARKER, "Bad round rect shader", e);
             }
         });
 
