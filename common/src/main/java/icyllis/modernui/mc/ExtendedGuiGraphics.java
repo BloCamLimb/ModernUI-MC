@@ -312,6 +312,7 @@ public class ExtendedGuiGraphics {
             // we expect local coordinates, concat pose with model view
             RenderSystem.getModelViewStack().pushMatrix();
             RenderSystem.getModelViewStack().mul(pose);
+            RenderSystem.applyModelViewMatrix();
             shader.safeGetUniform("u_Rect")
                     .set(centerX, centerY, extentX, extentY);
             shader.safeGetUniform("u_Radii")
@@ -325,6 +326,7 @@ public class ExtendedGuiGraphics {
             // we modify uniform for each draw, so cannot do batch rendering
             guiGraphics.flush();
             RenderSystem.getModelViewStack().popMatrix();
+            RenderSystem.applyModelViewMatrix();
         }
     }
 }
