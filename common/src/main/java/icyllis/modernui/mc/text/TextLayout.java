@@ -64,7 +64,8 @@ public class TextLayout {
         @Override
         public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
                               float x, float top, int r, int g, int b, int a, boolean isShadow,
-                              int preferredMode, boolean polygonOffset, int bgColor, int packedLight) {
+                              int preferredMode, boolean polygonOffset, float uniformScale,
+                              int bgColor, int packedLight) {
             return 0;
         }
 
@@ -249,14 +250,15 @@ public class TextLayout {
     }
 
     @Nonnull
-    private GLBakedGlyph[] prepareGlyphs(int resLevel, int fontSize) {
+    private GLBakedGlyph[] prepareGlyphs(int fontSize) {
         GlyphManager glyphManager = GlyphManager.getInstance();
         GLBakedGlyph[] glyphs = new GLBakedGlyph[mGlyphs.length];
         for (int i = 0; i < glyphs.length; i++) {
             if ((mGlyphFlags[i] & CharacterStyle.OBFUSCATED_MASK) != 0) {
                 glyphs[i] = glyphManager.lookupFastChars(
                         getFont(i),
-                        resLevel
+                        fontSize,
+                        mGlyphs[i]
                 );
             } else {
                 glyphs[i] = glyphManager.lookupGlyph(
@@ -274,13 +276,13 @@ public class TextLayout {
         if (resLevel == mCreatedResLevel) {
             if (mBakedGlyphs == null) {
                 int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
-                mBakedGlyphs = prepareGlyphs(resLevel, fontSize);
+                mBakedGlyphs = prepareGlyphs(fontSize);
             }
             return mBakedGlyphs;
         } else {
             if (mBakedGlyphsForSDF == null) {
                 int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
-                mBakedGlyphsForSDF = prepareGlyphs(resLevel, fontSize);
+                mBakedGlyphsForSDF = prepareGlyphs(fontSize);
             }
             return mBakedGlyphsForSDF;
         }
@@ -294,7 +296,7 @@ public class TextLayout {
         int fontSize = TextLayoutProcessor.computeFontSize(density);
         GLBakedGlyph[] glyphs = mBakedGlyphsArray.get(fontSize);
         if (glyphs == null) {
-            glyphs = prepareGlyphs(mCreatedResLevel, fontSize);
+            glyphs = prepareGlyphs(fontSize);
             mBakedGlyphsArray.put(fontSize, glyphs);
         }
         return glyphs;
@@ -314,16 +316,17 @@ public class TextLayout {
      * @param isShadow      whether to use a darker color to draw?
      * @param preferredMode a render mode, normal, see through or SDF
      * @param polygonOffset polygon offset layering requested?
+     * @param uniformScale  additional scale factor if uniform scale
      * @param bgColor       the background color of the text in 0xAARRGGBB format
      * @param packedLight   see {@link net.minecraft.client.renderer.LightTexture}
      * @return the total advance, always positive
      */
     public float drawText(@Nonnull final Matrix4f matrix,
                           @Nonnull final MultiBufferSource source,
-                          final float x, final float top,
-                          int r, int g, int b, int a,
+                          float x, float top,
+                          int r, int g, int b, final int a,
                           final boolean isShadow, int preferredMode,
-                          final boolean polygonOffset,
+                          final boolean polygonOffset, final float uniformScale,
                           final int bgColor, final int packedLight) {
         final int startR = r;
         final int startG = g;
@@ -335,11 +338,11 @@ public class TextLayout {
             glyphs = getGlyphs(resLevel);
             density = resLevel;
         } else if (preferredMode == TextRenderType.MODE_UNIFORM_SCALE) {
-            float devS = matrix.m00();
-            if (devS == 0) {
+            if (uniformScale <= 0.001f) {
+                // drop if flipped or too small
                 return mTotalAdvance;
             }
-            density = mCreatedResLevel * devS;
+            density = mCreatedResLevel * uniformScale;
             glyphs = getGlyphsUniformScale(density);
             preferredMode = TextRenderType.MODE_NORMAL;
         } else {
@@ -347,6 +350,16 @@ public class TextLayout {
             density = mCreatedResLevel;
         }
         final float invDensity = 1.0f / density;
+        float shadowOffset = 0;
+        if (isShadow) {
+            shadowOffset = ModernTextRenderer.sShadowOffset;
+            if (preferredMode == TextRenderType.MODE_NORMAL) {
+                // align to screen pixel center in 2D
+                shadowOffset = Math.round(shadowOffset * density) * invDensity;
+            }
+            x += shadowOffset;
+            top += shadowOffset;
+        }
 
         final var positions = mPositions;
         final var flags = mGlyphFlags;
@@ -368,7 +381,7 @@ public class TextLayout {
                 continue;
             }
             final int bits = flags[i];
-            float rx = 0;
+            float rx;
             float ry;
             final float w;
             final float h;
@@ -380,12 +393,8 @@ public class TextLayout {
             boolean isBitmapFont = false;
             if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
                 var chars = (GlyphManager.FastCharSet) glyph;
-                int fastIndex = RANDOM.nextInt(chars.glyphs.length);
-                glyph = chars.glyphs[fastIndex];
-                // 0 is standard, no additional offset
-                if (fastIndex != 0) {
-                    rx += chars.offsets[fastIndex];
-                }
+                int fastIndex = RANDOM.nextInt(chars.glyphs.size());
+                glyph = chars.glyphs.get(fastIndex);
             }
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 final float scaleFactor;
@@ -404,12 +413,12 @@ public class TextLayout {
                     scaleFactor = TextLayoutProcessor.sBaseFontSize / GlyphManager.EMOJI_BASE;
                 }
                 fakeItalic = (bits & CharacterStyle.ITALIC_MASK) != 0;
-                rx += x + positions[i << 1] + glyph.x * scaleFactor;
+                rx = x + positions[i << 1] + glyph.x * scaleFactor;
                 ry = baseline + positions[i << 1 | 1] + glyph.y * scaleFactor;
                 if (isShadow) {
                     // bitmap font shadow offset is always 1 pixel
-                    rx += 1.0f - ModernTextRenderer.sShadowOffset;
-                    ry += 1.0f - ModernTextRenderer.sShadowOffset;
+                    rx += 1.0f - shadowOffset;
+                    ry += 1.0f - shadowOffset;
                 }
 
                 w = glyph.width * scaleFactor;
@@ -425,7 +434,7 @@ public class TextLayout {
                 }
             } else {
                 mode = preferredMode;
-                rx += x + positions[i << 1] + glyph.x * invDensity;
+                rx = x + positions[i << 1] + glyph.x * invDensity;
                 ry = baseline + positions[i << 1 | 1] + glyph.y * invDensity;
 
                 w = glyph.width * invDensity;
@@ -435,8 +444,7 @@ public class TextLayout {
                 }
                 texture = fontTexture;
             }
-            if (mode == TextRenderType.MODE_NORMAL &&
-                    !TextLayoutEngine.sCurrentInWorldRendering) {
+            if (preferredMode == TextRenderType.MODE_NORMAL) {
                 // align to screen pixel center in 2D
                 rx = Math.round(rx * density) * invDensity;
                 ry = Math.round(ry * density) * invDensity;
@@ -496,7 +504,7 @@ public class TextLayout {
         builder = null;
 
         if (mHasEffect) {
-            builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough));
+            builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough, polygonOffset));
             for (int i = 0, e = glyphs.length; i < e; i++) {
                 final int bits = flags[i];
                 if ((bits & CharacterStyle.EFFECT_MASK) == 0) {
@@ -530,21 +538,17 @@ public class TextLayout {
         }
 
         if ((bgColor & 0xFF000000) != 0) {
-            a = bgColor >>> 24;
-            r = bgColor >> 16 & 0xff;
-            g = bgColor >> 8 & 0xff;
-            b = bgColor & 0xff;
             if (builder == null) {
-                builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough));
+                builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough, polygonOffset));
             }
             builder.vertex(matrix, x - 1, top + 9, TextRenderEffect.EFFECT_DEPTH)
-                    .color(r, g, b, a).uv(0, 1).uv2(packedLight).endVertex();
+                    .color(bgColor).uv(0, 1).uv2(packedLight).endVertex();
             builder.vertex(matrix, x + mTotalAdvance + 1, top + 9, TextRenderEffect.EFFECT_DEPTH)
-                    .color(r, g, b, a).uv(1, 1).uv2(packedLight).endVertex();
+                    .color(bgColor).uv(1, 1).uv2(packedLight).endVertex();
             builder.vertex(matrix, x + mTotalAdvance + 1, top - 1, TextRenderEffect.EFFECT_DEPTH)
-                    .color(r, g, b, a).uv(1, 0).uv2(packedLight).endVertex();
+                    .color(bgColor).uv(1, 0).uv2(packedLight).endVertex();
             builder.vertex(matrix, x - 1, top - 1, TextRenderEffect.EFFECT_DEPTH)
-                    .color(r, g, b, a).uv(0, 0).uv2(packedLight).endVertex();
+                    .color(bgColor).uv(0, 0).uv2(packedLight).endVertex();
         }
 
         return mTotalAdvance;
@@ -593,7 +597,7 @@ public class TextLayout {
                 continue;
             }
             final int bits = flags[i];
-            float rx = 0;
+            final float rx;
             final float ry;
             final float w;
             final float h;
@@ -603,14 +607,10 @@ public class TextLayout {
             } else {
                 if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
                     var chars = (GlyphManager.FastCharSet) glyph;
-                    int fastIndex = RANDOM.nextInt(chars.glyphs.length);
-                    glyph = chars.glyphs[fastIndex];
-                    // 0 is standard, no additional offset
-                    if (fastIndex != 0) {
-                        rx += chars.offsets[fastIndex];
-                    }
+                    int fastIndex = RANDOM.nextInt(chars.glyphs.size());
+                    glyph = chars.glyphs.get(fastIndex);
                 }
-                rx += x + positions[i << 1] + glyph.x / resLevel;
+                rx = x + positions[i << 1] + glyph.x / resLevel;
                 ry = baseline + positions[i << 1 | 1] + glyph.y / resLevel;
 
                 w = glyph.width / resLevel;
@@ -918,6 +918,8 @@ public class TextLayout {
         }
         b.append("total advance: ");
         b.append(mTotalAdvance);
+        b.append(", created res level: ");
+        b.append(mCreatedResLevel);
 
         return b.toString();
     }

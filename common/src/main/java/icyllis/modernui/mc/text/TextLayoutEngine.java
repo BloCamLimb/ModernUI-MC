@@ -402,8 +402,6 @@ public class TextLayoutEngine extends FontResourceManager
         mVanillaCache = new HashMap<>();
         mComponentCache = new HashMap<>();
         mFormattedCache = new HashMap<>();
-        // Metrics change with resolution level
-        GlyphManager.getInstance().clearFastCharMap();
         // Just clear TextRenderType instances, font textures are remained
         TextRenderType.clear(/*cleanup*/ false);
         if (count > 0) {
@@ -471,13 +469,6 @@ public class TextLayoutEngine extends FontResourceManager
         mFontCollections.putIfAbsent(SERIF,
                 Typeface.SERIF);
         mFontCollections.putIfAbsent(MONOSPACED,
-                Typeface.MONOSPACED);
-        // register logical fonts in default namespace
-        mFontCollections.putIfAbsent(new ResourceLocation(SANS_SERIF.getPath()),
-                Typeface.SANS_SERIF);
-        mFontCollections.putIfAbsent(new ResourceLocation(SERIF.getPath()),
-                Typeface.SERIF);
-        mFontCollections.putIfAbsent(new ResourceLocation(MONOSPACED.getPath()),
                 Typeface.MONOSPACED);
 
         if (sDefaultFontBehavior == DEFAULT_FONT_BEHAVIOR_IGNORE_ALL || // exclude everything
@@ -726,8 +717,6 @@ public class TextLayoutEngine extends FontResourceManager
             var location = ModernUIMod.location(newName);
             if (mRegisteredFonts.putIfAbsent(location, fc) == null) {
                 LOGGER.info(MARKER, "Redirect registered font '{}' to '{}'", name, location);
-                // also register in minecraft namespace
-                mRegisteredFonts.putIfAbsent(new ResourceLocation(newName), fc);
             }
         } catch (Exception e) {
             LOGGER.warn(MARKER, "Failed to redirect registered font '{}'", name);

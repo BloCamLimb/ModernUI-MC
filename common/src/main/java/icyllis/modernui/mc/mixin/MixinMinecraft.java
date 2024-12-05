@@ -58,6 +58,11 @@ public abstract class MixinMinecraft {
         MuiModApi.dispatchOnScreenChange(screen, guiScreen);
     }
 
+    @Inject(method = "onGameLoadFinished", at = @At("TAIL"))
+    private void onGameLoadFinished(CallbackInfo ci) {
+        UIManager.getInstance().onGameLoadFinished();
+    }
+
     @Inject(method = "allowsTelemetry", at = @At("HEAD"), cancellable = true)
     private void onAllowsTelemetry(CallbackInfoReturnable<Boolean> info) {
         if (ModernUIClient.sRemoveTelemetrySession) {

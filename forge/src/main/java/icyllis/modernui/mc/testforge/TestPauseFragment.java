@@ -21,18 +21,39 @@ package icyllis.modernui.mc.testforge;
 import com.ibm.icu.text.DateFormat;
 import com.ibm.icu.text.SimpleDateFormat;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.animation.*;
+import icyllis.modernui.animation.Animator;
+import icyllis.modernui.animation.AnimatorListener;
+import icyllis.modernui.animation.LayoutTransition;
+import icyllis.modernui.animation.ObjectAnimator;
+import icyllis.modernui.animation.TimeInterpolator;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.Canvas;
+import icyllis.modernui.graphics.Color;
+import icyllis.modernui.graphics.Image;
+import icyllis.modernui.graphics.Paint;
+import icyllis.modernui.graphics.Rect;
 import icyllis.modernui.graphics.drawable.Drawable;
-import icyllis.modernui.mc.ContainerDrawHelper;
-import icyllis.modernui.text.*;
+import icyllis.modernui.mc.ExtendedGuiGraphics;
+import icyllis.modernui.mc.MinecraftSurfaceView;
+import icyllis.modernui.text.SpannableString;
+import icyllis.modernui.text.Spanned;
+import icyllis.modernui.text.TextPaint;
 import icyllis.modernui.text.style.ForegroundColorSpan;
-import icyllis.modernui.util.*;
-import icyllis.modernui.view.*;
-import icyllis.modernui.widget.*;
+import icyllis.modernui.util.DataSet;
+import icyllis.modernui.util.FloatProperty;
+import icyllis.modernui.util.IntProperty;
+import icyllis.modernui.view.Gravity;
+import icyllis.modernui.view.LayoutInflater;
+import icyllis.modernui.view.View;
+import icyllis.modernui.view.ViewGroup;
+import icyllis.modernui.widget.EditText;
+import icyllis.modernui.widget.FrameLayout;
+import icyllis.modernui.widget.LinearLayout;
+import icyllis.modernui.widget.Toast;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -277,7 +298,7 @@ public class TestPauseFragment extends Fragment {
         }
     }
 
-    private static class ConnectorView extends View {
+    private static class ConnectorView extends FrameLayout {
 
         private final Image mImage;
         private final int mSize;
@@ -286,6 +307,8 @@ public class TestPauseFragment extends Fragment {
 
         private final ObjectAnimator mRodAnimator;
         private final ObjectAnimator mBoxAnimator;
+
+        private final MinecraftSurfaceView mItemView;
 
         private final ItemStack mItem = Items.DIAMOND_BLOCK.getDefaultInstance();
 
@@ -317,17 +340,59 @@ public class TestPauseFragment extends Fragment {
                 @Override
                 public void setValue(@Nonnull Paint object, int value) {
                     object.setAlpha(value);
+                    if (value > 0) {
+                        mItemView.setVisibility(View.VISIBLE);
+                    }
                     invalidate();
                 }
 
                 @Override
                 public Integer get(@Nonnull Paint object) {
-                    return object.getColor() >>> 24;
+                    return object.getAlpha();
                 }
             }, 0, 128);
             mRodAnimator.setInterpolator(TimeInterpolator.LINEAR);
             mBoxAnimator.setDuration(400);
             mBoxPaint.setRGBA(64, 64, 64, 0);
+            {
+                mItemView = new MinecraftSurfaceView(context);
+                mItemView.setVisibility(INVISIBLE);
+                mItemView.setRenderer(new MinecraftSurfaceView.Renderer() {
+                    int mSurfaceWidth;
+                    int mSurfaceHeight;
+
+                    @Override
+                    public void onSurfaceChanged(int width, int height) {
+                        mSurfaceWidth = width;
+                        mSurfaceHeight = height;
+                    }
+
+                    @Override
+                    public void onDraw(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick,
+                                       double guiScale, float alpha) {
+                        int guiScaledWidth = (int) (mSurfaceWidth / guiScale);
+                        int guiScaledHeight = (int) (mSurfaceHeight / guiScale);
+                        int itemX = guiScaledWidth / 2 - 8;
+                        int itemY = Math.round(guiScaledHeight * 0.120625F) - 8;
+
+                        var exGr = new ExtendedGuiGraphics(gr);
+                        exGr.setGradient(ExtendedGuiGraphics.Orientation.TL_BR,
+                                Color.argb(128, 45, 212, 191),
+                                Color.argb(255, 14, 165, 233));
+                        exGr.fillRoundRect(
+                                itemX - 1, itemY - 1, itemX + 17, itemY + 17,
+                                3
+                        );
+                        // the text should not be clipped
+                        gr.drawString(Minecraft.getInstance().font,
+                                "A", itemX, itemY, ~0);
+
+                        gr.renderItem(mItem, itemX, itemY);
+                    }
+                });
+                LayoutParams params = new LayoutParams(mSize * 4, mSize * 5, Gravity.CENTER);
+                addView(mItemView, params);
+            }
         }
 
         @Override
@@ -345,7 +410,7 @@ public class TestPauseFragment extends Fragment {
             float centerX = getWidth() / 2f;
             float centerY = getHeight() / 2f;
 
-            int boxAlpha = mBoxPaint.getColor() >>> 24;
+            int boxAlpha = mBoxPaint.getAlpha();
 
             float px1l = centerX - (15 / 64f) * mSize;
             float py1 = centerY + (8 / 64f) * mSize;
@@ -409,7 +474,6 @@ public class TestPauseFragment extends Fragment {
             if (boxAlpha > 0) {
                 canvas.drawRect(centerX - mSize * .5f, py2 - mSize * 2.1f,
                         centerX + mSize * .5f, py2 - mSize * 1.1f, mBoxPaint);
-                ContainerDrawHelper.drawItem(canvas, mItem, centerX, py2 - mSize * 1.6f, 0, mSize, 0);
             }
             paint.recycle();
         }

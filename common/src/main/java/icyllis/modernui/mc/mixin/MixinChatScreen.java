@@ -56,7 +56,7 @@ public class MixinChatScreen {
                     int end = matcher.end();
                     if (end - start > 2) {
                         String replacement = manager.lookupEmojiShortcode(
-                                input.getValue().substring(start + 1, end - 1)
+                                input.getValue().substring(start, end)
                         );
                         if (replacement != null) {
                             modernUI_MC$broadcasting = true;
