@@ -34,8 +34,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import javax.annotation.Nullable;
 
-import static org.lwjgl.glfw.GLFW.glfwGetMonitorPhysicalSize;
-
 @Mixin(Window.class)
 public abstract class MixinWindow {
 
