@@ -806,6 +806,7 @@ public final class Config {
         public final ForgeConfigSpec.BooleanValue mSmartSDFShaders;
         public final ForgeConfigSpec.BooleanValue mComputeDeviceFontSize;
         public final ForgeConfigSpec.BooleanValue mAllowSDFTextIn2D;
+        public final ForgeConfigSpec.BooleanValue mTweakExperienceText;
 
         public final ForgeConfigSpec.BooleanValue mAntiAliasing;
         public final ForgeConfigSpec.BooleanValue mLinearMetrics;
@@ -950,6 +951,9 @@ public final class Config {
                             "Otherwise, it uses nearest-neighbor or bilinear sampling based on texel density.",
                             "This option only applies to TrueType fonts.")
                     .define("allowSDFTextIn2D", true);
+            mTweakExperienceText = builder.comment(
+                            "When enabled, the outline of the experience level text will be tweaked.")
+                    .define("tweakExperienceText", true);
             mAntiAliasing = builder.comment(
                             "Control the anti-aliasing of raw glyph rasterization.")
                     .define("antiAliasing", true);
@@ -1056,6 +1060,7 @@ public final class Config {
 
             ModernTextRenderer.sComputeDeviceFontSize = mComputeDeviceFontSize.get();
             ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();
+            ModernTextRenderer.sTweakExperienceText = mTweakExperienceText.get();
 
             if (GlyphManager.sAntiAliasing != mAntiAliasing.get()) {
                 GlyphManager.sAntiAliasing = mAntiAliasing.get();
