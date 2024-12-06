@@ -57,6 +57,7 @@ public final class ModernTextRenderer {
     public static volatile float sOutlineOffset = 0.5f;
     public static volatile boolean sComputeDeviceFontSize = true;
     public static volatile boolean sAllowSDFTextIn2D = true;
+    public static volatile boolean sTweakExperienceText = true;
     //private boolean mGlobalRenderer = false;
 
     //private final TextLayoutEngine mFontEngine = TextLayoutEngine.getInstance();
