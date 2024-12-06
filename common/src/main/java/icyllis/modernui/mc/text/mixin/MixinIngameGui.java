@@ -20,66 +20,46 @@ package icyllis.modernui.mc.text.mixin;
 
 import icyllis.modernui.mc.mixin.AccessGuiGraphics;
 import icyllis.modernui.mc.text.ModernTextRenderer;
-import icyllis.modernui.mc.text.TextLayoutEngine;
-import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.*;
-import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
-import org.objectweb.asm.Opcodes;
-import org.spongepowered.asm.mixin.*;
-import org.spongepowered.asm.mixin.injection.*;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Redirect;
 
 @Mixin(Gui.class)
 public abstract class MixinIngameGui {
 
-    @Shadow
-    @Final
-    private Minecraft minecraft;
-
-    @Shadow
-    protected abstract boolean isExperienceBarVisible();
-
     @Redirect(
             method = "renderExperienceLevel",
-            at = @At(value = "FIELD", target = "net/minecraft/client/player/LocalPlayer.experienceLevel:I",
-                    opcode = Opcodes.GETFIELD)
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;drawString" +
+                    "(Lnet/minecraft/client/gui/Font;Ljava/lang/String;IIIZ)I")
     )
-    private int fakeExperience(LocalPlayer player) {
-        return 0;
-    }
-
-    @Inject(method = "renderExperienceLevel", at = @At("TAIL"))
-    private void drawExperience(GuiGraphics gr, DeltaTracker deltaTracker, CallbackInfo ci) {
-        LocalPlayer player = minecraft.player;
-        if (player != null && player.experienceLevel > 0 && isExperienceBarVisible()) {
-            String s = Integer.toString(player.experienceLevel);
-            TextLayoutEngine engine = TextLayoutEngine.getInstance();
-            float w = engine.getStringSplitter().measureText(s);
-            float x = (gr.guiWidth() - w) / 2;
-            float y = gr.guiHeight() - 31 - 4;
+    private int drawExperience(GuiGraphics gr, Font font, String text, int x, int y, int color, boolean dropShadow) {
+        if (!ModernTextRenderer.sTweakExperienceText) {
+            return gr.drawString(font, text, x, y, color, dropShadow);
+        }
+        // the first four drawString() are black, and the last one is green
+        if ((color & 0xFFFFFF) != 0) {
             float offset = ModernTextRenderer.sOutlineOffset;
             Matrix4f pose = gr.pose().last().pose();
-            // end batch for each draw to prevent transparency sorting
             MultiBufferSource.BufferSource source = ((AccessGuiGraphics) gr).getBufferSource();
-            engine.getTextRenderer().drawText(s, x + offset, y, 0xff000000, false,
+            font.drawInBatch(text, x + offset, y, 0xFF000000, dropShadow,
                     pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-            source.endBatch();
-            engine.getTextRenderer().drawText(s, x - offset, y, 0xff000000, false,
+            font.drawInBatch(text, x - offset, y, 0xFF000000, dropShadow,
                     pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-            source.endBatch();
-            engine.getTextRenderer().drawText(s, x, y + offset, 0xff000000, false,
+            font.drawInBatch(text, x, y + offset, 0xFF000000, dropShadow,
                     pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-            source.endBatch();
-            engine.getTextRenderer().drawText(s, x, y - offset, 0xff000000, false,
+            font.drawInBatch(text, x, y - offset, 0xFF000000, dropShadow,
                     pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-            source.endBatch();
-            engine.getTextRenderer().drawText(s, x, y, 0xff80ff20, false,
+            gr.flush();
+            font.drawInBatch(text, x, y, 0xFF000000 | color, dropShadow,
                     pose, source, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
             gr.flush();
         }
+        return x;
     }
 }

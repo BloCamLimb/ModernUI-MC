@@ -16,6 +16,7 @@ Changelogs
 #### Fabric Extension 1.21.1
 * Functionally equivalent to NeoForge version
 #### Modern Text Engine 1.21.1
+* Improve experience level rendering
 * Set max allowed value for minPixelDensityForSDF to 10
 * Use point sampling for A8 atlas by default as an optimization
   - We prefer computeDeviceFontSize and allowSDFTextIn2D, if some mods use `RenderSystem.getModelViewMatrix()` to
