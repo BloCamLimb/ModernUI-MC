@@ -18,6 +18,7 @@ Changelogs
 #### Fabric Extension 1.21.1
 * Functionally equivalent to NeoForge version
 #### Modern Text Engine 1.21.1
+* Improve experience level rendering
 * Optimize white texture and text effect rendering
 * No longer register fonts in minecraft namespace
   - Use `"font":"modernui:jetbrains-mono-medium"` to change font
