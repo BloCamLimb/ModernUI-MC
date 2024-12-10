@@ -1,7 +1,9 @@
 Changelogs
 ===
-### Modern UI 3.11.1.4
-#### NeoForge Extension 1.21.1
+### Modern UI 3.11.1.5
+#### NeoForge Extension 1.21.3
+* Add ExtendedGuiGraphics that allows other mods to draw rounded rectangles in vanilla-based GUI
+* Vanilla blur now follow vanilla menu blurriness option
 * Add emoji shortcode suggestions
 * Fix lifecycle bug, improve UI slider
 * Fix game loading complete sound "DING" not working
@@ -9,14 +11,17 @@ Changelogs
 * Update to Emoji 16.0
 * Fix startup crash on dedicated server
 * Fix crash in PojavLauncher
-* Use point sampling for layer blit (optimization)
 * Change the first font loading behavior to ensure bundled fonts are loaded
-#### Forge Extension 1.21.1
+* Some other fixes, improvements and optimizations
+#### Forge Extension 1.21.3
 * Equivalent to NeoForge version
-#### Fabric Extension 1.21.1
+#### Fabric Extension 1.21.3
 * Functionally equivalent to NeoForge version
-#### Modern Text Engine 1.21.1
+#### Modern Text Engine 1.21.3
 * Improve experience level rendering
+* Optimize white texture and text effect rendering
+* No longer register fonts in minecraft namespace
+  - Use `"font":"modernui:jetbrains-mono-medium"` to change font
 * Set max allowed value for minPixelDensityForSDF to 10
 * Use point sampling for A8 atlas by default as an optimization
   - We prefer computeDeviceFontSize and allowSDFTextIn2D, if some mods use `RenderSystem.getModelViewMatrix()` to

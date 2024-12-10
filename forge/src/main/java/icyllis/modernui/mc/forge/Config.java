@@ -264,7 +264,8 @@ public final class Config {
             mBlurEffect = builder.comment(
                             "Add Gaussian blur effect to GUI background when opened.",
                             "Disable this if you run into a problem or are on low-end PCs")
-                    .define("blurEffect", true);
+                    .define("blurEffect", !ModernUIMod.isOptiFineLoaded());
+            // OK, this doesn't work well with OptiFine
             /*mBlurWithBackground = builder.comment(
                             "This option means that blur effect only applies to GUI screens with a background.",
                             "Similar to Minecraft 1.21. Enable this for better optimization & compatibility.")
@@ -272,7 +273,8 @@ public final class Config {
             mOverrideVanillaBlur = builder.comment(
                             "Whether to replace Vanilla 3-pass box blur with Modern UI Gaussian blur.",
                             "This gives you better quality and performance, recommend setting this to true.")
-                    .define("overrideVanillaBlur", true);
+                    .define("overrideVanillaBlur", !ModernUIMod.isOptiFineLoaded());
+            // OK, this doesn't work well with OptiFine
             mBlurRadius = builder.comment(
                             "The kernel radius for gaussian convolution blur effect, 0 = disable.",
                             "samples per pixel = ((radius * 2) + 1) * 2, sigma = radius / 2.")
@@ -936,8 +938,7 @@ public final class Config {
                             "This feature requires GLSL 400 or has no effect.",
                             "This generally decreases performance but provides better rendering quality.",
                             "This option only applies to TrueType fonts. May not be compatible with OptiFine.")
-                    .define("smartSDFShaders", !ModernUIMod.isOptiFineLoaded());
-            // OK, this doesn't work well with OptiFine
+                    .define("smartSDFShaders", true);
             mComputeDeviceFontSize = builder.comment(
                             "When rendering in 2D, this option allows Modern UI to exactly compute font size in " +
                                     "device-space from the current coordinate transform matrix.",
