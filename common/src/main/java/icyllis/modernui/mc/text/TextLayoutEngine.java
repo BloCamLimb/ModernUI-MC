@@ -786,7 +786,7 @@ public class TextLayoutEngine extends FontResourceManager
             for (var resource : entry.getValue()) {
                 try (var reader = resource.openAsReader()) {
                     var providers = GsonHelper.getAsJsonArray(Objects.requireNonNull(
-                            GsonHelper.fromJson(gson, reader, JsonObject.class)), "providers");
+                            gson.fromJson(reader, JsonObject.class)), "providers");
                     for (int i = 0; i < providers.size(); i++) {
                         var metadata = GsonHelper.convertToJsonObject(
                                 providers.get(i), "providers[" + i + "]");
@@ -845,6 +845,7 @@ public class TextLayoutEngine extends FontResourceManager
                 LOGGER.warn(MARKER, "Ignore font: '{}', because it's empty", name);
             }
         });
+        map.remove(INTERNAL_DEFAULT);
         results.mFontCollections = map;
     }
 
@@ -1221,16 +1222,19 @@ public class TextLayoutEngine extends FontResourceManager
             basePath = basePath.substring(0, basePath.length() - 4);
         }
         int index = 0;
+        var visited = new IdentityHashMap<BitmapFont, Boolean>();
         for (var fc : mFontCollections.values()) {
             for (var family : fc.getFamilies()) {
                 var font = family.getClosestMatch(FontPaint.NORMAL);
                 if (font instanceof BitmapFont bmf) {
-                    if (basePath != null) {
-                        bmf.dumpAtlas(index, basePath + "_" + index + ".png");
-                    } else {
-                        bmf.dumpAtlas(index, null);
+                    if (visited.put(bmf, Boolean.TRUE) == null) {
+                        if (basePath != null) {
+                            bmf.dumpAtlas(index, basePath + "_" + index + ".png");
+                        } else {
+                            bmf.dumpAtlas(index, null);
+                        }
+                        index++;
                     }
-                    index++;
                 }
             }
         }
