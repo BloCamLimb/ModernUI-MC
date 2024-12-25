@@ -175,10 +175,10 @@ public final class TooltipRenderer implements ScrollController.IListener {
                     (i, style, ch) -> {
                         TextColor textColor = style.getColor();
                         if (textColor != null) {
-                            return colors.add(textColor.getValue() & 0xFFFFFF) &&
-                                    colors.size() >= 16;
+                            return !(colors.add(textColor.getValue() & 0xFFFFFF) &&
+                                    colors.size() >= 16);
                         }
-                        return false;
+                        return true;
                     }
             );
             if (!colors.isEmpty()) {

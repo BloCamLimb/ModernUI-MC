@@ -915,6 +915,8 @@ public final class Config {
                                 "element_ideographs|cjk_punctuations|ellipsis|2em_dash)\\.png$");
                         // the vanilla space
                         rules.add("^minecraft:include\\/space \\/ minecraft:space$");
+                        // CozyUI by 05
+                        rules.add("^minecraft:font\\/(mcsans|emoji)_05_00\\d.png$");
                         return rules;
                     }, s -> true);
             mUseComponentCache = builder.comment(
