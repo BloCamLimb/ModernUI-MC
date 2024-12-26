@@ -1064,7 +1064,7 @@ public abstract class UIManager implements LifecycleOwner {
                 MathUtil.isApproxZero(ctm.m23()) &&
                 MathUtil.isApproxZero(ctm.m30()) &&
                 MathUtil.isApproxZero(ctm.m31()) &&
-                MathUtil.isApproxZero(ctm.m32()) &&
+                /* MathUtil.isApproxZero(ctm.m32()) && */ // translation-z is ignored
                 MathUtil.isApproxEqual(ctm.m33(), 1);
     }
 
