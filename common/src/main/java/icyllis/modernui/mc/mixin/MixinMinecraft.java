@@ -57,7 +57,11 @@ public abstract class MixinMinecraft {
 
     @Inject(method = "onGameLoadFinished", at = @At("TAIL"))
     private void onGameLoadFinished(@Coerce Object cookie, CallbackInfo ci) {
-        UIManager.getInstance().onGameLoadFinished();
+        try {
+            UIManager.getInstance().onGameLoadFinished();
+        } catch (IllegalStateException ignored) {
+            // happen in broken mod state
+        }
     }
 
     @Inject(method = "allowsTelemetry", at = @At("HEAD"), cancellable = true)
