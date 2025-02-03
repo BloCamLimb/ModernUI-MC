@@ -48,6 +48,10 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
     @Shadow
     public abstract int guiHeight();
 
+    @Shadow
+    protected abstract void renderTooltipInternal(Font arg, List<ClientTooltipComponent> list, int m, int n,
+                                                  ClientTooltipPositioner arg2, @Nullable ResourceLocation arg3);
+
     @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V",
             at = @At("HEAD"))
     private void preRenderTooltip(Font font, ItemStack stack, int x, int y, CallbackInfo ci) {
@@ -70,12 +74,10 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
                 var transformedComponents = modernUI_MC$transformComponents(
                         font, components, tooltipComponent, x
                 );
-                UIManager.getInstance().drawExtTooltip(modernUI_MC$tooltipStack,
-                        (GuiGraphics) (Object) this,
-                        transformedComponents, x, y, font,
-                        guiWidth(), guiHeight(), DefaultTooltipPositioner.INSTANCE, tooltipStyle);
+                renderTooltipInternal(font, transformedComponents,
+                        x, y, DefaultTooltipPositioner.INSTANCE, tooltipStyle);
+                ci.cancel();
             }
-            ci.cancel();
         }
     }
 
@@ -84,7 +86,7 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
     private List<ClientTooltipComponent> modernUI_MC$transformComponents(
             Font font, List<Component> components, Optional<TooltipComponent> tooltipComponent,
             int x) {
-        List<ClientTooltipComponent> result = new ArrayList<>(components.size());
+        List<ClientTooltipComponent> result = new ArrayList<>(components.size() + 1);
 
         int screenWidth = guiWidth();
         int tooltipWidth = 0;
@@ -133,8 +135,8 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
                         (GuiGraphics) (Object) this,
                         components, x, y, font,
                         guiWidth(), guiHeight(), positioner, tooltipStyle);
+                ci.cancel();
             }
-            ci.cancel();
         }
     }
 
