@@ -465,7 +465,11 @@ public class TextLayout {
                 rx = Math.round(rx * density) * invDensity;
                 ry = Math.round(ry * density) * invDensity;
             }
-            if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
+            if ((bits & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0) {
+                r = 0xff;
+                g = 0xff;
+                b = 0xff;
+            } else if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
                 r = startR;
                 g = startG;
                 b = startB;
