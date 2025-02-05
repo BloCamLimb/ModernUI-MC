@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -145,9 +145,9 @@ public final class ModernUIForge extends ModernUIMod {
                         return MuiForgeApi.get().createScreen(fragment, null, modsScreen);
                     }
             );
-            if (ModernUIMod.sDevelopment) {
+            /*if (ModernUIMod.sDevelopment) {
                 modEventBus.register(Registration.ModClientDev.class);
-            }
+            }*/
             LOGGER.info(MARKER, "Initialized Modern UI client");
         }
 

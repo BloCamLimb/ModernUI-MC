@@ -29,7 +29,6 @@ import icyllis.modernui.mc.mixin.AccessOptions;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.components.CycleButton;
-import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.registries.Registries;
@@ -416,7 +415,7 @@ final class Registration {
             }
         }*/
 
-        @SubscribeEvent
+        /*@SubscribeEvent
         static void onRegisterClientExtensions(@Nonnull RegisterClientExtensionsEvent event) {
             if (ModernUIMod.sDevelopment) {
                 event.registerItem(new IClientItemExtensions() {
@@ -426,10 +425,10 @@ final class Registration {
                     }
                 }, MuiRegistries.PROJECT_BUILDER_ITEM);
             }
-        }
+        }*/
     }
 
-    static class ModClientDev {
+    /*static class ModClientDev {
 
         static {
             assert (FMLEnvironment.dist.isClient());
@@ -456,5 +455,5 @@ final class Registration {
                                          @Nonnull Function<BakedModel, BakedModel> replacer) {
             modelRegistry.put(location, replacer.apply(modelRegistry.get(location)));
         }
-    }
+    }*/
 }

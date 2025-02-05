@@ -36,6 +36,7 @@ import java.util.Random;
  * This is a Minecraft alternative of {@link icyllis.modernui.graphics.text.ShapedText},
  * {@link icyllis.arc3d.core.TextBlob} and {@link icyllis.arc3d.granite.BakedTextBlob}.
  */
+//TODO currently we don't support shadow_color that added in Minecraft 1.21.4
 public class TextLayout {
 
     /**

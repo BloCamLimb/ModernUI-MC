@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.forge;
 
-import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.client.extensions.common.IClientItemExtensions;
 
@@ -31,7 +30,7 @@ final class ProjectBuilderItem extends Item {
         super(props);
     }
 
-    @Override
+    /*@Override
     public void initializeClient(@Nonnull Consumer<IClientItemExtensions> consumer) {
         consumer.accept(new IClientItemExtensions() {
             @Override
@@ -39,5 +38,5 @@ final class ProjectBuilderItem extends Item {
                 return new ProjectBuilderRenderer();
             }
         });
-    }
+    }*/
 }

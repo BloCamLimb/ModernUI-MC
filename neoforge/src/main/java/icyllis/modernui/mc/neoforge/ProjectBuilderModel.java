@@ -23,13 +23,12 @@ import icyllis.modernui.mc.ModernUIMod;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
-import net.neoforged.neoforge.client.model.BakedModelWrapper;
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
 
-@ApiStatus.Experimental
+/*@ApiStatus.Experimental
 final class ProjectBuilderModel extends BakedModelWrapper<BakedModel> {
 
     public final BakedModel main;
@@ -58,4 +57,4 @@ final class ProjectBuilderModel extends BakedModelWrapper<BakedModel> {
     public boolean isCustomRenderer() {
         return true;
     }
-}
+}*/

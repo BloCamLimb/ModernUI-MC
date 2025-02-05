@@ -22,7 +22,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -33,7 +32,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
 
-@ApiStatus.Experimental
+/*@ApiStatus.Experimental
 final class ProjectBuilderRenderer extends BlockEntityWithoutLevelRenderer {
 
     ProjectBuilderRenderer() {
@@ -71,4 +70,4 @@ final class ProjectBuilderRenderer extends BlockEntityWithoutLevelRenderer {
 
         ps.popPose();
     }
-}
+}*/

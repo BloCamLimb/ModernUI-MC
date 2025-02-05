@@ -27,8 +27,8 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(Font.class)
 public interface AccessFontRenderer {
 
-    @Accessor("SHADOW_OFFSET")
+    /*@Accessor("SHADOW_OFFSET")
     static Vector3f shadowLifting() {
         throw new IllegalStateException();
-    }
+    }*/
 }

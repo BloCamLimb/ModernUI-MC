@@ -414,7 +414,7 @@ final class Registration {
         }*/
     }
 
-    static class ModClientDev {
+    /*static class ModClientDev {
 
         static {
             assert (FMLEnvironment.dist.isClient());
@@ -423,11 +423,11 @@ final class Registration {
         private ModClientDev() {
         }
 
-        /*@SubscribeEvent
+        @SubscribeEvent
         static void onRegistryModel(@Nonnull ModelEvent.RegisterAdditional event) {
             event.register(new ModelResourceLocation(ModernUIMod.location("item/project_builder_main"), "standalone"));
             event.register(new ModelResourceLocation(ModernUIMod.location("item/project_builder_cube"), "standalone"));
-        }*/
+        }
 
         @SubscribeEvent
         static void onBakeModel(@Nonnull ModelEvent.ModifyBakingResult event) {
@@ -441,5 +441,5 @@ final class Registration {
                                          @Nonnull Function<BakedModel, BakedModel> replacer) {
             modelRegistry.put(location, replacer.apply(modelRegistry.get(location)));
         }
-    }
+    }*/
 }
