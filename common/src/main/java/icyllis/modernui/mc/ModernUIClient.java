@@ -86,7 +86,11 @@ public abstract class ModernUIClient extends ModernUI {
         sInstance = this;
     }
 
+    @Nonnull
     public static ModernUIClient getInstance() {
+        if (sInstance == null)
+            throw new IllegalStateException("ModernUI mod client was never initialized. " +
+                    "Please check whether mod loader threw an exception before.");
         return sInstance;
     }
 

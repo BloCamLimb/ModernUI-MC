@@ -163,7 +163,11 @@ public class FontResourceManager implements PreparableReloadListener {
         mPrefixedEmojiShortcodes.clear();
         mPrefixedEmojiShortcodes.putAll(results.mPrefixedEmojiShortcodes);
         // reload the whole engine
-        ModernUIClient.getInstance().reloadTypeface();
+        try {
+            ModernUIClient.getInstance().reloadTypeface();
+        } catch (IllegalStateException ignored) {
+            // happen in broken mod state
+        }
         reloadAll();
     }
 

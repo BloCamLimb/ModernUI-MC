@@ -26,6 +26,6 @@ license="LGPL-3.0-or-later"
 [[dependencies.modernui]]
     modId="minecraft"
     mandatory=true
-    versionRange="[1.21, 1.22)"
+    versionRange="[1.21, 1.21.2)"
     ordering="NONE"
     side="BOTH"

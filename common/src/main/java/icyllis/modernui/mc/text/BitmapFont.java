@@ -107,7 +107,8 @@ public class BitmapFont implements Font, AutoCloseable {
 
         // height <= 0 means nothing to render
         boolean isEmpty = height <= 0 || mSpriteWidth <= 0 || mSpriteHeight <= 0 ||
-                bitmap.getWidth() > FONT_TEXTURE_SIZE || bitmap.getHeight() > FONT_TEXTURE_SIZE;
+                mSpriteWidth > FONT_TEXTURE_SIZE || mSpriteHeight > FONT_TEXTURE_SIZE ||
+                bitmap.getWidth() > Short.MAX_VALUE || bitmap.getHeight() > Short.MAX_VALUE;
         boolean useDedicatedTexture = !isEmpty &&
                 (mSpriteWidth > MAX_ATLAS_DIMENSION || mSpriteHeight > MAX_ATLAS_DIMENSION);
         if (useDedicatedTexture) {
@@ -124,26 +125,26 @@ public class BitmapFont implements Font, AutoCloseable {
                 }
                 int actualWidth = getActualGlyphWidth(bitmap, mSpriteWidth, mSpriteHeight, c, r);
                 // (width == 0) means the glyph is fully transparent
-                if (actualWidth == 0) {
+                if (actualWidth <= 0) {
                     numEmptyGlyphs++;
                 }
                 // Note: this must be (int) (0.5 + value) to match vanilla behavior,
                 // do not use Math.round() as results are different for negative values
                 Glyph glyph = new Glyph((int) (0.5 + actualWidth * mScaleFactor) + 1,
                         c * mSpriteWidth, r * mSpriteHeight,
-                        actualWidth == 0);
+                        actualWidth <= 0);
                 if (mGlyphs.put(ch, glyph) != null) {
-                    ModernUI.LOGGER.warn("Codepoint '{}' declared multiple times in {}",
+                    ModernUI.LOGGER.warn(GlyphManager.MARKER, "Codepoint '{}' declared multiple times in {}",
                             Integer.toHexString(ch), mName);
                 }
                 if (useDedicatedTexture) {
                     GLBakedGlyph bakedGlyph = new GLBakedGlyph();
                     setGlyphMetrics(bakedGlyph);
                     // always create 256x256 texture
-                    bakedGlyph.u1 = (float) (c * mSpriteWidth) / FONT_TEXTURE_SIZE;
-                    bakedGlyph.v1 = (float) (r * mSpriteHeight) / FONT_TEXTURE_SIZE;
-                    bakedGlyph.u2 = (float) (c * mSpriteWidth + mSpriteWidth) / FONT_TEXTURE_SIZE;
-                    bakedGlyph.v2 = (float) (r * mSpriteHeight + mSpriteHeight) / FONT_TEXTURE_SIZE;
+                    bakedGlyph.u1 = (float) (c * mSpriteWidth) / getTextureWidth();
+                    bakedGlyph.v1 = (float) (r * mSpriteHeight) / getTextureHeight();
+                    bakedGlyph.u2 = (float) (c * mSpriteWidth + mSpriteWidth) / getTextureWidth();
+                    bakedGlyph.v2 = (float) (r * mSpriteHeight + mSpriteHeight) / getTextureHeight();
                     mBakedGlyphs.put(ch, bakedGlyph);
                 }
             }
@@ -204,12 +205,11 @@ public class BitmapFont implements Font, AutoCloseable {
     private void createTexture() {
         assert mBitmap != null;
         ImmediateContext context = Core.requireImmediateContext();
-        // always create 256x256 texture
         ImageDesc desc = context.getCaps().getDefaultColorImageDesc(
                 Engine.ImageType.k2D,
                 mBitmap.getColorType(),
-                FONT_TEXTURE_SIZE,
-                FONT_TEXTURE_SIZE,
+                getTextureWidth(),
+                getTextureHeight(),
                 1,
                 ISurface.FLAG_SAMPLED_IMAGE
         );
@@ -295,6 +295,18 @@ public class BitmapFont implements Font, AutoCloseable {
      */
     public boolean fitsInAtlas() {
         return mBakedGlyphs == null;
+    }
+
+    private int getTextureWidth() {
+        assert mBitmap != null;
+        // create 256x256 texture at least
+        return Math.max(mBitmap.getWidth(), FONT_TEXTURE_SIZE);
+    }
+
+    private int getTextureHeight() {
+        assert mBitmap != null;
+        // create 256x256 texture at least
+        return Math.max(mBitmap.getHeight(), FONT_TEXTURE_SIZE);
     }
 
     @SuppressWarnings("ConstantValue")
