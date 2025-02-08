@@ -66,7 +66,7 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
             at = @At(value = "INVOKE", target = "Ljava/util/List;stream()Ljava/util/stream/Stream;"), cancellable = true)
     private void onRenderTooltip(Font font, List<Component> components, Optional<TooltipComponent> tooltipComponent,
                                  int x, int y, CallbackInfo ci) {
-        if (TooltipRenderer.sTooltip) {
+        if (TooltipRenderer.sTooltip && TooltipRenderer.sLineWrapping_FabricOnly) {
             if (!components.isEmpty()) {
                 var transformedComponents = modernUI_MC$transformComponents(
                         font, components, tooltipComponent, x
