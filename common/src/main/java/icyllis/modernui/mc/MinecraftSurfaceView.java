@@ -165,7 +165,7 @@ public class MinecraftSurfaceView extends View {
         mAlpha = 1f;
         if (mDrawHandler != null) {
             if (getViewRoot() instanceof UIManager.ViewRootImpl viewRoot) {
-                viewRoot.mPendingRawDrawHandlerOperations.add(
+                viewRoot.addRawDrawHandlerOperation(
                         new MinecraftDrawHandler.Operation(
                                 MinecraftDrawHandler.Operation.OP_REMOVE,
                                 mDrawHandler
@@ -230,7 +230,7 @@ public class MinecraftSurfaceView extends View {
 
             if (creating) {
                 mDrawHandler = new MinecraftDrawHandler(mThisWeakRef);
-                viewRoot.mPendingRawDrawHandlerOperations.add(
+                viewRoot.addRawDrawHandlerOperation(
                         new MinecraftDrawHandler.Operation(
                                 MinecraftDrawHandler.Operation.OP_ADD,
                                 mDrawHandler
@@ -248,7 +248,7 @@ public class MinecraftSurfaceView extends View {
             p.mSurfaceWidth = mSurfaceWidth;
             p.mSurfaceHeight = mSurfaceHeight;
 
-            viewRoot.mPendingRawDrawHandlerOperations.add(
+            viewRoot.addRawDrawHandlerOperation(
                     new MinecraftDrawHandler.Operation(
                             MinecraftDrawHandler.Operation.OP_UPDATE,
                             mDrawHandler

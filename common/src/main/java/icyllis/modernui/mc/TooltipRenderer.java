@@ -56,6 +56,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
     public static volatile float sShadowRadius = 10;
     public static volatile float sShadowAlpha = 0.3f;
     public static volatile boolean sAdaptiveColors = true;
+    public static volatile boolean sLineWrapping_FabricOnly = true;
 
     // space between mouse and tooltip
     public static final int TOOLTIP_SPACE = 12;
@@ -173,10 +174,10 @@ public final class TooltipRenderer implements ScrollController.IListener {
                     (i, style, ch) -> {
                         TextColor textColor = style.getColor();
                         if (textColor != null) {
-                            return colors.add(textColor.getValue() & 0xFFFFFF) &&
-                                    colors.size() >= 16;
+                            return !(colors.add(textColor.getValue() & 0xFFFFFF) &&
+                                    colors.size() >= 16);
                         }
-                        return false;
+                        return true;
                     }
             );
             if (!colors.isEmpty()) {

@@ -1079,7 +1079,7 @@ public abstract class UIManager implements LifecycleOwner {
                 MathUtil.isApproxZero(ctm.m23()) &&
                 MathUtil.isApproxZero(ctm.m30()) &&
                 MathUtil.isApproxZero(ctm.m31()) &&
-                MathUtil.isApproxZero(ctm.m32()) &&
+                /* MathUtil.isApproxZero(ctm.m32()) && */ // translation-z is ignored
                 MathUtil.isApproxEqual(ctm.m33(), 1);
     }
 
@@ -1288,6 +1288,12 @@ public abstract class UIManager implements LifecycleOwner {
             }
         }
 
+        void addRawDrawHandlerOperation(MinecraftDrawHandler.Operation op) {
+            synchronized (mRenderLock) {
+                mPendingRawDrawHandlerOperations.add(op);
+            }
+        }
+
         @RenderThread
         private Pair<@SharedPtr RootTask, @SharedPtr Surface> swapFrameTask() {
             @SharedPtr
@@ -1298,7 +1304,8 @@ public abstract class UIManager implements LifecycleOwner {
                 surface = RefCnt.create(mSurface);
                 task = mLastFrameTask;
                 mLastFrameTask = null;
-                for (var operation : mPendingRawDrawHandlerOperations) {
+                for (int i = 0; i < mPendingRawDrawHandlerOperations.size(); i++) {
+                    var operation = mPendingRawDrawHandlerOperations.get(i);
                     switch (operation.mOp) {
                         case MinecraftDrawHandler.Operation.OP_ADD ->
                             mRawDrawHandlers.add(operation.mTarget);

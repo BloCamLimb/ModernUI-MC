@@ -46,6 +46,10 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
     @Shadow
     public abstract int guiHeight();
 
+    @Shadow
+    protected abstract void renderTooltipInternal(Font arg, List<ClientTooltipComponent> list, int m, int n,
+                                                  ClientTooltipPositioner arg2);
+
     @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V",
             at = @At("HEAD"))
     private void preRenderTooltip(Font font, ItemStack stack, int x, int y, CallbackInfo ci) {
@@ -59,20 +63,18 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
     }
 
     @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Ljava/util/List;Ljava/util/Optional;II)V",
-            at = @At("HEAD"), cancellable = true)
+            at = @At(value = "INVOKE", target = "Ljava/util/List;stream()Ljava/util/stream/Stream;"), cancellable = true)
     private void onRenderTooltip(Font font, List<Component> components, Optional<TooltipComponent> tooltipComponent,
                                  int x, int y, CallbackInfo ci) {
-        if (TooltipRenderer.sTooltip) {
+        if (TooltipRenderer.sTooltip && TooltipRenderer.sLineWrapping_FabricOnly) {
             if (!components.isEmpty()) {
                 var transformedComponents = modernUI_MC$transformComponents(
                         font, components, tooltipComponent, x
                 );
-                UIManager.getInstance().drawExtTooltip(modernUI_MC$tooltipStack,
-                        (GuiGraphics) (Object) this,
-                        transformedComponents, x, y, font,
-                        guiWidth(), guiHeight(), DefaultTooltipPositioner.INSTANCE);
+                renderTooltipInternal(font, transformedComponents,
+                        x, y, DefaultTooltipPositioner.INSTANCE);
+                ci.cancel();
             }
-            ci.cancel();
         }
     }
 
@@ -81,7 +83,7 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
     private List<ClientTooltipComponent> modernUI_MC$transformComponents(
             Font font, List<Component> components, Optional<TooltipComponent> tooltipComponent,
             int x) {
-        List<ClientTooltipComponent> result = new ArrayList<>(components.size());
+        List<ClientTooltipComponent> result = new ArrayList<>(components.size() + 1);
 
         int screenWidth = guiWidth();
         int tooltipWidth = 0;
@@ -129,8 +131,8 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
                         (GuiGraphics) (Object) this,
                         components, x, y, font,
                         guiWidth(), guiHeight(), positioner);
+                ci.cancel();
             }
-            ci.cancel();
         }
     }
 
