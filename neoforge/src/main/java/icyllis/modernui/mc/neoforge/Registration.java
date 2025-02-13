@@ -165,15 +165,15 @@ final class Registration {
         @SubscribeEvent
         static void loadingClient(RegisterParticleProvidersEvent event) {
             // this event fired after LOAD_REGISTRIES and before COMMON_SETUP on client main thread (render thread)
-            // this event fired before RegisterClientReloadListenersEvent
+            // this event fired before AddClientReloadListenersEvent
             UIManagerForge.initialize();
         }
 
         @SubscribeEvent
-        static void registerResourceListener(@Nonnull RegisterClientReloadListenersEvent event) {
+        static void registerResourceListener(@Nonnull AddClientReloadListenersEvent event) {
             // this event fired after LOAD_REGISTRIES and before COMMON_SETUP on client main thread (render thread)
             // this event fired after ParticleFactoryRegisterEvent
-            event.registerReloadListener((ResourceManagerReloadListener) manager -> {
+            event.addListener(ModernUIMod.location("client"), (ResourceManagerReloadListener) manager -> {
                 ImageStore.getInstance().clear();
                 Handler handler = Core.getUiHandlerAsync();
                 // FML may throw ex, so it can be null
@@ -184,7 +184,7 @@ final class Registration {
                 //BlurHandler.INSTANCE.loadEffect();
             });
             if (!ModernUIMod.isTextEngineEnabled()) {
-                event.registerReloadListener(FontResourceManager.getInstance());
+                event.addListener(ModernUIMod.location("font"), FontResourceManager.getInstance());
             }
             // else injected by MixinFontManager
 
