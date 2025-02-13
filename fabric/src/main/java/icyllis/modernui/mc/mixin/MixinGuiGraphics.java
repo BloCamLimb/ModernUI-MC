@@ -69,7 +69,7 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
             at = @At("HEAD"), cancellable = true)
     private void onRenderTooltip(Font font, List<Component> components, Optional<TooltipComponent> tooltipComponent,
                                  int x, int y, @Nullable ResourceLocation tooltipStyle, CallbackInfo ci) {
-        if (TooltipRenderer.sTooltip) {
+        if (TooltipRenderer.sTooltip && TooltipRenderer.sLineWrapping_FabricOnly) {
             if (!components.isEmpty()) {
                 var transformedComponents = modernUI_MC$transformComponents(
                         font, components, tooltipComponent, x

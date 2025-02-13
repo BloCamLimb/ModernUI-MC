@@ -202,6 +202,7 @@ public final class Config {
         public final ModConfigSpec.DoubleValue mTooltipShadowAlpha;
         public final ModConfigSpec.BooleanValue mAdaptiveTooltipColors;
         public final ModConfigSpec.IntValue mTooltipArrowScrollFactor;
+        public final ModConfigSpec.BooleanValue mTooltipLineWrapping;
         //public final ForgeConfigSpec.IntValue mTooltipDuration;
         public final ModConfigSpec.BooleanValue mDing;
         //public final ForgeConfigSpec.BooleanValue mZoom;
@@ -378,6 +379,9 @@ public final class Config {
             mTooltipArrowScrollFactor = builder.comment(
                             "Amount to scroll the tooltip in response to a arrow key pressed event.")
                     .defineInRange("arrowScrollFactor", 60, TOOLTIP_ARROW_SCROLL_FACTOR_MIN, TOOLTIP_ARROW_SCROLL_FACTOR_MAX);
+            mTooltipLineWrapping = builder.comment(
+                            "Provide line wrapping and optimization for tooltip components.")
+                    .define("lineWrapping", true);
 
             builder.pop();
 
@@ -591,6 +595,7 @@ public final class Config {
             TooltipRenderer.sShadowAlpha = mTooltipShadowAlpha.get().floatValue();
             TooltipRenderer.sAdaptiveColors = mAdaptiveTooltipColors.get();
             TooltipRenderer.sArrowScrollFactor = mTooltipArrowScrollFactor.get();
+            TooltipRenderer.sLineWrapping_FabricOnly = mTooltipLineWrapping.get();
 
             UIManager.sDingEnabled = mDing.get();
             //UIManager.sZoomEnabled = mZoom.get() && !ModernUIMod.isOptiFineLoaded();
