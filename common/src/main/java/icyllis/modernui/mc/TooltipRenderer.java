@@ -58,6 +58,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
     public static volatile float sShadowRadius = 10;
     public static volatile float sShadowAlpha = 0.3f;
     public static volatile boolean sAdaptiveColors = true;
+    public static volatile boolean sLineWrapping_FabricOnly = true;
 
     // space between mouse and tooltip
     public static final int TOOLTIP_SPACE = 12;
