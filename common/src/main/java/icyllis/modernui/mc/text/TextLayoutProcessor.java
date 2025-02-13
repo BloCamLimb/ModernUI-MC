@@ -860,8 +860,7 @@ public class TextLayoutProcessor {
             if (font instanceof BitmapFont) {
                 glyphFlags |= CharacterStyle.BITMAP_REPLACEMENT;
             } else if (font instanceof EmojiFont) {
-                glyphFlags |= CharacterStyle.COLOR_EMOJI_REPLACEMENT | 0xFFFFFF;
-                glyphFlags &= ~CharacterStyle.IMPLICIT_COLOR_MASK;
+                glyphFlags |= CharacterStyle.COLOR_EMOJI_REPLACEMENT;
                 mHasColorEmoji = true;
             }
             mGlyphFlags.add(glyphFlags);
