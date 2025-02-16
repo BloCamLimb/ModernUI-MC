@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -124,7 +124,7 @@ public class DashboardFragment extends Fragment {
         {
             var tv = new TextView(getContext());
             tv.setTextSize(12);
-            tv.setText("Copyright © 2019-2024 BloCamLimb. All rights reserved.");
+            tv.setText("Copyright © 2019-2025 BloCamLimb. All rights reserved.");
             var params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT);
             params.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
