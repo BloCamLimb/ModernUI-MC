@@ -1,5 +1,24 @@
 Changelogs
 ===
+### Modern UI 3.11.1.6
+This is a Minecraft-only update, the Modern UI core does not change.  
+**Modern UI** is likely to be renamed to **ModernUI** in the next version.
+#### Forge Extension 1.20.1 / NeoForge Extension 1.20.1
+* Suppress indirect crashes due to broken mod state
+* Ignore translation-z for exact tooltip positioning
+* Fix multiple tooltip colors not working
+#### Fabric Extension 1.20.1
+* Improve modern tooltip compatibility on Fabric
+* Add config for tooltip line wrapping on Fabric
+* Others are functionally equivalent to Forge version
+#### Modern Text Engine 1.20.1
+* Fix the compatibility with polytone
+* Fix text effect of color emoji is always white
+* Exclude CozyUI fonts by default
+* Remove duplicates when dumping bitmap fonts
+* Use isLenient for parsing font definition files
+* Fix large bitmap fonts being ignored
+
 ### Modern UI 3.11.1.1
 #### Forge Extension 1.20.1 / NeoForge Extension 1.20.1
 * Add ExtendedGuiGraphics that allows other mods to draw rounded rectangles in vanilla-based GUI
