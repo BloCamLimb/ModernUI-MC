@@ -29,7 +29,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(Gui.class)
+@Mixin(value = Gui.class, priority = 5102)
 public abstract class MixinIngameGui {
 
     @Redirect(
