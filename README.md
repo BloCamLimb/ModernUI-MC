@@ -85,6 +85,34 @@ dependencies {
     implementation fg.deobf("icyllis.modernui:ModernUI-Forge:${minecraft_version}-${modernui_version}.+")
 }
 ```
+##### FabricLoom
+```
+repositories {
+    maven {
+        name 'IzzelAliz Maven'
+        url 'https://maven.izzel.io/releases/'
+    }
+    maven {
+        url 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven/'
+        content {
+            includeGroup 'fuzs.forgeconfigapiport'
+        }
+    }
+}
+loom {
+    runs {
+        configureEach {
+            vmArgs "-Dmodernui.resource.pack=true"
+        }
+    }
+}
+dependencies {
+    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:8.0.0"
+    implementation "icyllis.modernui:ModernUI-Core:${modernui_version}"
+    implementation "icyllis.modernui:ModernUI-Markdown:${modernui_version}"
+    modImplementation("icyllis.modernui:ModernUI-Fabric:${minecraft_version}-${modernui_version}.+")
+}
+```
 Add these if you have not [MixinGradle](https://github.com/SpongePowered/MixinGradle):
 ```
 minecraft {
