@@ -416,9 +416,19 @@ public class TextRenderType extends RenderType {
         if (smart) {
             if (((GLCaps) Core.requireImmediateContext()
                     .getCaps()).getGLSLVersion() >= 400) {
-                sCurrentShaderSDFFill = SHADER_SDF_FILL_SMART;
-                sCurrentShaderSDFStroke = SHADER_SDF_STROKE_SMART;
-                return;
+                try {
+                    // Even a driver reports OpenGL 4.0 (like MobileGlues), it is still possible that
+                    // the shader compilation fails and then triggers the resource pack rollback.
+                    // Let's compile ahead of time to see if there are any failures.
+                    var shaderManager = Minecraft.getInstance().getShaderManager();
+                    shaderManager.getProgramForLoading(SHADER_SDF_FILL_SMART);
+                    shaderManager.getProgramForLoading(SHADER_SDF_STROKE_SMART);
+                    sCurrentShaderSDFFill = SHADER_SDF_FILL_SMART;
+                    sCurrentShaderSDFStroke = SHADER_SDF_STROKE_SMART;
+                    return;
+                } catch (Exception e) {
+                    LOGGER.error(MARKER, "Failed to load smart SDF text shaders", e);
+                }
             } else {
                 LOGGER.info(MARKER, "No GLSL 400, smart SDF text shaders disabled");
             }
