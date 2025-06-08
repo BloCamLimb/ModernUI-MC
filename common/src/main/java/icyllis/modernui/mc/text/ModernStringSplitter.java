@@ -501,7 +501,6 @@ public final class ModernStringSplitter extends StringSplitter {
     public void computeLineBreaks(@Nonnull String text, float width, @Nonnull Style base,
                                   @Nonnull StringSplitter.LinePosConsumer consumer) {
         if (text.isEmpty()) {
-            consumer.accept(base, 0, 0);
             return;
         }
         width = Math.max(width, 0.0f);
