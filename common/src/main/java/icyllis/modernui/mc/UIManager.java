@@ -27,20 +27,25 @@ import icyllis.arc3d.core.*;
 import icyllis.arc3d.engine.*;
 import icyllis.arc3d.granite.*;
 import icyllis.arc3d.opengl.*;
+import icyllis.arc3d.sketch.Surface;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
-import icyllis.modernui.animation.LayoutTransition;
 import icyllis.modernui.annotation.*;
 import icyllis.modernui.audio.AudioManager;
 import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.*;
 import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.pipeline.ArcCanvas;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.lifecycle.*;
 import icyllis.modernui.mc.text.GlyphManager;
+import icyllis.modernui.mc.text.ModernStringSplitter;
+import icyllis.modernui.mc.text.TextLayout;
 import icyllis.modernui.mc.text.TextLayoutEngine;
+import icyllis.modernui.resources.TypedValue;
 import icyllis.modernui.text.*;
+import icyllis.modernui.util.DisplayMetrics;
 import icyllis.modernui.view.*;
 import icyllis.modernui.view.menu.ContextMenuBuilder;
 import icyllis.modernui.view.menu.MenuHelper;
@@ -48,6 +53,7 @@ import icyllis.modernui.widget.EditText;
 import net.minecraft.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
+import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -58,6 +64,8 @@ import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -67,7 +75,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL33C;
 import org.lwjgl.system.MemoryUtil;
@@ -343,7 +350,7 @@ public abstract class UIManager implements LifecycleOwner {
             mRoot.mHandler.post(this::suppressLayoutTransition);
             mFragmentController.getFragmentManager().beginTransaction()
                     .add(fragment_container, screen.getFragment(), "main")
-                    .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                    .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_FADE)
                     .setReorderingAllowed(true)
                     .commit();
             mRoot.mHandler.post(this::restoreLayoutTransition);
@@ -355,16 +362,16 @@ public abstract class UIManager implements LifecycleOwner {
 
     @UiThread
     void suppressLayoutTransition() {
-        LayoutTransition transition = mDecor.getLayoutTransition();
+        /*LayoutTransition transition = mDecor.getLayoutTransition();
         transition.disableTransitionType(LayoutTransition.APPEARING);
-        transition.disableTransitionType(LayoutTransition.DISAPPEARING);
+        transition.disableTransitionType(LayoutTransition.DISAPPEARING);*/
     }
 
     @UiThread
     void restoreLayoutTransition() {
-        LayoutTransition transition = mDecor.getLayoutTransition();
+        /*LayoutTransition transition = mDecor.getLayoutTransition();
         transition.enableTransitionType(LayoutTransition.APPEARING);
-        transition.enableTransitionType(LayoutTransition.DISAPPEARING);
+        transition.enableTransitionType(LayoutTransition.DISAPPEARING);*/
     }
 
     protected void onScreenChange(@Nullable Screen oldScreen, @Nullable Screen newScreen) {
@@ -391,13 +398,14 @@ public abstract class UIManager implements LifecycleOwner {
         mFragmentContainerView.setWillNotDraw(true);
         mFragmentContainerView.setId(fragment_container);
         mDecor.addView(mFragmentContainerView);
+        mDecor.setIsRootNamespace(true);
 
-        mDecor.setLayoutTransition(new LayoutTransition());
+        //mDecor.setLayoutTransition(new LayoutTransition());
 
         mRoot.setView(mDecor);
         resize(minecraft.getWindow().getWidth(), minecraft.getWindow().getHeight());
 
-        mDecor.getViewTreeObserver().addOnScrollChangedListener(() -> onHoverMove(false));
+        //mDecor.getViewTreeObserver().addOnScrollChangedListener(() -> onHoverMove(false));
 
         mFragmentLifecycleRegistry = new LifecycleRegistry(this);
         mViewModelStore = new ViewModelStore();
@@ -608,6 +616,18 @@ public abstract class UIManager implements LifecycleOwner {
                     LOGGER.info(TextLayoutEngine.getInstance().lookupVanillaLayout(text));*/
                     if (ModernUIMod.isTextEngineEnabled()) {
                         TextLayoutEngine.getInstance().dumpLayoutCache();
+                        /*var modern = TextLayoutEngine.getInstance().getStringSplitter();
+                        var vanilla = new StringSplitter(((ModernStringSplitter) Minecraft.getInstance().font.getSplitter()).mWidthProvider);
+                        for (var string : new String[]{"\n", "ABC", "ABC\n", ""}) {
+                            LOGGER.info("Vanilla");
+                            for (var res : vanilla.splitLines(string, 300, Style.EMPTY)) {
+                                LOGGER.info(TextLayout.toEscapeChars(res.getString().toCharArray()));
+                            }
+                            LOGGER.info("Modern");
+                            for (var res : modern.splitLines(string, 300, Style.EMPTY)) {
+                                LOGGER.info(TextLayout.toEscapeChars(res.getString().toCharArray()));
+                            }
+                        }*/
                     }
                 }
                 case GLFW_KEY_G ->
@@ -859,15 +879,15 @@ public abstract class UIManager implements LifecycleOwner {
 
         var frameTask = mRoot.swapFrameTask();
         @SharedPtr
-        RootTask rootTask = frameTask.getLeft();
+        Recording recording = frameTask.getLeft();
         @SharedPtr
         Surface surface = frameTask.getRight();
 
-        if (rootTask != null) {
+        if (recording != null) {
             oldVertexArray = GL33C.glGetInteger(GL33C.GL_VERTEX_ARRAY_BINDING);
             oldProgram = GL33C.glGetInteger(GL33C.GL_CURRENT_PROGRAM);
-            boolean added = context.addTask(rootTask);
-            rootTask.unref();
+            boolean added = context.addTask(recording);
+            recording.close();
             if (!added) {
                 LOGGER.error("Failed to add draw commands");
             }
@@ -875,7 +895,7 @@ public abstract class UIManager implements LifecycleOwner {
 
         ((GLDevice) context.getDevice()).flushRenderCalls();
 
-        if (rootTask != null) {
+        if (recording != null) {
             context.submit();
             GL33C.glBindFramebuffer(GL33C.GL_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);
             GL33C.glBindVertexArray(oldVertexArray);
@@ -1169,7 +1189,7 @@ public abstract class UIManager implements LifecycleOwner {
         MenuHelper mContextMenuHelper;
 
         Surface mSurface;
-        RootTask mLastFrameTask;
+        Recording mLastFrameTask;
 
         private long mLastPurgeNanos;
 
@@ -1221,6 +1241,25 @@ public abstract class UIManager implements LifecycleOwner {
         }
 
         @Override
+        public void setFrame(int width, int height) {
+            super.setFrame(width, height);
+            if (width > 0 && height > 0) {
+                final DisplayMetrics displayMetrics = ModernUI.getInstance().getResources().getDisplayMetrics();
+                final float zRatio = Math.min(width, height)
+                        / (450f * displayMetrics.density);
+                final float zWeightedAdjustment = (zRatio + 2) / 3f;
+                final float lightZ = TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DP, 500, displayMetrics
+                ) * zWeightedAdjustment;
+                final float lightRadius = TypedValue.applyDimension(
+                        TypedValue.COMPLEX_UNIT_DP, 800, displayMetrics
+                );
+
+                LightingInfo.setLightGeometry(width / 2f, 0, lightZ, lightRadius);
+            }
+        }
+
+        @Override
         protected Canvas beginDrawLocked(int width, int height) {
             synchronized (mRenderLock) {
                 if (mSurface == null ||
@@ -1239,7 +1278,7 @@ public abstract class UIManager implements LifecycleOwner {
                     }
                 }
                 if (mSurface != null && width > 0 && height > 0) {
-                    mSurface.getCanvas().clear(0);
+                    //mSurface.getCanvas().clear(0);
                     return new ArcCanvas(mSurface.getCanvas());
                 }
                 return null;
@@ -1249,15 +1288,21 @@ public abstract class UIManager implements LifecycleOwner {
         @Override
         protected void endDrawLocked(@Nonnull Canvas canvas) {
             canvas.restoreToCount(1);
-            RootTask task = Core.requireUiRecordingContext().snap();
+            Recording task = Core.requireUiRecordingContext().snap();
             synchronized (mRenderLock) {
-                mLastFrameTask = RefCnt.move(mLastFrameTask, task);
+                if (mLastFrameTask != null) {
+                    mLastFrameTask.close();
+                }
+                mLastFrameTask = task;
                 try {
                     mRenderLock.wait();
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
-                mLastFrameTask = RefCnt.move(mLastFrameTask);
+                if (mLastFrameTask != null) {
+                    mLastFrameTask.close();
+                }
+                mLastFrameTask = null;
             }
             var context = Core.requireUiRecordingContext();
             if (System.nanoTime() - mLastPurgeNanos >= 20_000_000_000L) {
@@ -1280,14 +1325,14 @@ public abstract class UIManager implements LifecycleOwner {
         }
 
         @RenderThread
-        private Pair<@SharedPtr RootTask, @SharedPtr Surface> swapFrameTask() {
+        private Pair<@SharedPtr Recording, @SharedPtr Surface> swapFrameTask() {
             @SharedPtr
-            RootTask task;
+            Recording recording;
             @SharedPtr
             Surface surface;
             synchronized (mRenderLock) {
                 surface = RefCnt.create(mSurface);
-                task = mLastFrameTask;
+                recording = mLastFrameTask;
                 mLastFrameTask = null;
                 for (int i = 0; i < mPendingRawDrawHandlerOperations.size(); i++) {
                     var operation = mPendingRawDrawHandlerOperations.get(i);
@@ -1300,7 +1345,7 @@ public abstract class UIManager implements LifecycleOwner {
                 mPendingRawDrawHandlerOperations.clear();
                 mRenderLock.notifyAll();
             }
-            return Pair.of(task, surface);
+            return Pair.of(recording, surface);
             /*// wait UI thread, if slow
             synchronized (mRenderLock) {
 

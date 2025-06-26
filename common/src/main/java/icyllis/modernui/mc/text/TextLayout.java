@@ -34,7 +34,7 @@ import java.util.Random;
  * The layout contains all glyph layout information and rendering information.
  * <p>
  * This is a Minecraft alternative of {@link icyllis.modernui.graphics.text.ShapedText},
- * {@link icyllis.arc3d.core.TextBlob} and {@link icyllis.arc3d.granite.BakedTextBlob}.
+ * {@link icyllis.arc3d.sketch.TextBlob} and {@link icyllis.arc3d.granite.BakedTextBlob}.
  */
 //TODO currently we don't support shadow_color that added in Minecraft 1.21.4
 public class TextLayout {
@@ -922,7 +922,7 @@ public class TextLayout {
     }
 
     @Nonnull
-    private static String toEscapeChars(@Nonnull char[] a) {
+    public static String toEscapeChars(@Nonnull char[] a) {
         int iMax = a.length - 1;
         if (iMax == -1)
             return "";

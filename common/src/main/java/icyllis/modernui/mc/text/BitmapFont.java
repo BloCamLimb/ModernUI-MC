@@ -24,6 +24,7 @@ import com.mojang.blaze3d.font.SheetGlyphInfo;
 import icyllis.arc3d.core.*;
 import icyllis.arc3d.engine.*;
 import icyllis.arc3d.opengl.*;
+import icyllis.arc3d.sketch.Typeface;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.MathUtil;

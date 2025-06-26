@@ -97,12 +97,10 @@ dependencies {
 
     testImplementation "io.github.stephankoelle:jamm:0.4.1"
 
-    implementation(forgeDependencies("com.github.ben-manes.caffeine:caffeine:${caffeine_version}"))
     implementation(forgeDependencies("com.vladsch.flexmark:flexmark:${flexmark_version}"))
 
     //implementation(forgeDependencies("io.reactivex.rxjava3:rxjava:${rxjava_version}"))
 
-    include "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
     include "com.vladsch.flexmark:flexmark:${flexmark_version}"
     include "com.vladsch.flexmark:flexmark-util-ast:${flexmark_version}"
     include "com.vladsch.flexmark:flexmark-util-builder:${flexmark_version}"

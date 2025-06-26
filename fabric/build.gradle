@@ -83,10 +83,8 @@ dependencies {
         }
     }
 
-    implementation("com.github.ben-manes.caffeine:caffeine:${caffeine_version}")
     implementation("com.vladsch.flexmark:flexmark:${flexmark_version}")
 
-    include "com.github.ben-manes.caffeine:caffeine:${caffeine_version}"
     include "com.vladsch.flexmark:flexmark:${flexmark_version}"
     include "com.vladsch.flexmark:flexmark-util-ast:${flexmark_version}"
     include "com.vladsch.flexmark:flexmark-util-builder:${flexmark_version}"
