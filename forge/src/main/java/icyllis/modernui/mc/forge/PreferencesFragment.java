@@ -1203,7 +1203,7 @@ public class PreferencesFragment extends Fragment {
                         4, Config.CLIENT.mTooltipWidth, (thickness) -> {
                             Config.CLIENT.mTooltipWidth.set(thickness);
                             if (mColorPicker != null) {
-                                mColorPicker.setThicknessFactor(thickness.floatValue() / 3f);
+                                mColorPicker.setBorderWidth(thickness.floatValue() / 3f);
                             }
                         }, 100, mSaveFn);
                 if (!rounded) {

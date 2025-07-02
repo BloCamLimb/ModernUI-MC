@@ -18,12 +18,20 @@
 
 package icyllis.modernui.mc.ui;
 
+import icyllis.modernui.R;
 import icyllis.modernui.annotation.NonNull;
+import icyllis.modernui.annotation.Size;
 import icyllis.modernui.core.Context;
-import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.Canvas;
+import icyllis.modernui.graphics.Color;
+import icyllis.modernui.graphics.Paint;
+import icyllis.modernui.graphics.Rect;
+import icyllis.modernui.resources.TypedValue;
 import icyllis.modernui.text.InputFilter;
+import icyllis.modernui.text.Typeface;
 import icyllis.modernui.widget.EditText;
 import icyllis.modernui.widget.RelativeLayout;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,20 +42,17 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 public class FourColorPicker extends RelativeLayout {
 
-    private EditText mULColorField;
-    private EditText mURColorField;
-    private EditText mLRColorField;
-    private EditText mLLColorField;
+    // upper left, upper right, lower right, lower left
+    private final EditText[] mColorFields = new EditText[4];
 
-    private int mULColor = ~0;
-    private int mURColor = ~0;
-    private int mLRColor = ~0;
-    private int mLLColor = ~0;
+    private final int[] mColors = {~0, ~0, ~0, ~0};
 
     private final Rect mPreviewBox = new Rect();
-    private final int mBorderRadius;
 
-    private float mThicknessFactor = 4f / 9f;
+    private float mBorderRadius;
+    private float mBorderWidth = 1;
+
+    private final int mBorderColor;
 
     private final OnFocusChangeListener mOnFieldFocusChange;
 
@@ -56,60 +61,45 @@ public class FourColorPicker extends RelativeLayout {
                            Consumer<List<? extends String>> setter,
                            Runnable saveFn) {
         super(context);
-        mBorderRadius = dp(6);
+
+        TypedValue value = new TypedValue();
+        context.getTheme().resolveAttribute(R.ns, R.attr.colorOutline, value, true);
+        mBorderColor = value.data;
 
         mOnFieldFocusChange = (v, hasFocus) -> {
             EditText input = (EditText) v;
-            if (!hasFocus) {
-                try {
-                    var string = input.getText().toString();
-                    int color = 0xFFFFFFFF;
-                    int idx = -1;
-                    try {
-                        color = Color.parseColor(string);
-                        if (input == mULColorField) {
-                            if (mULColor != color) {
-                                mULColor = color;
-                                idx = 0;
-                            }
-                        } else if (input == mURColorField) {
-                            if (mURColor != color) {
-                                mURColor = color;
-                                idx = 1;
-                            }
-                        } else if (input == mLRColorField) {
-                            if (mLRColor != color) {
-                                mLRColor = color;
-                                idx = 2;
-                            }
-                        } else if (input == mLLColorField) {
-                            if (mLLColor != color) {
-                                mLLColor = color;
-                                idx = 3;
-                            }
-                        }
-                    } catch (IllegalArgumentException e) {
-                        e.printStackTrace();
-                    }
-                    if (idx != -1) {
-                        invalidate();
-                        var oldList = getter.get();
-                        var newList = new ArrayList<String>(oldList);
-                        if (newList.isEmpty()) {
-                            newList.add("#FFFFFFFF");
-                        }
-                        while (newList.size() < 4) {
-                            newList.add(newList.get(newList.size() - 1));
-                        }
-                        newList.set(idx, string);
-                        if (!newList.equals(oldList)) {
-                            setter.accept(newList);
-                            saveFn.run();
-                        }
-                    }
-                    input.setTextColor(0xFF000000 | color);
-                } catch (Exception e) {
-                    input.setTextColor(0xFFFF0000);
+            if (hasFocus) {
+                return;
+            }
+            var string = input.getText().toString();
+            int color = 0xFFFFFFFF;
+            int index = -1;
+            for (int i = 0; i < mColorFields.length; i++) {
+                if (mColorFields[i] == input) {
+                    index = i;
+                    break;
+                }
+            }
+            try {
+                color = Color.parseColor(string);
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+            if (mColors[index] != color) {
+                mColors[index] = color;
+                invalidate();
+                var oldList = getter.get();
+                var newList = new ArrayList<String>(oldList);
+                if (newList.isEmpty()) {
+                    newList.add("#FFFFFFFF");
+                }
+                while (newList.size() < 4) {
+                    newList.add(newList.get(newList.size() - 1));
+                }
+                newList.set(index, string);
+                if (!newList.equals(oldList)) {
+                    setter.accept(newList);
+                    saveFn.run();
                 }
             }
         };
@@ -117,73 +107,85 @@ public class FourColorPicker extends RelativeLayout {
         var colors = getter.get();
 
         int dp4 = dp(4);
-        mULColorField = createField(0, colors);
+        mColorFields[0] = createField(0, colors);
         {
             var params = new LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
             params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
             params.setMargins(dp4, dp4, dp4, dp4);
-            mULColorField.setId(601);
-            addView(mULColorField, params);
+            mColorFields[0].setId(601);
+            addView(mColorFields[0], params);
         }
-        mURColorField = createField(1, colors);
+        mColorFields[1] = createField(1, colors);
         {
             var params = new LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
             params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
             params.setMargins(dp4, dp4, dp4, dp4);
-            mURColorField.setId(602);
-            addView(mURColorField, params);
+            mColorFields[1].setId(602);
+            addView(mColorFields[1], params);
         }
-        mLRColorField = createField(2, colors);
+        mColorFields[2] = createField(2, colors);
         {
             var params = new LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.addRule(RelativeLayout.BELOW, 602);
             params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
             params.setMargins(dp4, dp4, dp4, dp4);
-            addView(mLRColorField, params);
+            addView(mColorFields[2], params);
         }
-        mLLColorField = createField(3, colors);
+        mColorFields[3] = createField(3, colors);
         {
             var params = new LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.addRule(RelativeLayout.BELOW, 601);
             params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
             params.setMargins(dp4, dp4, dp4, dp4);
-            addView(mLLColorField, params);
+            addView(mColorFields[3], params);
         }
-        mOnFieldFocusChange.onFocusChange(mULColorField, false);
-        mOnFieldFocusChange.onFocusChange(mURColorField, false);
-        mOnFieldFocusChange.onFocusChange(mLRColorField, false);
-        mOnFieldFocusChange.onFocusChange(mLLColorField, false);
+        // init colors
+        for (var f : mColorFields) {
+            mOnFieldFocusChange.onFocusChange(f, false);
+        }
+        setWillNotDraw(false);
     }
 
     @NonNull
-    private EditText createField(int idx, List<? extends String> colors) {
-        var field = new EditText(getContext());
+    private EditText createField(int index, @NotNull List<? extends String> colors) {
+        var field = new EditText(getContext(), null, null,
+                R.style.Widget_Material3_EditText_OutlinedBox);
+        Typeface monoFont = Typeface.getSystemFont("JetBrains Mono Medium");
+        if (monoFont != Typeface.SANS_SERIF) {
+            field.setTypeface(monoFont);
+        }
         field.setSingleLine();
         field.setText(colors.isEmpty()
                 ? "#FFFFFFFF"
-                : colors.get(Math.min(idx, colors.size() - 1)));
+                : colors.get(Math.min(index, colors.size() - 1)));
         field.setFilters(new InputFilter.LengthFilter(10));
-        field.setTextSize(16);
         field.setOnFocusChangeListener(mOnFieldFocusChange);
         return field;
     }
 
-    public void setColors(String[] colors) {
-        mULColorField.setText(colors[0]);
-        mURColorField.setText(colors[1]);
-        mLRColorField.setText(colors[2]);
-        mLLColorField.setText(colors[3]);
-        mOnFieldFocusChange.onFocusChange(mULColorField, false);
-        mOnFieldFocusChange.onFocusChange(mURColorField, false);
-        mOnFieldFocusChange.onFocusChange(mLRColorField, false);
-        mOnFieldFocusChange.onFocusChange(mLLColorField, false);
+    public void setColors(@NonNull @Size(4) String[] colors) {
+        for (int i = 0; i < mColorFields.length; i++) {
+            mColorFields[i].setText(colors[i]);
+        }
+        for (var f : mColorFields) {
+            mOnFieldFocusChange.onFocusChange(f, false);
+        }
     }
 
-    public void setThicknessFactor(float thicknessFactor) {
-        if (mThicknessFactor != thicknessFactor) {
-            mThicknessFactor = thicknessFactor;
+    public void setBorderRadius(float borderRadius) {
+        borderRadius = getContext().getResources().getDisplayMetrics().density * borderRadius * 2.0f;
+        if (mBorderRadius != borderRadius) {
+            mBorderRadius = borderRadius;
+            invalidate();
+        }
+    }
+
+    public void setBorderWidth(float borderWidth) {
+        borderWidth = getContext().getResources().getDisplayMetrics().density * borderWidth * 2.0f;
+        if (mBorderWidth != borderWidth) {
+            mBorderWidth = borderWidth;
             invalidate();
         }
     }
@@ -193,11 +195,37 @@ public class FourColorPicker extends RelativeLayout {
         super.onDraw(canvas);
 
         var paint = Paint.obtain();
+
+        paint.setColor(mColors[0]);
+        canvas.drawRoundRect(
+                mPreviewBox.left + mBorderWidth, mPreviewBox.top + mBorderWidth, mPreviewBox.centerX() - 1,
+                mPreviewBox.centerY() - 1,
+                mBorderRadius, paint
+        );
+        paint.setColor(mColors[1]);
+        canvas.drawRoundRect(
+                mPreviewBox.centerX() + 1, mPreviewBox.top + mBorderWidth, mPreviewBox.right - mBorderWidth,
+                mPreviewBox.centerY() - 1,
+                mBorderRadius, paint
+        );
+        paint.setColor(mColors[2]);
+        canvas.drawRoundRect(
+                mPreviewBox.centerX() + 1, mPreviewBox.centerY() + 1, mPreviewBox.right - mBorderWidth,
+                mPreviewBox.bottom - mBorderWidth,
+                mBorderRadius, paint
+        );
+        paint.setColor(mColors[3]);
+        canvas.drawRoundRect(
+                mPreviewBox.left + mBorderWidth, mPreviewBox.centerY() + 1, mPreviewBox.centerX() - 1,
+                mPreviewBox.bottom - mBorderWidth,
+                mBorderRadius, paint
+        );
+
+        paint.setColor(mBorderColor);
         paint.setStyle(Paint.STROKE);
-        // TooltipRenderer: rad = 3f, width = 4/3f
-        paint.setStrokeWidth(mBorderRadius * mThicknessFactor);
-        canvas.drawRoundRectGradient(mPreviewBox.left, mPreviewBox.top, mPreviewBox.right, mPreviewBox.bottom,
-                mULColor, mURColor, mLRColor, mLLColor, mBorderRadius, paint);
+        paint.setStrokeWidth(mBorderWidth);
+        canvas.drawRoundRect(mPreviewBox.left, mPreviewBox.top, mPreviewBox.right, mPreviewBox.bottom,
+                mBorderRadius, paint);
         paint.recycle();
     }
 
@@ -206,13 +234,12 @@ public class FourColorPicker extends RelativeLayout {
         super.onLayout(changed, left, top, right, bottom);
 
         mPreviewBox.set(
-                Math.max(mULColorField.getRight(), mLLColorField.getRight()),
+                Math.max(mColorFields[0].getRight(), mColorFields[3].getRight()),
                 getPaddingTop(),
-                Math.min(mURColorField.getLeft(), mLRColorField.getLeft()),
+                Math.min(mColorFields[1].getLeft(), mColorFields[2].getLeft()),
                 getHeight() - getPaddingBottom()
         );
-        int inset = (int) (mBorderRadius * 1.33f + 0.5f);
+        int inset = dp(8);
         mPreviewBox.inset(inset, inset);
-        invalidate();
     }
 }

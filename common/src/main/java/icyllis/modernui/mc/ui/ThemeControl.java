@@ -18,7 +18,9 @@
 
 package icyllis.modernui.mc.ui;
 
+import icyllis.modernui.R;
 import icyllis.modernui.graphics.drawable.*;
+import icyllis.modernui.resources.TypedValue;
 import icyllis.modernui.util.StateSet;
 import icyllis.modernui.view.View;
 
@@ -59,10 +61,16 @@ public class ThemeControl {
     }
 
     public static Drawable makeDivider(@Nonnull View view) {
+        return makeDivider(view, false);
+    }
+
+    public static Drawable makeDivider(@Nonnull View view, boolean vertical) {
         ShapeDrawable drawable = new ShapeDrawable();
-        drawable.setShape(ShapeDrawable.HLINE);
-        drawable.setColor(THEME_COLOR);
-        drawable.setSize(-1, view.dp(2));
+        drawable.setShape(vertical ? ShapeDrawable.VLINE : ShapeDrawable.HLINE);
+        TypedValue value = new TypedValue();
+        view.getContext().getTheme().resolveAttribute(R.ns, R.attr.colorOutlineVariant, value, true);
+        drawable.setColor(value.data);
+        drawable.setSize(view.dp(1), view.dp(1));
         return drawable;
     }
 }

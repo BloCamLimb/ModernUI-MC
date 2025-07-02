@@ -61,13 +61,13 @@ public class AdvancedOptionsFragment extends Fragment {
     TextView mGPUStatsDump;
 
     public static Button createDebugButton(Context context, String text) {
-        var button = new Button(context);
+        var button = new Button(context, null, null, R.style.Widget_Material3_Button_OutlinedButton);
         button.setText(text);
         button.setTextSize(14);
-        button.setGravity(Gravity.START);
 
         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-        params.setMargins(button.dp(6), 0, button.dp(6), 0);
+        var margin = button.dp(6);
+        params.setMargins(margin, margin, margin, margin);
         button.setLayoutParams(params);
         return button;
     }
@@ -79,7 +79,7 @@ public class AdvancedOptionsFragment extends Fragment {
         var sv = new ScrollView(context);
         sv.addView(createPage(context), MATCH_PARENT, WRAP_CONTENT);
 
-        sv.setEdgeEffectColor(ThemeControl.THEME_COLOR);
+        //sv.setEdgeEffectColor(ThemeControl.THEME_COLOR);
         sv.setTopEdgeEffectBlendMode(BlendMode.SRC_OVER);
         sv.setBottomEdgeEffectBlendMode(BlendMode.SRC_OVER);
 
@@ -98,7 +98,7 @@ public class AdvancedOptionsFragment extends Fragment {
 
         var dp6 = content.dp(6);
         {
-            var category = createCategoryList(context, "Developer");
+            var category = createCategoryList(content, "Developer");
 
             if (ModernUIMod.isDeveloperMode()) {
                 {
@@ -135,7 +135,7 @@ public class AdvancedOptionsFragment extends Fragment {
             }
             {
                 var layout = createSwitchLayout(context, "Show Layout Bounds");
-                var button = layout.<SwitchButton>requireViewById(R.id.button1);
+                var button = layout.<Switch>requireViewById(R.id.button1);
                 button.setChecked(UIManager.getInstance().isShowingLayoutBounds());
                 button.setOnCheckedChangeListener((__, checked) ->
                         UIManager.getInstance().setShowingLayoutBounds(checked));

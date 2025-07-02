@@ -20,22 +20,44 @@ package icyllis.modernui.mc.neoforge;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
-import icyllis.modernui.animation.*;
+import icyllis.modernui.animation.LayoutTransition;
+import icyllis.modernui.animation.MotionEasingUtils;
+import icyllis.modernui.animation.ObjectAnimator;
+import icyllis.modernui.animation.ValueAnimator;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.Color;
+import icyllis.modernui.graphics.MathUtil;
+import icyllis.modernui.graphics.drawable.BuiltinIconDrawable;
+import icyllis.modernui.graphics.drawable.ColorDrawable;
+import icyllis.modernui.graphics.drawable.RippleDrawable;
+import icyllis.modernui.graphics.drawable.ShapeDrawable;
+import icyllis.modernui.graphics.drawable.StateListDrawable;
 import icyllis.modernui.graphics.text.FontFamily;
-import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.ModernUIClient;
+import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.UIManager;
 import icyllis.modernui.mc.ui.FourColorPicker;
-import icyllis.modernui.mc.ui.ThemeControl;
-import icyllis.modernui.text.*;
+import icyllis.modernui.resources.TypedValue;
+import icyllis.modernui.text.Editable;
+import icyllis.modernui.text.InputFilter;
+import icyllis.modernui.text.SpannableString;
+import icyllis.modernui.text.Spanned;
+import icyllis.modernui.text.Typeface;
 import icyllis.modernui.text.method.DigitsInputFilter;
 import icyllis.modernui.text.style.ForegroundColorSpan;
+import icyllis.modernui.util.ColorStateList;
 import icyllis.modernui.util.DataSet;
-import icyllis.modernui.view.*;
+import icyllis.modernui.util.StateSet;
+import icyllis.modernui.view.Gravity;
+import icyllis.modernui.view.LayoutInflater;
+import icyllis.modernui.view.OneShotPreDrawListener;
+import icyllis.modernui.view.View;
+import icyllis.modernui.view.ViewGroup;
 import icyllis.modernui.widget.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
@@ -44,7 +66,10 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -54,47 +79,80 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class PreferencesFragment extends Fragment {
 
-    LinearLayout mTooltipCategory;
-    LinearLayout mTextLayoutCategory;
-    LinearLayout mTextRenderingCategory;
+    boolean mClientConfigChanged;
+    boolean mTextConfigChanged;
+
+    final Runnable mOnClientConfigChanged = () -> {
+        mClientConfigChanged = true;
+        Config.CLIENT.reload();
+    };
+    final Runnable mOnTextConfigChanged = () -> {
+        mTextConfigChanged = true;
+        Config.TEXT.reload();
+    };
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable DataSet savedInstanceState) {
-        var pager = new ViewPager(getContext());
-
-        pager.setAdapter(this.new ThePagerAdapter());
-        pager.setFocusableInTouchMode(true);
-        pager.setKeyboardNavigationCluster(true);
-
-        pager.setEdgeEffectColor(ThemeControl.THEME_COLOR);
-        pager.setLeftEdgeEffectBlendMode(BlendMode.SRC_OVER);
-        pager.setRightEdgeEffectBlendMode(BlendMode.SRC_OVER);
-
+        var context = requireContext();
+        var base = new FrameLayout(context);
+        var pager = new ViewPager(context);
         {
-            var indicator = new LinearPagerIndicator(getContext());
-            indicator.setPager(pager);
-            indicator.setLineWidth(pager.dp(4));
-            indicator.setLineColor(ThemeControl.THEME_COLOR);
-            var lp = new ViewPager.LayoutParams();
-            lp.height = pager.dp(30);
-            lp.isDecor = true;
-            lp.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
-            pager.addView(indicator, lp);
+            pager.setAdapter(this.new PreferencesAdapter());
+            pager.setFocusableInTouchMode(true);
+            pager.setKeyboardNavigationCluster(true);
+
+            OneShotPreDrawListener.add(pager, () -> {
+                var animator = ObjectAnimator.ofFloat(pager,
+                        View.ROTATION_Y, pager.isLayoutRtl() ? -45 : 45, 0);
+                animator.setInterpolator(MotionEasingUtils.MOTION_EASING_EMPHASIZED);
+                animator.start();
+            });
+
+            var lp = new FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT);
+            lp.gravity = Gravity.CENTER_HORIZONTAL;
+            lp.topMargin = base.dp(48);
+            base.addView(pager, lp);
         }
 
-        var lp = new FrameLayout.LayoutParams(pager.dp(720), ViewGroup.LayoutParams.MATCH_PARENT);
-        lp.gravity = Gravity.CENTER;
-        pager.setLayoutParams(lp);
+        {
+            var tabLayout = new TabLayout(context);
+            {
+                var value = new TypedValue();
+                context.getTheme().resolveAttribute(R.ns, R.attr.colorSurfaceContainerLow, value, true);
+                tabLayout.setBackground(new ColorDrawable(value.data));
+            }
+            tabLayout.setElevation(base.dp(3));
+            tabLayout.setTabMode(TabLayout.MODE_AUTO);
+            tabLayout.setTabGravity(TabLayout.GRAVITY_CENTER);
+            tabLayout.setupWithViewPager(pager);
 
-        return pager;
+            var lp = new FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+            lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+            base.addView(tabLayout, lp);
+        }
+
+        return base;
     }
 
-    private class ThePagerAdapter extends PagerAdapter {
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (mClientConfigChanged) {
+            Config.CLIENT.saveAsync();
+            mClientConfigChanged = false;
+        }
+        if (mTextConfigChanged) {
+            Config.TEXT.saveAsync();
+            mTextConfigChanged = false;
+        }
+    }
+
+    private class PreferencesAdapter extends PagerAdapter {
 
         @Override
         public int getCount() {
-            return 2;
+            return 5;
         }
 
         @NonNull
@@ -102,31 +160,22 @@ public class PreferencesFragment extends Fragment {
         public Object instantiateItem(@NonNull ViewGroup container, int position) {
             var context = container.getContext();
             var sv = new ScrollView(context);
-            if (position == 1) {
-                sv.addView(createSecondPage(context), MATCH_PARENT, WRAP_CONTENT);
-            } else {
-                sv.addView(createFirstPage(context), MATCH_PARENT, WRAP_CONTENT);
+            sv.setTag(position);
+            ViewGroup layout = switch (position) {
+                case 0 -> createPage1(context);
+                case 1 -> createPage2(context);
+                case 2 -> createPage3(context);
+                case 3 -> createPage4(context);
+                default -> createPage5(context);
+            };
+            layout.setMinimumWidth(layout.dp(720));
+            var params = new ScrollView.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
+            sv.addView(layout, params);
+            //sv.setEdgeEffectColor(ThemeControl.THEME_COLOR);
+            //sv.setTopEdgeEffectBlendMode(BlendMode.SRC_OVER);
+            //sv.setBottomEdgeEffectBlendMode(BlendMode.SRC_OVER);
 
-                var animator = ObjectAnimator.ofFloat(sv,
-                        View.ROTATION_Y, container.isLayoutRtl() ? -45 : 45, 0);
-                animator.setInterpolator(TimeInterpolator.DECELERATE);
-                sv.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-                    @Override
-                    public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft,
-                                               int oldTop, int oldRight, int oldBottom) {
-                        animator.start();
-                        v.removeOnLayoutChangeListener(this);
-                    }
-                });
-            }
-            sv.setEdgeEffectColor(ThemeControl.THEME_COLOR);
-            sv.setTopEdgeEffectBlendMode(BlendMode.SRC_OVER);
-            sv.setBottomEdgeEffectBlendMode(BlendMode.SRC_OVER);
-
-            var params = new LinearLayout.LayoutParams(0, MATCH_PARENT, 1);
-            var dp6 = sv.dp(6);
-            params.setMargins(dp6, dp6, dp6, dp6);
-            container.addView(sv, params);
+            container.addView(sv);
 
             return sv;
         }
@@ -140,158 +189,38 @@ public class PreferencesFragment extends Fragment {
         public boolean isViewFromObject(@NonNull View view, @NonNull Object object) {
             return view == object;
         }
-    }
 
-    public static LinearLayout createSecondPage(Context context) {
-        var content = new LinearLayout(context);
-        content.setOrientation(LinearLayout.VERTICAL);
-        var transition = new LayoutTransition();
-        transition.enableTransitionType(LayoutTransition.CHANGING);
-        content.setLayoutTransition(transition);
-
-        {
-            var category = createCategoryList(context, "modernui.center.category.font");
-
-            {
-                var layout = new LinearLayout(context);
-                layout.setOrientation(LinearLayout.VERTICAL);
-
-                final int dp6 = layout.dp(6);
-                final LinearLayout firstLine = new LinearLayout(context);
-                firstLine.setOrientation(LinearLayout.HORIZONTAL);
-                {
-                    TextView title = new TextView(context);
-                    title.setText(I18n.get("modernui.center.font.firstFont"));
-                    title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-                    title.setTextSize(14);
-
-                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
-                    firstLine.addView(title, params);
+        @Override
+        public int getItemPosition(@NonNull Object object) {
+            if (object instanceof View) {
+                Object tag = ((View) object).getTag();
+                if (tag != null) {
+                    return (int) tag;
                 }
-                Runnable onFontChanged;
-                {
-                    TextView value = new TextView(context);
-                    onFontChanged = () -> {
-                        FontFamily first = ModernUIClient.getInstance().getFirstFontFamily();
-                        if (first != null) {
-                            value.setText(first.getFamilyName(value.getTextLocale()));
-                        } else {
-                            value.setText("NONE");
-                        }
-                    };
-                    onFontChanged.run();
-                    value.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-                    value.setTextSize(14);
-
-                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
-                    firstLine.addView(value, params);
-                }
-
-                firstLine.setOnClickListener(
-                        new PreferredFontCollapsed(
-                                layout,
-                                onFontChanged
-                        )
-                );
-                ThemeControl.addBackground(firstLine);
-
-                layout.addView(firstLine);
-
-                var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-                params.gravity = Gravity.CENTER;
-                params.setMargins(dp6, layout.dp(3), dp6, layout.dp(3));
-
-                category.addView(layout, params);
             }
-
-            {
-                var option = createStringListOption(context, "modernui.center.font.fallbackFonts",
-                        Config.CLIENT.mFallbackFontFamilyList,
-                        () -> {
-                            Config.CLIENT.saveAndReloadAsync();
-                            reloadDefaultTypeface(context, () -> {
-                            });
-                        });
-                category.addView(option);
-            }
-
-            /*list.addView(createBooleanOption(context, "modernui.center.font.vanillaFont",
-                    ModernUIText.CONFIG.mUseVanillaFont,
-                    ModernUIText.CONFIG::saveAndReloadAsync));*/
-
-            category.addView(createBooleanOption(context, "modernui.center.font.colorEmoji",
-                    Config.CLIENT.mUseColorEmoji, () -> {
-                        Config.CLIENT.saveAndReloadAsync();
-                        reloadDefaultTypeface(context, () -> {
-                        });
-                    }));
-
-            category.addView(createStringListOption(context, "modernui.center.font.fontRegistrationList",
-                    Config.CLIENT.mFontRegistrationList, () -> {
-                        Config.CLIENT.saveAsync();
-                        Toast.makeText(context,
-                                        I18n.get("gui.modernui.restart_to_work"),
-                                        Toast.LENGTH_SHORT)
-                                .show();
-                    }));
-
-            content.addView(category);
+            return POSITION_NONE;
         }
 
-        {
-            var list = createCategoryList(context, "modernui.center.category.system");
-
-            list.addView(createBooleanOption(context, "modernui.center.system.forceRtlLayout",
-                    Config.CLIENT.mForceRtl, Config.CLIENT::saveAndReloadAsync));
-
-            list.addView(createFloatOption(context, "modernui.center.system.globalFontScale",
-                    Config.Client.FONT_SCALE_MIN, Config.Client.FONT_SCALE_MAX,
-                    4, Config.CLIENT.mFontScale, 10, Config.CLIENT::saveAndReloadAsync));
-
-            {
-                var option = createInputBox(context, "modernui.center.system.globalAnimationScale");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(Float.toString(ValueAnimator.sDurationScale));
-                input.setFilters(DigitsInputFilter.getInstance(null, false, true),
-                        new InputFilter.LengthFilter(4));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        double scale = Math.max(Math.min(Double.parseDouble(v.getText().toString()), 10), 0.1);
-                        v.setText(Double.toString(scale));
-                        if (scale != ValueAnimator.sDurationScale) {
-                            ValueAnimator.sDurationScale = (float) scale;
-                        }
-                    }
-                });
-                list.addView(option);
-            }
-
-            list.addView(createBooleanOption(context, "modernui.center.system.developerMode",
-                    Config.COMMON.developerMode, Config.COMMON::saveAndReloadAsync));
-
-            content.addView(list);
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return switch (position) {
+                case 0 -> I18n.get("modernui.center.category.screen");
+                case 1 -> "View";
+                case 2 -> I18n.get("modernui.center.category.font");
+                case 3 -> I18n.get("modernui.center.category.extension");
+                default -> "Text (MC)";
+            };
         }
-
-        content.setDividerDrawable(ThemeControl.makeDivider(content));
-        content.setDividerPadding(content.dp(8));
-        content.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
-
-        return content;
     }
 
-    public LinearLayout createFirstPage(Context context) {
+    public LinearLayout createPage1(Context context) {
         var content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
-        var transition = new LayoutTransition();
-        transition.enableTransitionType(LayoutTransition.CHANGING);
-        content.setLayoutTransition(transition);
 
-        Runnable saveFn = Config.CLIENT::saveAndReloadAsync;
+        Runnable saveFn = mOnClientConfigChanged;
 
-        // Screen
         {
-            var list = createCategoryList(context, "modernui.center.category.screen");
+            var list = createCategoryList(content, null);
 
             list.addView(createGuiScaleOption(context));
 
@@ -337,11 +266,162 @@ public class PreferencesFragment extends Fragment {
             content.addView(list);
         }
 
-        boolean rawTextEngineEnabled = !Boolean.parseBoolean(
-                ModernUIClient.getBootstrapProperty(ModernUIMod.BOOTSTRAP_DISABLE_TEXT_ENGINE));
+        return content;
+    }
+
+    public LinearLayout createPage2(Context context) {
+        var content = new LinearLayout(context);
+        content.setOrientation(LinearLayout.VERTICAL);
 
         {
-            var list = createCategoryList(context, "modernui.center.category.extension");
+            var list = createCategoryList(content, "modernui.center.category.system");
+
+            list.addView(createBooleanOption(context, "modernui.center.system.forceRtlLayout",
+                    Config.CLIENT.mForceRtl, Config.CLIENT::saveAndReloadAsync));
+
+            list.addView(createFloatOption(context, "modernui.center.system.globalFontScale",
+                    Config.Client.FONT_SCALE_MIN, Config.Client.FONT_SCALE_MAX,
+                    4, Config.CLIENT.mFontScale, 10, Config.CLIENT::saveAndReloadAsync));
+
+            {
+                var option = createInputBox(context, "modernui.center.system.globalAnimationScale");
+                var input = option.<EditText>requireViewById(R.id.input);
+                input.setText(Float.toString(ValueAnimator.sDurationScale));
+                input.setFilters(DigitsInputFilter.getInstance(null, false, true),
+                        new InputFilter.LengthFilter(4));
+                input.setOnFocusChangeListener((view, hasFocus) -> {
+                    if (!hasFocus) {
+                        EditText v = (EditText) view;
+                        double scale = Math.max(Math.min(Double.parseDouble(v.getText().toString()), 10), 0.1);
+                        v.setText(Double.toString(scale));
+                        if (scale != ValueAnimator.sDurationScale) {
+                            ValueAnimator.sDurationScale = (float) scale;
+                        }
+                    }
+                });
+                list.addView(option);
+            }
+
+            list.addView(createBooleanOption(context, "modernui.center.system.developerMode",
+                    Config.COMMON.developerMode, Config.COMMON::saveAndReloadAsync));
+
+            content.addView(list);
+        }
+
+        return content;
+    }
+
+    public LinearLayout createPage3(Context context) {
+        var content = new LinearLayout(context);
+        content.setOrientation(LinearLayout.VERTICAL);
+
+        {
+            var category = createCategoryList(content, null);
+
+            {
+                var layout = new LinearLayout(context);
+                layout.setOrientation(LinearLayout.VERTICAL);
+
+                final int dp6 = layout.dp(6);
+                final LinearLayout firstLine = new LinearLayout(context);
+                firstLine.setOrientation(LinearLayout.HORIZONTAL);
+                {
+                    TextView title = new TextView(context);
+                    title.setText(I18n.get("modernui.center.font.firstFont"));
+                    title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+                    title.setTextSize(14);
+
+                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
+                    firstLine.addView(title, params);
+                }
+                Runnable onFontChanged;
+                {
+                    TextView value = new TextView(context);
+                    onFontChanged = () -> {
+                        FontFamily first = ModernUIClient.getInstance().getFirstFontFamily();
+                        if (first != null) {
+                            value.setText(first.getFamilyName(value.getTextLocale()));
+                        } else {
+                            value.setText("NONE");
+                        }
+                    };
+                    onFontChanged.run();
+                    value.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+                    value.setTextSize(14);
+
+                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+                    firstLine.addView(value, params);
+                }
+
+                firstLine.setOnClickListener(
+                        new PreferredFontCollapsed(
+                                layout,
+                                onFontChanged
+                        )
+                );
+                TypedValue value = new TypedValue();
+                context.getTheme().resolveAttribute(R.ns, R.attr.colorControlHighlight, value, true);
+                firstLine.setBackground(new RippleDrawable(ColorStateList.valueOf(value.data), null,
+                        new ColorDrawable(~0)));
+
+                layout.addView(firstLine);
+
+                var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+                params.gravity = Gravity.CENTER;
+                params.setMargins(dp6, layout.dp(3), dp6, layout.dp(3));
+
+                category.addView(layout, params);
+            }
+
+            {
+                var option = createStringListOption(context, "modernui.center.font.fallbackFonts",
+                        Config.CLIENT.mFallbackFontFamilyList,
+                        () -> {
+                            Config.CLIENT.saveAndReloadAsync();
+                            reloadDefaultTypeface(context, () -> {
+                            });
+                        });
+                category.addView(option);
+            }
+
+            /*list.addView(createBooleanOption(context, "modernui.center.font.vanillaFont",
+                    ModernUIText.CONFIG.mUseVanillaFont,
+                    ModernUIText.CONFIG::saveAndReloadAsync));*/
+
+            category.addView(createBooleanOption(context, "modernui.center.font.colorEmoji",
+                    Config.CLIENT.mUseColorEmoji, () -> {
+                        Config.CLIENT.saveAndReloadAsync();
+                        reloadDefaultTypeface(context, () -> {
+                        });
+                    }));
+
+            category.addView(createStringListOption(context, "modernui.center.font.fontRegistrationList",
+                    Config.CLIENT.mFontRegistrationList, () -> {
+                        Config.CLIENT.saveAsync();
+                        Toast.makeText(context,
+                                        I18n.get("gui.modernui.restart_to_work"),
+                                        Toast.LENGTH_SHORT)
+                                .show();
+                    }));
+
+            content.addView(category);
+        }
+
+        return content;
+    }
+
+    public LinearLayout createPage4(Context context) {
+        var content = new LinearLayout(context);
+        content.setOrientation(LinearLayout.VERTICAL);
+
+        Runnable saveFn = mOnClientConfigChanged;
+
+        boolean curTooltipEnabled = Config.CLIENT.mTooltip.get();
+
+        final View[] tooltipCategories = new View[2];
+
+        {
+            var list = createCategoryList(content, null);
 
             list.addView(createBooleanOption(context, "modernui.center.extension.ding",
                     Config.CLIENT.mDing, saveFn));
@@ -350,93 +430,57 @@ public class PreferencesFragment extends Fragment {
                     Config.CLIENT.mZoom, saveFn));
 
             list.addView(createBooleanOption(context, "modernui.center.text.emojiShortcodes",
-                    Config.CLIENT.mEmojiShortcodes, Config.CLIENT::saveAndReloadAsync));
+                    Config.CLIENT.mEmojiShortcodes, saveFn));
 
             {
                 var option = createSwitchLayout(context, "modernui.center.extension.smoothScrolling");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
+                var button = option.<Switch>requireViewById(R.id.button1);
                 button.setChecked(!Boolean.parseBoolean(
                         ModernUIClient.getBootstrapProperty(ModernUIMod.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
                 ));
-                button.setOnCheckedChangeListener((__, checked) -> {
+                button.setOnCheckedChangeListener((view, checked) -> {
                     ModernUIClient.setBootstrapProperty(
                             ModernUIMod.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING,
                             Boolean.toString(!checked)
                     );
-                    Toast.makeText(__.getContext(),
-                                    I18n.get("gui.modernui.restart_to_work"),
-                                    Toast.LENGTH_SHORT)
-                            .show();
+                    Toast.makeText(
+                            view.getContext(),
+                            I18n.get("gui.modernui.restart_to_work"),
+                            Toast.LENGTH_SHORT
+                    ).show();
                 });
                 list.addView(option);
             }
 
             {
                 var option = createSwitchLayout(context, "modernui.center.text.enhancedTextField");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
+                var button = option.<Switch>requireViewById(R.id.button1);
                 button.setChecked(!Boolean.parseBoolean(
                         ModernUIClient.getBootstrapProperty(ModernUIMod.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD)
                 ));
-                button.setOnCheckedChangeListener((__, checked) -> {
+                button.setOnCheckedChangeListener((view, checked) -> {
                     ModernUIClient.setBootstrapProperty(
                             ModernUIMod.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD,
                             Boolean.toString(!checked)
                     );
-                    Toast.makeText(__.getContext(),
-                                    I18n.get("gui.modernui.restart_to_work"),
-                                    Toast.LENGTH_SHORT)
-                            .show();
+                    Toast.makeText(
+                            view.getContext(),
+                            I18n.get("gui.modernui.restart_to_work"),
+                            Toast.LENGTH_SHORT
+                    ).show();
                 });
                 list.addView(option);
             }
 
             {
                 var option = createSwitchLayout(context, "modernui.center.extension.tooltip");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(Config.CLIENT.mTooltip.get());
+                var button = option.<Switch>requireViewById(R.id.button1);
+                button.setChecked(curTooltipEnabled);
                 button.setOnCheckedChangeListener((view, checked) -> {
                     Config.CLIENT.mTooltip.set(checked);
                     saveFn.run();
-                    if (checked) {
-                        if (mTooltipCategory == null) {
-                            mTooltipCategory = createTooltipCategory(view.getContext());
-                            content.addView(mTooltipCategory, 2);
-                        } else {
-                            mTooltipCategory.setVisibility(View.VISIBLE);
-                        }
-                    } else if (mTooltipCategory != null) {
-                        mTooltipCategory.setVisibility(View.GONE);
-                    }
-                });
-                list.addView(option);
-            }
-
-            {
-                var option = createSwitchLayout(context, "modernui.center.text.textEngine");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
-                button.setChecked(rawTextEngineEnabled);
-                button.setOnCheckedChangeListener((view, checked) -> {
-                    ModernUIClient.setBootstrapProperty(
-                            ModernUIMod.BOOTSTRAP_DISABLE_TEXT_ENGINE,
-                            Boolean.toString(!checked)
-                    );
-                    Toast.makeText(view.getContext(),
-                                    I18n.get("gui.modernui.restart_to_work"),
-                                    Toast.LENGTH_SHORT)
-                            .show();
-                    if (checked) {
-                        if (mTextLayoutCategory == null) {
-                            mTextLayoutCategory = createTextLayoutCategory(view.getContext());
-                            mTextRenderingCategory = createTextRenderingCategory(view.getContext());
-                            content.addView(mTextLayoutCategory);
-                            content.addView(mTextRenderingCategory);
-                        } else {
-                            mTextLayoutCategory.setVisibility(View.VISIBLE);
-                            mTextRenderingCategory.setVisibility(View.VISIBLE);
-                        }
-                    } else if (mTextLayoutCategory != null) {
-                        mTextLayoutCategory.setVisibility(View.GONE);
-                        mTextRenderingCategory.setVisibility(View.GONE);
+                    for (var v : tooltipCategories) {
+                        setViewAndChildrenEnabled(v, checked);
                     }
                 });
                 list.addView(option);
@@ -449,30 +493,63 @@ public class PreferencesFragment extends Fragment {
             content.addView(list);
         }
 
-        if (Config.CLIENT.mTooltip.get()) {
-            mTooltipCategory = createTooltipCategory(context);
-            content.addView(mTooltipCategory);
+        content.addView(tooltipCategories[0] = createTooltipCategory(content));
+        content.addView(tooltipCategories[1] = createTooltipBorderCategory(content));
+        for (var v : tooltipCategories) {
+            setViewAndChildrenEnabled(v, curTooltipEnabled);
         }
-
-        if (rawTextEngineEnabled) {
-            mTextLayoutCategory = createTextLayoutCategory(context);
-            content.addView(mTextLayoutCategory);
-
-            mTextRenderingCategory = createTextRenderingCategory(context);
-            content.addView(mTextRenderingCategory);
-        }
-
-        content.setDividerDrawable(ThemeControl.makeDivider(content));
-        content.setDividerPadding(content.dp(8));
-        content.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
 
         return content;
     }
 
-    public static LinearLayout createTooltipCategory(Context context) {
-        var category = createCategoryList(context, "modernui.center.category.tooltip");
+    public LinearLayout createPage5(Context context) {
+        var content = new LinearLayout(context);
+        content.setOrientation(LinearLayout.VERTICAL);
 
-        Runnable saveFn = Config.CLIENT::saveAndReloadAsync;
+        boolean curTextEngineEnabled = !Boolean.parseBoolean(
+                ModernUIClient.getBootstrapProperty(ModernUIMod.BOOTSTRAP_DISABLE_TEXT_ENGINE));
+
+        final View[] categories = new View[2];
+
+        {
+            var list = createCategoryList(content, null);
+            {
+                var option = createSwitchLayout(context, "modernui.center.text.textEngine");
+                var button = option.<Switch>requireViewById(R.id.button1);
+                button.setChecked(curTextEngineEnabled);
+                button.setOnCheckedChangeListener((view, checked) -> {
+                    ModernUIClient.setBootstrapProperty(
+                            ModernUIMod.BOOTSTRAP_DISABLE_TEXT_ENGINE,
+                            Boolean.toString(!checked)
+                    );
+                    Toast.makeText(
+                            view.getContext(),
+                            I18n.get("gui.modernui.restart_to_work"),
+                            Toast.LENGTH_SHORT
+                    ).show();
+                    for (var v : categories) {
+                        setViewAndChildrenEnabled(v, checked);
+                    }
+                });
+                list.addView(option);
+            }
+            content.addView(list);
+        }
+
+        content.addView(categories[0] = createTextLayoutCategory(content));
+        content.addView(categories[1] = createTextRenderingCategory(content));
+        for (var v : categories) {
+            setViewAndChildrenEnabled(v, curTextEngineEnabled);
+        }
+
+        return content;
+    }
+
+    public LinearLayout createTooltipCategory(@NonNull ViewGroup page) {
+        var context = page.getContext();
+        var category = createCategoryList(page, "modernui.center.category.tooltip");
+
+        Runnable saveFn = mOnClientConfigChanged;
 
         category.addView(createBooleanOption(context, "modernui.center.tooltip.centerTitle",
                 Config.CLIENT.mCenterTooltipTitle, saveFn));
@@ -490,40 +567,48 @@ public class PreferencesFragment extends Fragment {
         category.addView(createColorOpacityOption(context, "modernui.center.tooltip.backgroundOpacity",
                 Config.CLIENT.mTooltipFill, saveFn));
 
+        return category;
+    }
+
+    public LinearLayout createTooltipBorderCategory(@NonNull ViewGroup page) {
+        var context = page.getContext();
+        var category = createCategoryList(page, null);
+        var transition = new LayoutTransition();
+        transition.enableTransitionType(LayoutTransition.CHANGING);
+        category.setLayoutTransition(transition);
+
         {
-            var layout = new LinearLayout(context);
-            layout.setOrientation(LinearLayout.VERTICAL);
-
-            final int dp3 = layout.dp(3);
-            final int dp6 = layout.dp(6);
             final Button title;
+            title = new ToggleButton(context, null, null, R.style.Widget_Material3_Button_TextButton);
+            title.setText(I18n.get("modernui.center.tooltip.borderStyle"));
+            title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
             {
-                title = new Button(context);
-                title.setText(I18n.get("modernui.center.tooltip.borderStyle"));
-                title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-                title.setTextSize(14);
-
-                var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-                layout.addView(title, params);
+                var icon = new StateListDrawable();
+                icon.addState(new int[]{R.attr.state_checked}, new BuiltinIconDrawable(
+                        context.getResources(), BuiltinIconDrawable.KEYBOARD_ARROW_UP
+                ));
+                icon.addState(StateSet.WILD_CARD, new BuiltinIconDrawable(
+                        context.getResources(), BuiltinIconDrawable.KEYBOARD_ARROW_DOWN
+                ));
+                icon.setTintList(title.getTextColors());
+                title.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                        null, null, icon, null
+                );
             }
-
-            title.setOnClickListener(new TooltipBorderCollapsed(layout, saveFn));
-            title.setPadding(dp3, 0, dp3, 0);
-            ThemeControl.addBackground(title);
+            title.setOnClickListener(new TooltipBorderCollapsed(category, mOnClientConfigChanged));
 
             var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-            params.gravity = Gravity.CENTER;
-            params.setMargins(dp6, dp3, dp6, 0);
-            category.addView(layout, params);
+            category.addView(title, params);
         }
 
         return category;
     }
 
-    public static LinearLayout createTextLayoutCategory(Context context) {
-        var category = createCategoryList(context, "modernui.center.category.textLayout");
+    public LinearLayout createTextLayoutCategory(@NonNull ViewGroup page) {
+        var context = page.getContext();
+        var category = createCategoryList(page, "modernui.center.category.textLayout");
 
-        Runnable saveFn = Config.TEXT::saveAndReloadAsync;
+        Runnable saveFn = mOnTextConfigChanged;
 
         category.addView(createSpinnerOption(context, "modernui.center.text.defaultFontBehavior",
                 Config.Text.DefaultFontBehavior.values(),
@@ -566,10 +651,11 @@ public class PreferencesFragment extends Fragment {
         return category;
     }
 
-    public static LinearLayout createTextRenderingCategory(Context context) {
-        var category = createCategoryList(context, "modernui.center.category.textRendering");
+    public LinearLayout createTextRenderingCategory(@NonNull ViewGroup page) {
+        var context = page.getContext();
+        var category = createCategoryList(page, "modernui.center.category.textRendering");
 
-        Runnable saveFn = Config.TEXT::saveAndReloadAsync;
+        Runnable saveFn = mOnTextConfigChanged;
 
         category.addView(createBooleanOption(context, "modernui.center.font.antiAliasing",
                 Config.TEXT.mAntiAliasing, saveFn));
@@ -615,30 +701,52 @@ public class PreferencesFragment extends Fragment {
     }
 
     @NonNull
-    public static LinearLayout createCategoryList(Context context,
-                                                  String name) {
+    public static LinearLayout createCategoryList(@NonNull ViewGroup page,
+                                                  @Nullable String name) {
+        var context = page.getContext();
         var layout = new LinearLayout(context);
         layout.setOrientation(LinearLayout.VERTICAL);
+        // no need to clip to padding, disabling it may be faster
+        layout.setClipToPadding(false);
 
         final int dp6 = layout.dp(6);
         final int dp12 = layout.dp(12);
-        final int dp18 = layout.dp(18);
-        {
+        TypedValue value = new TypedValue();
+        if (name != null) {
             var title = new TextView(context);
             title.setId(R.id.title);
             title.setText(I18n.get(name));
             title.setTextSize(16);
-            title.setTextColor(ThemeControl.THEME_COLOR);
+            context.getTheme().resolveAttribute(R.ns, R.attr.colorPrimary, value, true);
+            title.setTextColor(value.data);
 
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.START;
-            params.setMargins(dp6, dp6, dp6, dp6);
-            layout.addView(title, params);
+            params.setMargins(0, page.getChildCount() == 0 ? dp6 : layout.dp(18), 0, 0);
+            page.addView(title, params);
         }
+        // card
+        ShapeDrawable bg = new ShapeDrawable();
+        bg.setCornerRadius(dp12);
+        context.getTheme().resolveAttribute(R.ns, R.attr.colorSurface, value, true);
+        bg.setColor(value.data);
+        int[] strokeColors = new int[2];
+        context.getTheme().resolveAttribute(R.ns, R.attr.colorOutlineVariant, value, true);
+        strokeColors[0] = value.data;
+        context.getTheme().resolveAttribute(R.ns, R.attr.colorOutline, value, true);
+        strokeColors[1] = ColorStateList.modulateColor(value.data, 0.12f);
+        bg.setStroke(layout.dp(1), new ColorStateList(
+                new int[][]{
+                        StateSet.get(StateSet.VIEW_STATE_ENABLED),
+                        StateSet.WILD_CARD
+                },
+                strokeColors
+        ));
+        layout.setBackground(bg);
+        layout.setPadding(dp12, dp12, dp12, dp12);
 
         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-        params.gravity = Gravity.CENTER;
-        params.setMargins(dp12, dp12, dp12, dp18);
+        params.setMargins(0, dp6, 0, dp6);
         layout.setLayoutParams(params);
 
         return layout;
@@ -662,11 +770,11 @@ public class PreferencesFragment extends Fragment {
             layout.addView(title, params);
         }
         {
-            var button = new SwitchButton(context);
+            var button = new Switch(context);
             button.setId(R.id.button1);
-            button.setCheckedColor(ThemeControl.THEME_COLOR);
+            //button.setCheckedColor(ThemeControl.THEME_COLOR);
 
-            var params = new LinearLayout.LayoutParams(layout.dp(36), layout.dp(16));
+            var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER_VERTICAL;
             params.setMargins(0, dp3, 0, dp3);
             layout.addView(button, params);
@@ -681,6 +789,7 @@ public class PreferencesFragment extends Fragment {
         if (I18n.exists(tooltip)) {
             layout.setTooltipText(I18n.get(tooltip));
         }
+        layout.setMinimumHeight(layout.dp(44));
 
         return layout;
     }
@@ -691,7 +800,7 @@ public class PreferencesFragment extends Fragment {
             ModConfigSpec.BooleanValue config,
             Runnable saveFn) {
         var layout = createSwitchLayout(context, name);
-        var button = layout.<SwitchButton>requireViewById(R.id.button1);
+        var button = layout.<Switch>requireViewById(R.id.button1);
         button.setChecked(config.get());
         button.setOnCheckedChangeListener((__, checked) -> {
             config.set(checked);
@@ -728,7 +837,7 @@ public class PreferencesFragment extends Fragment {
         }
         {
             var spinner = new Spinner(context);
-            spinner.setGravity(Gravity.END);
+            //spinner.setGravity(Gravity.END);
             spinner.setAdapter(new ArrayAdapter<>(context, values));
             spinner.setSelection(config.get().ordinal());
             spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -754,6 +863,7 @@ public class PreferencesFragment extends Fragment {
         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
         params.gravity = Gravity.CENTER;
         params.setMargins(dp6, 0, dp6, 0);
+        option.setMinimumHeight(option.dp(44));
         option.setLayoutParams(params);
 
         return option;
@@ -867,7 +977,6 @@ public class PreferencesFragment extends Fragment {
         layout.setOrientation(LinearLayout.HORIZONTAL);
         layout.setHorizontalGravity(Gravity.START);
 
-        final int dp3 = layout.dp(3);
         final int dp6 = layout.dp(6);
         {
             var title = new TextView(context);
@@ -880,13 +989,10 @@ public class PreferencesFragment extends Fragment {
             layout.addView(title, params);
         }
         {
-            var input = new EditText(context);
+            var input = new EditText(context, null, null,
+                    R.style.Widget_Material3_EditText_OutlinedBox);
             input.setId(R.id.input);
             input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-            input.setTextSize(14);
-            input.setPadding(dp3, 0, dp3, 0);
-
-            ThemeControl.addBackground(input);
 
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER_VERTICAL;
@@ -902,16 +1008,21 @@ public class PreferencesFragment extends Fragment {
         if (I18n.exists(tooltip)) {
             layout.setTooltipText(I18n.get(tooltip));
         }
+        layout.setMinimumHeight(layout.dp(44));
 
         return layout;
     }
 
-    public static LinearLayout createInputBoxWithSlider(Context context, String name) {
+    public static LinearLayout createInputBoxWithSlider(Context context, String name,
+                                                        boolean discrete) {
         var layout = createInputBox(context, name);
-        var slider = new SeekBar(context);
+        var slider = new SeekBar(context, null, null,
+                discrete ? R.style.Widget_Material3_SeekBar_Discrete_Slider : R.style.Widget_Material3_SeekBar_Slider);
         slider.setId(R.id.button2);
         slider.setClickable(true);
-        var params = new LinearLayout.LayoutParams(slider.dp(200), WRAP_CONTENT);
+        slider.setUserAnimationEnabled(true);
+        var params = new LinearLayout.LayoutParams(slider.dp(210), WRAP_CONTENT);
+        params.setMarginEnd(slider.dp(8));
         params.gravity = Gravity.CENTER_VERTICAL;
         layout.addView(slider, 1, params);
         return layout;
@@ -930,7 +1041,7 @@ public class PreferencesFragment extends Fragment {
                                                    int minValue, int maxValue, int maxLength, int stepSize,
                                                    Supplier<Integer> getter, Consumer<Integer> setter,
                                                    Runnable saveFn) {
-        var layout = createInputBoxWithSlider(context, name);
+        var layout = createInputBoxWithSlider(context, name, (maxValue - minValue) / stepSize <= 10);
         var slider = layout.<SeekBar>requireViewById(R.id.button2);
         var input = layout.<EditText>requireViewById(R.id.input);
         input.setFilters(DigitsInputFilter.getInstance((Locale) null),
@@ -951,7 +1062,7 @@ public class PreferencesFragment extends Fragment {
                 }
             }
         });
-        input.setMinWidth(slider.dp(50));
+        input.setMinWidth(slider.dp(60));
         int steps = (maxValue - minValue) / stepSize;
         slider.setMax(steps);
         slider.setProgress((curValue - minValue) / stepSize);
@@ -1028,7 +1139,7 @@ public class PreferencesFragment extends Fragment {
                                                  Supplier<Double> getter, Consumer<Double> setter,
                                                  float denominator, // 10 means step=0.1, 100 means step=0.01
                                                  Runnable saveFn) {
-        var layout = createInputBoxWithSlider(context, name);
+        var layout = createInputBoxWithSlider(context, name, (maxValue - minValue) * denominator <= 10);
         var slider = layout.<SeekBar>requireViewById(R.id.button2);
         var input = layout.<EditText>requireViewById(R.id.input);
         input.setFilters(DigitsInputFilter.getInstance(null, minValue < 0, true),
@@ -1049,7 +1160,7 @@ public class PreferencesFragment extends Fragment {
                 }
             }
         });
-        input.setMinWidth(slider.dp(50));
+        input.setMinWidth(slider.dp(60));
         int steps = Math.round((maxValue - minValue) * denominator);
         slider.setMax(steps);
         int curProgress = Math.round((curValue - minValue) * denominator);
@@ -1100,7 +1211,8 @@ public class PreferencesFragment extends Fragment {
             option.addView(title, params);
         }
         {
-            var input = new EditText(context);
+            var input = new EditText(context, null, null,
+                    R.style.Widget_Material3_EditText_OutlinedBox);
             input.setId(R.id.input);
             input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
             input.setTextSize(14);
@@ -1126,8 +1238,6 @@ public class PreferencesFragment extends Fragment {
                     }
                 }
             });
-
-            ThemeControl.addBackground(input);
 
             var params = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 5);
             params.gravity = Gravity.CENTER_VERTICAL;
@@ -1184,15 +1294,14 @@ public class PreferencesFragment extends Fragment {
             final boolean rounded;
             {
                 var option = createSwitchLayout(mParent.getContext(), "modernui.center.tooltip.roundedShapes");
-                var button = option.<SwitchButton>requireViewById(R.id.button1);
+                var button = option.<Switch>requireViewById(R.id.button1);
                 button.setChecked(rounded = Config.CLIENT.mRoundedTooltip.get());
                 button.setOnCheckedChangeListener((__, checked) -> {
                     Config.CLIENT.mRoundedTooltip.set(checked);
-                    int visibility = checked ? View.VISIBLE : View.GONE;
-                    mBorderWidth.setVisibility(visibility);
-                    mCornerRadius.setVisibility(visibility);
-                    mShadowRadius.setVisibility(visibility);
-                    mShadowAlpha.setVisibility(visibility);
+                    setViewAndChildrenEnabled(mBorderWidth, checked);
+                    setViewAndChildrenEnabled(mCornerRadius, checked);
+                    setViewAndChildrenEnabled(mShadowRadius, checked);
+                    setViewAndChildrenEnabled(mShadowAlpha, checked);
                     mSaveFn.run();
                 });
                 mContent.addView(option);
@@ -1200,14 +1309,14 @@ public class PreferencesFragment extends Fragment {
             {
                 var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.borderWidth",
                         Config.Client.TOOLTIP_BORDER_WIDTH_MIN, Config.Client.TOOLTIP_BORDER_WIDTH_MAX,
-                        4, Config.CLIENT.mTooltipWidth, (thickness) -> {
-                            Config.CLIENT.mTooltipWidth.set(thickness);
+                        4, Config.CLIENT.mTooltipWidth, (width) -> {
+                            Config.CLIENT.mTooltipWidth.set(width);
                             if (mColorPicker != null) {
-                                mColorPicker.setThicknessFactor(thickness.floatValue() / 3f);
+                                mColorPicker.setBorderWidth(width.floatValue());
                             }
                         }, 100, mSaveFn);
                 if (!rounded) {
-                    option.setVisibility(View.GONE);
+                    setViewAndChildrenEnabled(option, false);
                 }
                 mBorderWidth = option;
                 mContent.addView(option);
@@ -1215,9 +1324,14 @@ public class PreferencesFragment extends Fragment {
             {
                 var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.cornerRadius",
                         Config.Client.TOOLTIP_CORNER_RADIUS_MIN, Config.Client.TOOLTIP_CORNER_RADIUS_MAX,
-                        3, Config.CLIENT.mTooltipRadius, 10, mSaveFn);
+                        3, Config.CLIENT.mTooltipRadius, (radius) -> {
+                            Config.CLIENT.mTooltipRadius.set(radius);
+                            if (mColorPicker != null) {
+                                mColorPicker.setBorderRadius(radius.floatValue());
+                            }
+                        }, 10, mSaveFn);
                 if (!rounded) {
-                    option.setVisibility(View.GONE);
+                    setViewAndChildrenEnabled(option, false);
                 }
                 mCornerRadius = option;
                 mContent.addView(option);
@@ -1227,7 +1341,7 @@ public class PreferencesFragment extends Fragment {
                         Config.Client.TOOLTIP_SHADOW_RADIUS_MIN, Config.Client.TOOLTIP_SHADOW_RADIUS_MAX,
                         4, Config.CLIENT.mTooltipShadowRadius, 10, mSaveFn);
                 if (!rounded) {
-                    option.setVisibility(View.GONE);
+                    setViewAndChildrenEnabled(option, false);
                 }
                 mShadowRadius = option;
                 mContent.addView(option);
@@ -1237,7 +1351,7 @@ public class PreferencesFragment extends Fragment {
                         0F, 1F,
                         4, Config.CLIENT.mTooltipShadowAlpha, 100, mSaveFn);
                 if (!rounded) {
-                    option.setVisibility(View.GONE);
+                    setViewAndChildrenEnabled(option, false);
                 }
                 mShadowAlpha = option;
                 mContent.addView(option);
@@ -1249,17 +1363,20 @@ public class PreferencesFragment extends Fragment {
                     4, 100, Config.CLIENT.mTooltipCycle, mSaveFn));
             var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
             params.setMargins(0, mContent.dp(6), 0, 0);
+            int dp4 = mContent.dp(4);
             {
                 var buttonGroup = new LinearLayout(mParent.getContext());
                 buttonGroup.setOrientation(LinearLayout.HORIZONTAL);
                 for (int i = 0; i < 4; i++) {
-                    var button = new Button(mParent.getContext());
+                    var button = new Button(mParent.getContext(), null, null,
+                            R.style.Widget_Material3_Button_OutlinedButton);
                     button.setText(I18n.get("gui.modernui.preset_s", (i + 1)));
                     final int idx = i;
                     button.setOnClickListener((__) -> mColorPicker.setColors(
                             PRESET_COLORS[idx])
                     );
                     var p = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
+                    p.setMargins(dp4, 0, dp4, 0);
                     buttonGroup.addView(button, p);
                 }
                 mContent.addView(buttonGroup, new LinearLayout.LayoutParams(params));
@@ -1267,6 +1384,8 @@ public class PreferencesFragment extends Fragment {
             mContent.addView(mColorPicker = new FourColorPicker(mParent.getContext(),
                     Config.CLIENT.mTooltipStroke, Config.CLIENT.mTooltipStroke::set,
                     mSaveFn), new LinearLayout.LayoutParams(params));
+            mColorPicker.setBorderRadius(Config.CLIENT.mTooltipRadius.get().floatValue());
+            mColorPicker.setBorderWidth(Config.CLIENT.mTooltipWidth.get().floatValue());
             mParent.addView(mContent, params);
         }
     }
@@ -1499,6 +1618,19 @@ public class PreferencesFragment extends Fragment {
                 if (tv.getTypeface() == oldTypeface) {
                     tv.setTypeface(ModernUI.getSelectedTypeface());
                 }
+            }
+        }
+    }
+
+    private static void setViewAndChildrenEnabled(View view, boolean enabled) {
+        if (view != null) {
+            view.setEnabled(enabled);
+        }
+        if (view instanceof ViewGroup vg) {
+            int cc = vg.getChildCount();
+            for (int i = 0; i < cc; i++) {
+                View v = vg.getChildAt(i);
+                setViewAndChildrenEnabled(v, enabled);
             }
         }
     }
