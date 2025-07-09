@@ -29,7 +29,6 @@ import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.TextLayoutEngine;
-import icyllis.modernui.mc.ui.ThemeControl;
 import icyllis.modernui.text.*;
 import icyllis.modernui.text.method.DigitsInputFilter;
 import icyllis.modernui.util.DataSet;
@@ -128,7 +127,7 @@ public class AdvancedOptionsFragment extends Fragment {
                         Config.CLIENT.mRemoveSignature, Config.CLIENT::saveAndReloadAsync));*/
 
                 category.addView(createBooleanOption(context, "Remove telemetry session",
-                        Config.CLIENT.mRemoveTelemetry, Config.CLIENT::saveAndReloadAsync));
+                        ConfigImpl.CLIENT.mRemoveTelemetry, ConfigImpl.CLIENT::saveAndReloadAsync));
 
                 /*category.addView(createBooleanOption(context, "Secure Profile Public Key",
                         Config.CLIENT.mSecurePublicKey, Config.CLIENT::saveAndReloadAsync));*/

@@ -83,12 +83,10 @@ public final class ModernUIForge extends ModernUIMod {
         sLegendaryTooltipsLoaded = ModList.get().isLoaded("legendarytooltips");
         sUntranslatedItemsLoaded = ModList.get().isLoaded("untranslateditems");
 
-        Config.initCommonConfig(
-                spec -> context.registerConfig(ModConfig.Type.COMMON, spec,
-                        ModernUI.NAME_CPT + "/common.toml")
-        );
+        context.registerConfig(ModConfig.Type.COMMON, ConfigImpl.COMMON_SPEC,
+                ModernUI.NAME_CPT + "/common.toml");
         context.getModEventBus().addListener(
-                (Consumer<ModConfigEvent>) event -> Config.reloadCommon(event.getConfig())
+                (Consumer<ModConfigEvent>) event -> ConfigImpl.reloadCommon(event.getConfig())
         );
         LocalStorage.init();
 
@@ -148,21 +146,17 @@ public final class ModernUIForge extends ModernUIMod {
 
         private Client(FMLJavaModLoadingContext context) {
             super();
-            Config.initClientConfig(
-                    spec -> context.registerConfig(ModConfig.Type.CLIENT, spec,
-                            ModernUI.NAME_CPT + "/client.toml")
-            );
-            Config.initTextConfig(
-                    spec -> context.registerConfig(ModConfig.Type.CLIENT, spec,
-                            ModernUI.NAME_CPT + "/text.toml")
-            );
+            context.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
+                    ModernUI.NAME_CPT + "/client.toml");
+            context.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
+                    ModernUI.NAME_CPT + "/text.toml");
             FontResourceManager.getInstance();
             if (ModernUIMod.isTextEngineEnabled()) {
                 ModernUIText.init(context);
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
             context.getModEventBus().addListener(
-                    (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())
+                    (Consumer<ModConfigEvent>) event -> ConfigImpl.reloadAnyClient(event.getConfig())
             );
             context.registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
                     () -> new ConfigScreenHandler.ConfigScreenFactory(

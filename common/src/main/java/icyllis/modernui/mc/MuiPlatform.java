@@ -18,17 +18,23 @@
 
 package icyllis.modernui.mc;
 
+import org.jetbrains.annotations.ApiStatus;
+
+import javax.annotation.Nonnull;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.ServiceLoader;
 
 /**
  * Service interface, common only. This is loaded in MixinConfigPlugin.
  */
+@ApiStatus.Internal
 public abstract class MuiPlatform {
 
-    static final MuiPlatform INSTANCE = ServiceLoader.load(MuiPlatform.class).findFirst()
+    private static final MuiPlatform INSTANCE = ServiceLoader.load(MuiPlatform.class).findFirst()
             .orElseThrow();
 
+    @Nonnull
     public static MuiPlatform get() {
         return INSTANCE;
     }
@@ -36,4 +42,6 @@ public abstract class MuiPlatform {
     public abstract Path getBootstrapPath();
 
     public abstract boolean isClient();
+
+    public abstract Map<String, Config.ConfigItem<?>> getConfigMap(int type);
 }

@@ -433,13 +433,13 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 group.addView(title, params);
             }
 
-            addSystemSetting(20, "Scrollbar size", group, 1024, Config.CLIENT.mScrollbarSize);
-            addSystemSetting(22, "Touch slop", group, 1024, Config.CLIENT.mTouchSlop);
-            addSystemSetting(24, "Min scrollbar touch target", group, 1024, Config.CLIENT.mMinScrollbarTouchTarget);
-            addSystemSetting(26, "Minimum fling velocity", group, 32767, Config.CLIENT.mMinimumFlingVelocity);
-            addSystemSetting(28, "Maximum fling velocity", group, 32767, Config.CLIENT.mMaximumFlingVelocity);
-            addSystemSetting(30, "Overscroll distance", group, 1024, Config.CLIENT.mOverscrollDistance);
-            addSystemSetting(32, "Overfling distance", group, 1024, Config.CLIENT.mOverflingDistance);
+            addSystemSetting(20, "Scrollbar size", group, 1024, ConfigImpl.CLIENT.mScrollbarSize);
+            addSystemSetting(22, "Touch slop", group, 1024, ConfigImpl.CLIENT.mTouchSlop);
+            addSystemSetting(24, "Min scrollbar touch target", group, 1024, ConfigImpl.CLIENT.mMinScrollbarTouchTarget);
+            addSystemSetting(26, "Minimum fling velocity", group, 32767, ConfigImpl.CLIENT.mMinimumFlingVelocity);
+            addSystemSetting(28, "Maximum fling velocity", group, 32767, ConfigImpl.CLIENT.mMaximumFlingVelocity);
+            addSystemSetting(30, "Overscroll distance", group, 1024, ConfigImpl.CLIENT.mOverscrollDistance);
+            addSystemSetting(32, "Overfling distance", group, 1024, ConfigImpl.CLIENT.mOverflingDistance);
 
             {
                 var view = new TextView(getContext());
@@ -454,7 +454,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 group.addView(view, params);
 
                 var input = new EditText(getContext());
-                input.setText(Config.CLIENT.mVerticalScrollFactor.get().toString());
+                input.setText(ConfigImpl.CLIENT.mVerticalScrollFactor.get().toString());
                 input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                 input.setTextSize(14);
                 input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
@@ -465,9 +465,9 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                         double radius = Double.parseDouble(input.getText().toString());
                         radius = Math.max(Math.min(radius, 1024), 0);
                         input.setText(Double.toString(radius));
-                        if (radius != Config.CLIENT.mVerticalScrollFactor.get()) {
-                            Config.CLIENT.mVerticalScrollFactor.set(radius);
-                            Config.CLIENT.saveAndReloadAsync();
+                        if (radius != ConfigImpl.CLIENT.mVerticalScrollFactor.get()) {
+                            ConfigImpl.CLIENT.mVerticalScrollFactor.set(radius);
+                            ConfigImpl.CLIENT.saveAndReloadAsync();
                         }
                     }
                 });
@@ -497,7 +497,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 group.addView(view, params);
 
                 var input = new EditText(getContext());
-                input.setText(Config.CLIENT.mHorizontalScrollFactor.get().toString());
+                input.setText(ConfigImpl.CLIENT.mHorizontalScrollFactor.get().toString());
                 input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                 input.setTextSize(14);
                 input.setFilters(DigitsInputFilter.getInstance(input.getTextLocale(), false, true),
@@ -508,9 +508,9 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                         double radius = Double.parseDouble(input.getText().toString());
                         radius = Math.max(Math.min(radius, 1024), 0);
                         input.setText(Double.toString(radius));
-                        if (radius != Config.CLIENT.mHorizontalScrollFactor.get()) {
-                            Config.CLIENT.mHorizontalScrollFactor.set(radius);
-                            Config.CLIENT.saveAndReloadAsync();
+                        if (radius != ConfigImpl.CLIENT.mHorizontalScrollFactor.get()) {
+                            ConfigImpl.CLIENT.mHorizontalScrollFactor.set(radius);
+                            ConfigImpl.CLIENT.saveAndReloadAsync();
                         }
                     }
                 });
@@ -566,7 +566,7 @@ public class CenterFragment extends Fragment implements ScreenCallback {
                 input.setText(Integer.toString(val));
                 if (val != config.get()) {
                     config.set(val);
-                    Config.CLIENT.saveAndReloadAsync();
+                    ConfigImpl.CLIENT.saveAndReloadAsync();
                 }
             }
         });

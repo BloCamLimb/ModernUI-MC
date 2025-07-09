@@ -61,12 +61,12 @@ public final class ServerHandler {
         if (!mStarted) {
             return;
         }
-        if (Config.COMMON.autoShutdown.get()) {
+        if (ConfigImpl.COMMON.autoShutdown.get()) {
             Calendar calendar = Calendar.getInstance();
             int current =
                     calendar.get(Calendar.HOUR_OF_DAY) * 3600 + calendar.get(Calendar.MINUTE) * 60 + calendar.get(Calendar.SECOND);
             int target = Integer.MAX_VALUE;
-            for (String s : Config.COMMON.shutdownTimes.get()) {
+            for (String s : ConfigImpl.COMMON.shutdownTimes.get()) {
                 try {
                     String[] s1 = s.split(":", 2);
                     int h = Integer.parseInt(s1[0]);

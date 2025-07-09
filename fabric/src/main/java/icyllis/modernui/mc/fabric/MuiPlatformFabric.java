@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.fabric;
 
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.mc.Config;
 import icyllis.modernui.mc.MuiPlatform;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
@@ -26,6 +27,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 public final class MuiPlatformFabric extends MuiPlatform {
 
@@ -52,5 +54,10 @@ public final class MuiPlatformFabric extends MuiPlatform {
     @Override
     public boolean isClient() {
         return FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT;
+    }
+
+    @Override
+    public Map<String, Config.ConfigItem<?>> getConfigMap(int type) {
+        return ConfigImpl.getConfigMap(type);
     }
 }

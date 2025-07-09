@@ -42,12 +42,12 @@ public final class LocalStorage {
 
     // Unstable
     public static boolean checkOneTimeEvent(int mask) {
-        int v = Config.COMMON.oneTimeEvents.get();
+        int v = ConfigImpl.COMMON.oneTimeEvents.get();
         if ((v & mask) != 0) {
             return false;
         }
-        Config.COMMON.oneTimeEvents.set(v | mask);
-        Config.COMMON.oneTimeEvents.save();
+        ConfigImpl.COMMON.oneTimeEvents.set(v | mask);
+        ConfigImpl.COMMON.oneTimeEvents.save();
         return true;
     }
 

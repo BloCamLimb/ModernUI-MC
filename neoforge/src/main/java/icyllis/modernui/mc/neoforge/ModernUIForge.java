@@ -76,12 +76,10 @@ public final class ModernUIForge extends ModernUIMod {
         sLegendaryTooltipsLoaded = ModList.get().isLoaded("legendarytooltips");
         sUntranslatedItemsLoaded = ModList.get().isLoaded("untranslateditems");
 
-        Config.initCommonConfig(
-                spec -> modContainer.registerConfig(ModConfig.Type.COMMON, spec,
-                        ModernUI.NAME_CPT + "/common.toml")
-        );
+        modContainer.registerConfig(ModConfig.Type.COMMON, ConfigImpl.COMMON_SPEC,
+                ModernUI.NAME_CPT + "/common.toml");
         modEventBus.addListener(
-                (Consumer<ModConfigEvent>) event -> Config.reloadCommon(event.getConfig())
+                (Consumer<ModConfigEvent>) event -> ConfigImpl.reloadCommon(event.getConfig())
         );
         LocalStorage.init();
 
@@ -120,21 +118,17 @@ public final class ModernUIForge extends ModernUIMod {
         // mod-loading thread
         public Client(IEventBus modEventBus, ModContainer modContainer) {
             super();
-            Config.initClientConfig(
-                    spec -> modContainer.registerConfig(ModConfig.Type.CLIENT, spec,
-                            ModernUI.NAME_CPT + "/client.toml")
-            );
-            Config.initTextConfig(
-                    spec -> modContainer.registerConfig(ModConfig.Type.CLIENT, spec,
-                            ModernUI.NAME_CPT + "/text.toml")
-            );
+            modContainer.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
+                    ModernUI.NAME_CPT + "/client.toml");
+            modContainer.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
+                    ModernUI.NAME_CPT + "/text.toml");
             FontResourceManager.getInstance();
             if (ModernUIMod.isTextEngineEnabled()) {
                 ModernUIText.init(modEventBus);
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
             modEventBus.addListener(
-                    (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())
+                    (Consumer<ModConfigEvent>) event -> ConfigImpl.reloadAnyClient(event.getConfig())
             );
             modContainer.registerExtensionPoint(IConfigScreenFactory.class,
                     (mc, modsScreen) -> {

@@ -32,8 +32,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -61,7 +59,6 @@ import javax.annotation.Nonnull;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static icyllis.modernui.mc.ModernUIMod.*;
@@ -181,7 +178,7 @@ final class Registration {
                 // FML may throw ex, so it can be null
                 if (handler != null) {
                     // Call in lambda, not in creating the lambda
-                    handler.post(() -> UIManager.getInstance().updateLayoutDir(Config.CLIENT.mForceRtl.get()));
+                    handler.post(() -> UIManager.getInstance().updateLayoutDir(ConfigImpl.CLIENT.mForceRtl.get()));
                 }
                 //BlurHandler.INSTANCE.loadEffect();
             });
@@ -245,7 +242,7 @@ final class Registration {
                             .guiScale))))
             );*/
 
-            if (Config.CLIENT.mUseNewGuiScale.get()) {
+            if (ConfigImpl.CLIENT.mUseNewGuiScale.get()) {
                 final OptionInstance<Integer> newGuiScale = new OptionInstance<>(
                         /*caption*/ "options.guiScale",
                         /*tooltip*/ OptionInstance.noTooltip(),

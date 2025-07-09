@@ -118,7 +118,7 @@ public class AdvancedOptionsFragment extends Fragment {
                         Config.CLIENT.mRemoveSignature, Config.CLIENT::saveAndReloadAsync));*/
 
                 category.addView(createBooleanOption(context, "Remove telemetry session",
-                        Config.CLIENT.mRemoveTelemetry, Config.CLIENT::saveAndReloadAsync));
+                        ConfigImpl.CLIENT.mRemoveTelemetry, ConfigImpl.CLIENT::saveAndReloadAsync));
 
                 /*category.addView(createBooleanOption(context, "Secure Profile Public Key",
                         Config.CLIENT.mSecurePublicKey, Config.CLIENT::saveAndReloadAsync));*/

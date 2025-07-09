@@ -18,48 +18,42 @@
 
 package icyllis.modernui.mc.neoforge;
 
-import com.mojang.blaze3d.platform.*;
-import icyllis.modernui.ModernUI;
-import icyllis.modernui.core.Core;
-import icyllis.modernui.core.Handler;
-import icyllis.modernui.graphics.Color;
-import icyllis.modernui.graphics.text.LineBreakConfig;
-import icyllis.modernui.mc.*;
-import icyllis.modernui.mc.text.*;
-import icyllis.modernui.resources.Resources;
-import icyllis.modernui.util.DisplayMetrics;
-import icyllis.modernui.view.View;
+import icyllis.modernui.mc.Config;
+import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.MuiPlatform;
+import icyllis.modernui.mc.text.TextLayout;
+import icyllis.modernui.mc.text.TextLayoutEngine;
+import icyllis.modernui.mc.text.TextLayoutProcessor;
 import icyllis.modernui.view.ViewConfiguration;
 import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
-import net.minecraft.client.resources.language.I18n;
 import net.neoforged.fml.config.IConfigSpec;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.ModConfigSpec;
+import org.apache.commons.lang3.Range;
 import org.jetbrains.annotations.ApiStatus;
-import org.lwjgl.glfw.GLFW;
-import org.lwjgl.system.MemoryUtil;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import static icyllis.modernui.mc.ModernUIMod.*;
 
 @ApiStatus.Internal
-public final class Config {
+public final class ConfigImpl {
 
-    public static Client CLIENT;
+    public static final Client CLIENT;
+    public static final ModConfigSpec CLIENT_SPEC;
 
-    private static ModConfigSpec CLIENT_SPEC;
+    public static final Common COMMON;
+    public static final ModConfigSpec COMMON_SPEC;
 
-    public static Common COMMON;
-    private static ModConfigSpec COMMON_SPEC;
-
-    public static Text TEXT;
-    public static ModConfigSpec TEXT_SPEC;
+    public static final Text TEXT;
+    public static final ModConfigSpec TEXT_SPEC;
 
     /*static final Server SERVER;
     private static final ModConfigSpec SERVER_SPEC;*/
@@ -74,25 +68,26 @@ public final class Config {
                     ModernUI.NAME_CPT + "/server.toml")); // sync to client (network)*/
     }
 
-    public static void initClientConfig(Consumer<ModConfigSpec> registerConfig) {
-        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
-        CLIENT = new Client(builder);
-        CLIENT_SPEC = builder.build();
-        registerConfig.accept(CLIENT_SPEC);
-    }
-
-    public static void initCommonConfig(Consumer<ModConfigSpec> registerConfig) {
+    static {
+        MuiPlatform service = MuiPlatform.get();
+        if (service.isClient()) {
+            {
+                ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+                CLIENT = new Client(builder);
+                CLIENT_SPEC = builder.build();
+            }
+            ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+            TEXT = new Text(builder);
+            TEXT_SPEC = builder.build();
+        } else {
+            CLIENT = null;
+            CLIENT_SPEC = null;
+            TEXT = null;
+            TEXT_SPEC = null;
+        }
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         COMMON = new Common(builder);
         COMMON_SPEC = builder.build();
-        registerConfig.accept(COMMON_SPEC);
-    }
-
-    public static void initTextConfig(Consumer<ModConfigSpec> registerConfig) {
-        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
-        TEXT = new Text(builder);
-        TEXT_SPEC = builder.build();
-        registerConfig.accept(TEXT_SPEC);
     }
 
     /*public static void reload(@Nonnull ModConfig config) {
@@ -120,6 +115,78 @@ public final class Config {
             TEXT.reload();
             LOGGER.debug(MARKER, "Modern UI text config loaded/reloaded");
         }
+    }
+
+    static class ConfigItemImpl<T> extends Config.ConfigItem<T> {
+
+        private final ModConfigSpec.ConfigValue<T> value;
+        private final ModConfigSpec.ValueSpec spec;
+
+        ConfigItemImpl(ModConfigSpec.ConfigValue<T> value,
+                       ModConfigSpec.ValueSpec spec) {
+            this.value = value;
+            this.spec = spec;
+        }
+
+        @Override
+        public T get() {
+            return value.get();
+        }
+
+        @Override
+        public void set(T value) {
+            this.value.set(value);
+        }
+
+        @Override
+        public T getDefault() {
+            return value.getDefault();
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public Range<T> getRange() {
+            ModConfigSpec.Range<Comparable<Object>> r = spec.getRange();
+            if (r != null) {
+                return (Range<T>) Range.of(r.getMin(), r.getMax());
+            }
+            return null;
+        }
+    }
+
+    @Nullable
+    static Map<String, Config.ConfigItem<?>> getConfigMap(int type) {
+        final Object config;
+        final ModConfigSpec configSpec;
+        switch (type) {
+            case Config.TYPE_CLIENT -> {
+                config = CLIENT;
+                configSpec = CLIENT_SPEC;
+            }
+            case Config.TYPE_COMMON -> {
+                config = COMMON;
+                configSpec = COMMON_SPEC;
+            }
+            case Config.TYPE_TEXT -> {
+                config = TEXT;
+                configSpec = TEXT_SPEC;
+            }
+            default -> {
+                return null;
+            }
+        }
+        Map<String, Config.ConfigItem<?>> map = new HashMap<>();
+        for (var f : config.getClass().getDeclaredFields()) {
+            try {
+                if (f.get(config) instanceof ModConfigSpec.ConfigValue<?> value &&
+                        configSpec.getSpec().get(value.getPath()) instanceof ModConfigSpec.ValueSpec spec) {
+                    map.put(f.getName(), new ConfigItemImpl<>(value, spec));
+                }
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return map;
     }
 
     /*private static class C extends ModConfig {
@@ -202,13 +269,14 @@ public final class Config {
         public final ModConfigSpec.DoubleValue mTooltipShadowAlpha;
         public final ModConfigSpec.BooleanValue mAdaptiveTooltipColors;
         public final ModConfigSpec.IntValue mTooltipArrowScrollFactor;
+        //public final ModConfigSpec.BooleanValue mTooltipLineWrapping;
         //public final ModConfigSpec.IntValue mTooltipDuration;
         public final ModConfigSpec.BooleanValue mDing;
         public final ModConfigSpec.BooleanValue mZoom;
         //private final ModConfigSpec.BooleanValue hudBars;
         public final ModConfigSpec.BooleanValue mForceRtl;
         public final ModConfigSpec.DoubleValue mFontScale;
-        public final ModConfigSpec.EnumValue<WindowMode> mWindowMode;
+        public final ModConfigSpec.EnumValue<Config.Client.WindowMode> mWindowMode;
         public final ModConfigSpec.BooleanValue mUseNewGuiScale;
         //public final ModConfigSpec.BooleanValue mRemoveSignature;
         public final ModConfigSpec.BooleanValue mRemoveTelemetry;
@@ -238,8 +306,6 @@ public final class Config {
 
         /*public final ModConfigSpec.BooleanValue mSkipGLCapsError;
         public final ModConfigSpec.BooleanValue mShowGLCapsError;*/
-
-        public WindowMode mLastWindowMode = WindowMode.NORMAL;
 
         private Client(@Nonnull ModConfigSpec.Builder builder) {
             builder.comment("Screen Config")
@@ -377,7 +443,11 @@ public final class Config {
                     .define("adaptiveColors", true);
             mTooltipArrowScrollFactor = builder.comment(
                             "Amount to scroll the tooltip in response to a arrow key pressed event.")
-                    .defineInRange("arrowScrollFactor", 60, TOOLTIP_ARROW_SCROLL_FACTOR_MIN, TOOLTIP_ARROW_SCROLL_FACTOR_MAX);
+                    .defineInRange("arrowScrollFactor", 60, TOOLTIP_ARROW_SCROLL_FACTOR_MIN,
+                            TOOLTIP_ARROW_SCROLL_FACTOR_MAX);
+            /*mTooltipLineWrapping = builder.comment(
+                            "Provide line wrapping and optimization for tooltip components.")
+                    .define("lineWrapping", true);*/
 
             builder.pop();
 
@@ -396,7 +466,7 @@ public final class Config {
                     .define("hudBars", false);*/
 
             mWindowMode = builder.comment("Control the window mode, normal mode does nothing.")
-                    .defineEnum("windowMode", WindowMode.NORMAL);
+                    .defineEnum("windowMode", Config.Client.WindowMode.NORMAL);
             mUseNewGuiScale = builder.comment("Whether to replace vanilla GUI scale button to slider with tips.")
                     .define("useNewGuiScale", true);
 
@@ -440,12 +510,14 @@ public final class Config {
                     .defineInRange("overscrollDistance", ViewConfiguration.OVERSCROLL_DISTANCE, 0, 1024);
             mOverflingDistance = builder.comment("Max distance in dips to overfling for edge effects.")
                     .defineInRange("overflingDistance", ViewConfiguration.OVERFLING_DISTANCE, 0, 1024);
-            mVerticalScrollFactor = builder.comment("Amount to scroll in response to a vertical scroll event, in dips" +
-                            " per axis value.")
-                    .defineInRange("verticalScrollFactor", ViewConfiguration.VERTICAL_SCROLL_FACTOR, 0, 1024);
-            mHorizontalScrollFactor = builder.comment("Amount to scroll in response to a horizontal scroll event, in " +
-                            "dips per axis value.")
-                    .defineInRange("horizontalScrollFactor", ViewConfiguration.HORIZONTAL_SCROLL_FACTOR, 0, 1024);
+            mVerticalScrollFactor = builder.comment(
+                            "Amount to scroll in response to a vertical scroll event, in dips per axis value.")
+                    .defineInRange("verticalScrollFactor", (double) ViewConfiguration.VERTICAL_SCROLL_FACTOR,
+                            0, 1024);
+            mHorizontalScrollFactor = builder.comment(
+                            "Amount to scroll in response to a horizontal scroll event, in dips per axis value.")
+                    .defineInRange("horizontalScrollFactor", (double) ViewConfiguration.HORIZONTAL_SCROLL_FACTOR,
+                            0, 1024);
 
             builder.pop();
 
@@ -510,208 +582,13 @@ public final class Config {
             reload();
         }
 
-        public void reload() {
-            BlurHandler.sBlurEffect = mBlurEffect.get();
-            //BlurHandler.sBlurWithBackground = mBlurWithBackground.get();
-            BlurHandler.sOverrideVanillaBlur = mOverrideVanillaBlur.get();
-            BlurHandler.sBackgroundDuration = mBackgroundDuration.get();
-            BlurHandler.sBlurRadius = mBlurRadius.get();
-
-            BlurHandler.sFramerateInactive = mFramerateInactive.get();
-            /*BlurHandler.sFramerateMinimized = Math.min(
-                    mFramerateMinimized.get(),
-                    BlurHandler.sFramerateInactive
-            );*/
-            BlurHandler.sMasterVolumeInactive = mMasterVolumeInactive.get().floatValue();
-            BlurHandler.sMasterVolumeMinimized = Math.min(
-                    mMasterVolumeMinimized.get().floatValue(),
-                    BlurHandler.sMasterVolumeInactive
-            );
-
-            List<? extends String> inColors = mBackgroundColor.get();
-            int[] resultColors = new int[4];
-            int color = 0x99000000;
-            for (int i = 0; i < 4; i++) {
-                if (inColors != null && i < inColors.size()) {
-                    String s = inColors.get(i);
-                    try {
-                        color = Color.parseColor(s);
-                    } catch (Exception e) {
-                        LOGGER.error(MARKER, "Wrong color format for screen background, index: {}", i, e);
-                    }
-                }
-                resultColors[i] = color;
-            }
-            BlurHandler.sBackgroundColor = resultColors;
-
-            BlurHandler.INSTANCE.loadBlacklist(mBlurBlacklist.get());
-
-            ModernUIClient.sInventoryPause = mInventoryPause.get();
-            //ModernUIForge.sRemoveMessageSignature = mRemoveSignature.get();
-            ModernUIClient.sRemoveTelemetrySession = mRemoveTelemetry.get();
-            //ModernUIForge.sSecureProfilePublicKey = mSecurePublicKey.get();
-
-            TooltipRenderer.sTooltip = mTooltip.get();
-
-            inColors = mTooltipFill.get();
-            color = 0xFFFFFFFF;
-            for (int i = 0; i < 4; i++) {
-                if (inColors != null && i < inColors.size()) {
-                    String s = inColors.get(i);
-                    try {
-                        color = Color.parseColor(s);
-                    } catch (Exception e) {
-                        LOGGER.error(MARKER, "Wrong color format for tooltip background, index: {}", i, e);
-                    }
-                }
-                TooltipRenderer.sFillColor[i] = color;
-            }
-            inColors = mTooltipStroke.get();
-            color = 0xFFFFFFFF;
-            for (int i = 0; i < 4; i++) {
-                if (inColors != null && i < inColors.size()) {
-                    String s = inColors.get(i);
-                    try {
-                        color = Color.parseColor(s);
-                    } catch (Exception e) {
-                        LOGGER.error(MARKER, "Wrong color format for tooltip border, index: {}", i, e);
-                    }
-                }
-                TooltipRenderer.sStrokeColor[i] = color;
-            }
-            //TooltipRenderer.sAnimationDuration = mTooltipDuration.get();
-            TooltipRenderer.sBorderColorCycle = mTooltipCycle.get();
-            TooltipRenderer.sExactPositioning = mExactTooltipPositioning.get();
-            TooltipRenderer.sRoundedShapes = mRoundedTooltip.get();
-            TooltipRenderer.sCenterTitle = mCenterTooltipTitle.get();
-            TooltipRenderer.sTitleBreak = mTooltipTitleBreak.get();
-            TooltipRenderer.sBorderWidth = mTooltipWidth.get().floatValue();
-            TooltipRenderer.sCornerRadius = mTooltipRadius.get().floatValue();
-            TooltipRenderer.sShadowRadius = mTooltipShadowRadius.get().floatValue();
-            TooltipRenderer.sShadowAlpha = mTooltipShadowAlpha.get().floatValue();
-            TooltipRenderer.sAdaptiveColors = mAdaptiveTooltipColors.get();
-            TooltipRenderer.sArrowScrollFactor = mTooltipArrowScrollFactor.get();
-
-            UIManager.sDingEnabled = mDing.get();
-            UIManager.sZoomEnabled = mZoom.get() && !ModernUIMod.isOptiFineLoaded();
-
-            WindowMode windowMode = mWindowMode.get();
-            if (mLastWindowMode != windowMode) {
-                mLastWindowMode = windowMode;
-                Minecraft.getInstance().schedule(() -> mLastWindowMode.apply());
-            }
-
-            //TestHUD.sBars = hudBars.get();
-            Handler handler = Core.getUiHandlerAsync();
-            if (handler != null) {
-                handler.post(() -> {
-                    UIManager.getInstance().updateLayoutDir(mForceRtl.get());
-                    ModernUIClient.sFontScale = (mFontScale.get().floatValue());
-                    var ctx = ModernUI.getInstance();
-                    if (ctx != null) {
-                        Resources res = ctx.getResources();
-                        DisplayMetrics metrics = new DisplayMetrics();
-                        metrics.setTo(res.getDisplayMetrics());
-                        metrics.scaledDensity = ModernUIClient.sFontScale * metrics.density;
-                        res.updateMetrics(metrics);
-                    }
-                });
-            }
-
-            ModernUIClient.sUseColorEmoji = mUseColorEmoji.get();
-            ModernUIClient.sEmojiShortcodes = mEmojiShortcodes.get();
-            ModernUIClient.sFirstFontFamily = mFirstFontFamily.get();
-            ModernUIClient.sFallbackFontFamilyList = mFallbackFontFamilyList.get();
-            ModernUIClient.sFontRegistrationList = mFontRegistrationList.get();
+        private void reload() {
+            Config.CLIENT.reload();
 
             // scan and preload typeface in background thread
             // only on Forge, config is loaded when reloading resources
             // on NeoForge 1.21 and Fabric, config is preloaded and loadTypeface() is trigger by FontResourceManager
             //ModernUIClient.getInstance().loadTypeface();
-        }
-
-        public enum WindowMode {
-            NORMAL,
-            FULLSCREEN,
-            FULLSCREEN_BORDERLESS,
-            MAXIMIZED,
-            MAXIMIZED_BORDERLESS,
-            WINDOWED,
-            WINDOWED_BORDERLESS;
-
-            public void apply() {
-                if (this == NORMAL) {
-                    return;
-                }
-                Window window = Minecraft.getInstance().getWindow();
-                switch (this) {
-                    case FULLSCREEN -> {
-                        if (!window.isFullscreen()) {
-                            window.toggleFullScreen();
-                        }
-                    }
-                    case FULLSCREEN_BORDERLESS -> {
-                        if (window.isFullscreen()) {
-                            window.toggleFullScreen();
-                        }
-                        GLFW.glfwRestoreWindow(window.getWindow());
-                        GLFW.glfwSetWindowAttrib(window.getWindow(),
-                                GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
-                        Monitor monitor = window.findBestMonitor();
-                        if (monitor != null) {
-                            VideoMode videoMode = monitor.getCurrentMode();
-                            int x = monitor.getX();
-                            int y = monitor.getY();
-                            int width = videoMode.getWidth();
-                            int height = videoMode.getHeight();
-                            GLFW.glfwSetWindowMonitor(window.getWindow(), MemoryUtil.NULL,
-                                    x, y, width, height, GLFW.GLFW_DONT_CARE);
-                        } else {
-                            GLFW.glfwMaximizeWindow(window.getWindow());
-                        }
-                    }
-                    case MAXIMIZED -> {
-                        if (window.isFullscreen()) {
-                            window.toggleFullScreen();
-                        }
-                        GLFW.glfwRestoreWindow(window.getWindow());
-                        GLFW.glfwSetWindowAttrib(window.getWindow(),
-                                GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
-                        GLFW.glfwMaximizeWindow(window.getWindow());
-                    }
-                    case MAXIMIZED_BORDERLESS -> {
-                        if (window.isFullscreen()) {
-                            window.toggleFullScreen();
-                        }
-                        GLFW.glfwRestoreWindow(window.getWindow());
-                        GLFW.glfwSetWindowAttrib(window.getWindow(),
-                                GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
-                        GLFW.glfwMaximizeWindow(window.getWindow());
-                    }
-                    case WINDOWED -> {
-                        if (window.isFullscreen()) {
-                            window.toggleFullScreen();
-                        }
-                        GLFW.glfwSetWindowAttrib(window.getWindow(),
-                                GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
-                        GLFW.glfwRestoreWindow(window.getWindow());
-                    }
-                    case WINDOWED_BORDERLESS -> {
-                        if (window.isFullscreen()) {
-                            window.toggleFullScreen();
-                        }
-                        GLFW.glfwSetWindowAttrib(window.getWindow(),
-                                GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
-                        GLFW.glfwRestoreWindow(window.getWindow());
-                    }
-                }
-            }
-
-            @Nonnull
-            @Override
-            public String toString() {
-                return I18n.get("modernui.windowMode." + name().toLowerCase(Locale.ROOT));
-            }
         }
     }
 
@@ -794,17 +671,17 @@ public final class Config {
         //public final ModConfigSpec.BooleanValue mAlignPixels;
         public final ModConfigSpec.IntValue mCacheLifespan;
         //public final ModConfigSpec.IntValue mRehashThreshold;
-        public final ModConfigSpec.EnumValue<TextDirection> mTextDirection;
+        public final ModConfigSpec.EnumValue<Config.Text.TextDirection> mTextDirection;
         //public final ModConfigSpec.BooleanValue mBitmapReplacement;
         //public final ModConfigSpec.BooleanValue mUseDistanceField;
         //public final ModConfigSpec.BooleanValue mUseVanillaFont;
         public final ModConfigSpec.BooleanValue mUseTextShadersInWorld;
-        public final ModConfigSpec.EnumValue<DefaultFontBehavior> mDefaultFontBehavior;
+        public final ModConfigSpec.EnumValue<Config.Text.DefaultFontBehavior> mDefaultFontBehavior;
         public final ModConfigSpec.ConfigValue<List<? extends String>> mDefaultFontRuleSet;
         public final ModConfigSpec.BooleanValue mUseComponentCache;
         public final ModConfigSpec.BooleanValue mAllowAsyncLayout;
-        public final ModConfigSpec.EnumValue<LineBreakStyle> mLineBreakStyle;
-        public final ModConfigSpec.EnumValue<LineBreakWordStyle> mLineBreakWordStyle;
+        public final ModConfigSpec.EnumValue<Config.Text.LineBreakStyle> mLineBreakStyle;
+        public final ModConfigSpec.EnumValue<Config.Text.LineBreakWordStyle> mLineBreakWordStyle;
         public final ModConfigSpec.BooleanValue mSmartSDFShaders;
         public final ModConfigSpec.BooleanValue mComputeDeviceFontSize;
         public final ModConfigSpec.BooleanValue mAllowSDFTextIn2D;
@@ -843,12 +720,12 @@ public final class Config {
                             "Control base font size, in GUI scaled pixels. The default and vanilla value is 8.",
                             "For bitmap fonts, 8 represents a glyph size of 8x or 16x if fixed resolution.",
                             "This option only applies to TrueType fonts.")
-                    .defineInRange("baseFontSize", TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE,
+                    .defineInRange("baseFontSize", (double) TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE,
                             BASE_FONT_SIZE_MIN, BASE_FONT_SIZE_MAX);
             mBaselineShift = builder.comment(
                             "Control vertical baseline for vanilla text layout, in GUI scaled pixels.",
                             "The vanilla default value is 7.")
-                    .defineInRange("baselineShift", TextLayout.STANDARD_BASELINE_OFFSET,
+                    .defineInRange("baselineShift", (double) TextLayout.STANDARD_BASELINE_OFFSET,
                             BASELINE_MIN, BASELINE_MAX);
             mShadowOffset = builder.comment(
                             "Control the text shadow offset for vanilla text rendering, in GUI scaled pixels.")
@@ -872,7 +749,7 @@ public final class Config {
             mTextDirection = builder.comment(
                             "The bidirectional text heuristic algorithm. The default is FirstStrong (Locale).",
                             "This will affect which BiDi algorithm to use during text layout.")
-                    .defineEnum("textDirection", TextDirection.FIRST_STRONG);
+                    .defineEnum("textDirection", Config.Text.TextDirection.FIRST_STRONG);
             /*mBitmapReplacement = builder.comment(
                             "Whether to use bitmap replacement for non-Emoji character sequences. Restart is required.")
                     .define("bitmapReplacement", false);*/
@@ -899,7 +776,7 @@ public final class Config {
                             "Keep All: Include all except Unicode font.",
                             "Only Include: Only include providers that specified by defaultFontRuleSet.",
                             "Only Exclude: Only exclude providers that specified by defaultFontRuleSet.")
-                    .defineEnum("defaultFontBehavior", DefaultFontBehavior.ONLY_EXCLUDE);
+                    .defineEnum("defaultFontBehavior", Config.Text.DefaultFontBehavior.ONLY_EXCLUDE);
             mDefaultFontRuleSet = builder.comment(
                             "Used when defaultFontBehavior is either ONLY_INCLUDE or ONLY_EXCLUDE.",
                             "This specifies a set of regular expressions to match the glyph provider name.",
@@ -931,9 +808,9 @@ public final class Config {
                     .define("allowAsyncLayout", true);
             mLineBreakStyle = builder.comment(
                             "See CSS line-break property, https://developer.mozilla.org/en-US/docs/Web/CSS/line-break")
-                    .defineEnum("lineBreakStyle", LineBreakStyle.AUTO);
+                    .defineEnum("lineBreakStyle", Config.Text.LineBreakStyle.AUTO);
             mLineBreakWordStyle = builder
-                    .defineEnum("lineBreakWordStyle", LineBreakWordStyle.AUTO);
+                    .defineEnum("lineBreakWordStyle", Config.Text.LineBreakWordStyle.AUTO);
             mSmartSDFShaders = builder.comment(
                             "When enabled, Modern UI will compute texel density in device-space to determine whether " +
                                     "to use SDF text or bilinear sampling.",
@@ -965,15 +842,16 @@ public final class Config {
                             "Disable if on low-res monitor; enable for linear text.")
                     .define("linearMetrics", true);
             mMinPixelDensityForSDF = builder.comment(
-                    "Control the minimum pixel density for SDF text and text in 3D world rendering.",
-                    "This value will be no less than current GUI scale.",
-                    "Recommend setting a higher value on high-res monitor and powerful PC hardware.")
+                            "Control the minimum pixel density for SDF text and text in 3D world rendering.",
+                            "This value will be no less than current GUI scale.",
+                            "Recommend setting a higher value on high-res monitor and powerful PC hardware.")
                     .defineInRange("minPixelDensityForSDF", TextLayoutEngine.DEFAULT_MIN_PIXEL_DENSITY_FOR_SDF,
                             4, 10);
             mLinearSamplingA8Atlas = builder.comment(
-                    "Enable linear sampling for A8 font atlases with mipmaps, mag filter will be always NEAREST.",
-                    "We prefer computeDeviceFontSize and allowSDFTextIn2D, then setting this to false can improve performance.",
-                    "If either of the above two is false or Shaders are active, then setting this to true can improve quality.")
+                            "Enable linear sampling for A8 font atlases with mipmaps, mag filter will be always",
+                            "NEAREST. We prefer computeDeviceFontSize and allowSDFTextIn2D, then setting this to",
+                            "false can improve performance. If either of the above two is false or Shaders are active,",
+                            "then setting this to true can improve readability.")
                     .define("linearSamplingA8Atlas", false);
             /*mLinearSampling = builder.comment(
                             "Enable linear sampling for font atlases with mipmaps, mag filter will be always NEAREST.",
@@ -1013,180 +891,7 @@ public final class Config {
         }
 
         void reload() {
-            boolean reload = false;
-            boolean reloadStrike = false;
-            ModernTextRenderer.sAllowShadow = mAllowShadow.get();
-            if (TextLayoutEngine.sFixedResolution != mFixedResolution.get()) {
-                TextLayoutEngine.sFixedResolution = mFixedResolution.get();
-                reload = true;
-            }
-            if (TextLayoutProcessor.sBaseFontSize != mBaseFontSize.get()) {
-                TextLayoutProcessor.sBaseFontSize = mBaseFontSize.get().floatValue();
-                reloadStrike = true;
-            }
-            TextLayout.sBaselineOffset = mBaselineShift.get().floatValue();
-            ModernTextRenderer.sShadowOffset = mShadowOffset.get().floatValue();
-            ModernTextRenderer.sOutlineOffset = mOutlineOffset.get().floatValue();
-            /*if (TextLayoutProcessor.sAlignPixels != mAlignPixels.get()) {
-                TextLayoutProcessor.sAlignPixels = mAlignPixels.get();
-                reload = true;
-            }*/
-            TextLayoutEngine.sCacheLifespan = mCacheLifespan.get();
-            /*TextLayoutEngine.sRehashThreshold = mRehashThreshold.get();*/
-            if (TextLayoutEngine.sTextDirection != mTextDirection.get().key) {
-                TextLayoutEngine.sTextDirection = mTextDirection.get().key;
-                reload = true;
-            }
-            if (TextLayoutEngine.sDefaultFontBehavior != mDefaultFontBehavior.get().key) {
-                TextLayoutEngine.sDefaultFontBehavior = mDefaultFontBehavior.get().key;
-                reload = true;
-            }
-            List<? extends String> defaultFontRuleSet = mDefaultFontRuleSet.get();
-            if (!Objects.equals(TextLayoutEngine.sDefaultFontRuleSet, defaultFontRuleSet)) {
-                TextLayoutEngine.sDefaultFontRuleSet = defaultFontRuleSet;
-                reload = true;
-            }
-            TextLayoutEngine.sRawUseTextShadersInWorld = mUseTextShadersInWorld.get();
-            TextLayoutEngine.sUseComponentCache = mUseComponentCache.get();
-            TextLayoutEngine.sAllowAsyncLayout = mAllowAsyncLayout.get();
-            if (TextLayoutProcessor.sLbStyle != mLineBreakStyle.get().key) {
-                TextLayoutProcessor.sLbStyle = mLineBreakStyle.get().key;
-                reload = true;
-            }
-            if (TextLayoutProcessor.sLbWordStyle != mLineBreakWordStyle.get().key) {
-                TextLayoutProcessor.sLbWordStyle = mLineBreakWordStyle.get().key;
-                reload = true;
-            }
-
-            final boolean smartShaders = mSmartSDFShaders.get();
-            Minecraft.getInstance().submit(() -> TextRenderType.toggleSDFShaders(smartShaders));
-
-            ModernTextRenderer.sComputeDeviceFontSize = mComputeDeviceFontSize.get();
-            ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();
-            ModernTextRenderer.sTweakExperienceText = mTweakExperienceText.get();
-
-            if (GlyphManager.sAntiAliasing != mAntiAliasing.get()) {
-                GlyphManager.sAntiAliasing = mAntiAliasing.get();
-                reloadStrike = true;
-            }
-            if (GlyphManager.sFractionalMetrics != mLinearMetrics.get()) {
-                GlyphManager.sFractionalMetrics = mLinearMetrics.get();
-                reloadStrike = true;
-            }
-            if (TextLayoutEngine.sMinPixelDensityForSDF != mMinPixelDensityForSDF.get()) {
-                TextLayoutEngine.sMinPixelDensityForSDF = mMinPixelDensityForSDF.get();
-                reload = true;
-            }
-            if (GLFontAtlas.sLinearSamplingA8Atlas != mLinearSamplingA8Atlas.get()) {
-                GLFontAtlas.sLinearSamplingA8Atlas = mLinearSamplingA8Atlas.get();
-                reloadStrike = true;
-            }
-            /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {
-                GLFontAtlas.sLinearSampling = mLinearSampling.get();
-                reload = true;
-            }*/
-
-            if (reloadStrike) {
-                Minecraft.getInstance().submit(
-                        () -> FontResourceManager.getInstance().reloadAll());
-            } else if (reload && ModernUIMod.isTextEngineEnabled()) {
-                Minecraft.getInstance().submit(
-                        () -> {
-                            try {
-                                TextLayoutEngine.getInstance().reload();
-                            } catch (Exception ignored) {
-                            }
-                        });
-            }
-            /*GlyphManagerForge.sPreferredFont = preferredFont.get();
-            GlyphManagerForge.sAntiAliasing = antiAliasing.get();
-            GlyphManagerForge.sHighPrecision = highPrecision.get();
-            GlyphManagerForge.sEnableMipmap = enableMipmap.get();
-            GlyphManagerForge.sMipmapLevel = mipmapLevel.get();*/
-            //GlyphManager.sResolutionLevel = resolutionLevel.get();
-            //TextLayoutEngine.sDefaultFontSize = defaultFontSize.get();
-        }
-
-        public enum TextDirection {
-            FIRST_STRONG(View.TEXT_DIRECTION_FIRST_STRONG, "FirstStrong"),
-            ANY_RTL(View.TEXT_DIRECTION_ANY_RTL, "AnyRTL-LTR"),
-            LTR(View.TEXT_DIRECTION_LTR, "LTR"),
-            RTL(View.TEXT_DIRECTION_RTL, "RTL"),
-            LOCALE(View.TEXT_DIRECTION_LOCALE, "Locale"),
-            FIRST_STRONG_LTR(View.TEXT_DIRECTION_FIRST_STRONG_LTR, "FirstStrong-LTR"),
-            FIRST_STRONG_RTL(View.TEXT_DIRECTION_FIRST_STRONG_RTL, "FirstStrong-RTL");
-
-            private final int key;
-            private final String text;
-
-            TextDirection(int key, String text) {
-                this.key = key;
-                this.text = text;
-            }
-
-            @Override
-            public String toString() {
-                return text;
-            }
-        }
-
-        public enum DefaultFontBehavior {
-            IGNORE_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_IGNORE_ALL),
-            KEEP_ASCII(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ASCII),
-            KEEP_OTHER(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_OTHER),
-            KEEP_ALL(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_KEEP_ALL),
-            ONLY_INCLUDE(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_ONLY_INCLUDE),
-            ONLY_EXCLUDE(TextLayoutEngine.DEFAULT_FONT_BEHAVIOR_ONLY_EXCLUDE);
-
-            private final int key;
-
-            DefaultFontBehavior(int key) {
-                this.key = key;
-            }
-
-            @Nonnull
-            @Override
-            public String toString() {
-                return I18n.get("modernui.defaultFontBehavior." + name().toLowerCase(Locale.ROOT));
-            }
-        }
-
-        public enum LineBreakStyle {
-            AUTO(LineBreakConfig.LINE_BREAK_STYLE_NONE, "Auto"),
-            LOOSE(LineBreakConfig.LINE_BREAK_STYLE_LOOSE, "Loose"),
-            NORMAL(LineBreakConfig.LINE_BREAK_STYLE_NORMAL, "Normal"),
-            STRICT(LineBreakConfig.LINE_BREAK_STYLE_STRICT, "Strict");
-
-            private final int key;
-            private final String text;
-
-            LineBreakStyle(int key, String text) {
-                this.key = key;
-                this.text = text;
-            }
-
-            @Override
-            public String toString() {
-                return text;
-            }
-        }
-
-        public enum LineBreakWordStyle {
-            AUTO(LineBreakConfig.LINE_BREAK_WORD_STYLE_NONE, "Auto"),
-            PHRASE(LineBreakConfig.LINE_BREAK_WORD_STYLE_PHRASE, "Phrase-based");
-
-            private final int key;
-            private final String text;
-
-            LineBreakWordStyle(int key, String text) {
-                this.key = key;
-                this.text = text;
-            }
-
-            @Override
-            public String toString() {
-                return text;
-            }
+            Config.TEXT.reload();
         }
     }
 

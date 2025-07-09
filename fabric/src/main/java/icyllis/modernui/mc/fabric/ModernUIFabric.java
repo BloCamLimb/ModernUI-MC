@@ -41,12 +41,10 @@ public class ModernUIFabric extends ModernUIMod implements ModInitializer {
         sLegendaryTooltipsLoaded = FabricLoader.getInstance().isModLoaded("legendarytooltips");
         sUntranslatedItemsLoaded = FabricLoader.getInstance().isModLoaded("untranslateditems");
 
-        NeoForgeModConfigEvents.loading(ModernUI.ID).register(Config::reloadCommon);
-        NeoForgeModConfigEvents.reloading(ModernUI.ID).register(Config::reloadCommon);
-        Config.initCommonConfig(
-                spec -> NeoForgeConfigRegistry.INSTANCE.register(ModernUI.ID, ModConfig.Type.COMMON, spec,
-                        ModernUI.NAME_CPT + "/common.toml")
-        );
+        NeoForgeModConfigEvents.loading(ModernUI.ID).register(ConfigImpl::reloadCommon);
+        NeoForgeModConfigEvents.reloading(ModernUI.ID).register(ConfigImpl::reloadCommon);
+        NeoForgeConfigRegistry.INSTANCE.register(ModernUI.ID, ModConfig.Type.COMMON, ConfigImpl.COMMON_SPEC,
+                ModernUI.NAME_CPT + "/common.toml");
 
         LOGGER.info(MARKER, "Initialized Modern UI");
     }

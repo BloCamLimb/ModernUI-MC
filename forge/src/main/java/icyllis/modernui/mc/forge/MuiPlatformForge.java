@@ -18,11 +18,13 @@
 
 package icyllis.modernui.mc.forge;
 
+import icyllis.modernui.mc.Config;
 import icyllis.modernui.mc.MuiPlatform;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.nio.file.Path;
+import java.util.Map;
 
 import static icyllis.modernui.ModernUI.NAME_CPT;
 
@@ -40,5 +42,10 @@ public final class MuiPlatformForge extends MuiPlatform {
     @Override
     public boolean isClient() {
         return FMLEnvironment.dist.isClient();
+    }
+
+    @Override
+    public Map<String, Config.ConfigItem<?>> getConfigMap(int type) {
+        return ConfigImpl.getConfigMap(type);
     }
 }
