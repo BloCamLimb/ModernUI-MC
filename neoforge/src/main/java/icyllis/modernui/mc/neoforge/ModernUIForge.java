@@ -82,7 +82,6 @@ public final class ModernUIForge extends ModernUIMod {
         modEventBus.addListener(
                 (Consumer<ModConfigEvent>) event -> ConfigImpl.reloadCommon(event.getConfig())
         );
-        LocalStorage.init();
 
         /*if (FMLEnvironment.dist.isClient()) {
             Loader.init(modEventBus);
