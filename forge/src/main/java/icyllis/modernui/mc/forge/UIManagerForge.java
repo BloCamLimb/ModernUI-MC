@@ -27,6 +27,7 @@ import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.lifecycle.LifecycleOwner;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessNativeImage;
+import icyllis.modernui.mc.ui.CenterFragment2;
 import icyllis.modernui.text.TextUtils;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;

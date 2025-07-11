@@ -20,7 +20,6 @@ package icyllis.modernui.mc.neoforge;
 
 import icyllis.modernui.mc.Config;
 import icyllis.modernui.mc.ModernUIMod;
-import icyllis.modernui.mc.MuiPlatform;
 import icyllis.modernui.mc.text.TextLayout;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.text.TextLayoutProcessor;
@@ -29,6 +28,7 @@ import net.minecraft.Util;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.neoforged.fml.config.IConfigSpec;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.Range;
 import org.jetbrains.annotations.ApiStatus;
@@ -69,8 +69,7 @@ public final class ConfigImpl {
     }
 
     static {
-        MuiPlatform service = MuiPlatform.get();
-        if (service.isClient()) {
+        if (FMLEnvironment.dist.isClient()) {
             {
                 ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
                 CLIENT = new Client(builder);
@@ -187,6 +186,18 @@ public final class ConfigImpl {
             }
         }
         return map;
+    }
+
+    static void saveConfig(int type) {
+        ModConfigSpec spec = switch (type) {
+            case Config.TYPE_CLIENT -> CLIENT_SPEC;
+            case Config.TYPE_COMMON -> COMMON_SPEC;
+            case Config.TYPE_TEXT -> TEXT_SPEC;
+            default -> null;
+        };
+        if (spec != null) {
+            spec.save();
+        }
     }
 
     /*private static class C extends ModConfig {
@@ -634,13 +645,8 @@ public final class ConfigImpl {
             builder.pop();
         }
 
-        public void saveAndReloadAsync() {
-            Util.ioPool().execute(() -> COMMON_SPEC.save());
-            reload();
-        }
-
         private void reload() {
-            ModernUIMod.sDeveloperMode = developerMode.get();
+            Config.COMMON.reload();
             ServerHandler.INSTANCE.determineShutdownTime();
         }
     }
@@ -881,16 +887,7 @@ public final class ConfigImpl {
             builder.pop();
         }
 
-        public void saveAsync() {
-            Util.ioPool().execute(() -> TEXT_SPEC.save());
-        }
-
-        public void saveAndReloadAsync() {
-            Util.ioPool().execute(() -> TEXT_SPEC.save());
-            reload();
-        }
-
-        void reload() {
+        private void reload() {
             Config.TEXT.reload();
         }
     }

@@ -16,7 +16,7 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc;
+package icyllis.modernui.mc.ui;
 
 import icyllis.modernui.animation.LayoutTransition;
 import icyllis.modernui.annotation.NonNull;
@@ -27,7 +27,7 @@ import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
 import icyllis.modernui.markdown.Markdown;
 import icyllis.modernui.markdown.core.CorePlugin;
-import icyllis.modernui.mc.ui.ThemeControl;
+import icyllis.modernui.mc.StillAlive;
 import icyllis.modernui.text.method.LinkMovementMethod;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;

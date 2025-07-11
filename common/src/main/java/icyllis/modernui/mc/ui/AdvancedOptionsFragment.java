@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.forge;
+package icyllis.modernui.mc.ui;
 
 import icyllis.arc3d.opengl.GLCaps;
 import icyllis.modernui.R;
@@ -29,7 +29,6 @@ import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.TextLayoutEngine;
-import icyllis.modernui.mc.ui.ThemeControl;
 import icyllis.modernui.text.*;
 import icyllis.modernui.text.method.DigitsInputFilter;
 import icyllis.modernui.util.DataSet;
@@ -37,13 +36,12 @@ import icyllis.modernui.view.*;
 import icyllis.modernui.widget.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
-import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 import org.apache.commons.io.output.StringBuilderWriter;
 
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 
-import static icyllis.modernui.mc.forge.PreferencesFragment.*;
+import static icyllis.modernui.mc.ui.PreferencesFragment.*;
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 /**
@@ -51,7 +49,19 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
  */
 public class AdvancedOptionsFragment extends Fragment {
 
-    private static final Field OPTION_VALUE = ObfuscationReflectionHelper.findField(OptionInstance.class, "f_231481_");
+    private static final Field OPTION_VALUE = getOptionValue();
+
+    private static Field getOptionValue() {
+        for (String can : new String[]{"value", "f_231481_"}) {
+            try {
+                Field f = OptionInstance.class.getDeclaredField(can);
+                f.setAccessible(true);
+                return f;
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
 
     ViewGroup mContent;
     TextView mUIManagerDump;
@@ -61,13 +71,12 @@ public class AdvancedOptionsFragment extends Fragment {
     TextView mGPUStatsDump;
 
     public static Button createDebugButton(Context context, String text) {
-        var button = new Button(context);
+        var button = new Button(context, null, null, R.style.Widget_Material3_Button_OutlinedButton);
         button.setText(text);
-        button.setTextSize(14);
-        button.setGravity(Gravity.START);
 
         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-        params.setMargins(button.dp(6), 0, button.dp(6), 0);
+        var margin = button.dp(6);
+        params.setMargins(margin, margin, margin, margin);
         button.setLayoutParams(params);
         return button;
     }
@@ -79,7 +88,7 @@ public class AdvancedOptionsFragment extends Fragment {
         var sv = new ScrollView(context);
         sv.addView(createPage(context), MATCH_PARENT, WRAP_CONTENT);
 
-        sv.setEdgeEffectColor(ThemeControl.THEME_COLOR);
+        //sv.setEdgeEffectColor(ThemeControl.THEME_COLOR);
         sv.setTopEdgeEffectBlendMode(BlendMode.SRC_OVER);
         sv.setBottomEdgeEffectBlendMode(BlendMode.SRC_OVER);
 
@@ -98,7 +107,7 @@ public class AdvancedOptionsFragment extends Fragment {
 
         var dp6 = content.dp(6);
         {
-            var category = createCategoryList(context, "Developer");
+            var category = createCategoryList(content, "Developer");
 
             if (ModernUIMod.isDeveloperMode()) {
                 {
@@ -113,12 +122,15 @@ public class AdvancedOptionsFragment extends Fragment {
                             double gamma = Double.parseDouble(v.getText().toString());
                             v.setText(Double.toString(gamma));
                             // no sync, but safe
-                            try {
-                                // no listener
-                                OPTION_VALUE.set(Minecraft.getInstance().options.gamma(), gamma);
-                            } catch (Exception e) {
-                                Minecraft.getInstance().options.gamma().set(gamma);
+                            if (OPTION_VALUE != null) {
+                                try {
+                                    // no listener
+                                    OPTION_VALUE.set(Minecraft.getInstance().options.gamma(), gamma);
+                                    return;
+                                } catch (Exception ignored) {
+                                }
                             }
+                            Minecraft.getInstance().options.gamma().set(gamma);
                         }
                     });
                     category.addView(option);
@@ -128,14 +140,17 @@ public class AdvancedOptionsFragment extends Fragment {
                         Config.CLIENT.mRemoveSignature, Config.CLIENT::saveAndReloadAsync));*/
 
                 category.addView(createBooleanOption(context, "Remove telemetry session",
-                        ConfigImpl.CLIENT.mRemoveTelemetry, ConfigImpl.CLIENT::saveAndReloadAsync));
+                        Config.CLIENT.mRemoveTelemetry, () -> {
+                            Config.CLIENT.reload();
+                            MuiPlatform.get().saveConfig(Config.TYPE_CLIENT);
+                        }));
 
                 /*category.addView(createBooleanOption(context, "Secure Profile Public Key",
                         Config.CLIENT.mSecurePublicKey, Config.CLIENT::saveAndReloadAsync));*/
             }
             {
                 var layout = createSwitchLayout(context, "Show Layout Bounds");
-                var button = layout.<SwitchButton>requireViewById(R.id.button1);
+                var button = layout.<Switch>requireViewById(R.id.button1);
                 button.setChecked(UIManager.getInstance().isShowingLayoutBounds());
                 button.setOnCheckedChangeListener((__, checked) ->
                         UIManager.getInstance().setShowingLayoutBounds(checked));

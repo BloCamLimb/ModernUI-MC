@@ -48,4 +48,9 @@ public final class MuiPlatformForge extends MuiPlatform {
     public Map<String, Config.ConfigItem<?>> getConfigMap(int type) {
         return ConfigImpl.getConfigMap(type);
     }
+
+    @Override
+    public void saveConfig(int type) {
+        ConfigImpl.saveConfig(type);
+    }
 }

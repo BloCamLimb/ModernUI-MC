@@ -20,6 +20,7 @@ package icyllis.modernui.mc.neoforge;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.ui.CenterFragment2;
 import icyllis.modernui.util.DataSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.LanguageManager;

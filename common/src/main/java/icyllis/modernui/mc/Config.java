@@ -45,6 +45,7 @@ import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -87,8 +88,8 @@ public final class Config {
             CLIENT = new Client(service.getConfigMap(TYPE_CLIENT));
             TEXT = new Text(service.getConfigMap(TYPE_TEXT));
         } else {
-            CLIENT = null;
-            TEXT = null;
+            CLIENT = new Client(Collections.emptyMap());
+            TEXT = new Text(Collections.emptyMap());
         }
         COMMON = new Common(service.getConfigMap(TYPE_COMMON));
     }
@@ -412,6 +413,10 @@ public final class Config {
 
         private Common(Map<String, ConfigItem<?>> map) {
             developerMode = get(map, "developerMode");
+        }
+
+        public void reload() {
+            ModernUIMod.sDeveloperMode = developerMode.get();
         }
     }
 

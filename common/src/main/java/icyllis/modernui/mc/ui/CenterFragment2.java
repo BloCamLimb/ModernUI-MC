@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.neoforge;
+package icyllis.modernui.mc.ui;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
@@ -24,21 +24,32 @@ import icyllis.modernui.TestFragment;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
-import icyllis.modernui.fragment.*;
-import icyllis.modernui.graphics.*;
+import icyllis.modernui.fragment.Fragment;
+import icyllis.modernui.fragment.FragmentContainerView;
+import icyllis.modernui.fragment.FragmentTransaction;
+import icyllis.modernui.graphics.Image;
+import icyllis.modernui.graphics.LinearGradient;
+import icyllis.modernui.graphics.Shader;
 import icyllis.modernui.graphics.drawable.ColorDrawable;
 import icyllis.modernui.graphics.drawable.ImageDrawable;
-import icyllis.modernui.graphics.drawable.LayerDrawable;
 import icyllis.modernui.graphics.drawable.RippleDrawable;
 import icyllis.modernui.graphics.drawable.ShapeDrawable;
-import icyllis.modernui.graphics.drawable.StateListDrawable;
-import icyllis.modernui.mc.*;
-import icyllis.modernui.mc.ui.ThemeControl;
+import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.resources.TypedValue;
 import icyllis.modernui.text.Typeface;
-import icyllis.modernui.util.*;
-import icyllis.modernui.view.*;
-import icyllis.modernui.widget.*;
+import icyllis.modernui.util.ColorStateList;
+import icyllis.modernui.util.DataSet;
+import icyllis.modernui.util.DisplayMetrics;
+import icyllis.modernui.util.StateSet;
+import icyllis.modernui.view.Gravity;
+import icyllis.modernui.view.LayoutInflater;
+import icyllis.modernui.view.View;
+import icyllis.modernui.view.ViewGroup;
+import icyllis.modernui.widget.FrameLayout;
+import icyllis.modernui.widget.LinearLayout;
+import icyllis.modernui.widget.RadioButton;
+import icyllis.modernui.widget.RadioGroup;
+import icyllis.modernui.widget.TextView;
 import net.minecraft.client.resources.language.I18n;
 
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;

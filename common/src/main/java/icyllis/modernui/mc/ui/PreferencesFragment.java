@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,7 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.neoforge;
+package icyllis.modernui.mc.ui;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
@@ -41,8 +41,8 @@ import icyllis.modernui.mc.Config;
 import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.MuiPlatform;
 import icyllis.modernui.mc.UIManager;
-import icyllis.modernui.mc.ui.FourColorPicker;
 import icyllis.modernui.resources.TypedValue;
 import icyllis.modernui.text.Editable;
 import icyllis.modernui.text.InputFilter;
@@ -60,9 +60,9 @@ import icyllis.modernui.view.OneShotPreDrawListener;
 import icyllis.modernui.view.View;
 import icyllis.modernui.view.ViewGroup;
 import icyllis.modernui.widget.*;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
-import net.neoforged.neoforge.common.ModConfigSpec;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
@@ -80,9 +80,14 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class PreferencesFragment extends Fragment {
 
+    boolean mCommonConfigChanged;
     boolean mClientConfigChanged;
     boolean mTextConfigChanged;
 
+    final Runnable mOnCommonConfigChanged = () -> {
+        mCommonConfigChanged = true;
+        Config.COMMON.reload();
+    };
     final Runnable mOnClientConfigChanged = () -> {
         mClientConfigChanged = true;
         Config.CLIENT.reload();
@@ -139,13 +144,31 @@ public class PreferencesFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (mClientConfigChanged) {
-            ConfigImpl.CLIENT.saveAsync();
-            mClientConfigChanged = false;
-        }
-        if (mTextConfigChanged) {
-            ConfigImpl.TEXT.saveAsync();
-            mTextConfigChanged = false;
+        int count = (mClientConfigChanged ? 1 : 0) +
+                (mCommonConfigChanged ? 1 : 0) +
+                (mTextConfigChanged ? 1 : 0);
+        if (count != 0) {
+            int[] configs = new int[count];
+            count = 0;
+            if (mClientConfigChanged) {
+                configs[count++] = Config.TYPE_CLIENT;
+                mClientConfigChanged = false;
+            }
+            if (mCommonConfigChanged) {
+                configs[count++] = Config.TYPE_COMMON;
+                mCommonConfigChanged = false;
+            }
+            if (mTextConfigChanged) {
+                configs[count++] = Config.TYPE_TEXT;
+                mTextConfigChanged = false;
+            }
+            assert count == configs.length;
+            Util.ioPool().execute(() -> {
+                var service = MuiPlatform.get();
+                for (int type : configs) {
+                    service.saveConfig(type);
+                }
+            });
         }
     }
 
@@ -226,43 +249,41 @@ public class PreferencesFragment extends Fragment {
             list.addView(createGuiScaleOption(context));
 
             list.addView(createColorOpacityOption(context, "modernui.center.screen.backgroundOpacity",
-                    ConfigImpl.CLIENT.mBackgroundColor, saveFn));
+                    Config.CLIENT.mBackgroundColor, saveFn));
 
             list.addView(createIntegerOption(context, "modernui.center.screen.backgroundDuration",
-                    ConfigImpl.Client.ANIM_DURATION_MIN, ConfigImpl.Client.ANIM_DURATION_MAX,
-                    3, 50, ConfigImpl.CLIENT.mBackgroundDuration, saveFn));
+                    3, 50, Config.CLIENT.mBackgroundDuration, saveFn));
 
             list.addView(createBooleanOption(context, "modernui.center.screen.blurEffect",
-                    ConfigImpl.CLIENT.mBlurEffect, saveFn));
+                    Config.CLIENT.mBlurEffect, saveFn));
 
             list.addView(createBooleanOption(context, "modernui.center.screen.overrideVanillaBlur",
-                    ConfigImpl.CLIENT.mOverrideVanillaBlur, saveFn));
+                    Config.CLIENT.mOverrideVanillaBlur, saveFn));
 
             list.addView(createIntegerOption(context, "modernui.center.screen.blurRadius",
-                    ConfigImpl.Client.BLUR_RADIUS_MIN, ConfigImpl.Client.BLUR_RADIUS_MAX,
-                    2, 1, ConfigImpl.CLIENT.mBlurRadius, saveFn));
+                    2, 1, Config.CLIENT.mBlurRadius, saveFn));
 
             list.addView(createSpinnerOption(context, "modernui.center.screen.windowMode",
-                    Config.Client.WindowMode.values(), ConfigImpl.CLIENT.mWindowMode, saveFn));
+                    Config.Client.WindowMode.values(), Config.CLIENT.mWindowMode, saveFn));
 
             list.addView(createIntegerOption(context, "modernui.center.screen.framerateInactive",
-                    0, 250, 3, 10,
-                    ConfigImpl.CLIENT.mFramerateInactive, saveFn));
+                    3, 10,
+                    Config.CLIENT.mFramerateInactive, saveFn));
 
             /*list.addView(createIntegerOption(context, "modernui.center.screen.framerateMinimized",
                     0, 255, 3, 5,
                     Config.CLIENT.mFramerateMinimized, saveFn));*/
 
             list.addView(createFloatOption(context, "modernui.center.screen.masterVolumeInactive",
-                    0, 1, 4,
-                    ConfigImpl.CLIENT.mMasterVolumeInactive, 100, saveFn));
+                    4,
+                    Config.CLIENT.mMasterVolumeInactive, 100, saveFn));
 
             list.addView(createFloatOption(context, "modernui.center.screen.masterVolumeMinimized",
-                    0, 1, 4,
-                    ConfigImpl.CLIENT.mMasterVolumeMinimized, 100, saveFn));
+                    4,
+                    Config.CLIENT.mMasterVolumeMinimized, 100, saveFn));
 
             list.addView(createBooleanOption(context, "modernui.center.screen.inventoryPause",
-                    ConfigImpl.CLIENT.mInventoryPause, saveFn));
+                    Config.CLIENT.mInventoryPause, saveFn));
 
             content.addView(list);
         }
@@ -274,15 +295,16 @@ public class PreferencesFragment extends Fragment {
         var content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
 
+        Runnable saveFn = mOnClientConfigChanged;
+
         {
             var list = createCategoryList(content, "modernui.center.category.system");
 
             list.addView(createBooleanOption(context, "modernui.center.system.forceRtlLayout",
-                    ConfigImpl.CLIENT.mForceRtl, ConfigImpl.CLIENT::saveAndReloadAsync));
+                    Config.CLIENT.mForceRtl, saveFn));
 
             list.addView(createFloatOption(context, "modernui.center.system.globalFontScale",
-                    ConfigImpl.Client.FONT_SCALE_MIN, ConfigImpl.Client.FONT_SCALE_MAX,
-                    4, ConfigImpl.CLIENT.mFontScale, 10, ConfigImpl.CLIENT::saveAndReloadAsync));
+                    4, Config.CLIENT.mFontScale, 10, saveFn));
 
             {
                 var option = createInputBox(context, "modernui.center.system.globalAnimationScale");
@@ -304,7 +326,7 @@ public class PreferencesFragment extends Fragment {
             }
 
             list.addView(createBooleanOption(context, "modernui.center.system.developerMode",
-                    ConfigImpl.COMMON.developerMode, ConfigImpl.COMMON::saveAndReloadAsync));
+                    Config.COMMON.developerMode, mOnCommonConfigChanged));
 
             content.addView(list);
         }
@@ -357,6 +379,7 @@ public class PreferencesFragment extends Fragment {
                 firstLine.setOnClickListener(
                         new PreferredFontCollapsed(
                                 layout,
+                                mOnClientConfigChanged,
                                 onFontChanged
                         )
                 );
@@ -376,9 +399,9 @@ public class PreferencesFragment extends Fragment {
 
             {
                 var option = createStringListOption(context, "modernui.center.font.fallbackFonts",
-                        ConfigImpl.CLIENT.mFallbackFontFamilyList,
+                        Config.CLIENT.mFallbackFontFamilyList,
                         () -> {
-                            ConfigImpl.CLIENT.saveAndReloadAsync();
+                            mOnClientConfigChanged.run();
                             reloadDefaultTypeface(context, () -> {
                             });
                         });
@@ -390,15 +413,15 @@ public class PreferencesFragment extends Fragment {
                     ModernUIText.CONFIG::saveAndReloadAsync));*/
 
             category.addView(createBooleanOption(context, "modernui.center.font.colorEmoji",
-                    ConfigImpl.CLIENT.mUseColorEmoji, () -> {
-                        ConfigImpl.CLIENT.saveAndReloadAsync();
+                    Config.CLIENT.mUseColorEmoji, () -> {
+                        mOnClientConfigChanged.run();
                         reloadDefaultTypeface(context, () -> {
                         });
                     }));
 
             category.addView(createStringListOption(context, "modernui.center.font.fontRegistrationList",
-                    ConfigImpl.CLIENT.mFontRegistrationList, () -> {
-                        ConfigImpl.CLIENT.saveAsync();
+                    Config.CLIENT.mFontRegistrationList, () -> {
+                        mClientConfigChanged = true;
                         Toast.makeText(context,
                                         I18n.get("gui.modernui.restart_to_work"),
                                         Toast.LENGTH_SHORT)
@@ -417,7 +440,7 @@ public class PreferencesFragment extends Fragment {
 
         Runnable saveFn = mOnClientConfigChanged;
 
-        boolean curTooltipEnabled = ConfigImpl.CLIENT.mTooltip.get();
+        boolean curTooltipEnabled = Config.CLIENT.mTooltip.get();
 
         final View[] tooltipCategories = new View[2];
 
@@ -425,13 +448,15 @@ public class PreferencesFragment extends Fragment {
             var list = createCategoryList(content, null);
 
             list.addView(createBooleanOption(context, "modernui.center.extension.ding",
-                    ConfigImpl.CLIENT.mDing, saveFn));
+                    Config.CLIENT.mDing, saveFn));
 
-            list.addView(createBooleanOption(context, "key.modernui.zoom",
-                    ConfigImpl.CLIENT.mZoom, saveFn));
+            if (Config.CLIENT.mZoom != null) {
+                list.addView(createBooleanOption(context, "key.modernui.zoom",
+                        Config.CLIENT.mZoom, saveFn));
+            }
 
             list.addView(createBooleanOption(context, "modernui.center.text.emojiShortcodes",
-                    ConfigImpl.CLIENT.mEmojiShortcodes, saveFn));
+                    Config.CLIENT.mEmojiShortcodes, saveFn));
 
             {
                 var option = createSwitchLayout(context, "modernui.center.extension.smoothScrolling");
@@ -478,7 +503,7 @@ public class PreferencesFragment extends Fragment {
                 var button = option.<Switch>requireViewById(R.id.button1);
                 button.setChecked(curTooltipEnabled);
                 button.setOnCheckedChangeListener((view, checked) -> {
-                    ConfigImpl.CLIENT.mTooltip.set(checked);
+                    Config.CLIENT.mTooltip.set(checked);
                     saveFn.run();
                     for (var v : tooltipCategories) {
                         setViewAndChildrenEnabled(v, checked);
@@ -553,20 +578,19 @@ public class PreferencesFragment extends Fragment {
         Runnable saveFn = mOnClientConfigChanged;
 
         category.addView(createBooleanOption(context, "modernui.center.tooltip.centerTitle",
-                ConfigImpl.CLIENT.mCenterTooltipTitle, saveFn));
+                Config.CLIENT.mCenterTooltipTitle, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.tooltip.titleBreak",
-                ConfigImpl.CLIENT.mTooltipTitleBreak, saveFn));
+                Config.CLIENT.mTooltipTitleBreak, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.tooltip.exactPositioning",
-                ConfigImpl.CLIENT.mExactTooltipPositioning, saveFn));
+                Config.CLIENT.mExactTooltipPositioning, saveFn));
 
         category.addView(createIntegerOption(context, "modernui.center.tooltip.arrowScrollFactor",
-                ConfigImpl.Client.TOOLTIP_ARROW_SCROLL_FACTOR_MIN, ConfigImpl.Client.TOOLTIP_ARROW_SCROLL_FACTOR_MAX,
-                3, 1, ConfigImpl.CLIENT.mTooltipArrowScrollFactor, saveFn));
+                3, 1, Config.CLIENT.mTooltipArrowScrollFactor, saveFn));
 
         category.addView(createColorOpacityOption(context, "modernui.center.tooltip.backgroundOpacity",
-                ConfigImpl.CLIENT.mTooltipFill, saveFn));
+                Config.CLIENT.mTooltipFill, saveFn));
 
         return category;
     }
@@ -613,41 +637,39 @@ public class PreferencesFragment extends Fragment {
 
         category.addView(createSpinnerOption(context, "modernui.center.text.defaultFontBehavior",
                 Config.Text.DefaultFontBehavior.values(),
-                ConfigImpl.TEXT.mDefaultFontBehavior, saveFn));
+                Config.TEXT.mDefaultFontBehavior, saveFn));
 
         category.addView(createStringListOption(context, "modernui.center.text.defaultFontRuleSet",
-                ConfigImpl.TEXT.mDefaultFontRuleSet, saveFn));
+                Config.TEXT.mDefaultFontRuleSet, saveFn));
 
         category.addView(createSpinnerOption(context, "modernui.center.text.bidiHeuristicAlgo",
                 Config.Text.TextDirection.values(),
-                ConfigImpl.TEXT.mTextDirection,
+                Config.TEXT.mTextDirection,
                 saveFn));
 
         category.addView(createSpinnerOption(context, "modernui.center.text.lineBreakStyle",
                 Config.Text.LineBreakStyle.values(),
-                ConfigImpl.TEXT.mLineBreakStyle, saveFn));
+                Config.TEXT.mLineBreakStyle, saveFn));
 
         category.addView(createSpinnerOption(context, "modernui.center.text.lineBreakWordStyle",
                 Config.Text.LineBreakWordStyle.values(),
-                ConfigImpl.TEXT.mLineBreakWordStyle, saveFn));
+                Config.TEXT.mLineBreakWordStyle, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.text.allowAsyncLayout",
-                ConfigImpl.TEXT.mAllowAsyncLayout, saveFn));
+                Config.TEXT.mAllowAsyncLayout, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.text.useComponentCache",
-                ConfigImpl.TEXT.mUseComponentCache, saveFn));
+                Config.TEXT.mUseComponentCache, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.text.fixedResolution",
-                ConfigImpl.TEXT.mFixedResolution, saveFn));
+                Config.TEXT.mFixedResolution, saveFn));
 
         category.addView(createFloatOption(context, "modernui.center.text.baseFontSize",
-                ConfigImpl.Text.BASE_FONT_SIZE_MIN, ConfigImpl.Text.BASE_FONT_SIZE_MAX,
-                5, ConfigImpl.TEXT.mBaseFontSize, 10, saveFn));
+                5, Config.TEXT.mBaseFontSize, 10, saveFn));
 
         category.addView(createIntegerOption(context, "modernui.center.text.cacheLifespan",
-                ConfigImpl.Text.LIFESPAN_MIN, ConfigImpl.Text.LIFESPAN_MAX,
                 2, 1,
-                ConfigImpl.TEXT.mCacheLifespan, saveFn));
+                Config.TEXT.mCacheLifespan, saveFn));
 
         return category;
     }
@@ -659,44 +681,40 @@ public class PreferencesFragment extends Fragment {
         Runnable saveFn = mOnTextConfigChanged;
 
         category.addView(createBooleanOption(context, "modernui.center.font.antiAliasing",
-                ConfigImpl.TEXT.mAntiAliasing, saveFn));
+                Config.TEXT.mAntiAliasing, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.font.linearMetrics",
-                ConfigImpl.TEXT.mLinearMetrics, saveFn));
+                Config.TEXT.mLinearMetrics, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.text.textShadersInWorld",
-                ConfigImpl.TEXT.mUseTextShadersInWorld, saveFn));
+                Config.TEXT.mUseTextShadersInWorld, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.text.allowSDFTextIn2D",
-                ConfigImpl.TEXT.mAllowSDFTextIn2D, saveFn));
+                Config.TEXT.mAllowSDFTextIn2D, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.text.smartSDFShaders",
-                ConfigImpl.TEXT.mSmartSDFShaders, saveFn));
+                Config.TEXT.mSmartSDFShaders, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.text.computeDeviceFontSize",
-                ConfigImpl.TEXT.mComputeDeviceFontSize, saveFn));
+                Config.TEXT.mComputeDeviceFontSize, saveFn));
 
         category.addView(createIntegerOption(context, "modernui.center.text.minPixelDensityForSDF",
-                4, 10,
-                2, 1, ConfigImpl.TEXT.mMinPixelDensityForSDF, saveFn));
+                2, 1, Config.TEXT.mMinPixelDensityForSDF, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.font.linearSampling",
-                ConfigImpl.TEXT.mLinearSamplingA8Atlas, saveFn));
+                Config.TEXT.mLinearSamplingA8Atlas, saveFn));
 
         category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
-                ConfigImpl.TEXT.mAllowShadow, saveFn));
+                Config.TEXT.mAllowShadow, saveFn));
 
         category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
-                ConfigImpl.Text.SHADOW_OFFSET_MIN, ConfigImpl.Text.SHADOW_OFFSET_MAX,
-                5, ConfigImpl.TEXT.mShadowOffset, 100, saveFn));
+                5, Config.TEXT.mShadowOffset, 100, saveFn));
 
         category.addView(createFloatOption(context, "modernui.center.text.baselineShift",
-                ConfigImpl.Text.BASELINE_MIN, ConfigImpl.Text.BASELINE_MAX,
-                5, ConfigImpl.TEXT.mBaselineShift, 10, saveFn));
+                5, Config.TEXT.mBaselineShift, 10, saveFn));
 
         category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
-                ConfigImpl.Text.OUTLINE_OFFSET_MIN, ConfigImpl.Text.OUTLINE_OFFSET_MAX,
-                5, ConfigImpl.TEXT.mOutlineOffset, 100, saveFn));
+                5, Config.TEXT.mOutlineOffset, 100, saveFn));
 
         return category;
     }
@@ -798,7 +816,7 @@ public class PreferencesFragment extends Fragment {
     public static LinearLayout createBooleanOption(
             Context context,
             String name,
-            ModConfigSpec.BooleanValue config,
+            Config.ConfigItem<Boolean> config,
             Runnable saveFn) {
         var layout = createSwitchLayout(context, name);
         var button = layout.<Switch>requireViewById(R.id.button1);
@@ -814,7 +832,7 @@ public class PreferencesFragment extends Fragment {
             Context context,
             String name,
             E[] values,
-            ModConfigSpec.EnumValue<E> config,
+            Config.ConfigItem<E> config,
             Runnable saveFn) {
         var option = new LinearLayout(context);
         option.setOrientation(LinearLayout.HORIZONTAL);
@@ -1023,12 +1041,14 @@ public class PreferencesFragment extends Fragment {
     }
 
     public static LinearLayout createIntegerOption(Context context, String name,
-                                                   int minValue, int maxValue, int maxLength, int stepSize,
-                                                   ModConfigSpec.IntValue config,
+                                                   int maxLength, int stepSize,
+                                                   Config.ConfigItem<Integer> config,
                                                    Runnable saveFn) {
+        var range = config.getRange();
+        Objects.requireNonNull(range);
         return createIntegerOption(context, name,
-                minValue, maxValue, maxLength, stepSize,
-                config, config::set, saveFn);
+                range.getMinimum(), range.getMaximum(), maxLength, stepSize,
+                config, config, saveFn);
     }
 
     public static LinearLayout createIntegerOption(Context context, String name,
@@ -1082,7 +1102,7 @@ public class PreferencesFragment extends Fragment {
 
     public static LinearLayout createColorOpacityOption(
             Context context, String name,
-            ModConfigSpec.ConfigValue<List<? extends String>> config,
+            Config.ConfigItem<List<? extends String>> config,
             Runnable saveFn) {
         Supplier<Double> getter = () -> {
             List<? extends String> colors = config.get();
@@ -1116,12 +1136,25 @@ public class PreferencesFragment extends Fragment {
     }
 
     public static LinearLayout createFloatOption(Context context, String name,
-                                                 float minValue, float maxValue, int maxLength,
-                                                 ModConfigSpec.DoubleValue config,
+                                                 int maxLength,
+                                                 Config.ConfigItem<Double> config,
                                                  float denominator,
                                                  Runnable saveFn) {
-        return createFloatOption(context, name, minValue, maxValue, maxLength,
-                config, config::set, denominator, saveFn);
+        return createFloatOption(context, name, maxLength,
+                config, config, denominator, saveFn);
+    }
+
+    public static LinearLayout createFloatOption(Context context, String name,
+                                                 int maxLength,
+                                                 Config.ConfigItem<Double> config,
+                                                 Consumer<Double> setter,
+                                                 float denominator,
+                                                 Runnable saveFn) {
+        var range = config.getRange();
+        Objects.requireNonNull(range);
+        return createFloatOption(context, name,
+                range.getMinimum().floatValue(), range.getMaximum().floatValue(), maxLength,
+                config, setter, denominator, saveFn);
     }
 
     private static String floatValueToString(float value, float denominator) {
@@ -1181,7 +1214,7 @@ public class PreferencesFragment extends Fragment {
 
     public static LinearLayout createStringListOption(Context context,
                                                       String name,
-                                                      ModConfigSpec.ConfigValue<List<? extends String>> config,
+                                                      Config.ConfigItem<List<? extends String>> config,
                                                       Runnable saveFn) {
         var option = new LinearLayout(context);
         option.setOrientation(LinearLayout.HORIZONTAL);
@@ -1289,9 +1322,9 @@ public class PreferencesFragment extends Fragment {
             {
                 var option = createSwitchLayout(mParent.getContext(), "modernui.center.tooltip.roundedShapes");
                 var button = option.<Switch>requireViewById(R.id.button1);
-                button.setChecked(rounded = ConfigImpl.CLIENT.mRoundedTooltip.get());
+                button.setChecked(rounded = Config.CLIENT.mRoundedTooltip.get());
                 button.setOnCheckedChangeListener((__, checked) -> {
-                    ConfigImpl.CLIENT.mRoundedTooltip.set(checked);
+                    Config.CLIENT.mRoundedTooltip.set(checked);
                     setViewAndChildrenEnabled(mBorderWidth, checked);
                     setViewAndChildrenEnabled(mCornerRadius, checked);
                     setViewAndChildrenEnabled(mShadowRadius, checked);
@@ -1302,9 +1335,8 @@ public class PreferencesFragment extends Fragment {
             }
             {
                 var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.borderWidth",
-                        ConfigImpl.Client.TOOLTIP_BORDER_WIDTH_MIN, ConfigImpl.Client.TOOLTIP_BORDER_WIDTH_MAX,
-                        4, ConfigImpl.CLIENT.mTooltipWidth, (width) -> {
-                            ConfigImpl.CLIENT.mTooltipWidth.set(width);
+                        4, Config.CLIENT.mTooltipWidth, (width) -> {
+                            Config.CLIENT.mTooltipWidth.set(width);
                             if (mColorPicker != null) {
                                 mColorPicker.setBorderWidth(width.floatValue());
                             }
@@ -1317,9 +1349,8 @@ public class PreferencesFragment extends Fragment {
             }
             {
                 var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.cornerRadius",
-                        ConfigImpl.Client.TOOLTIP_CORNER_RADIUS_MIN, ConfigImpl.Client.TOOLTIP_CORNER_RADIUS_MAX,
-                        3, ConfigImpl.CLIENT.mTooltipRadius, (radius) -> {
-                            ConfigImpl.CLIENT.mTooltipRadius.set(radius);
+                        3, Config.CLIENT.mTooltipRadius, (radius) -> {
+                            Config.CLIENT.mTooltipRadius.set(radius);
                             if (mColorPicker != null) {
                                 mColorPicker.setBorderRadius(radius.floatValue());
                             }
@@ -1332,8 +1363,7 @@ public class PreferencesFragment extends Fragment {
             }
             {
                 var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.shadowRadius",
-                        ConfigImpl.Client.TOOLTIP_SHADOW_RADIUS_MIN, ConfigImpl.Client.TOOLTIP_SHADOW_RADIUS_MAX,
-                        4, ConfigImpl.CLIENT.mTooltipShadowRadius, 10, mSaveFn);
+                        4, Config.CLIENT.mTooltipShadowRadius, 10, mSaveFn);
                 if (!rounded) {
                     setViewAndChildrenEnabled(option, false);
                 }
@@ -1342,8 +1372,7 @@ public class PreferencesFragment extends Fragment {
             }
             {
                 var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.shadowOpacity",
-                        0F, 1F,
-                        4, ConfigImpl.CLIENT.mTooltipShadowAlpha, 100, mSaveFn);
+                        4, Config.CLIENT.mTooltipShadowAlpha, 100, mSaveFn);
                 if (!rounded) {
                     setViewAndChildrenEnabled(option, false);
                 }
@@ -1351,10 +1380,9 @@ public class PreferencesFragment extends Fragment {
                 mContent.addView(option);
             }
             mContent.addView(createBooleanOption(mParent.getContext(), "modernui.center.tooltip.adaptiveColors",
-                    ConfigImpl.CLIENT.mAdaptiveTooltipColors, mSaveFn));
+                    Config.CLIENT.mAdaptiveTooltipColors, mSaveFn));
             mContent.addView(createIntegerOption(mParent.getContext(), "modernui.center.tooltip.borderCycle",
-                    ConfigImpl.Client.TOOLTIP_BORDER_COLOR_ANIM_MIN, ConfigImpl.Client.TOOLTIP_BORDER_COLOR_ANIM_MAX,
-                    4, 100, ConfigImpl.CLIENT.mTooltipCycle, mSaveFn));
+                    4, 100, Config.CLIENT.mTooltipCycle, mSaveFn));
             var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
             params.setMargins(0, mContent.dp(6), 0, 0);
             int dp4 = mContent.dp(4);
@@ -1376,10 +1404,10 @@ public class PreferencesFragment extends Fragment {
                 mContent.addView(buttonGroup, new LinearLayout.LayoutParams(params));
             }
             mContent.addView(mColorPicker = new FourColorPicker(mParent.getContext(),
-                    ConfigImpl.CLIENT.mTooltipStroke, ConfigImpl.CLIENT.mTooltipStroke::set,
+                    Config.CLIENT.mTooltipStroke, Config.CLIENT.mTooltipStroke,
                     mSaveFn), new LinearLayout.LayoutParams(params));
-            mColorPicker.setBorderRadius(ConfigImpl.CLIENT.mTooltipRadius.get().floatValue());
-            mColorPicker.setBorderWidth(ConfigImpl.CLIENT.mTooltipWidth.get().floatValue());
+            mColorPicker.setBorderRadius(Config.CLIENT.mTooltipRadius.get().floatValue());
+            mColorPicker.setBorderWidth(Config.CLIENT.mTooltipWidth.get().floatValue());
             mParent.addView(mContent, params);
         }
     }
@@ -1387,6 +1415,7 @@ public class PreferencesFragment extends Fragment {
     public static class PreferredFontCollapsed implements View.OnClickListener {
 
         final ViewGroup mParent;
+        final Runnable mSaveFn;
         final Runnable mOnFontChanged;
 
         // lazy-init
@@ -1394,8 +1423,9 @@ public class PreferencesFragment extends Fragment {
         EditText mInput;
         Spinner mSpinner;
 
-        public PreferredFontCollapsed(ViewGroup parent, Runnable onFontChanged) {
+        public PreferredFontCollapsed(ViewGroup parent, Runnable saveFn, Runnable onFontChanged) {
             mParent = parent;
+            mSaveFn = saveFn;
             mOnFontChanged = onFontChanged;
         }
 
@@ -1415,7 +1445,7 @@ public class PreferencesFragment extends Fragment {
             {
                 var layout = createInputBox(mParent.getContext(), "gui.modernui.configValue");
                 var input = mInput = layout.requireViewById(R.id.input);
-                input.setText(ConfigImpl.CLIENT.mFirstFontFamily.get());
+                input.setText(Config.CLIENT.mFirstFontFamily.get());
                 input.setOnFocusChangeListener((view, hasFocus) -> {
                     if (!hasFocus) {
                         EditText v1 = (EditText) view;
@@ -1557,9 +1587,9 @@ public class PreferencesFragment extends Fragment {
         }
 
         private boolean applyNewValue(Context context, @NonNull String newValue) {
-            if (!newValue.equals(ConfigImpl.CLIENT.mFirstFontFamily.get())) {
-                ConfigImpl.CLIENT.mFirstFontFamily.set(newValue);
-                ConfigImpl.CLIENT.saveAndReloadAsync();
+            if (!newValue.equals(Config.CLIENT.mFirstFontFamily.get())) {
+                Config.CLIENT.mFirstFontFamily.set(newValue);
+                mSaveFn.run();
                 reloadDefaultTypeface(context, mOnFontChanged);
                 return true;
             }
