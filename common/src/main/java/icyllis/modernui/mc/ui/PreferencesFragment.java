@@ -192,7 +192,9 @@ public class PreferencesFragment extends Fragment {
                 case 3 -> createPage4(context);
                 default -> createPage5(context);
             };
-            layout.setMinimumWidth(layout.dp(720));
+            var dp20 = sv.dp(20);
+            layout.setPadding(dp20, 0, dp20, 0);
+            layout.setMinimumWidth(layout.dp(800) + dp20 + dp20);
             var params = new ScrollView.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
             sv.addView(layout, params);
             //sv.setEdgeEffectColor(ThemeControl.THEME_COLOR);
@@ -604,7 +606,7 @@ public class PreferencesFragment extends Fragment {
 
         {
             final Button title;
-            title = new ToggleButton(context, null, null, R.style.Widget_Material3_Button_TextButton);
+            title = new ToggleButton(context, null, R.attr.borderlessButtonStyle);
             title.setText(I18n.get("modernui.center.tooltip.borderStyle"));
             title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
             {
@@ -1001,8 +1003,7 @@ public class PreferencesFragment extends Fragment {
             layout.addView(title, params);
         }
         {
-            var input = new EditText(context, null, null,
-                    R.style.Widget_Material3_EditText_OutlinedBox);
+            var input = new EditText(context, null, R.attr.editTextOutlinedStyle);
             input.setId(R.id.input);
             input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
 
@@ -1238,8 +1239,7 @@ public class PreferencesFragment extends Fragment {
             option.addView(title, params);
         }
         {
-            var input = new EditText(context, null, null,
-                    R.style.Widget_Material3_EditText_OutlinedBox);
+            var input = new EditText(context, null, R.attr.editTextOutlinedStyle);
             input.setId(R.id.input);
             input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
             input.setTextSize(14);
@@ -1390,8 +1390,7 @@ public class PreferencesFragment extends Fragment {
                 var buttonGroup = new LinearLayout(mParent.getContext());
                 buttonGroup.setOrientation(LinearLayout.HORIZONTAL);
                 for (int i = 0; i < 4; i++) {
-                    var button = new Button(mParent.getContext(), null, null,
-                            R.style.Widget_Material3_Button_OutlinedButton);
+                    var button = new Button(mParent.getContext(), null, R.attr.buttonOutlinedStyle);
                     button.setText(I18n.get("gui.modernui.preset_s", (i + 1)));
                     final int idx = i;
                     button.setOnClickListener((__) -> mColorPicker.setColors(

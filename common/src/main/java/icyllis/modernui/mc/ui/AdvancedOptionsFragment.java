@@ -71,7 +71,7 @@ public class AdvancedOptionsFragment extends Fragment {
     TextView mGPUStatsDump;
 
     public static Button createDebugButton(Context context, String text) {
-        var button = new Button(context, null, null, R.style.Widget_Material3_Button_OutlinedButton);
+        var button = new Button(context, null, R.attr.buttonOutlinedStyle);
         button.setText(text);
 
         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);

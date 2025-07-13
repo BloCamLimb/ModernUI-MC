@@ -150,8 +150,7 @@ public class FourColorPicker extends RelativeLayout {
 
     @NonNull
     private EditText createField(int index, @NotNull List<? extends String> colors) {
-        var field = new EditText(getContext(), null, null,
-                R.style.Widget_Material3_EditText_OutlinedBox);
+        var field = new EditText(getContext(), null, R.attr.editTextOutlinedStyle);
         Typeface monoFont = Typeface.getSystemFont("JetBrains Mono Medium");
         if (monoFont != Typeface.SANS_SERIF) {
             field.setTypeface(monoFont);

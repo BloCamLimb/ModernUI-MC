@@ -85,6 +85,7 @@ public abstract class ModernUIClient extends ModernUI {
     protected ModernUIClient() {
         super();
         sInstance = this;
+        setTheme(R.style.Theme_Material3_Dark);
         getTheme().applyStyle(R.style.ThemeOverlay_Material3_Dark_Rust, true);
     }
 
