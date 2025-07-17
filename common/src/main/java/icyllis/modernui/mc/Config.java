@@ -36,6 +36,7 @@ import icyllis.modernui.mc.text.TextRenderType;
 import icyllis.modernui.resources.Resources;
 import icyllis.modernui.util.DisplayMetrics;
 import icyllis.modernui.view.View;
+import icyllis.modernui.view.ViewConfiguration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
 import org.apache.commons.lang3.Range;
@@ -137,13 +138,17 @@ public final class Config {
         public final ConfigItem<Double> mMasterVolumeMinimized;
         public final ConfigItem<Integer> mScrollbarSize;
         public final ConfigItem<Integer> mTouchSlop;
+        public final ConfigItem<Integer> mHoverSlop;
         public final ConfigItem<Integer> mMinScrollbarTouchTarget;
         public final ConfigItem<Integer> mMinimumFlingVelocity;
         public final ConfigItem<Integer> mMaximumFlingVelocity;
+        public final ConfigItem<Double> mScrollFriction;
         public final ConfigItem<Integer> mOverscrollDistance;
         public final ConfigItem<Integer> mOverflingDistance;
         public final ConfigItem<Double> mVerticalScrollFactor;
         public final ConfigItem<Double> mHorizontalScrollFactor;
+        public final ConfigItem<Integer> mHoverTooltipShowTimeout;
+        public final ConfigItem<Integer> mHoverTooltipHideTimeout;
         public final ConfigItem<List<? extends String>> mBlurBlacklist;
         public final ConfigItem<String> mFirstFontFamily;
         public final ConfigItem<List<? extends String>> mFallbackFontFamilyList;
@@ -187,13 +192,17 @@ public final class Config {
             mMasterVolumeMinimized = get(map, "mMasterVolumeMinimized");
             mScrollbarSize = get(map, "mScrollbarSize");
             mTouchSlop = get(map, "mTouchSlop");
+            mHoverSlop = get(map, "mHoverSlop");
             mMinScrollbarTouchTarget = get(map, "mMinScrollbarTouchTarget");
             mMinimumFlingVelocity = get(map, "mMinimumFlingVelocity");
             mMaximumFlingVelocity = get(map, "mMaximumFlingVelocity");
+            mScrollFriction = get(map, "mScrollFriction");
             mOverscrollDistance = get(map, "mOverscrollDistance");
             mOverflingDistance = get(map, "mOverflingDistance");
             mVerticalScrollFactor = get(map, "mVerticalScrollFactor");
             mHorizontalScrollFactor = get(map, "mHorizontalScrollFactor");
+            mHoverTooltipShowTimeout = get(map, "mHoverTooltipShowTimeout");
+            mHoverTooltipHideTimeout = get(map, "mHoverTooltipHideTimeout");
             mBlurBlacklist = get(map, "mBlurBlacklist");
             mFirstFontFamily = get(map, "mFirstFontFamily");
             mFallbackFontFamilyList = get(map, "mFallbackFontFamilyList");
@@ -311,6 +320,53 @@ public final class Config {
                         metrics.setTo(res.getDisplayMetrics());
                         metrics.scaledDensity = ModernUIClient.sFontScale * metrics.density;
                         res.updateMetrics(metrics);
+                    }
+                    boolean resetConfigCache = false;
+                    if (ViewConfiguration.sScrollBarSize != mScrollbarSize.get()) {
+                        ViewConfiguration.sScrollBarSize = mScrollbarSize.get();
+                        resetConfigCache = true;
+                    }
+                    if (ViewConfiguration.sTouchSlop != mTouchSlop.get()) {
+                        ViewConfiguration.sTouchSlop = mTouchSlop.get();
+                        resetConfigCache = true;
+                    }
+                    if (ViewConfiguration.sHoverSlop != mHoverSlop.get()) {
+                        ViewConfiguration.sHoverSlop = mHoverSlop.get();
+                        resetConfigCache = true;
+                    }
+                    if (ViewConfiguration.sMinScrollbarTouchTarget != mMinScrollbarTouchTarget.get()) {
+                        ViewConfiguration.sMinScrollbarTouchTarget = mMinScrollbarTouchTarget.get();
+                        resetConfigCache = true;
+                    }
+                    if (ViewConfiguration.sMinimumFlingVelocity != mMinimumFlingVelocity.get()) {
+                        ViewConfiguration.sMinimumFlingVelocity = mMinimumFlingVelocity.get();
+                        resetConfigCache = true;
+                    }
+                    if (ViewConfiguration.sMaximumFlingVelocity != mMaximumFlingVelocity.get()) {
+                        ViewConfiguration.sMaximumFlingVelocity = mMaximumFlingVelocity.get();
+                        resetConfigCache = true;
+                    }
+                    ViewConfiguration.sScrollFriction = mScrollFriction.get().floatValue();
+                    if (ViewConfiguration.sOverscrollDistance != mOverscrollDistance.get()) {
+                        ViewConfiguration.sOverscrollDistance = mOverscrollDistance.get();
+                        resetConfigCache = true;
+                    }
+                    if (ViewConfiguration.sOverflingDistance != mOverflingDistance.get()) {
+                        ViewConfiguration.sOverflingDistance = mOverflingDistance.get();
+                        resetConfigCache = true;
+                    }
+                    if (ViewConfiguration.sHorizontalScrollFactor != mHorizontalScrollFactor.get()) {
+                        ViewConfiguration.sHorizontalScrollFactor = mHorizontalScrollFactor.get().floatValue();
+                        resetConfigCache = true;
+                    }
+                    if (ViewConfiguration.sVerticalScrollFactor != mVerticalScrollFactor.get()) {
+                        ViewConfiguration.sVerticalScrollFactor = mVerticalScrollFactor.get().floatValue();
+                        resetConfigCache = true;
+                    }
+                    ViewConfiguration.sHoverTooltipShowTimeout = mHoverTooltipShowTimeout.get();
+                    ViewConfiguration.sHoverTooltipHideTimeout = mHoverTooltipHideTimeout.get();
+                    if (resetConfigCache) {
+                        ViewConfiguration.resetCache();
                     }
                 });
             }

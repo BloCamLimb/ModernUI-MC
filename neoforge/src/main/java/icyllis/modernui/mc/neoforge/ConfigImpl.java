@@ -24,7 +24,6 @@ import icyllis.modernui.mc.text.TextLayout;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.text.TextLayoutProcessor;
 import icyllis.modernui.view.ViewConfiguration;
-import net.minecraft.Util;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.neoforged.fml.config.IConfigSpec;
 import net.neoforged.fml.config.ModConfig;
@@ -299,13 +298,17 @@ public final class ConfigImpl {
 
         public final ModConfigSpec.IntValue mScrollbarSize;
         public final ModConfigSpec.IntValue mTouchSlop;
+        public final ModConfigSpec.IntValue mHoverSlop;
         public final ModConfigSpec.IntValue mMinScrollbarTouchTarget;
         public final ModConfigSpec.IntValue mMinimumFlingVelocity;
         public final ModConfigSpec.IntValue mMaximumFlingVelocity;
+        public final ModConfigSpec.DoubleValue mScrollFriction;
         public final ModConfigSpec.IntValue mOverscrollDistance;
         public final ModConfigSpec.IntValue mOverflingDistance;
         public final ModConfigSpec.DoubleValue mVerticalScrollFactor;
         public final ModConfigSpec.DoubleValue mHorizontalScrollFactor;
+        public final ModConfigSpec.IntValue mHoverTooltipShowTimeout;
+        public final ModConfigSpec.IntValue mHoverTooltipHideTimeout;
 
         private final ModConfigSpec.ConfigValue<List<? extends String>> mBlurBlacklist;
 
@@ -500,7 +503,7 @@ public final class ConfigImpl {
 
             builder.pop();
 
-            builder.comment("View system config, currently not working.")
+            builder.comment("View Config")
                     .push("view");
 
             mForceRtl = builder.comment("Force layout direction to RTL, otherwise, the current Locale setting.")
@@ -511,12 +514,16 @@ public final class ConfigImpl {
                     .defineInRange("scrollbarSize", ViewConfiguration.SCROLL_BAR_SIZE, 0, 1024);
             mTouchSlop = builder.comment("Distance a touch can wander before we think the user is scrolling in dips.")
                     .defineInRange("touchSlop", ViewConfiguration.TOUCH_SLOP, 0, 1024);
+            mHoverSlop = builder.comment("Distance a hover can wander while it is still considered \"stationary\" in dips.")
+                    .defineInRange("hoverSlop", ViewConfiguration.TOUCH_SLOP, 0, 1024);
             mMinScrollbarTouchTarget = builder.comment("Minimum size of the touch target for a scrollbar in dips.")
                     .defineInRange("minScrollbarTouchTarget", ViewConfiguration.MIN_SCROLLBAR_TOUCH_TARGET, 0, 1024);
             mMinimumFlingVelocity = builder.comment("Minimum velocity to initiate a fling in dips per second.")
                     .defineInRange("minimumFlingVelocity", ViewConfiguration.MINIMUM_FLING_VELOCITY, 0, 32767);
             mMaximumFlingVelocity = builder.comment("Maximum velocity to initiate a fling in dips per second.")
                     .defineInRange("maximumFlingVelocity", ViewConfiguration.MAXIMUM_FLING_VELOCITY, 0, 32767);
+            mScrollFriction = builder.comment("The coefficient of friction applied to flings/scrolls.")
+                    .defineInRange("scrollFriction", ViewConfiguration.SCROLL_FRICTION, 0.001, 7.389);
             mOverscrollDistance = builder.comment("Max distance in dips to overscroll for edge effects.")
                     .defineInRange("overscrollDistance", ViewConfiguration.OVERSCROLL_DISTANCE, 0, 1024);
             mOverflingDistance = builder.comment("Max distance in dips to overfling for edge effects.")
@@ -529,6 +536,14 @@ public final class ConfigImpl {
                             "Amount to scroll in response to a horizontal scroll event, in dips per axis value.")
                     .defineInRange("horizontalScrollFactor", (double) ViewConfiguration.HORIZONTAL_SCROLL_FACTOR,
                             0, 1024);
+            mHoverTooltipShowTimeout = builder.comment(
+                            "The duration in milliseconds before a hover event causes a tooltip to be shown.")
+                    .defineInRange("hoverTooltipShowTimeout", ViewConfiguration.HOVER_TOOLTIP_SHOW_TIMEOUT,
+                            0, 1200);
+            mHoverTooltipHideTimeout = builder.comment(
+                            "The duration in milliseconds before mouse inactivity causes a tooltip to be hidden.")
+                    .defineInRange("hoverTooltipHideTimeout", ViewConfiguration.HOVER_TOOLTIP_HIDE_TIMEOUT,
+                            3000, 120000);
 
             builder.pop();
 
@@ -582,15 +597,6 @@ public final class ConfigImpl {
                     .define("useColorEmoji", true);
 
             builder.pop();
-        }
-
-        public void saveAsync() {
-            Util.ioPool().execute(() -> CLIENT_SPEC.save());
-        }
-
-        public void saveAndReloadAsync() {
-            Util.ioPool().execute(() -> CLIENT_SPEC.save());
-            reload();
         }
 
         private void reload() {

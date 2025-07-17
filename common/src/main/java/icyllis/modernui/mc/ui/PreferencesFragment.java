@@ -56,6 +56,8 @@ import icyllis.modernui.util.DataSet;
 import icyllis.modernui.util.StateSet;
 import icyllis.modernui.view.Gravity;
 import icyllis.modernui.view.LayoutInflater;
+import icyllis.modernui.view.MeasureSpec;
+import icyllis.modernui.view.Menu;
 import icyllis.modernui.view.OneShotPreDrawListener;
 import icyllis.modernui.view.View;
 import icyllis.modernui.view.ViewGroup;
@@ -63,18 +65,13 @@ import icyllis.modernui.widget.*;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
@@ -182,8 +179,30 @@ public class PreferencesFragment extends Fragment {
         @NonNull
         @Override
         public Object instantiateItem(@NonNull ViewGroup container, int position) {
+            final int dp20 = container.dp(20);
+            final int maxWidth = container.dp(800) + dp20 + dp20;
             var context = container.getContext();
-            var sv = new ScrollView(context);
+            //noinspection ExtractMethodRecommender
+            var sv = new ScrollView(context) {
+                @Override
+                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+                    if (getChildCount() > 0) {
+                        // constrain the direct child
+                        final View child = getChildAt(0);
+
+                        int childWidth = child.getMeasuredWidth();
+                        int clampedWidth = Math.min(childWidth, maxWidth);
+
+                        if (childWidth != clampedWidth) {
+                            var newWidthSpec = MeasureSpec.makeMeasureSpec(clampedWidth, MeasureSpec.EXACTLY);
+                            var newHeightSpec = MeasureSpec.makeMeasureSpec(child.getMeasuredHeight(), MeasureSpec.EXACTLY);
+                            child.measure(newWidthSpec, newHeightSpec);
+                        }
+                    }
+                }
+            };
             sv.setTag(position);
             ViewGroup layout = switch (position) {
                 case 0 -> createPage1(context);
@@ -192,10 +211,8 @@ public class PreferencesFragment extends Fragment {
                 case 3 -> createPage4(context);
                 default -> createPage5(context);
             };
-            var dp20 = sv.dp(20);
             layout.setPadding(dp20, 0, dp20, 0);
-            layout.setMinimumWidth(layout.dp(800) + dp20 + dp20);
-            var params = new ScrollView.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
+            var params = new ScrollView.LayoutParams(MATCH_PARENT, WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
             sv.addView(layout, params);
             //sv.setEdgeEffectColor(ThemeControl.THEME_COLOR);
             //sv.setTopEdgeEffectBlendMode(BlendMode.SRC_OVER);
@@ -300,6 +317,49 @@ public class PreferencesFragment extends Fragment {
         Runnable saveFn = mOnClientConfigChanged;
 
         {
+            var list = createCategoryList(content, null);
+
+            list.addView(createIntegerOption(context, "Scrollbar Size",
+                    4, 1,
+                    Config.CLIENT.mScrollbarSize, saveFn));
+            list.addView(createIntegerOption(context, "Touch Slop",
+                    4, 1,
+                    Config.CLIENT.mTouchSlop, saveFn));
+            list.addView(createIntegerOption(context, "Hover Slop",
+                    4, 1,
+                    Config.CLIENT.mHoverSlop, saveFn));
+            list.addView(createIntegerOption(context, "Minimum Scrollbar Touch Target",
+                    4, 1,
+                    Config.CLIENT.mMinScrollbarTouchTarget, saveFn));
+            list.addView(createIntegerOption(context, "Minimum Fling Velocity",
+                    4, 1,
+                    Config.CLIENT.mMinimumFlingVelocity, saveFn));
+            list.addView(createIntegerOption(context, "Maximum Fling Velocity",
+                    4, 1,
+                    Config.CLIENT.mMaximumFlingVelocity, saveFn));
+            list.addView(createFloatOption(context, "Scroll Friction",
+                    6, Config.CLIENT.mScrollFriction, 1000, saveFn));
+            list.addView(createIntegerOption(context, "Overscroll Distance",
+                    4, 1,
+                    Config.CLIENT.mOverscrollDistance, saveFn));
+            list.addView(createIntegerOption(context, "Overfling Distance",
+                    4, 1,
+                    Config.CLIENT.mOverflingDistance, saveFn));
+            list.addView(createFloatOption(context, "Horizontal Scroll Factor",
+                    4, Config.CLIENT.mHorizontalScrollFactor, 10, saveFn));
+            list.addView(createFloatOption(context, "Vertical Scroll Factor",
+                    4, Config.CLIENT.mVerticalScrollFactor, 10, saveFn));
+            list.addView(createIntegerOption(context, "Hover Tooltip Show Timeout",
+                    4, 1,
+                    Config.CLIENT.mHoverTooltipShowTimeout, saveFn));
+            list.addView(createIntegerOption(context, "Hover Tooltip Hide Timeout",
+                    6, 1,
+                    Config.CLIENT.mHoverTooltipHideTimeout, saveFn));
+
+            content.addView(list);
+        }
+
+        {
             var list = createCategoryList(content, "modernui.center.category.system");
 
             list.addView(createBooleanOption(context, "modernui.center.system.forceRtlLayout",
@@ -379,7 +439,7 @@ public class PreferencesFragment extends Fragment {
                 }
 
                 firstLine.setOnClickListener(
-                        new PreferredFontCollapsed(
+                        new PreferredFontAccordion(
                                 layout,
                                 mOnClientConfigChanged,
                                 onFontChanged
@@ -622,7 +682,7 @@ public class PreferencesFragment extends Fragment {
                         null, null, icon, null
                 );
             }
-            title.setOnClickListener(new TooltipBorderCollapsed(category, mOnClientConfigChanged));
+            title.setOnClickListener(new TooltipBorderAccordion(category, mOnClientConfigChanged));
 
             var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
             category.addView(title, params);
@@ -1133,7 +1193,7 @@ public class PreferencesFragment extends Fragment {
             config.set(newList);
         };
         return createFloatOption(context, name, 0, 1, 4,
-                getter, setter, 100, saveFn);
+                getter, setter, null, 100, saveFn);
     }
 
     public static LinearLayout createFloatOption(Context context, String name,
@@ -1155,7 +1215,7 @@ public class PreferencesFragment extends Fragment {
         Objects.requireNonNull(range);
         return createFloatOption(context, name,
                 range.getMinimum().floatValue(), range.getMaximum().floatValue(), maxLength,
-                config, setter, denominator, saveFn);
+                config, setter, config.getDefault(), denominator, saveFn);
     }
 
     private static String floatValueToString(float value, float denominator) {
@@ -1165,11 +1225,29 @@ public class PreferencesFragment extends Fragment {
     public static LinearLayout createFloatOption(Context context, String name,
                                                  float minValue, float maxValue, int maxLength,
                                                  Supplier<Double> getter, Consumer<Double> setter,
+                                                 Double defaultValue,
                                                  float denominator, // 10 means step=0.1, 100 means step=0.01
                                                  Runnable saveFn) {
         var layout = createInputBoxWithSlider(context, name, (maxValue - minValue) * denominator <= 10);
         var slider = layout.<SeekBar>requireViewById(R.id.button2);
         var input = layout.<EditText>requireViewById(R.id.input);
+        if (defaultValue != null) {
+            layout.setOnCreateContextMenuListener((menu, v, menuInfo) -> {
+                float curValue = slider.getProgress() / denominator + minValue;
+                float newValue = defaultValue.floatValue();
+                if (newValue != curValue) {
+                    menu.add(Menu.NONE, Menu.NONE, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
+                            .setOnMenuItemClickListener(item -> {
+                                replaceText(input, floatValueToString(newValue, denominator));
+                                setter.accept((double) newValue);
+                                int newProgress = Math.round((newValue - minValue) * denominator);
+                                slider.setProgress(newProgress, true);
+                                saveFn.run();
+                                return true;
+                            });
+                }
+            });
+        }
         input.setFilters(DigitsInputFilter.getInstance(null, minValue < 0, true),
                 new InputFilter.LengthFilter(maxLength));
         float curValue = getter.get().floatValue();
@@ -1242,8 +1320,6 @@ public class PreferencesFragment extends Fragment {
             var input = new EditText(context, null, R.attr.editTextOutlinedStyle);
             input.setId(R.id.input);
             input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-            input.setTextSize(14);
-            input.setPadding(dp3, 0, dp3, 0);
 
             input.setText(String.join("\n", config.get()));
             input.setOnFocusChangeListener((view, hasFocus) -> {
@@ -1279,329 +1355,12 @@ public class PreferencesFragment extends Fragment {
         return option;
     }
 
-    public static class TooltipBorderCollapsed implements View.OnClickListener {
-
-        public static final String[][] PRESET_COLORS = {
-                {"#F0AADCF0", "#F0FFC3F7", "#F0BFF2B2", "#F0D27F3D"},
-                {"#F0AADCF0", "#F0DAD0F4", "#F0FFC3F7", "#F0DAD0F4"},
-                {"#F028007F", "#F028007F", "#F014003F", "#F014003F"},
-                {"#F0E0E0E0", "#F0B0B0B0", "#F0FFFFFF", "#F0B0B0B0"}
-        };
-
-        final ViewGroup mParent;
-        final Runnable mSaveFn;
-
-        // lazy-init
-        LinearLayout mContent;
-        FourColorPicker mColorPicker;
-
-        ViewGroup mBorderWidth;
-        ViewGroup mCornerRadius;
-        ViewGroup mShadowRadius;
-        ViewGroup mShadowAlpha;
-
-        // this callback is registered on a child view of 'parent'
-        // so no weak ref
-        public TooltipBorderCollapsed(ViewGroup parent, Runnable saveFn) {
-            mParent = parent;
-            mSaveFn = saveFn;
-        }
-
-        @Override
-        public void onClick(View v) {
-            if (mContent != null) {
-                // toggle
-                mContent.setVisibility(mContent.getVisibility() == View.GONE
-                        ? View.VISIBLE
-                        : View.GONE);
-                return;
-            }
-            mContent = new LinearLayout(mParent.getContext());
-            mContent.setOrientation(LinearLayout.VERTICAL);
-            final boolean rounded;
-            {
-                var option = createSwitchLayout(mParent.getContext(), "modernui.center.tooltip.roundedShapes");
-                var button = option.<Switch>requireViewById(R.id.button1);
-                button.setChecked(rounded = Config.CLIENT.mRoundedTooltip.get());
-                button.setOnCheckedChangeListener((__, checked) -> {
-                    Config.CLIENT.mRoundedTooltip.set(checked);
-                    setViewAndChildrenEnabled(mBorderWidth, checked);
-                    setViewAndChildrenEnabled(mCornerRadius, checked);
-                    setViewAndChildrenEnabled(mShadowRadius, checked);
-                    setViewAndChildrenEnabled(mShadowAlpha, checked);
-                    mSaveFn.run();
-                });
-                mContent.addView(option);
-            }
-            {
-                var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.borderWidth",
-                        4, Config.CLIENT.mTooltipWidth, (width) -> {
-                            Config.CLIENT.mTooltipWidth.set(width);
-                            if (mColorPicker != null) {
-                                mColorPicker.setBorderWidth(width.floatValue());
-                            }
-                        }, 100, mSaveFn);
-                if (!rounded) {
-                    setViewAndChildrenEnabled(option, false);
-                }
-                mBorderWidth = option;
-                mContent.addView(option);
-            }
-            {
-                var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.cornerRadius",
-                        3, Config.CLIENT.mTooltipRadius, (radius) -> {
-                            Config.CLIENT.mTooltipRadius.set(radius);
-                            if (mColorPicker != null) {
-                                mColorPicker.setBorderRadius(radius.floatValue());
-                            }
-                        }, 10, mSaveFn);
-                if (!rounded) {
-                    setViewAndChildrenEnabled(option, false);
-                }
-                mCornerRadius = option;
-                mContent.addView(option);
-            }
-            {
-                var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.shadowRadius",
-                        4, Config.CLIENT.mTooltipShadowRadius, 10, mSaveFn);
-                if (!rounded) {
-                    setViewAndChildrenEnabled(option, false);
-                }
-                mShadowRadius = option;
-                mContent.addView(option);
-            }
-            {
-                var option = createFloatOption(mParent.getContext(), "modernui.center.tooltip.shadowOpacity",
-                        4, Config.CLIENT.mTooltipShadowAlpha, 100, mSaveFn);
-                if (!rounded) {
-                    setViewAndChildrenEnabled(option, false);
-                }
-                mShadowAlpha = option;
-                mContent.addView(option);
-            }
-            mContent.addView(createBooleanOption(mParent.getContext(), "modernui.center.tooltip.adaptiveColors",
-                    Config.CLIENT.mAdaptiveTooltipColors, mSaveFn));
-            mContent.addView(createIntegerOption(mParent.getContext(), "modernui.center.tooltip.borderCycle",
-                    4, 100, Config.CLIENT.mTooltipCycle, mSaveFn));
-            var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-            params.setMargins(0, mContent.dp(6), 0, 0);
-            int dp4 = mContent.dp(4);
-            {
-                var buttonGroup = new LinearLayout(mParent.getContext());
-                buttonGroup.setOrientation(LinearLayout.HORIZONTAL);
-                for (int i = 0; i < 4; i++) {
-                    var button = new Button(mParent.getContext(), null, R.attr.buttonOutlinedStyle);
-                    button.setText(I18n.get("gui.modernui.preset_s", (i + 1)));
-                    final int idx = i;
-                    button.setOnClickListener((__) -> mColorPicker.setColors(
-                            PRESET_COLORS[idx])
-                    );
-                    var p = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
-                    p.setMargins(dp4, 0, dp4, 0);
-                    buttonGroup.addView(button, p);
-                }
-                mContent.addView(buttonGroup, new LinearLayout.LayoutParams(params));
-            }
-            mContent.addView(mColorPicker = new FourColorPicker(mParent.getContext(),
-                    Config.CLIENT.mTooltipStroke, Config.CLIENT.mTooltipStroke,
-                    mSaveFn), new LinearLayout.LayoutParams(params));
-            mColorPicker.setBorderRadius(Config.CLIENT.mTooltipRadius.get().floatValue());
-            mColorPicker.setBorderWidth(Config.CLIENT.mTooltipWidth.get().floatValue());
-            mParent.addView(mContent, params);
-        }
-    }
-
-    public static class PreferredFontCollapsed implements View.OnClickListener {
-
-        final ViewGroup mParent;
-        final Runnable mSaveFn;
-        final Runnable mOnFontChanged;
-
-        // lazy-init
-        LinearLayout mContent;
-        EditText mInput;
-        Spinner mSpinner;
-
-        public PreferredFontCollapsed(ViewGroup parent, Runnable saveFn, Runnable onFontChanged) {
-            mParent = parent;
-            mSaveFn = saveFn;
-            mOnFontChanged = onFontChanged;
-        }
-
-        @Override
-        public void onClick(View v) {
-            if (mContent != null) {
-                // toggle
-                mContent.setVisibility(mContent.getVisibility() == View.GONE
-                        ? View.VISIBLE
-                        : View.GONE);
-                return;
-            }
-            mContent = new LinearLayout(mParent.getContext());
-            mContent.setOrientation(LinearLayout.VERTICAL);
-            var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-            params.setMargins(0, mContent.dp(6), 0, 0);
-            {
-                var layout = createInputBox(mParent.getContext(), "gui.modernui.configValue");
-                var input = mInput = layout.requireViewById(R.id.input);
-                input.setText(Config.CLIENT.mFirstFontFamily.get());
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v1 = (EditText) view;
-                        String newValue = v1.getText().toString().strip();
-                        applyNewValue(v1.getContext(), newValue);
-                    }
-                });
-                mContent.addView(layout);
-            }
-            {
-                var spinner = mSpinner = new Spinner(mParent.getContext());
-                CompletableFuture.supplyAsync(() -> {
-                    var values = FontFamily.getSystemFontMap()
-                            .values()
-                            .stream()
-                            .map(family -> new FontFamilyItem(family.getFamilyName(),
-                                    family.getFamilyName(ModernUI.getSelectedLocale())))
-                            .sorted()
-                            .collect(Collectors.toList());
-                    String chooseFont = I18n.get("modernui.center.font.chooseFont");
-                    values.add(0, new FontFamilyItem(chooseFont, chooseFont));
-                    return values;
-                }).thenAcceptAsync(values -> {
-                    mSpinner.setAdapter(new FontFamilyAdapter(mParent.getContext(), values));
-                    mSpinner.setOnItemSelectedListener((parent, view, position, id) -> {
-                        if (position == 0) {
-                            return;
-                        }
-                        String newValue = values.get(position).rootName;
-                        boolean changed = applyNewValue(view.getContext(), newValue);
-                        if (changed) {
-                            mInput.setText(newValue);
-                        }
-                    });
-                    FontFamily first = ModernUIClient.getInstance().getFirstFontFamily();
-                    if (first != null) {
-                        for (int i = 1; i < values.size(); i++) {
-                            var candidate = values.get(i);
-                            if (candidate.rootName
-                                    .equalsIgnoreCase(
-                                            first.getFamilyName()
-                                    )) {
-                                mSpinner.setSelection(i);
-                                break;
-                            }
-                        }
-                    }
-                }, Core.getUiThreadExecutor());
-
-                mContent.addView(spinner, new LinearLayout.LayoutParams(params));
-            }
-            {
-                Button openFile = new Button(mParent.getContext());
-                openFile.setText(I18n.get("modernui.center.font.openFontFile"));
-                openFile.setTextSize(14);
-                openFile.setOnClickListener(v1 -> CompletableFuture.runAsync(() -> {
-                    String path;
-                    try (MemoryStack stack = MemoryStack.stackPush()) {
-                        PointerBuffer filters = stack.mallocPointer(4);
-                        stack.nUTF8("*.ttf", true);
-                        filters.put(stack.getPointerAddress());
-                        stack.nUTF8("*.otf", true);
-                        filters.put(stack.getPointerAddress());
-                        stack.nUTF8("*.ttc", true);
-                        filters.put(stack.getPointerAddress());
-                        stack.nUTF8("*.otc", true);
-                        filters.put(stack.getPointerAddress());
-                        filters.rewind();
-                        path = TinyFileDialogs.tinyfd_openFileDialog(null, null,
-                                filters, "TrueType/OpenType Fonts (*.ttf;*.otf;*.ttc;*.otc)", false);
-                    }
-                    if (path != null) {
-                        v1.post(() -> {
-                            boolean changed = applyNewValue(v1.getContext(), path);
-                            if (changed) {
-                                mInput.setText(path);
-                            }
-                            mSpinner.setSelection(0);
-                        });
-                    }
-                }));
-                mContent.addView(openFile, new LinearLayout.LayoutParams(params));
-            }
-            mParent.addView(mContent, params);
-        }
-
-        public record FontFamilyItem(String rootName, String localeName)
-                implements Comparable<FontFamilyItem> {
-
-            @Override
-            public String toString() {
-                return localeName;
-            }
-
-            @Override
-            public int compareTo(@NonNull FontFamilyItem o) {
-                return localeName.compareTo(o.localeName);
-            }
-        }
-
-        private static class FontFamilyAdapter extends ArrayAdapter<FontFamilyItem> {
-
-            private final Context mContext;
-
-            public FontFamilyAdapter(Context context, @NonNull List<FontFamilyItem> objects) {
-                super(context, objects);
-                mContext = context;
-            }
-
-            @NonNull
-            @Override
-            public View getView(int position, @Nullable View convertView,
-                                @NonNull ViewGroup parent) {
-                final TextView tv;
-
-                if (convertView == null) {
-                    tv = new TextView(mContext);
-                } else {
-                    tv = (TextView) convertView;
-                }
-
-                final FontFamilyItem item = getItem(position);
-                tv.setText(item.localeName);
-
-                tv.setTextSize(14);
-                tv.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-                final int dp4 = tv.dp(4);
-                tv.setPadding(dp4, dp4, dp4, dp4);
-
-                return tv;
-            }
-
-            @NonNull
-            @Override
-            public View getDropDownView(int position, @Nullable View convertView,
-                                        @NonNull ViewGroup parent) {
-                return getView(position, convertView, parent);
-            }
-        }
-
-        private boolean applyNewValue(Context context, @NonNull String newValue) {
-            if (!newValue.equals(Config.CLIENT.mFirstFontFamily.get())) {
-                Config.CLIENT.mFirstFontFamily.set(newValue);
-                mSaveFn.run();
-                reloadDefaultTypeface(context, mOnFontChanged);
-                return true;
-            }
-            return false;
-        }
-    }
-
     private static void replaceText(@NonNull EditText editText, @NonNull CharSequence newText) {
         Editable text = editText.getText();
         text.replace(0, text.length(), newText);
     }
 
-    private static void reloadDefaultTypeface(@NonNull Context context, @NonNull Runnable onFontChanged) {
+    static void reloadDefaultTypeface(@NonNull Context context, @NonNull Runnable onFontChanged) {
         var future = Minecraft.getInstance().submit(() -> {
             var oldTypeface = ModernUI.getSelectedTypeface();
             var client = ModernUIClient.getInstance();
@@ -1638,7 +1397,7 @@ public class PreferencesFragment extends Fragment {
         }
     }
 
-    private static void setViewAndChildrenEnabled(View view, boolean enabled) {
+    static void setViewAndChildrenEnabled(View view, boolean enabled) {
         if (view != null) {
             view.setEnabled(enabled);
         }
