@@ -54,10 +54,12 @@ import icyllis.modernui.text.style.ForegroundColorSpan;
 import icyllis.modernui.util.ColorStateList;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.util.StateSet;
+import icyllis.modernui.view.ContextMenu;
 import icyllis.modernui.view.Gravity;
 import icyllis.modernui.view.LayoutInflater;
 import icyllis.modernui.view.MeasureSpec;
 import icyllis.modernui.view.Menu;
+import icyllis.modernui.view.MenuItem;
 import icyllis.modernui.view.OneShotPreDrawListener;
 import icyllis.modernui.view.View;
 import icyllis.modernui.view.ViewGroup;
@@ -270,8 +272,9 @@ public class PreferencesFragment extends Fragment {
             list.addView(createColorOpacityOption(context, "modernui.center.screen.backgroundOpacity",
                     Config.CLIENT.mBackgroundColor, saveFn));
 
-            list.addView(createIntegerOption(context, "modernui.center.screen.backgroundDuration",
-                    3, 50, Config.CLIENT.mBackgroundDuration, saveFn));
+            new IntegerOption(context, "modernui.center.screen.backgroundDuration",
+                    50, Config.CLIENT.mBackgroundDuration, saveFn)
+                    .create(list, 3);
 
             list.addView(createBooleanOption(context, "modernui.center.screen.blurEffect",
                     Config.CLIENT.mBlurEffect, saveFn));
@@ -279,27 +282,31 @@ public class PreferencesFragment extends Fragment {
             list.addView(createBooleanOption(context, "modernui.center.screen.overrideVanillaBlur",
                     Config.CLIENT.mOverrideVanillaBlur, saveFn));
 
-            list.addView(createIntegerOption(context, "modernui.center.screen.blurRadius",
-                    2, 1, Config.CLIENT.mBlurRadius, saveFn));
+            new IntegerOption(context, "modernui.center.screen.blurRadius",
+                    1, Config.CLIENT.mBlurRadius, saveFn)
+                    .create(list, 2);
 
             list.addView(createSpinnerOption(context, "modernui.center.screen.windowMode",
                     Config.Client.WindowMode.values(), Config.CLIENT.mWindowMode, saveFn));
 
-            list.addView(createIntegerOption(context, "modernui.center.screen.framerateInactive",
-                    3, 10,
-                    Config.CLIENT.mFramerateInactive, saveFn));
+            new IntegerOption(context, "modernui.center.screen.framerateInactive",
+                    10, Config.CLIENT.mFramerateInactive, saveFn)
+                    .create(list, 3);
 
             /*list.addView(createIntegerOption(context, "modernui.center.screen.framerateMinimized",
                     0, 255, 3, 5,
                     Config.CLIENT.mFramerateMinimized, saveFn));*/
 
-            list.addView(createFloatOption(context, "modernui.center.screen.masterVolumeInactive",
-                    4,
-                    Config.CLIENT.mMasterVolumeInactive, 100, saveFn));
+            new FloatOption(context, "modernui.center.screen.masterVolumeInactive",
+                    Config.CLIENT.mMasterVolumeInactive, 100, saveFn)
+                    .create(list, 4);
+            new FloatOption(context, "modernui.center.screen.masterVolumeInactive",
+                    Config.CLIENT.mMasterVolumeInactive, 100, saveFn)
+                    .create(list, 4);
 
-            list.addView(createFloatOption(context, "modernui.center.screen.masterVolumeMinimized",
-                    4,
-                    Config.CLIENT.mMasterVolumeMinimized, 100, saveFn));
+            new FloatOption(context, "modernui.center.screen.masterVolumeMinimized",
+                    Config.CLIENT.mMasterVolumeMinimized, 100, saveFn)
+                    .create(list, 4);
 
             list.addView(createBooleanOption(context, "modernui.center.screen.inventoryPause",
                     Config.CLIENT.mInventoryPause, saveFn));
@@ -319,42 +326,45 @@ public class PreferencesFragment extends Fragment {
         {
             var list = createCategoryList(content, null);
 
-            list.addView(createIntegerOption(context, "Scrollbar Size",
-                    4, 1,
-                    Config.CLIENT.mScrollbarSize, saveFn));
-            list.addView(createIntegerOption(context, "Touch Slop",
-                    4, 1,
-                    Config.CLIENT.mTouchSlop, saveFn));
-            list.addView(createIntegerOption(context, "Hover Slop",
-                    4, 1,
-                    Config.CLIENT.mHoverSlop, saveFn));
-            list.addView(createIntegerOption(context, "Minimum Scrollbar Touch Target",
-                    4, 1,
-                    Config.CLIENT.mMinScrollbarTouchTarget, saveFn));
-            list.addView(createIntegerOption(context, "Minimum Fling Velocity",
-                    4, 1,
-                    Config.CLIENT.mMinimumFlingVelocity, saveFn));
-            list.addView(createIntegerOption(context, "Maximum Fling Velocity",
-                    4, 1,
-                    Config.CLIENT.mMaximumFlingVelocity, saveFn));
-            list.addView(createFloatOption(context, "Scroll Friction",
-                    6, Config.CLIENT.mScrollFriction, 1000, saveFn));
-            list.addView(createIntegerOption(context, "Overscroll Distance",
-                    4, 1,
-                    Config.CLIENT.mOverscrollDistance, saveFn));
-            list.addView(createIntegerOption(context, "Overfling Distance",
-                    4, 1,
-                    Config.CLIENT.mOverflingDistance, saveFn));
-            list.addView(createFloatOption(context, "Horizontal Scroll Factor",
-                    4, Config.CLIENT.mHorizontalScrollFactor, 10, saveFn));
-            list.addView(createFloatOption(context, "Vertical Scroll Factor",
-                    4, Config.CLIENT.mVerticalScrollFactor, 10, saveFn));
-            list.addView(createIntegerOption(context, "Hover Tooltip Show Timeout",
-                    4, 1,
-                    Config.CLIENT.mHoverTooltipShowTimeout, saveFn));
-            list.addView(createIntegerOption(context, "Hover Tooltip Hide Timeout",
-                    6, 1,
-                    Config.CLIENT.mHoverTooltipHideTimeout, saveFn));
+            new IntegerOption(context, "Scrollbar Size",
+                    1, Config.CLIENT.mScrollbarSize, saveFn)
+                    .create(list, 4);
+            new IntegerOption(context, "Touch Slop",
+                     1, Config.CLIENT.mTouchSlop, saveFn)
+                    .create(list, 4);
+            new IntegerOption(context, "Hover Slop",
+                     1, Config.CLIENT.mHoverSlop, saveFn)
+                    .create(list, 4);
+            new IntegerOption(context, "Minimum Scrollbar Touch Target",
+                     1, Config.CLIENT.mMinScrollbarTouchTarget, saveFn)
+                    .create(list, 4);
+            new IntegerOption(context, "Minimum Fling Velocity",
+                     1, Config.CLIENT.mMinimumFlingVelocity, saveFn)
+                    .create(list, 4);
+            new IntegerOption(context, "Maximum Fling Velocity",
+                     1, Config.CLIENT.mMaximumFlingVelocity, saveFn)
+                    .create(list, 4);
+            new FloatOption(context, "Scroll Friction",
+                    Config.CLIENT.mScrollFriction, 1000, saveFn)
+                    .create(list, 6);
+            new IntegerOption(context, "Overscroll Distance",
+                     1, Config.CLIENT.mOverscrollDistance, saveFn)
+                    .create(list, 4);
+            new IntegerOption(context, "Overfling Distance",
+                     1, Config.CLIENT.mOverflingDistance, saveFn)
+                    .create(list, 4);
+            new FloatOption(context, "Horizontal Scroll Factor",
+                    Config.CLIENT.mHorizontalScrollFactor, 10, saveFn)
+                    .create(list, 6);
+            new FloatOption(context, "Vertical Scroll Factor",
+                    Config.CLIENT.mVerticalScrollFactor, 10, saveFn)
+                    .create(list, 6);
+            new IntegerOption(context, "Hover Tooltip Show Timeout",
+                     1, Config.CLIENT.mHoverTooltipShowTimeout, saveFn)
+                    .create(list, 4);
+            new IntegerOption(context, "Hover Tooltip Hide Timeout",
+                     1, Config.CLIENT.mHoverTooltipHideTimeout, saveFn)
+                    .create(list, 6);
 
             content.addView(list);
         }
@@ -365,27 +375,16 @@ public class PreferencesFragment extends Fragment {
             list.addView(createBooleanOption(context, "modernui.center.system.forceRtlLayout",
                     Config.CLIENT.mForceRtl, saveFn));
 
-            list.addView(createFloatOption(context, "modernui.center.system.globalFontScale",
-                    4, Config.CLIENT.mFontScale, 10, saveFn));
+            new FloatOption(context, "modernui.center.system.globalFontScale",
+                    Config.CLIENT.mFontScale, 100, saveFn)
+                    .create(list, 4);
 
-            {
-                var option = createInputBox(context, "modernui.center.system.globalAnimationScale");
-                var input = option.<EditText>requireViewById(R.id.input);
-                input.setText(Float.toString(ValueAnimator.sDurationScale));
-                input.setFilters(DigitsInputFilter.getInstance(null, false, true),
-                        new InputFilter.LengthFilter(4));
-                input.setOnFocusChangeListener((view, hasFocus) -> {
-                    if (!hasFocus) {
-                        EditText v = (EditText) view;
-                        double scale = Math.max(Math.min(Double.parseDouble(v.getText().toString()), 10), 0.1);
-                        v.setText(Double.toString(scale));
-                        if (scale != ValueAnimator.sDurationScale) {
-                            ValueAnimator.sDurationScale = (float) scale;
-                        }
-                    }
-                });
-                list.addView(option);
-            }
+            new FloatOption(context, "modernui.center.system.globalAnimationScale",
+                    () -> (double) ValueAnimator.sDurationScale,
+                    (scale) -> ValueAnimator.sDurationScale = scale.floatValue())
+                    .setRange(0.1, 10.0, 100)
+                    .setDefaultValue(1.0)
+                    .create(list, 4);
 
             list.addView(createBooleanOption(context, "modernui.center.system.developerMode",
                     Config.COMMON.developerMode, mOnCommonConfigChanged));
@@ -648,8 +647,9 @@ public class PreferencesFragment extends Fragment {
         category.addView(createBooleanOption(context, "modernui.center.tooltip.exactPositioning",
                 Config.CLIENT.mExactTooltipPositioning, saveFn));
 
-        category.addView(createIntegerOption(context, "modernui.center.tooltip.arrowScrollFactor",
-                3, 1, Config.CLIENT.mTooltipArrowScrollFactor, saveFn));
+        new IntegerOption(context, "modernui.center.tooltip.arrowScrollFactor",
+                2, Config.CLIENT.mTooltipArrowScrollFactor, saveFn)
+                .create(category, 3);
 
         category.addView(createColorOpacityOption(context, "modernui.center.tooltip.backgroundOpacity",
                 Config.CLIENT.mTooltipFill, saveFn));
@@ -726,12 +726,13 @@ public class PreferencesFragment extends Fragment {
         category.addView(createBooleanOption(context, "modernui.center.text.fixedResolution",
                 Config.TEXT.mFixedResolution, saveFn));
 
-        category.addView(createFloatOption(context, "modernui.center.text.baseFontSize",
-                5, Config.TEXT.mBaseFontSize, 10, saveFn));
+        new FloatOption(context, "modernui.center.text.baseFontSize",
+                Config.TEXT.mBaseFontSize, 10, saveFn)
+                .create(category, 4);
 
-        category.addView(createIntegerOption(context, "modernui.center.text.cacheLifespan",
-                2, 1,
-                Config.TEXT.mCacheLifespan, saveFn));
+        new IntegerOption(context, "modernui.center.text.cacheLifespan",
+                1, Config.TEXT.mCacheLifespan, saveFn)
+                .create(category, 2);
 
         return category;
     }
@@ -760,8 +761,9 @@ public class PreferencesFragment extends Fragment {
         category.addView(createBooleanOption(context, "modernui.center.text.computeDeviceFontSize",
                 Config.TEXT.mComputeDeviceFontSize, saveFn));
 
-        category.addView(createIntegerOption(context, "modernui.center.text.minPixelDensityForSDF",
-                2, 1, Config.TEXT.mMinPixelDensityForSDF, saveFn));
+        new IntegerOption(context, "modernui.center.text.minPixelDensityForSDF",
+                1, Config.TEXT.mMinPixelDensityForSDF, saveFn)
+                .create(category, 2);
 
         category.addView(createBooleanOption(context, "modernui.center.font.linearSampling",
                 Config.TEXT.mLinearSamplingA8Atlas, saveFn));
@@ -769,14 +771,17 @@ public class PreferencesFragment extends Fragment {
         category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
                 Config.TEXT.mAllowShadow, saveFn));
 
-        category.addView(createFloatOption(context, "modernui.center.text.shadowOffset",
-                5, Config.TEXT.mShadowOffset, 100, saveFn));
+        new FloatOption(context, "modernui.center.text.shadowOffset",
+                Config.TEXT.mShadowOffset, 100, saveFn)
+                .create(category, 4);
 
-        category.addView(createFloatOption(context, "modernui.center.text.baselineShift",
-                5, Config.TEXT.mBaselineShift, 10, saveFn));
+        new FloatOption(context, "modernui.center.text.baselineShift",
+                Config.TEXT.mBaselineShift, 10, saveFn)
+                .create(category, 4);
 
-        category.addView(createFloatOption(context, "modernui.center.text.outlineOffset",
-                5, Config.TEXT.mOutlineOffset, 100, saveFn));
+        new FloatOption(context, "modernui.center.text.outlineOffset",
+                Config.TEXT.mOutlineOffset, 100, saveFn)
+                .create(category, 4);
 
         return category;
     }
@@ -1086,79 +1091,237 @@ public class PreferencesFragment extends Fragment {
         return layout;
     }
 
-    public static LinearLayout createInputBoxWithSlider(Context context, String name,
-                                                        boolean discrete) {
-        var layout = createInputBox(context, name);
-        var slider = new SeekBar(context, null, null,
+    @NonNull
+    private static SeekBar addSliderToLayout(@NonNull LinearLayout layout,
+                                             boolean discrete) {
+        var slider = new SeekBar(layout.getContext(), null, null,
                 discrete ? R.style.Widget_Material3_SeekBar_Discrete_Slider : R.style.Widget_Material3_SeekBar_Slider);
         slider.setId(R.id.button2);
-        slider.setClickable(true);
         slider.setUserAnimationEnabled(true);
         var params = new LinearLayout.LayoutParams(slider.dp(210), WRAP_CONTENT);
-        params.setMarginEnd(slider.dp(8));
+        int dp8 = slider.dp(8);
+        params.setMargins(dp8, 0, dp8, 0);
         params.gravity = Gravity.CENTER_VERTICAL;
         layout.addView(slider, 1, params);
-        return layout;
+        return slider;
     }
 
-    public static LinearLayout createIntegerOption(Context context, String name,
-                                                   int maxLength, int stepSize,
-                                                   Config.ConfigItem<Integer> config,
-                                                   Runnable saveFn) {
-        var range = config.getRange();
-        Objects.requireNonNull(range);
-        return createIntegerOption(context, name,
-                range.getMinimum(), range.getMaximum(), maxLength, stepSize,
-                config, config, saveFn);
-    }
+    public static final int ID_RESET_TO_DEFAULT = 0x7f000002;
 
-    public static LinearLayout createIntegerOption(Context context, String name,
-                                                   int minValue, int maxValue, int maxLength, int stepSize,
-                                                   Supplier<Integer> getter, Consumer<Integer> setter,
-                                                   Runnable saveFn) {
-        var layout = createInputBoxWithSlider(context, name, (maxValue - minValue) / stepSize <= 10);
-        var slider = layout.<SeekBar>requireViewById(R.id.button2);
-        var input = layout.<EditText>requireViewById(R.id.input);
-        input.setFilters(DigitsInputFilter.getInstance((Locale) null),
-                new InputFilter.LengthFilter(maxLength));
-        int curValue = getter.get();
-        input.setText(Integer.toString(curValue));
-        input.setOnFocusChangeListener((view, hasFocus) -> {
+    public static class IntegerOption implements
+            View.OnFocusChangeListener,
+            SeekBar.OnSeekBarChangeListener,
+            View.OnCreateContextMenuListener,
+            MenuItem.OnMenuItemClickListener {
+
+        protected final LinearLayout layout;
+        protected final EditText input;
+
+        protected final Supplier<Integer> getter;
+        protected final Consumer<Integer> setter;
+        @Nullable
+        protected Runnable onChanged;
+
+        @Nullable
+        protected SeekBar slider;
+        protected int minValue = Integer.MIN_VALUE;
+        protected int maxValue = Integer.MAX_VALUE;
+        protected int stepSize = 1;
+
+        protected boolean hasDefaultValue = false;
+        protected int defaultValue;
+
+        public IntegerOption(Context context, String name,
+                             Supplier<Integer> getter,
+                             Consumer<Integer> setter) {
+            layout = createInputBox(context, name);
+            input = layout.<EditText>requireViewById(R.id.input);
+            this.getter = getter;
+            this.setter = setter;
+        }
+
+        public IntegerOption(Context context, String name,
+                             Config.ConfigItem<Integer> config,
+                             Consumer<Integer> setter,
+                             @Nullable Runnable onChanged) {
+            this(context, name, config, setter);
+            var range = config.getRange();
+            assert range != null;
+            minValue = range.getMinimum();
+            maxValue = range.getMaximum();
+            hasDefaultValue = true;
+            defaultValue = config.getDefault();
+            this.onChanged = onChanged;
+        }
+
+        public IntegerOption(Context context, String name,
+                             int stepSize,
+                             Config.ConfigItem<Integer> config,
+                             Consumer<Integer> setter,
+                             @Nullable Runnable onChanged) {
+            this(context, name, config, setter, onChanged);
+            this.stepSize = stepSize;
+        }
+
+        public IntegerOption(Context context, String name,
+                             int stepSize,
+                             Config.ConfigItem<Integer> config,
+                             @Nullable Runnable onChanged) {
+            this(context, name, stepSize, config, config, onChanged);
+        }
+
+        public IntegerOption setRange(int minValue, int maxValue) {
+            this.minValue = minValue;
+            this.maxValue = maxValue;
+            return this;
+        }
+
+        public IntegerOption setRange(int minValue, int maxValue,
+                                      int stepSize) {
+            this.minValue = minValue;
+            this.maxValue = maxValue;
+            this.stepSize = stepSize;
+            return this;
+        }
+
+        public IntegerOption setDefaultValue(int defaultValue) {
+            this.hasDefaultValue = true;
+            this.defaultValue = defaultValue;
+            return this;
+        }
+
+        public IntegerOption setOnChanged(Runnable onChanged) {
+            this.onChanged = onChanged;
+            return this;
+        }
+
+        @NonNull
+        public LinearLayout create(@Nullable ViewGroup parent) {
+            return create(parent, -1);
+        }
+
+        @NonNull
+        public LinearLayout create(@Nullable ViewGroup parent, int maxLength) {
+            int curValue = getter.get();
+            int steps = (maxValue - minValue) / stepSize;
+            if (steps <= 200) {
+                slider = addSliderToLayout(layout, steps <= 10);
+                slider.setMax(steps);
+                slider.setProgress((curValue - minValue) / stepSize);
+                slider.setOnSeekBarChangeListener(this);
+            }
+            InputFilter digitsFilter = DigitsInputFilter.getInstance((Locale) null);
+            if (maxLength > 0) {
+                input.setFilters(digitsFilter,
+                        new InputFilter.LengthFilter(maxLength));
+            } else {
+                input.setFilters(digitsFilter);
+            }
+            input.setText(Integer.toString(curValue));
+            input.setOnFocusChangeListener(this);
+            input.setMinWidth(slider != null ? slider.dp(60) : input.dp(80));
+            if (hasDefaultValue) {
+                defaultValue = (defaultValue / stepSize) * stepSize;
+                layout.setOnCreateContextMenuListener(this);
+            }
+            if (parent != null) {
+                parent.addView(layout);
+            }
+            return layout;
+        }
+
+        @Override
+        public void onFocusChange(View view, boolean hasFocus) {
+            assert view == input;
             if (!hasFocus) {
                 EditText v = (EditText) view;
-                int newValue = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
-                        minValue, maxValue);
+                int newValue;
+                try {
+                    newValue = MathUtil.clamp(Integer.parseInt(v.getText().toString()),
+                            minValue, maxValue);
+                } catch (NumberFormatException e) {
+                    newValue = hasDefaultValue ? defaultValue : minValue;
+                }
                 replaceText(v, Integer.toString(newValue));
                 if (newValue != getter.get()) {
                     setter.accept(newValue);
-                    int curProgress = (newValue - minValue) / stepSize;
-                    slider.setProgress(curProgress, true);
-                    saveFn.run();
+                    if (slider != null) {
+                        int curProgress = (newValue - minValue) / stepSize;
+                        slider.setProgress(curProgress, true);
+                    }
+                    if (onChanged != null) {
+                        onChanged.run();
+                    }
                 }
             }
-        });
-        input.setMinWidth(slider.dp(60));
-        int steps = (maxValue - minValue) / stepSize;
-        slider.setMax(steps);
-        slider.setProgress((curValue - minValue) / stepSize);
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                int newValue = seekBar.getProgress() * stepSize + minValue;
-                replaceText(input, Integer.toString(newValue));
-            }
+        }
 
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                int newValue = seekBar.getProgress() * stepSize + minValue;
-                if (newValue != getter.get()) {
-                    setter.accept(newValue);
-                    replaceText(input, Integer.toString(newValue));
-                    saveFn.run();
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            int newValue = seekBar.getProgress() * stepSize + minValue;
+            replaceText(input, Integer.toString(newValue));
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+            int newValue = seekBar.getProgress() * stepSize + minValue;
+            if (newValue != getter.get()) {
+                setter.accept(newValue);
+                replaceText(input, Integer.toString(newValue));
+                if (onChanged != null) {
+                    onChanged.run();
                 }
             }
-        });
-        return layout;
+        }
+
+        @Override
+        public void onCreateContextMenu(ContextMenu menu, View v,
+                                        ContextMenu.ContextMenuInfo menuInfo) {
+            boolean canReset;
+            if (slider != null) {
+                int curValue = slider.getProgress() * stepSize + minValue;
+                canReset = curValue != defaultValue;
+            } else {
+                try {
+                    int curValue = Integer.parseInt(input.getText().toString());
+                    canReset = curValue != defaultValue;
+                } catch (NumberFormatException e) {
+                    canReset = true;
+                }
+            }
+            if (canReset) {
+                menu.add(Menu.NONE, ID_RESET_TO_DEFAULT, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
+                        .setOnMenuItemClickListener(this);
+            }
+        }
+
+        @Override
+        public boolean onMenuItemClick(@NonNull MenuItem item) {
+            if (item.getItemId() == ID_RESET_TO_DEFAULT) {
+                replaceText(input, Integer.toString(defaultValue));
+                setter.accept(defaultValue);
+                if (slider != null) {
+                    int newProgress = (defaultValue - minValue) / stepSize;
+                    slider.setProgress(newProgress, true);
+                }
+                if (onChanged != null) {
+                    onChanged.run();
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+
+    public static double getFirstAlphaValue(List<? extends String> colors) {
+        if (colors != null && !colors.isEmpty()) {
+            try {
+                int color = Color.parseColor(colors.get(0));
+                return (color >>> 24) / 255.0;
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return 1.0;
     }
 
     public static LinearLayout createColorOpacityOption(
@@ -1167,15 +1330,7 @@ public class PreferencesFragment extends Fragment {
             Runnable saveFn) {
         Supplier<Double> getter = () -> {
             List<? extends String> colors = config.get();
-            if (colors != null && !colors.isEmpty()) {
-                try {
-                    int color = Color.parseColor(colors.get(0));
-                    return (double) ((color >>> 24) / 255.0f);
-                } catch (IllegalArgumentException e) {
-                    e.printStackTrace();
-                }
-            }
-            return 1.0;
+            return getFirstAlphaValue(colors);
         };
         Consumer<Double> setter = (d) -> {
             int alpha = (int) (d.floatValue() * 255.0f + 0.5f);
@@ -1186,109 +1341,240 @@ public class PreferencesFragment extends Fragment {
             for (var it = newList.listIterator();
                  it.hasNext();
             ) {
-                int color = Color.parseColor(it.next());
-                color = (color & 0xFFFFFF) | (alpha << 24);
-                it.set(String.format(Locale.ROOT, "#%08X", color));
+                try {
+                    int color = Color.parseColor(it.next());
+                    color = (color & 0xFFFFFF) | (alpha << 24);
+                    it.set(String.format(Locale.ROOT, "#%08X", color));
+                } catch (IllegalArgumentException ignored) {
+                }
             }
             config.set(newList);
         };
-        return createFloatOption(context, name, 0, 1, 4,
-                getter, setter, null, 100, saveFn);
+        double defaultValue = getFirstAlphaValue(config.getDefault());
+        return new FloatOption(context, name, getter, setter)
+                .setRange(0.0, 1.0, 100)
+                .setDefaultValue(defaultValue)
+                .setOnChanged(saveFn)
+                .create(null, 4);
     }
 
-    public static LinearLayout createFloatOption(Context context, String name,
-                                                 int maxLength,
-                                                 Config.ConfigItem<Double> config,
-                                                 float denominator,
-                                                 Runnable saveFn) {
-        return createFloatOption(context, name, maxLength,
-                config, config, denominator, saveFn);
-    }
+    public static class FloatOption implements
+            View.OnFocusChangeListener,
+            SeekBar.OnSeekBarChangeListener,
+            View.OnCreateContextMenuListener,
+            MenuItem.OnMenuItemClickListener {
 
-    public static LinearLayout createFloatOption(Context context, String name,
-                                                 int maxLength,
-                                                 Config.ConfigItem<Double> config,
-                                                 Consumer<Double> setter,
-                                                 float denominator,
-                                                 Runnable saveFn) {
-        var range = config.getRange();
-        Objects.requireNonNull(range);
-        return createFloatOption(context, name,
-                range.getMinimum().floatValue(), range.getMaximum().floatValue(), maxLength,
-                config, setter, config.getDefault(), denominator, saveFn);
-    }
+        protected final LinearLayout layout;
+        protected final EditText input;
 
-    private static String floatValueToString(float value, float denominator) {
-        return Float.toString(Math.round(value * denominator) / denominator);
-    }
+        protected final Supplier<Double> getter;
+        protected final Consumer<Double> setter;
+        @Nullable
+        protected Runnable onChanged;
 
-    public static LinearLayout createFloatOption(Context context, String name,
-                                                 float minValue, float maxValue, int maxLength,
-                                                 Supplier<Double> getter, Consumer<Double> setter,
-                                                 Double defaultValue,
-                                                 float denominator, // 10 means step=0.1, 100 means step=0.01
-                                                 Runnable saveFn) {
-        var layout = createInputBoxWithSlider(context, name, (maxValue - minValue) * denominator <= 10);
-        var slider = layout.<SeekBar>requireViewById(R.id.button2);
-        var input = layout.<EditText>requireViewById(R.id.input);
-        if (defaultValue != null) {
-            layout.setOnCreateContextMenuListener((menu, v, menuInfo) -> {
-                float curValue = slider.getProgress() / denominator + minValue;
-                float newValue = defaultValue.floatValue();
-                if (newValue != curValue) {
-                    menu.add(Menu.NONE, Menu.NONE, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
-                            .setOnMenuItemClickListener(item -> {
-                                replaceText(input, floatValueToString(newValue, denominator));
-                                setter.accept((double) newValue);
-                                int newProgress = Math.round((newValue - minValue) * denominator);
-                                slider.setProgress(newProgress, true);
-                                saveFn.run();
-                                return true;
-                            });
-                }
-            });
+        // there is a slider when denominator is not NaN
+        @Nullable
+        protected SeekBar slider;
+        protected double minValue = Double.NEGATIVE_INFINITY;
+        protected double maxValue = Double.POSITIVE_INFINITY;
+        // 10 means step=0.1, 100 means step=0.01
+        protected double denominator = Double.NaN;
+
+        protected double defaultValue = Double.NaN;
+
+        public FloatOption(Context context, String name,
+                           Supplier<Double> getter,
+                           Consumer<Double> setter) {
+            layout = createInputBox(context, name);
+            input = layout.<EditText>requireViewById(R.id.input);
+            this.getter = getter;
+            this.setter = setter;
         }
-        input.setFilters(DigitsInputFilter.getInstance(null, minValue < 0, true),
-                new InputFilter.LengthFilter(maxLength));
-        float curValue = getter.get().floatValue();
-        input.setText(floatValueToString(curValue, denominator));
-        input.setOnFocusChangeListener((view, hasFocus) -> {
+
+        public FloatOption(Context context, String name,
+                           Config.ConfigItem<Double> config,
+                           Consumer<Double> setter,
+                           @Nullable Runnable onChanged) {
+            this(context, name, config, setter);
+            var range = config.getRange();
+            assert range != null;
+            minValue = range.getMinimum();
+            maxValue = range.getMaximum();
+            defaultValue = config.getDefault();
+            this.onChanged = onChanged;
+        }
+
+        public FloatOption(Context context, String name,
+                           Config.ConfigItem<Double> config,
+                           Consumer<Double> setter,
+                           double denominator,
+                           @Nullable Runnable onChanged) {
+            this(context, name, config, setter, onChanged);
+            this.denominator = denominator;
+        }
+
+        public FloatOption(Context context, String name,
+                           Config.ConfigItem<Double> config,
+                           double denominator,
+                           @Nullable Runnable onChanged) {
+            this(context, name, config, config, denominator, onChanged);
+        }
+
+        public FloatOption setRange(double minValue, double maxValue) {
+            this.minValue = minValue;
+            this.maxValue = maxValue;
+            return this;
+        }
+
+        public FloatOption setRange(double minValue, double maxValue,
+                             double denominator) {
+            this.minValue = minValue;
+            this.maxValue = maxValue;
+            this.denominator = denominator;
+            return this;
+        }
+
+        public FloatOption setDefaultValue(double defaultValue) {
+            this.defaultValue = defaultValue;
+            return this;
+        }
+
+        public FloatOption setOnChanged(Runnable onChanged) {
+            this.onChanged = onChanged;
+            return this;
+        }
+
+        @NonNull
+        public LinearLayout create(@Nullable ViewGroup parent) {
+            return create(parent, -1);
+        }
+
+        @NonNull
+        public LinearLayout create(@Nullable ViewGroup parent, int maxLength) {
+            double curValue = getter.get();
+            if (!Double.isNaN(denominator)) {
+                int steps = (int) Math.round((maxValue - minValue) * denominator);
+                if (steps <= 200) {
+                    slider = addSliderToLayout(layout, steps <= 10);
+                    slider.setMax(steps);
+                    int curProgress = (int) Math.round((curValue - minValue) * denominator);
+                    slider.setProgress(curProgress);
+                    slider.setOnSeekBarChangeListener(this);
+                }
+            }
+            InputFilter digitsFilter = DigitsInputFilter.getInstance(
+                    null, minValue < 0, true);
+            if (maxLength > 0) {
+                input.setFilters(digitsFilter,
+                        new InputFilter.LengthFilter(maxLength));
+            } else {
+                input.setFilters(digitsFilter);
+            }
+            input.setText(floatValueToString(curValue, denominator));
+            input.setOnFocusChangeListener(this);
+            input.setMinWidth(slider != null ? slider.dp(60) : input.dp(80));
+            if (!Double.isNaN(defaultValue)) {
+                if (!Double.isNaN(denominator)) {
+                    defaultValue = Math.round(defaultValue * denominator) / denominator;
+                }
+                layout.setOnCreateContextMenuListener(this);
+            }
+            if (parent != null) {
+                parent.addView(layout);
+            }
+            return layout;
+        }
+
+        @Override
+        public void onFocusChange(View view, boolean hasFocus) {
+            assert view == input;
             if (!hasFocus) {
                 EditText v = (EditText) view;
-                float newValue = MathUtil.clamp(Float.parseFloat(v.getText().toString()),
-                        minValue, maxValue);
+                double newValue;
+                try {
+                    newValue = MathUtil.clamp(Double.parseDouble(v.getText().toString()),
+                            minValue, maxValue);
+                } catch (NumberFormatException e) {
+                    newValue = defaultValue;
+                }
+                if (Double.isNaN(newValue)) {
+                    newValue = minValue;
+                }
                 replaceText(v, floatValueToString(newValue, denominator));
-                if (newValue != getter.get().floatValue()) {
-                    setter.accept((double) newValue);
-                    int curProgress = Math.round((newValue - minValue) * denominator);
-                    slider.setProgress(curProgress, true);
-                    saveFn.run();
+                if (newValue != getter.get()) {
+                    setter.accept(newValue);
+                    if (slider != null) {
+                        int curProgress = (int) Math.round((newValue - minValue) * denominator);
+                        slider.setProgress(curProgress, true);
+                    }
+                    if (onChanged != null) {
+                        onChanged.run();
+                    }
                 }
             }
-        });
-        input.setMinWidth(slider.dp(60));
-        int steps = Math.round((maxValue - minValue) * denominator);
-        slider.setMax(steps);
-        int curProgress = Math.round((curValue - minValue) * denominator);
-        slider.setProgress(curProgress);
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                float newValue = seekBar.getProgress() / denominator + minValue;
-                replaceText(input, floatValueToString(newValue, denominator));
-            }
+        }
 
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                float newValue = seekBar.getProgress() / denominator + minValue;
-                if (newValue != getter.get().floatValue()) {
-                    setter.accept((double) newValue);
-                    replaceText(input, floatValueToString(newValue, denominator));
-                    saveFn.run();
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            double newValue = seekBar.getProgress() / denominator + minValue;
+            replaceText(input, floatValueToString(newValue, denominator));
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+            double newValue = seekBar.getProgress() / denominator + minValue;
+            if (newValue != getter.get()) {
+                setter.accept(newValue);
+                replaceText(input, floatValueToString(newValue, denominator));
+                if (onChanged != null) {
+                    onChanged.run();
                 }
             }
-        });
-        return layout;
+        }
+
+        @Override
+        public void onCreateContextMenu(ContextMenu menu, View v,
+                                        ContextMenu.ContextMenuInfo menuInfo) {
+            boolean canReset;
+            if (slider != null) {
+                double curValue = slider.getProgress() / denominator + minValue;
+                canReset = curValue != defaultValue;
+            } else {
+                try {
+                    double curValue = Double.parseDouble(input.getText().toString());
+                    canReset = curValue != defaultValue;
+                } catch (NumberFormatException e) {
+                    canReset = true;
+                }
+            }
+            if (canReset) {
+                menu.add(Menu.NONE, ID_RESET_TO_DEFAULT, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
+                        .setOnMenuItemClickListener(this);
+            }
+        }
+
+        @Override
+        public boolean onMenuItemClick(@NonNull MenuItem item) {
+            if (item.getItemId() == ID_RESET_TO_DEFAULT) {
+                replaceText(input, floatValueToString(defaultValue, denominator));
+                setter.accept(defaultValue);
+                if (slider != null) {
+                    int newProgress = (int) Math.round((defaultValue - minValue) * denominator);
+                    slider.setProgress(newProgress, true);
+                }
+                if (onChanged != null) {
+                    onChanged.run();
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private static String floatValueToString(double value, double denominator) {
+            if (Double.isNaN(denominator))
+                return Double.toString(value);
+            return Double.toString(Math.round(value * denominator) / denominator);
+        }
     }
 
     public static LinearLayout createStringListOption(Context context,

@@ -85,61 +85,57 @@ public class TooltipBorderAccordion implements View.OnClickListener {
             mContent.addView(option);
         }
         {
-            var option = PreferencesFragment.createFloatOption(mParent.getContext(), "modernui.center.tooltip" +
-                            ".borderWidth",
-                    4, Config.CLIENT.mTooltipWidth, (width) -> {
+            var option = new PreferencesFragment.FloatOption(mParent.getContext(), "modernui.center.tooltip.borderWidth",
+                    Config.CLIENT.mTooltipWidth, (width) -> {
                         Config.CLIENT.mTooltipWidth.set(width);
                         if (mColorPicker != null) {
                             mColorPicker.setBorderWidth(width.floatValue());
                         }
-                    }, 100, mSaveFn);
+                    }, 100, mSaveFn)
+                    .create(mContent, 4);
             if (!rounded) {
                 PreferencesFragment.setViewAndChildrenEnabled(option, false);
             }
             mBorderWidth = option;
-            mContent.addView(option);
         }
         {
-            var option = PreferencesFragment.createFloatOption(mParent.getContext(), "modernui.center.tooltip" +
-                            ".cornerRadius",
-                    3, Config.CLIENT.mTooltipRadius, (radius) -> {
+            var option = new PreferencesFragment.FloatOption(mParent.getContext(), "modernui.center.tooltip.cornerRadius",
+                    Config.CLIENT.mTooltipRadius, (radius) -> {
                         Config.CLIENT.mTooltipRadius.set(radius);
                         if (mColorPicker != null) {
                             mColorPicker.setBorderRadius(radius.floatValue());
                         }
-                    }, 10, mSaveFn);
+                    }, 10, mSaveFn)
+                    .create(mContent, 3);
             if (!rounded) {
                 PreferencesFragment.setViewAndChildrenEnabled(option, false);
             }
             mCornerRadius = option;
-            mContent.addView(option);
         }
         {
-            var option = PreferencesFragment.createFloatOption(mParent.getContext(), "modernui.center.tooltip" +
-                            ".shadowRadius",
-                    4, Config.CLIENT.mTooltipShadowRadius, 10, mSaveFn);
+            var option = new PreferencesFragment.FloatOption(mParent.getContext(), "modernui.center.tooltip.shadowRadius",
+                    Config.CLIENT.mTooltipShadowRadius, 5, mSaveFn)
+                    .create(mContent, 4);
             if (!rounded) {
                 PreferencesFragment.setViewAndChildrenEnabled(option, false);
             }
             mShadowRadius = option;
-            mContent.addView(option);
         }
         {
-            var option = PreferencesFragment.createFloatOption(mParent.getContext(), "modernui.center.tooltip" +
-                            ".shadowOpacity",
-                    4, Config.CLIENT.mTooltipShadowAlpha, 100, mSaveFn);
+            var option = new PreferencesFragment.FloatOption(mParent.getContext(), "modernui.center.tooltip.shadowOpacity",
+                    Config.CLIENT.mTooltipShadowAlpha, 100, mSaveFn)
+                    .create(mContent, 4);
             if (!rounded) {
                 PreferencesFragment.setViewAndChildrenEnabled(option, false);
             }
             mShadowAlpha = option;
-            mContent.addView(option);
         }
         mContent.addView(PreferencesFragment.createBooleanOption(mParent.getContext(), "modernui.center.tooltip" +
                         ".adaptiveColors",
                 Config.CLIENT.mAdaptiveTooltipColors, mSaveFn));
-        mContent.addView(PreferencesFragment.createIntegerOption(mParent.getContext(), "modernui.center.tooltip" +
-                        ".borderCycle",
-                4, 100, Config.CLIENT.mTooltipCycle, mSaveFn));
+        new PreferencesFragment.IntegerOption(mParent.getContext(), "modernui.center.tooltip.borderCycle",
+                100, Config.CLIENT.mTooltipCycle, mSaveFn)
+                .create(mContent, 4);
         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
         params.setMargins(0, mContent.dp(6), 0, 0);
         int dp4 = mContent.dp(4);
