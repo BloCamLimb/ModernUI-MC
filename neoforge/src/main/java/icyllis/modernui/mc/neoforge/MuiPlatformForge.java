@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc.neoforge;
 
-import icyllis.modernui.mc.Config;
+import icyllis.modernui.mc.ConfigItem;
 import icyllis.modernui.mc.MuiPlatform;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLPaths;
@@ -45,7 +45,7 @@ public final class MuiPlatformForge extends MuiPlatform {
     }
 
     @Override
-    public Map<String, Config.ConfigItem<?>> getConfigMap(int type) {
+    public Map<String, ConfigItem<?>> getConfigMap(int type) {
         return ConfigImpl.getConfigMap(type);
     }
 

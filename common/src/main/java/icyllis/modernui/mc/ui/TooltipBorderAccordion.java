@@ -24,7 +24,6 @@ import icyllis.modernui.view.View;
 import icyllis.modernui.view.ViewGroup;
 import icyllis.modernui.widget.Button;
 import icyllis.modernui.widget.LinearLayout;
-import icyllis.modernui.widget.Switch;
 import net.minecraft.client.resources.language.I18n;
 
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
@@ -39,26 +38,23 @@ public class TooltipBorderAccordion implements View.OnClickListener {
     };
 
     final ViewGroup mParent;
-    final Runnable mSaveFn;
+    final Runnable mOnChanged;
 
     // lazy-init
     LinearLayout mContent;
     FourColorPicker mColorPicker;
 
-    ViewGroup mBorderWidth;
-    ViewGroup mCornerRadius;
-    ViewGroup mShadowRadius;
-    ViewGroup mShadowAlpha;
+    final View[] mRoundedDependants = new View[4];
 
     // this callback is registered on a child view of 'parent'
     // so no weak ref
-    public TooltipBorderAccordion(ViewGroup parent, Runnable saveFn) {
+    public TooltipBorderAccordion(ViewGroup parent, Runnable onChanged) {
         mParent = parent;
-        mSaveFn = saveFn;
+        mOnChanged = onChanged;
     }
 
     @Override
-    public void onClick(View v) {
+    public void onClick(View __) {
         if (mContent != null) {
             // toggle
             mContent.setVisibility(mContent.getVisibility() == View.GONE
@@ -66,75 +62,59 @@ public class TooltipBorderAccordion implements View.OnClickListener {
                     : View.GONE);
             return;
         }
+        addContent();
+    }
+
+    private void addContent() {
         mContent = new LinearLayout(mParent.getContext());
         mContent.setOrientation(LinearLayout.VERTICAL);
-        final boolean rounded;
-        {
-            var option = PreferencesFragment.createSwitchLayout(mParent.getContext(), "modernui.center.tooltip" +
-                    ".roundedShapes");
-            var button = option.<Switch>requireViewById(R.id.button1);
-            button.setChecked(rounded = Config.CLIENT.mRoundedTooltip.get());
-            button.setOnCheckedChangeListener((__, checked) -> {
-                Config.CLIENT.mRoundedTooltip.set(checked);
-                PreferencesFragment.setViewAndChildrenEnabled(mBorderWidth, checked);
-                PreferencesFragment.setViewAndChildrenEnabled(mCornerRadius, checked);
-                PreferencesFragment.setViewAndChildrenEnabled(mShadowRadius, checked);
-                PreferencesFragment.setViewAndChildrenEnabled(mShadowAlpha, checked);
-                mSaveFn.run();
-            });
-            mContent.addView(option);
-        }
-        {
-            var option = new PreferencesFragment.FloatOption(mParent.getContext(), "modernui.center.tooltip.borderWidth",
-                    Config.CLIENT.mTooltipWidth, (width) -> {
-                        Config.CLIENT.mTooltipWidth.set(width);
-                        if (mColorPicker != null) {
-                            mColorPicker.setBorderWidth(width.floatValue());
-                        }
-                    }, 100, mSaveFn)
-                    .create(mContent, 4);
-            if (!rounded) {
-                PreferencesFragment.setViewAndChildrenEnabled(option, false);
+        int ri = 0;
+        new PreferencesFragment.BooleanOption(mParent.getContext(), "modernui.center.tooltip.roundedShapes",
+                Config.CLIENT.mRoundedTooltip,
+                (value) -> {
+                    Config.CLIENT.mRoundedTooltip.set(value);
+                    for (var v : mRoundedDependants) {
+                        ThemeControl.setViewAndChildrenEnabled(v, value);
+                    }
+                }, mOnChanged)
+                .create(mContent);
+        mRoundedDependants[ri++] = new PreferencesFragment.FloatOption(mParent.getContext(),
+                "modernui.center.tooltip.borderWidth",
+                Config.CLIENT.mTooltipWidth, (width) -> {
+            Config.CLIENT.mTooltipWidth.set(width);
+            if (mColorPicker != null) {
+                mColorPicker.setBorderWidth(width.floatValue());
             }
-            mBorderWidth = option;
-        }
-        {
-            var option = new PreferencesFragment.FloatOption(mParent.getContext(), "modernui.center.tooltip.cornerRadius",
-                    Config.CLIENT.mTooltipRadius, (radius) -> {
-                        Config.CLIENT.mTooltipRadius.set(radius);
-                        if (mColorPicker != null) {
-                            mColorPicker.setBorderRadius(radius.floatValue());
-                        }
-                    }, 10, mSaveFn)
-                    .create(mContent, 3);
-            if (!rounded) {
-                PreferencesFragment.setViewAndChildrenEnabled(option, false);
+        }, 100, mOnChanged)
+                .create(mContent, 4);
+        mRoundedDependants[ri++] = new PreferencesFragment.FloatOption(mParent.getContext(),
+                "modernui.center.tooltip.cornerRadius",
+                Config.CLIENT.mTooltipRadius, (radius) -> {
+            Config.CLIENT.mTooltipRadius.set(radius);
+            if (mColorPicker != null) {
+                mColorPicker.setBorderRadius(radius.floatValue());
             }
-            mCornerRadius = option;
-        }
-        {
-            var option = new PreferencesFragment.FloatOption(mParent.getContext(), "modernui.center.tooltip.shadowRadius",
-                    Config.CLIENT.mTooltipShadowRadius, 5, mSaveFn)
-                    .create(mContent, 4);
-            if (!rounded) {
-                PreferencesFragment.setViewAndChildrenEnabled(option, false);
+        }, 10, mOnChanged)
+                .create(mContent, 3);
+        mRoundedDependants[ri++] = new PreferencesFragment.FloatOption(mParent.getContext(),
+                "modernui.center.tooltip.shadowRadius",
+                Config.CLIENT.mTooltipShadowRadius, 5, mOnChanged)
+                .create(mContent, 4);
+        mRoundedDependants[ri++] = new PreferencesFragment.FloatOption(mParent.getContext(),
+                "modernui.center.tooltip.shadowOpacity",
+                Config.CLIENT.mTooltipShadowAlpha, 100, mOnChanged)
+                .create(mContent, 4);
+        assert ri == mRoundedDependants.length;
+        if (!Config.CLIENT.mRoundedTooltip.get()) {
+            for (var v : mRoundedDependants) {
+                ThemeControl.setViewAndChildrenEnabled(v, false);
             }
-            mShadowRadius = option;
         }
-        {
-            var option = new PreferencesFragment.FloatOption(mParent.getContext(), "modernui.center.tooltip.shadowOpacity",
-                    Config.CLIENT.mTooltipShadowAlpha, 100, mSaveFn)
-                    .create(mContent, 4);
-            if (!rounded) {
-                PreferencesFragment.setViewAndChildrenEnabled(option, false);
-            }
-            mShadowAlpha = option;
-        }
-        mContent.addView(PreferencesFragment.createBooleanOption(mParent.getContext(), "modernui.center.tooltip" +
-                        ".adaptiveColors",
-                Config.CLIENT.mAdaptiveTooltipColors, mSaveFn));
+        new PreferencesFragment.BooleanOption(mParent.getContext(), "modernui.center.tooltip.adaptiveColors",
+                Config.CLIENT.mAdaptiveTooltipColors, mOnChanged)
+                .create(mContent);
         new PreferencesFragment.IntegerOption(mParent.getContext(), "modernui.center.tooltip.borderCycle",
-                100, Config.CLIENT.mTooltipCycle, mSaveFn)
+                100, Config.CLIENT.mTooltipCycle, mOnChanged)
                 .create(mContent, 4);
         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
         params.setMargins(0, mContent.dp(6), 0, 0);
@@ -156,8 +136,8 @@ public class TooltipBorderAccordion implements View.OnClickListener {
             mContent.addView(buttonGroup, new LinearLayout.LayoutParams(params));
         }
         mContent.addView(mColorPicker = new FourColorPicker(mParent.getContext(),
-                Config.CLIENT.mTooltipStroke, Config.CLIENT.mTooltipStroke,
-                mSaveFn), new LinearLayout.LayoutParams(params));
+                Config.CLIENT.mTooltipStroke, mOnChanged),
+                new LinearLayout.LayoutParams(params));
         mColorPicker.setBorderRadius(Config.CLIENT.mTooltipRadius.get().floatValue());
         mColorPicker.setBorderWidth(Config.CLIENT.mTooltipWidth.get().floatValue());
         mParent.addView(mContent, params);

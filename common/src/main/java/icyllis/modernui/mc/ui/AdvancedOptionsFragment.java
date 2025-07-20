@@ -139,11 +139,12 @@ public class AdvancedOptionsFragment extends Fragment {
                 /*category.addView(createBooleanOption(context, "Remove Message Signature",
                         Config.CLIENT.mRemoveSignature, Config.CLIENT::saveAndReloadAsync));*/
 
-                category.addView(createBooleanOption(context, "Remove telemetry session",
+                new PreferencesFragment.BooleanOption(context, "Remove telemetry session",
                         Config.CLIENT.mRemoveTelemetry, () -> {
                             Config.CLIENT.reload();
                             MuiPlatform.get().saveConfig(Config.TYPE_CLIENT);
-                        }));
+                        })
+                        .create(category);
 
                 /*category.addView(createBooleanOption(context, "Secure Profile Public Key",
                         Config.CLIENT.mSecurePublicKey, Config.CLIENT::saveAndReloadAsync));*/

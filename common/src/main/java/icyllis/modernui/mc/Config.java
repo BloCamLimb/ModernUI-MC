@@ -39,41 +39,21 @@ import icyllis.modernui.view.View;
 import icyllis.modernui.view.ViewConfiguration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.I18n;
-import org.apache.commons.lang3.Range;
 import org.jetbrains.annotations.ApiStatus;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static icyllis.modernui.mc.ModernUIMod.*;
 
 @ApiStatus.Internal
 public final class Config {
-
-    // Abstraction of combination of ConfigValue and ValueSpec
-    public static abstract class ConfigItem<T> implements Supplier<T>, Consumer<T> {
-
-        @Override
-        public final void accept(T t) {
-            set(t);
-        }
-
-        public abstract void set(T value);
-
-        public abstract T getDefault();
-
-        @Nullable
-        public abstract Range<T> getRange();
-    }
 
     public static final int TYPE_CLIENT = 1;
     public static final int TYPE_COMMON = 2;

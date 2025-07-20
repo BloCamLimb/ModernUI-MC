@@ -19,10 +19,16 @@
 package icyllis.modernui.mc.ui;
 
 import icyllis.modernui.R;
-import icyllis.modernui.graphics.drawable.*;
+import icyllis.modernui.graphics.drawable.Drawable;
+import icyllis.modernui.graphics.drawable.ShapeDrawable;
+import icyllis.modernui.graphics.drawable.StateListDrawable;
+import icyllis.modernui.graphics.text.CharSequenceBuilder;
 import icyllis.modernui.resources.TypedValue;
 import icyllis.modernui.util.StateSet;
 import icyllis.modernui.view.View;
+import icyllis.modernui.view.ViewGroup;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.StringDecomposer;
 
 import javax.annotation.Nonnull;
 
@@ -72,5 +78,32 @@ public class ThemeControl {
         drawable.setColor(value.data);
         drawable.setSize(view.dp(1), view.dp(1));
         return drawable;
+    }
+
+    @Nonnull
+    public static String stripFormattingCodes(@Nonnull String str) {
+        if (str.indexOf(167) >= 0) {
+            var csb = new CharSequenceBuilder();
+            boolean res = StringDecomposer.iterateFormatted(str, Style.EMPTY, (index, style, codePoint) -> {
+                csb.addCodePoint(codePoint);
+                return true;
+            });
+            assert res;
+            return csb.toString();
+        }
+        return str;
+    }
+
+    public static void setViewAndChildrenEnabled(View view, boolean enabled) {
+        if (view != null) {
+            view.setEnabled(enabled);
+        }
+        if (view instanceof ViewGroup vg) {
+            int cc = vg.getChildCount();
+            for (int i = 0; i < cc; i++) {
+                View v = vg.getChildAt(i);
+                setViewAndChildrenEnabled(v, enabled);
+            }
+        }
     }
 }

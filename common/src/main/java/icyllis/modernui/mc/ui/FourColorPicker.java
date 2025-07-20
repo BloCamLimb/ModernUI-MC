@@ -26,17 +26,18 @@ import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.graphics.Paint;
 import icyllis.modernui.graphics.Rect;
+import icyllis.modernui.mc.ConfigItem;
 import icyllis.modernui.resources.TypedValue;
 import icyllis.modernui.text.InputFilter;
 import icyllis.modernui.text.Typeface;
+import icyllis.modernui.view.ContextMenu;
+import icyllis.modernui.view.Menu;
 import icyllis.modernui.widget.EditText;
 import icyllis.modernui.widget.RelativeLayout;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static icyllis.modernui.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
@@ -54,17 +55,19 @@ public class FourColorPicker extends RelativeLayout {
 
     private final int mBorderColor;
 
+    private final ConfigItem<List<? extends String>> mConfig;
     private final OnFocusChangeListener mOnFieldFocusChange;
 
     public FourColorPicker(Context context,
-                           Supplier<List<? extends String>> getter,
-                           Consumer<List<? extends String>> setter,
-                           Runnable saveFn) {
+                           ConfigItem<List<? extends String>> config,
+                           Runnable onChanged) {
         super(context);
 
         TypedValue value = new TypedValue();
         context.getTheme().resolveAttribute(R.ns, R.attr.colorOutline, value, true);
         mBorderColor = value.data;
+
+        mConfig = config;
 
         mOnFieldFocusChange = (v, hasFocus) -> {
             EditText input = (EditText) v;
@@ -88,7 +91,7 @@ public class FourColorPicker extends RelativeLayout {
             if (mColors[index] != color) {
                 mColors[index] = color;
                 invalidate();
-                var oldList = getter.get();
+                var oldList = mConfig.get();
                 var newList = new ArrayList<String>(oldList);
                 if (newList.isEmpty()) {
                     newList.add("#FFFFFFFF");
@@ -98,13 +101,13 @@ public class FourColorPicker extends RelativeLayout {
                 }
                 newList.set(index, string);
                 if (!newList.equals(oldList)) {
-                    setter.accept(newList);
-                    saveFn.run();
+                    mConfig.set(newList);
+                    onChanged.run();
                 }
             }
         };
 
-        var colors = getter.get();
+        var colors = mConfig.get();
 
         int dp4 = dp(4);
         mColorFields[0] = createField(0, colors);
@@ -146,10 +149,11 @@ public class FourColorPicker extends RelativeLayout {
             mOnFieldFocusChange.onFocusChange(f, false);
         }
         setWillNotDraw(false);
+        setLongClickable(true);
     }
 
     @NonNull
-    private EditText createField(int index, @NotNull List<? extends String> colors) {
+    private EditText createField(int index, @NonNull List<? extends String> colors) {
         var field = new EditText(getContext(), null, R.attr.editTextOutlinedStyle);
         Typeface monoFont = Typeface.getSystemFont("JetBrains Mono Medium");
         if (monoFont != Typeface.SANS_SERIF) {
@@ -165,8 +169,12 @@ public class FourColorPicker extends RelativeLayout {
     }
 
     public void setColors(@NonNull @Size(4) String[] colors) {
+        setColors(Arrays.asList(colors));
+    }
+
+    public void setColors(@NonNull @Size(4) List<? extends String> colors) {
         for (int i = 0; i < mColorFields.length; i++) {
-            mColorFields[i].setText(colors[i]);
+            mColorFields[i].setText(colors.get(i));
         }
         for (var f : mColorFields) {
             mOnFieldFocusChange.onFocusChange(f, false);
@@ -240,5 +248,18 @@ public class FourColorPicker extends RelativeLayout {
         );
         int inset = dp(8);
         mPreviewBox.inset(inset, inset);
+    }
+
+    @Override
+    protected void onCreateContextMenu(@NonNull ContextMenu menu) {
+        super.onCreateContextMenu(menu);
+        menu.add(Menu.NONE, PreferencesFragment.ID_RESET_TO_DEFAULT, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
+                .setOnMenuItemClickListener(item -> {
+                    if (item.getItemId() == PreferencesFragment.ID_RESET_TO_DEFAULT) {
+                        setColors(mConfig.getDefault());
+                        return true;
+                    }
+                    return false;
+                });
     }
 }

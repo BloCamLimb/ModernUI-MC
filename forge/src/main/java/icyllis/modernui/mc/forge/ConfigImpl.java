@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.mc.Config;
+import icyllis.modernui.mc.ConfigItem;
 import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.text.TextLayout;
@@ -30,7 +31,6 @@ import net.minecraftforge.common.ForgeConfigSpec;
 import net.minecraftforge.fml.config.IConfigSpec;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.loading.FMLEnvironment;
-import org.apache.commons.lang3.Range;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -116,45 +116,8 @@ public final class ConfigImpl {
         }
     }
 
-    static class ConfigItemImpl<T> extends Config.ConfigItem<T> {
-
-        private final ForgeConfigSpec.ConfigValue<T> value;
-        private final ForgeConfigSpec.ValueSpec spec;
-
-        ConfigItemImpl(ForgeConfigSpec.ConfigValue<T> value,
-                       ForgeConfigSpec.ValueSpec spec) {
-            this.value = value;
-            this.spec = spec;
-        }
-
-        @Override
-        public T get() {
-            return value.get();
-        }
-
-        @Override
-        public void set(T value) {
-            this.value.set(value);
-        }
-
-        @Override
-        public T getDefault() {
-            return value.getDefault();
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public Range<T> getRange() {
-            ForgeConfigSpec.Range<Comparable<Object>> r = spec.getRange();
-            if (r != null) {
-                return (Range<T>) Range.of(r.getMin(), r.getMax());
-            }
-            return null;
-        }
-    }
-
     @Nullable
-    static Map<String, Config.ConfigItem<?>> getConfigMap(int type) {
+    static Map<String, ConfigItem<?>> getConfigMap(int type) {
         final Object config;
         final ForgeConfigSpec configSpec;
         switch (type) {
@@ -174,12 +137,12 @@ public final class ConfigImpl {
                 return null;
             }
         }
-        Map<String, Config.ConfigItem<?>> map = new HashMap<>();
+        Map<String, ConfigItem<?>> map = new HashMap<>();
         for (var f : config.getClass().getDeclaredFields()) {
             try {
                 if (f.get(config) instanceof ForgeConfigSpec.ConfigValue<?> value &&
                         configSpec.getSpec().get(value.getPath()) instanceof ForgeConfigSpec.ValueSpec spec) {
-                    map.put(f.getName(), new ConfigItemImpl<>(value, spec));
+                    map.put(f.getName(), new ForgeConfigItem<>(value, spec));
                 }
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);

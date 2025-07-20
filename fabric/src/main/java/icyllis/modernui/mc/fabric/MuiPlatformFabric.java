@@ -19,7 +19,7 @@
 package icyllis.modernui.mc.fabric;
 
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.mc.Config;
+import icyllis.modernui.mc.ConfigItem;
 import icyllis.modernui.mc.MuiPlatform;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
@@ -57,7 +57,7 @@ public final class MuiPlatformFabric extends MuiPlatform {
     }
 
     @Override
-    public Map<String, Config.ConfigItem<?>> getConfigMap(int type) {
+    public Map<String, ConfigItem<?>> getConfigMap(int type) {
         return ConfigImpl.getConfigMap(type);
     }
 

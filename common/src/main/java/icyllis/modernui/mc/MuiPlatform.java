@@ -43,7 +43,7 @@ public abstract class MuiPlatform {
 
     public abstract boolean isClient();
 
-    public abstract Map<String, Config.ConfigItem<?>> getConfigMap(int type);
+    public abstract Map<String, ConfigItem<?>> getConfigMap(int type);
 
     public abstract void saveConfig(int type);
 }

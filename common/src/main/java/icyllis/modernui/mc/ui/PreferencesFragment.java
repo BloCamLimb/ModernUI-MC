@@ -38,6 +38,7 @@ import icyllis.modernui.graphics.drawable.ShapeDrawable;
 import icyllis.modernui.graphics.drawable.StateListDrawable;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.mc.Config;
+import icyllis.modernui.mc.ConfigItem;
 import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.MuiModApi;
@@ -57,7 +58,6 @@ import icyllis.modernui.util.StateSet;
 import icyllis.modernui.view.ContextMenu;
 import icyllis.modernui.view.Gravity;
 import icyllis.modernui.view.LayoutInflater;
-import icyllis.modernui.view.MeasureSpec;
 import icyllis.modernui.view.Menu;
 import icyllis.modernui.view.MenuItem;
 import icyllis.modernui.view.OneShotPreDrawListener;
@@ -74,6 +74,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
@@ -184,27 +185,8 @@ public class PreferencesFragment extends Fragment {
             final int dp20 = container.dp(20);
             final int maxWidth = container.dp(800) + dp20 + dp20;
             var context = container.getContext();
-            //noinspection ExtractMethodRecommender
-            var sv = new ScrollView(context) {
-                @Override
-                protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-
-                    if (getChildCount() > 0) {
-                        // constrain the direct child
-                        final View child = getChildAt(0);
-
-                        int childWidth = child.getMeasuredWidth();
-                        int clampedWidth = Math.min(childWidth, maxWidth);
-
-                        if (childWidth != clampedWidth) {
-                            var newWidthSpec = MeasureSpec.makeMeasureSpec(clampedWidth, MeasureSpec.EXACTLY);
-                            var newHeightSpec = MeasureSpec.makeMeasureSpec(child.getMeasuredHeight(), MeasureSpec.EXACTLY);
-                            child.measure(newWidthSpec, newHeightSpec);
-                        }
-                    }
-                }
-            };
+            var sv = new ClampingScrollView(context);
+            sv.setMaxWidth(maxWidth);
             sv.setTag(position);
             ViewGroup layout = switch (position) {
                 case 0 -> createPage1(context);
@@ -262,7 +244,7 @@ public class PreferencesFragment extends Fragment {
         var content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
 
-        Runnable saveFn = mOnClientConfigChanged;
+        Runnable onChanged = mOnClientConfigChanged;
 
         {
             var list = createCategoryList(content, null);
@@ -270,46 +252,51 @@ public class PreferencesFragment extends Fragment {
             list.addView(createGuiScaleOption(context));
 
             list.addView(createColorOpacityOption(context, "modernui.center.screen.backgroundOpacity",
-                    Config.CLIENT.mBackgroundColor, saveFn));
+                    Config.CLIENT.mBackgroundColor, onChanged));
 
             new IntegerOption(context, "modernui.center.screen.backgroundDuration",
-                    50, Config.CLIENT.mBackgroundDuration, saveFn)
+                    50, Config.CLIENT.mBackgroundDuration, onChanged)
                     .create(list, 3);
 
-            list.addView(createBooleanOption(context, "modernui.center.screen.blurEffect",
-                    Config.CLIENT.mBlurEffect, saveFn));
+            new BooleanOption(context, "modernui.center.screen.blurEffect",
+                    Config.CLIENT.mBlurEffect, onChanged)
+                    .create(list);
 
-            list.addView(createBooleanOption(context, "modernui.center.screen.overrideVanillaBlur",
-                    Config.CLIENT.mOverrideVanillaBlur, saveFn));
+            new BooleanOption(context, "modernui.center.screen.overrideVanillaBlur",
+                    Config.CLIENT.mOverrideVanillaBlur, onChanged)
+                    .create(list);
 
             new IntegerOption(context, "modernui.center.screen.blurRadius",
-                    1, Config.CLIENT.mBlurRadius, saveFn)
+                    1, Config.CLIENT.mBlurRadius, onChanged)
                     .create(list, 2);
 
-            list.addView(createSpinnerOption(context, "modernui.center.screen.windowMode",
-                    Config.Client.WindowMode.values(), Config.CLIENT.mWindowMode, saveFn));
+            new DropDownOption<>(context, "modernui.center.screen.windowMode",
+                    Config.Client.WindowMode.values(),
+                    Config.CLIENT.mWindowMode, onChanged)
+                    .create(list);
 
             new IntegerOption(context, "modernui.center.screen.framerateInactive",
-                    10, Config.CLIENT.mFramerateInactive, saveFn)
+                    10, Config.CLIENT.mFramerateInactive, onChanged)
                     .create(list, 3);
 
             /*list.addView(createIntegerOption(context, "modernui.center.screen.framerateMinimized",
                     0, 255, 3, 5,
-                    Config.CLIENT.mFramerateMinimized, saveFn));*/
+                    Config.CLIENT.mFramerateMinimized, onChanged));*/
 
             new FloatOption(context, "modernui.center.screen.masterVolumeInactive",
-                    Config.CLIENT.mMasterVolumeInactive, 100, saveFn)
+                    Config.CLIENT.mMasterVolumeInactive, 100, onChanged)
                     .create(list, 4);
             new FloatOption(context, "modernui.center.screen.masterVolumeInactive",
-                    Config.CLIENT.mMasterVolumeInactive, 100, saveFn)
+                    Config.CLIENT.mMasterVolumeInactive, 100, onChanged)
                     .create(list, 4);
 
             new FloatOption(context, "modernui.center.screen.masterVolumeMinimized",
-                    Config.CLIENT.mMasterVolumeMinimized, 100, saveFn)
+                    Config.CLIENT.mMasterVolumeMinimized, 100, onChanged)
                     .create(list, 4);
 
-            list.addView(createBooleanOption(context, "modernui.center.screen.inventoryPause",
-                    Config.CLIENT.mInventoryPause, saveFn));
+            new BooleanOption(context, "modernui.center.screen.inventoryPause",
+                    Config.CLIENT.mInventoryPause, onChanged)
+                    .create(list);
 
             content.addView(list);
         }
@@ -321,49 +308,49 @@ public class PreferencesFragment extends Fragment {
         var content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
 
-        Runnable saveFn = mOnClientConfigChanged;
+        Runnable onChanged = mOnClientConfigChanged;
 
         {
             var list = createCategoryList(content, null);
 
             new IntegerOption(context, "Scrollbar Size",
-                    1, Config.CLIENT.mScrollbarSize, saveFn)
+                    1, Config.CLIENT.mScrollbarSize, onChanged)
                     .create(list, 4);
             new IntegerOption(context, "Touch Slop",
-                     1, Config.CLIENT.mTouchSlop, saveFn)
+                     1, Config.CLIENT.mTouchSlop, onChanged)
                     .create(list, 4);
             new IntegerOption(context, "Hover Slop",
-                     1, Config.CLIENT.mHoverSlop, saveFn)
+                     1, Config.CLIENT.mHoverSlop, onChanged)
                     .create(list, 4);
             new IntegerOption(context, "Minimum Scrollbar Touch Target",
-                     1, Config.CLIENT.mMinScrollbarTouchTarget, saveFn)
+                     1, Config.CLIENT.mMinScrollbarTouchTarget, onChanged)
                     .create(list, 4);
             new IntegerOption(context, "Minimum Fling Velocity",
-                     1, Config.CLIENT.mMinimumFlingVelocity, saveFn)
+                     1, Config.CLIENT.mMinimumFlingVelocity, onChanged)
                     .create(list, 4);
             new IntegerOption(context, "Maximum Fling Velocity",
-                     1, Config.CLIENT.mMaximumFlingVelocity, saveFn)
+                     1, Config.CLIENT.mMaximumFlingVelocity, onChanged)
                     .create(list, 4);
             new FloatOption(context, "Scroll Friction",
-                    Config.CLIENT.mScrollFriction, 1000, saveFn)
+                    Config.CLIENT.mScrollFriction, 1000, onChanged)
                     .create(list, 6);
             new IntegerOption(context, "Overscroll Distance",
-                     1, Config.CLIENT.mOverscrollDistance, saveFn)
+                     1, Config.CLIENT.mOverscrollDistance, onChanged)
                     .create(list, 4);
             new IntegerOption(context, "Overfling Distance",
-                     1, Config.CLIENT.mOverflingDistance, saveFn)
+                     1, Config.CLIENT.mOverflingDistance, onChanged)
                     .create(list, 4);
             new FloatOption(context, "Horizontal Scroll Factor",
-                    Config.CLIENT.mHorizontalScrollFactor, 10, saveFn)
+                    Config.CLIENT.mHorizontalScrollFactor, 10, onChanged)
                     .create(list, 6);
             new FloatOption(context, "Vertical Scroll Factor",
-                    Config.CLIENT.mVerticalScrollFactor, 10, saveFn)
+                    Config.CLIENT.mVerticalScrollFactor, 10, onChanged)
                     .create(list, 6);
             new IntegerOption(context, "Hover Tooltip Show Timeout",
-                     1, Config.CLIENT.mHoverTooltipShowTimeout, saveFn)
+                     1, Config.CLIENT.mHoverTooltipShowTimeout, onChanged)
                     .create(list, 4);
             new IntegerOption(context, "Hover Tooltip Hide Timeout",
-                     1, Config.CLIENT.mHoverTooltipHideTimeout, saveFn)
+                     1, Config.CLIENT.mHoverTooltipHideTimeout, onChanged)
                     .create(list, 6);
 
             content.addView(list);
@@ -372,11 +359,12 @@ public class PreferencesFragment extends Fragment {
         {
             var list = createCategoryList(content, "modernui.center.category.system");
 
-            list.addView(createBooleanOption(context, "modernui.center.system.forceRtlLayout",
-                    Config.CLIENT.mForceRtl, saveFn));
+            new BooleanOption(context, "modernui.center.system.forceRtlLayout",
+                    Config.CLIENT.mForceRtl, onChanged)
+                    .create(list);
 
             new FloatOption(context, "modernui.center.system.globalFontScale",
-                    Config.CLIENT.mFontScale, 100, saveFn)
+                    Config.CLIENT.mFontScale, 100, onChanged)
                     .create(list, 4);
 
             new FloatOption(context, "modernui.center.system.globalAnimationScale",
@@ -386,8 +374,9 @@ public class PreferencesFragment extends Fragment {
                     .setDefaultValue(1.0)
                     .create(list, 4);
 
-            list.addView(createBooleanOption(context, "modernui.center.system.developerMode",
-                    Config.COMMON.developerMode, mOnCommonConfigChanged));
+            new BooleanOption(context, "modernui.center.system.developerMode",
+                    Config.COMMON.developerMode, mOnCommonConfigChanged)
+                    .create(list);
 
             content.addView(list);
         }
@@ -463,8 +452,7 @@ public class PreferencesFragment extends Fragment {
                         Config.CLIENT.mFallbackFontFamilyList,
                         () -> {
                             mOnClientConfigChanged.run();
-                            reloadDefaultTypeface(context, () -> {
-                            });
+                            reloadDefaultTypeface(context, null);
                         });
                 category.addView(option);
             }
@@ -473,12 +461,12 @@ public class PreferencesFragment extends Fragment {
                     ModernUIText.CONFIG.mUseVanillaFont,
                     ModernUIText.CONFIG::saveAndReloadAsync));*/
 
-            category.addView(createBooleanOption(context, "modernui.center.font.colorEmoji",
+            new BooleanOption(context, "modernui.center.font.colorEmoji",
                     Config.CLIENT.mUseColorEmoji, () -> {
                         mOnClientConfigChanged.run();
-                        reloadDefaultTypeface(context, () -> {
-                        });
-                    }));
+                        reloadDefaultTypeface(context, null);
+                    })
+                    .create(category);
 
             category.addView(createStringListOption(context, "modernui.center.font.fontRegistrationList",
                     Config.CLIENT.mFontRegistrationList, () -> {
@@ -499,7 +487,7 @@ public class PreferencesFragment extends Fragment {
         var content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
 
-        Runnable saveFn = mOnClientConfigChanged;
+        Runnable onChanged = mOnClientConfigChanged;
 
         boolean curTooltipEnabled = Config.CLIENT.mTooltip.get();
 
@@ -508,56 +496,43 @@ public class PreferencesFragment extends Fragment {
         {
             var list = createCategoryList(content, null);
 
-            list.addView(createBooleanOption(context, "modernui.center.extension.ding",
-                    Config.CLIENT.mDing, saveFn));
+            new BooleanOption(context, "modernui.center.extension.ding",
+                    Config.CLIENT.mDing, onChanged)
+                    .create(list);
 
             if (Config.CLIENT.mZoom != null) {
-                list.addView(createBooleanOption(context, "key.modernui.zoom",
-                        Config.CLIENT.mZoom, saveFn));
+                new BooleanOption(context, "key.modernui.zoom",
+                        Config.CLIENT.mZoom, onChanged)
+                        .create(list);
             }
 
-            list.addView(createBooleanOption(context, "modernui.center.text.emojiShortcodes",
-                    Config.CLIENT.mEmojiShortcodes, saveFn));
+            new BooleanOption(context, "modernui.center.text.emojiShortcodes",
+                    Config.CLIENT.mEmojiShortcodes, onChanged)
+                    .create(list);
 
-            {
-                var option = createSwitchLayout(context, "modernui.center.extension.smoothScrolling");
-                var button = option.<Switch>requireViewById(R.id.button1);
-                button.setChecked(!Boolean.parseBoolean(
-                        ModernUIClient.getBootstrapProperty(ModernUIMod.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
-                ));
-                button.setOnCheckedChangeListener((view, checked) -> {
-                    ModernUIClient.setBootstrapProperty(
+            new BooleanOption(context, "modernui.center.extension.smoothScrolling",
+                    () -> !Boolean.parseBoolean(
+                            ModernUIClient.getBootstrapProperty(ModernUIMod.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING)
+                    ),
+                    (value) -> ModernUIClient.setBootstrapProperty(
                             ModernUIMod.BOOTSTRAP_DISABLE_SMOOTH_SCROLLING,
-                            Boolean.toString(!checked)
-                    );
-                    Toast.makeText(
-                            view.getContext(),
-                            I18n.get("gui.modernui.restart_to_work"),
-                            Toast.LENGTH_SHORT
-                    ).show();
-                });
-                list.addView(option);
-            }
+                            Boolean.toString(!value)
+                    ))
+                    .setDefaultValue(true)
+                    .setNeedsRestart()
+                    .create(list);
 
-            {
-                var option = createSwitchLayout(context, "modernui.center.text.enhancedTextField");
-                var button = option.<Switch>requireViewById(R.id.button1);
-                button.setChecked(!Boolean.parseBoolean(
-                        ModernUIClient.getBootstrapProperty(ModernUIMod.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD)
-                ));
-                button.setOnCheckedChangeListener((view, checked) -> {
-                    ModernUIClient.setBootstrapProperty(
+            new BooleanOption(context, "modernui.center.text.enhancedTextField",
+                    () -> !Boolean.parseBoolean(
+                            ModernUIClient.getBootstrapProperty(ModernUIMod.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD)
+                    ),
+                    (value) -> ModernUIClient.setBootstrapProperty(
                             ModernUIMod.BOOTSTRAP_DISABLE_ENHANCED_TEXT_FIELD,
-                            Boolean.toString(!checked)
-                    );
-                    Toast.makeText(
-                            view.getContext(),
-                            I18n.get("gui.modernui.restart_to_work"),
-                            Toast.LENGTH_SHORT
-                    ).show();
-                });
-                list.addView(option);
-            }
+                            Boolean.toString(!value)
+                    ))
+                    .setDefaultValue(true)
+                    .setNeedsRestart()
+                    .create(list);
 
             {
                 var option = createSwitchLayout(context, "modernui.center.extension.tooltip");
@@ -565,9 +540,9 @@ public class PreferencesFragment extends Fragment {
                 button.setChecked(curTooltipEnabled);
                 button.setOnCheckedChangeListener((view, checked) -> {
                     Config.CLIENT.mTooltip.set(checked);
-                    saveFn.run();
+                    onChanged.run();
                     for (var v : tooltipCategories) {
-                        setViewAndChildrenEnabled(v, checked);
+                        ThemeControl.setViewAndChildrenEnabled(v, checked);
                     }
                 });
                 list.addView(option);
@@ -575,7 +550,7 @@ public class PreferencesFragment extends Fragment {
 
             /*list.addView(createIntegerOption(context, "modernui.center.extension.tooltipDuration",
                     Config.Client.ANIM_DURATION_MIN, Config.Client.ANIM_DURATION_MAX,
-                    3, 50, Config.CLIENT.mTooltipDuration, saveFn));*/
+                    3, 50, Config.CLIENT.mTooltipDuration, onChanged));*/
 
             content.addView(list);
         }
@@ -583,7 +558,7 @@ public class PreferencesFragment extends Fragment {
         content.addView(tooltipCategories[0] = createTooltipCategory(content));
         content.addView(tooltipCategories[1] = createTooltipBorderCategory(content));
         for (var v : tooltipCategories) {
-            setViewAndChildrenEnabled(v, curTooltipEnabled);
+            ThemeControl.setViewAndChildrenEnabled(v, curTooltipEnabled);
         }
 
         return content;
@@ -615,7 +590,7 @@ public class PreferencesFragment extends Fragment {
                             Toast.LENGTH_SHORT
                     ).show();
                     for (var v : categories) {
-                        setViewAndChildrenEnabled(v, checked);
+                        ThemeControl.setViewAndChildrenEnabled(v, checked);
                     }
                 });
                 list.addView(option);
@@ -626,7 +601,7 @@ public class PreferencesFragment extends Fragment {
         content.addView(categories[0] = createTextLayoutCategory(content));
         content.addView(categories[1] = createTextRenderingCategory(content));
         for (var v : categories) {
-            setViewAndChildrenEnabled(v, curTextEngineEnabled);
+            ThemeControl.setViewAndChildrenEnabled(v, curTextEngineEnabled);
         }
 
         return content;
@@ -636,23 +611,26 @@ public class PreferencesFragment extends Fragment {
         var context = page.getContext();
         var category = createCategoryList(page, "modernui.center.category.tooltip");
 
-        Runnable saveFn = mOnClientConfigChanged;
+        Runnable onChanged = mOnClientConfigChanged;
 
-        category.addView(createBooleanOption(context, "modernui.center.tooltip.centerTitle",
-                Config.CLIENT.mCenterTooltipTitle, saveFn));
+        new BooleanOption(context, "modernui.center.tooltip.centerTitle",
+                Config.CLIENT.mCenterTooltipTitle, onChanged)
+                .create(category);
 
-        category.addView(createBooleanOption(context, "modernui.center.tooltip.titleBreak",
-                Config.CLIENT.mTooltipTitleBreak, saveFn));
+        new BooleanOption(context, "modernui.center.tooltip.titleBreak",
+                Config.CLIENT.mTooltipTitleBreak, onChanged)
+                .create(category);
 
-        category.addView(createBooleanOption(context, "modernui.center.tooltip.exactPositioning",
-                Config.CLIENT.mExactTooltipPositioning, saveFn));
+        new BooleanOption(context, "modernui.center.tooltip.exactPositioning",
+                Config.CLIENT.mExactTooltipPositioning, onChanged)
+                .create(category);
 
         new IntegerOption(context, "modernui.center.tooltip.arrowScrollFactor",
-                2, Config.CLIENT.mTooltipArrowScrollFactor, saveFn)
+                2, Config.CLIENT.mTooltipArrowScrollFactor, onChanged)
                 .create(category, 3);
 
         category.addView(createColorOpacityOption(context, "modernui.center.tooltip.backgroundOpacity",
-                Config.CLIENT.mTooltipFill, saveFn));
+                Config.CLIENT.mTooltipFill, onChanged));
 
         return category;
     }
@@ -695,43 +673,49 @@ public class PreferencesFragment extends Fragment {
         var context = page.getContext();
         var category = createCategoryList(page, "modernui.center.category.textLayout");
 
-        Runnable saveFn = mOnTextConfigChanged;
+        Runnable onChanged = mOnTextConfigChanged;
 
-        category.addView(createSpinnerOption(context, "modernui.center.text.defaultFontBehavior",
+        new DropDownOption<>(context, "modernui.center.text.defaultFontBehavior",
                 Config.Text.DefaultFontBehavior.values(),
-                Config.TEXT.mDefaultFontBehavior, saveFn));
+                Config.TEXT.mDefaultFontBehavior, onChanged)
+                .create(category);
 
         category.addView(createStringListOption(context, "modernui.center.text.defaultFontRuleSet",
-                Config.TEXT.mDefaultFontRuleSet, saveFn));
+                Config.TEXT.mDefaultFontRuleSet, onChanged));
 
-        category.addView(createSpinnerOption(context, "modernui.center.text.bidiHeuristicAlgo",
+        new DropDownOption<>(context, "modernui.center.text.bidiHeuristicAlgo",
                 Config.Text.TextDirection.values(),
-                Config.TEXT.mTextDirection,
-                saveFn));
+                Config.TEXT.mTextDirection, onChanged)
+                .create(category);
 
-        category.addView(createSpinnerOption(context, "modernui.center.text.lineBreakStyle",
+        new DropDownOption<>(context, "modernui.center.text.lineBreakStyle",
                 Config.Text.LineBreakStyle.values(),
-                Config.TEXT.mLineBreakStyle, saveFn));
+                Config.TEXT.mLineBreakStyle, onChanged)
+                .create(category);
 
-        category.addView(createSpinnerOption(context, "modernui.center.text.lineBreakWordStyle",
+        new DropDownOption<>(context, "modernui.center.text.lineBreakWordStyle",
                 Config.Text.LineBreakWordStyle.values(),
-                Config.TEXT.mLineBreakWordStyle, saveFn));
+                Config.TEXT.mLineBreakWordStyle, onChanged)
+                .create(category);
 
-        category.addView(createBooleanOption(context, "modernui.center.text.allowAsyncLayout",
-                Config.TEXT.mAllowAsyncLayout, saveFn));
+        new BooleanOption(context, "modernui.center.text.allowAsyncLayout",
+                Config.TEXT.mAllowAsyncLayout, onChanged)
+                .create(category);
 
-        category.addView(createBooleanOption(context, "modernui.center.text.useComponentCache",
-                Config.TEXT.mUseComponentCache, saveFn));
+        new BooleanOption(context, "modernui.center.text.useComponentCache",
+                Config.TEXT.mUseComponentCache, onChanged)
+                .create(category);
 
-        category.addView(createBooleanOption(context, "modernui.center.text.fixedResolution",
-                Config.TEXT.mFixedResolution, saveFn));
+        new BooleanOption(context, "modernui.center.text.fixedResolution",
+                Config.TEXT.mFixedResolution, onChanged)
+                .create(category);
 
         new FloatOption(context, "modernui.center.text.baseFontSize",
-                Config.TEXT.mBaseFontSize, 10, saveFn)
+                Config.TEXT.mBaseFontSize, 10, onChanged)
                 .create(category, 4);
 
         new IntegerOption(context, "modernui.center.text.cacheLifespan",
-                1, Config.TEXT.mCacheLifespan, saveFn)
+                1, Config.TEXT.mCacheLifespan, onChanged)
                 .create(category, 2);
 
         return category;
@@ -741,46 +725,54 @@ public class PreferencesFragment extends Fragment {
         var context = page.getContext();
         var category = createCategoryList(page, "modernui.center.category.textRendering");
 
-        Runnable saveFn = mOnTextConfigChanged;
+        Runnable onChanged = mOnTextConfigChanged;
 
-        category.addView(createBooleanOption(context, "modernui.center.font.antiAliasing",
-                Config.TEXT.mAntiAliasing, saveFn));
+        new BooleanOption(context, "modernui.center.font.antiAliasing",
+                Config.TEXT.mAntiAliasing, onChanged)
+                .create(category);
 
-        category.addView(createBooleanOption(context, "modernui.center.font.linearMetrics",
-                Config.TEXT.mLinearMetrics, saveFn));
+        new BooleanOption(context, "modernui.center.font.linearMetrics",
+                Config.TEXT.mLinearMetrics, onChanged)
+                .create(category);
 
-        category.addView(createBooleanOption(context, "modernui.center.text.textShadersInWorld",
-                Config.TEXT.mUseTextShadersInWorld, saveFn));
+        new BooleanOption(context, "modernui.center.text.textShadersInWorld",
+                Config.TEXT.mUseTextShadersInWorld, onChanged)
+                .create(category);
 
-        category.addView(createBooleanOption(context, "modernui.center.text.allowSDFTextIn2D",
-                Config.TEXT.mAllowSDFTextIn2D, saveFn));
+        new BooleanOption(context, "modernui.center.text.allowSDFTextIn2D",
+                Config.TEXT.mAllowSDFTextIn2D, onChanged)
+                .create(category);
 
-        category.addView(createBooleanOption(context, "modernui.center.text.smartSDFShaders",
-                Config.TEXT.mSmartSDFShaders, saveFn));
+        new BooleanOption(context, "modernui.center.text.smartSDFShaders",
+                Config.TEXT.mSmartSDFShaders, onChanged)
+                .create(category);
 
-        category.addView(createBooleanOption(context, "modernui.center.text.computeDeviceFontSize",
-                Config.TEXT.mComputeDeviceFontSize, saveFn));
+        new BooleanOption(context, "modernui.center.text.computeDeviceFontSize",
+                Config.TEXT.mComputeDeviceFontSize, onChanged)
+                .create(category);
 
         new IntegerOption(context, "modernui.center.text.minPixelDensityForSDF",
-                1, Config.TEXT.mMinPixelDensityForSDF, saveFn)
+                1, Config.TEXT.mMinPixelDensityForSDF, onChanged)
                 .create(category, 2);
 
-        category.addView(createBooleanOption(context, "modernui.center.font.linearSampling",
-                Config.TEXT.mLinearSamplingA8Atlas, saveFn));
+        new BooleanOption(context, "modernui.center.font.linearSampling",
+                Config.TEXT.mLinearSamplingA8Atlas, onChanged)
+                .create(category);
 
-        category.addView(createBooleanOption(context, "modernui.center.text.allowShadow",
-                Config.TEXT.mAllowShadow, saveFn));
+        new BooleanOption(context, "modernui.center.text.allowShadow",
+                Config.TEXT.mAllowShadow, onChanged)
+                .create(category);
 
         new FloatOption(context, "modernui.center.text.shadowOffset",
-                Config.TEXT.mShadowOffset, 100, saveFn)
+                Config.TEXT.mShadowOffset, 100, onChanged)
                 .create(category, 4);
 
         new FloatOption(context, "modernui.center.text.baselineShift",
-                Config.TEXT.mBaselineShift, 10, saveFn)
+                Config.TEXT.mBaselineShift, 10, onChanged)
                 .create(category, 4);
 
         new FloatOption(context, "modernui.center.text.outlineOffset",
-                Config.TEXT.mOutlineOffset, 100, saveFn)
+                Config.TEXT.mOutlineOffset, 100, onChanged)
                 .create(category, 4);
 
         return category;
@@ -880,72 +872,111 @@ public class PreferencesFragment extends Fragment {
         return layout;
     }
 
-    public static LinearLayout createBooleanOption(
-            Context context,
-            String name,
-            Config.ConfigItem<Boolean> config,
-            Runnable saveFn) {
-        var layout = createSwitchLayout(context, name);
-        var button = layout.<Switch>requireViewById(R.id.button1);
-        button.setChecked(config.get());
-        button.setOnCheckedChangeListener((__, checked) -> {
-            config.set(checked);
-            saveFn.run();
-        });
-        return layout;
-    }
+    public static class BooleanOption implements
+            Checkable.OnCheckedChangeListener,
+            View.OnCreateContextMenuListener,
+            MenuItem.OnMenuItemClickListener {
 
-    public static <E extends Enum<E>> LinearLayout createSpinnerOption(
-            Context context,
-            String name,
-            E[] values,
-            Config.ConfigItem<E> config,
-            Runnable saveFn) {
-        var option = new LinearLayout(context);
-        option.setOrientation(LinearLayout.HORIZONTAL);
-        option.setHorizontalGravity(Gravity.START);
+        protected final LinearLayout layout;
+        protected final Switch button;
 
-        final int dp6 = option.dp(6);
-        {
-            var title = new TextView(context);
-            title.setText(I18n.get(name));
-            title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-            title.setTextSize(14);
+        protected final Supplier<Boolean> getter;
+        protected final Consumer<Boolean> setter;
+        @Nullable
+        protected Runnable onChanged;
 
-            String tooltip = name + "_desc";
-            if (I18n.exists(tooltip)) {
-                title.setTooltipText(I18n.get(tooltip));
+        protected boolean hasDefaultValue = false;
+        protected boolean defaultValue;
+
+        protected boolean needsRestart;
+
+        public BooleanOption(Context context, String name,
+                             Supplier<Boolean> getter,
+                             Consumer<Boolean> setter) {
+            layout = createSwitchLayout(context, name);
+            button = layout.<Switch>requireViewById(R.id.button1);
+            this.getter = getter;
+            this.setter = setter;
+        }
+
+        public BooleanOption(Context context, String name,
+                             ConfigItem<Boolean> config,
+                             Consumer<Boolean> setter,
+                             @Nullable Runnable onChanged) {
+            this(context, name, config, setter);
+            hasDefaultValue = true;
+            defaultValue = config.getDefault();
+            this.onChanged = onChanged;
+        }
+
+        public BooleanOption(Context context, String name,
+                             ConfigItem<Boolean> config,
+                             @Nullable Runnable onChanged) {
+            this(context, name, config, config, onChanged);
+        }
+
+        public BooleanOption setDefaultValue(boolean defaultValue) {
+            this.hasDefaultValue = true;
+            this.defaultValue = defaultValue;
+            return this;
+        }
+
+        public BooleanOption setOnChanged(Runnable onChanged) {
+            this.onChanged = onChanged;
+            return this;
+        }
+
+        public BooleanOption setNeedsRestart() {
+            this.needsRestart = true;
+            return this;
+        }
+
+        @NonNull
+        public LinearLayout create(@Nullable ViewGroup parent) {
+            button.setChecked(getter.get());
+            button.setOnCheckedChangeListener(this);
+            if (hasDefaultValue) {
+                layout.setOnCreateContextMenuListener(this);
             }
-
-            var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
-            params.gravity = Gravity.CENTER_VERTICAL;
-            option.addView(title, params);
-        }
-        {
-            var spinner = new Spinner(context);
-            //spinner.setGravity(Gravity.END);
-            spinner.setAdapter(new ArrayAdapter<>(context, values));
-            spinner.setSelection(config.get().ordinal());
-            spinner.setOnItemSelectedListener((parent, view, position, id) -> {
-                E newValue = values[position];
-                if (config.get() != newValue) {
-                    config.set(newValue);
-                    saveFn.run();
-                }
-            });
-
-            var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
-            params.gravity = Gravity.CENTER_VERTICAL;
-            option.addView(spinner, params);
+            if (parent != null) {
+                parent.addView(layout);
+            }
+            return layout;
         }
 
-        var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-        params.gravity = Gravity.CENTER;
-        params.setMargins(dp6, 0, dp6, 0);
-        option.setMinimumHeight(option.dp(44));
-        option.setLayoutParams(params);
+        @Override
+        public void onCheckedChanged(View buttonView, boolean isChecked) {
+            assert buttonView == button;
+            setter.accept(isChecked);
+            if (onChanged != null) {
+                onChanged.run();
+            }
+            if (needsRestart) {
+                Toast.makeText(
+                        buttonView.getContext(),
+                        I18n.get("gui.modernui.restart_to_work"),
+                        Toast.LENGTH_SHORT
+                ).show();
+            }
+        }
 
-        return option;
+        @Override
+        public void onCreateContextMenu(ContextMenu menu, View v,
+                                        ContextMenu.ContextMenuInfo menuInfo) {
+            if (button.isChecked() != defaultValue) {
+                menu.add(Menu.NONE, ID_RESET_TO_DEFAULT, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
+                        .setOnMenuItemClickListener(this);
+            }
+        }
+
+        @Override
+        public boolean onMenuItemClick(@NonNull MenuItem item) {
+            if (item.getItemId() == ID_RESET_TO_DEFAULT) {
+                button.setChecked(defaultValue);
+                return true;
+            }
+            return false;
+        }
     }
 
     private static LinearLayout createGuiScaleOption(Context context) {
@@ -1141,14 +1172,15 @@ public class PreferencesFragment extends Fragment {
         }
 
         public IntegerOption(Context context, String name,
-                             Config.ConfigItem<Integer> config,
+                             ConfigItem<Integer> config,
                              Consumer<Integer> setter,
                              @Nullable Runnable onChanged) {
             this(context, name, config, setter);
             var range = config.getRange();
-            assert range != null;
-            minValue = range.getMinimum();
-            maxValue = range.getMaximum();
+            if (range != null) {
+                minValue = range.getMinimum();
+                maxValue = range.getMaximum();
+            }
             hasDefaultValue = true;
             defaultValue = config.getDefault();
             this.onChanged = onChanged;
@@ -1156,7 +1188,7 @@ public class PreferencesFragment extends Fragment {
 
         public IntegerOption(Context context, String name,
                              int stepSize,
-                             Config.ConfigItem<Integer> config,
+                             ConfigItem<Integer> config,
                              Consumer<Integer> setter,
                              @Nullable Runnable onChanged) {
             this(context, name, config, setter, onChanged);
@@ -1165,7 +1197,7 @@ public class PreferencesFragment extends Fragment {
 
         public IntegerOption(Context context, String name,
                              int stepSize,
-                             Config.ConfigItem<Integer> config,
+                             ConfigItem<Integer> config,
                              @Nullable Runnable onChanged) {
             this(context, name, stepSize, config, config, onChanged);
         }
@@ -1324,10 +1356,11 @@ public class PreferencesFragment extends Fragment {
         return 1.0;
     }
 
+    @NonNull
     public static LinearLayout createColorOpacityOption(
             Context context, String name,
-            Config.ConfigItem<List<? extends String>> config,
-            Runnable saveFn) {
+            ConfigItem<List<? extends String>> config,
+            Runnable onChanged) {
         Supplier<Double> getter = () -> {
             List<? extends String> colors = config.get();
             return getFirstAlphaValue(colors);
@@ -1354,7 +1387,7 @@ public class PreferencesFragment extends Fragment {
         return new FloatOption(context, name, getter, setter)
                 .setRange(0.0, 1.0, 100)
                 .setDefaultValue(defaultValue)
-                .setOnChanged(saveFn)
+                .setOnChanged(onChanged)
                 .create(null, 4);
     }
 
@@ -1392,20 +1425,21 @@ public class PreferencesFragment extends Fragment {
         }
 
         public FloatOption(Context context, String name,
-                           Config.ConfigItem<Double> config,
+                           ConfigItem<Double> config,
                            Consumer<Double> setter,
                            @Nullable Runnable onChanged) {
             this(context, name, config, setter);
             var range = config.getRange();
-            assert range != null;
-            minValue = range.getMinimum();
-            maxValue = range.getMaximum();
+            if (range != null) {
+                minValue = range.getMinimum();
+                maxValue = range.getMaximum();
+            }
             defaultValue = config.getDefault();
             this.onChanged = onChanged;
         }
 
         public FloatOption(Context context, String name,
-                           Config.ConfigItem<Double> config,
+                           ConfigItem<Double> config,
                            Consumer<Double> setter,
                            double denominator,
                            @Nullable Runnable onChanged) {
@@ -1414,7 +1448,7 @@ public class PreferencesFragment extends Fragment {
         }
 
         public FloatOption(Context context, String name,
-                           Config.ConfigItem<Double> config,
+                           ConfigItem<Double> config,
                            double denominator,
                            @Nullable Runnable onChanged) {
             this(context, name, config, config, denominator, onChanged);
@@ -1577,9 +1611,161 @@ public class PreferencesFragment extends Fragment {
         }
     }
 
+    public static class DropDownOption<E> implements
+            AdapterView.OnItemSelectedListener,
+            View.OnCreateContextMenuListener,
+            MenuItem.OnMenuItemClickListener {
+
+        protected final LinearLayout layout;
+        protected final Spinner spinner;
+
+        protected final E[] values;
+        protected final ToIntFunction<E> toIndex;
+        protected final Supplier<E> getter;
+        protected final Consumer<E> setter;
+        @Nullable
+        protected Runnable onChanged;
+
+        protected E defaultValue;
+
+        public DropDownOption(Context context, String name,
+                              E[] values,
+                              ToIntFunction<E> toIndex,
+                              Supplier<E> getter,
+                              Consumer<E> setter) {
+            var option = new LinearLayout(context);
+            option.setOrientation(LinearLayout.HORIZONTAL);
+            option.setHorizontalGravity(Gravity.START);
+
+            final int dp6 = option.dp(6);
+            {
+                var title = new TextView(context);
+                title.setText(I18n.get(name));
+                title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+                title.setTextSize(14);
+
+                String tooltip = name + "_desc";
+                if (I18n.exists(tooltip)) {
+                    title.setTooltipText(I18n.get(tooltip));
+                }
+
+                var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
+                params.gravity = Gravity.CENTER_VERTICAL;
+                option.addView(title, params);
+            }
+            {
+                var spinner = new Spinner(context);
+                //spinner.setGravity(Gravity.END);
+                spinner.setAdapter(new ArrayAdapter<>(context, values));
+
+                var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+                params.gravity = Gravity.CENTER_VERTICAL;
+                option.addView(spinner, params);
+                this.spinner = spinner;
+            }
+
+            var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+            params.gravity = Gravity.CENTER;
+            params.setMargins(dp6, 0, dp6, 0);
+            option.setMinimumHeight(option.dp(44));
+            option.setLayoutParams(params);
+
+            this.layout = option;
+            this.values = values;
+            this.toIndex = toIndex;
+            this.getter = getter;
+            this.setter = setter;
+        }
+
+        public DropDownOption(Context context, String name,
+                              E[] values,
+                              ConfigItem<E> config,
+                              Consumer<E> setter,
+                              @Nullable Runnable onChanged) {
+            this(context, name, values, defaultToIndex(values), config, setter);
+            defaultValue = config.getDefault();
+            this.onChanged = onChanged;
+        }
+
+        public DropDownOption(Context context, String name,
+                              E[] values,
+                              ConfigItem<E> config,
+                              @Nullable Runnable onChanged) {
+            this(context, name, values, config, config, onChanged);
+        }
+
+        @NonNull
+        private static <E> ToIntFunction<E> defaultToIndex(E[] values) {
+            if (values.getClass().getComponentType().isEnum()) {
+                return v -> ((Enum<?>) v).ordinal();
+            } else {
+                return v -> {
+                    for (int i = 0; i < values.length; i++) {
+                        if (v.equals(values[i])) {
+                            return i;
+                        }
+                    }
+                    return AdapterView.INVALID_POSITION;
+                };
+            }
+        }
+
+        public DropDownOption<E> setDefaultValue(E defaultValue) {
+            this.defaultValue = defaultValue;
+            return this;
+        }
+
+        public DropDownOption<E> setOnChanged(Runnable onChanged) {
+            this.onChanged = onChanged;
+            return this;
+        }
+
+        @NonNull
+        public LinearLayout create(@Nullable ViewGroup parent) {
+            spinner.setSelection(toIndex.applyAsInt(getter.get()));
+            spinner.setOnItemSelectedListener(this);
+            if (defaultValue != null) {
+                layout.setOnCreateContextMenuListener(this);
+            }
+            if (parent != null) {
+                parent.addView(layout);
+            }
+            return layout;
+        }
+
+        @Override
+        public void onItemSelected(@NonNull AdapterView<?> parent, View view, int position, long id) {
+            E newValue = values[position];
+            if (getter.get() != newValue) {
+                setter.accept(newValue);
+                if (onChanged != null) {
+                    onChanged.run();
+                }
+            }
+        }
+
+        @Override
+        public void onCreateContextMenu(ContextMenu menu, View v,
+                                        ContextMenu.ContextMenuInfo menuInfo) {
+            if (!defaultValue.equals(spinner.getSelectedItem())) {
+                menu.add(Menu.NONE, ID_RESET_TO_DEFAULT, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
+                        .setOnMenuItemClickListener(this);
+            }
+        }
+
+        @Override
+        public boolean onMenuItemClick(@NonNull MenuItem item) {
+            if (item.getItemId() == ID_RESET_TO_DEFAULT) {
+                spinner.setSelection(toIndex.applyAsInt(defaultValue));
+                return true;
+            }
+            return false;
+        }
+    }
+
     public static LinearLayout createStringListOption(Context context,
                                                       String name,
-                                                      Config.ConfigItem<List<? extends String>> config,
+                                                      ConfigItem<List<? extends String>> config,
                                                       Runnable saveFn) {
         var option = new LinearLayout(context);
         option.setOrientation(LinearLayout.HORIZONTAL);
@@ -1646,7 +1832,7 @@ public class PreferencesFragment extends Fragment {
         text.replace(0, text.length(), newText);
     }
 
-    static void reloadDefaultTypeface(@NonNull Context context, @NonNull Runnable onFontChanged) {
+    static void reloadDefaultTypeface(@NonNull Context context, @Nullable Runnable onFontChanged) {
         var future = Minecraft.getInstance().submit(() -> {
             var oldTypeface = ModernUI.getSelectedTypeface();
             var client = ModernUIClient.getInstance();
@@ -1656,7 +1842,9 @@ public class PreferencesFragment extends Fragment {
         });
         future.whenCompleteAsync((oldTypeface, throwable) -> {
             if (throwable == null) {
-                onFontChanged.run();
+                if (onFontChanged != null) {
+                    onFontChanged.run();
+                }
                 refreshViewTypeface(
                         UIManager.getInstance().getDecorView(),
                         oldTypeface
@@ -1679,19 +1867,6 @@ public class PreferencesFragment extends Fragment {
                 if (tv.getTypeface() == oldTypeface) {
                     tv.setTypeface(ModernUI.getSelectedTypeface());
                 }
-            }
-        }
-    }
-
-    static void setViewAndChildrenEnabled(View view, boolean enabled) {
-        if (view != null) {
-            view.setEnabled(enabled);
-        }
-        if (view instanceof ViewGroup vg) {
-            int cc = vg.getChildCount();
-            for (int i = 0; i < cc; i++) {
-                View v = vg.getChildAt(i);
-                setViewAndChildrenEnabled(v, enabled);
             }
         }
     }
