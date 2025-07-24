@@ -47,11 +47,8 @@ import icyllis.modernui.mc.UIManager;
 import icyllis.modernui.resources.TypedValue;
 import icyllis.modernui.text.Editable;
 import icyllis.modernui.text.InputFilter;
-import icyllis.modernui.text.SpannableString;
-import icyllis.modernui.text.Spanned;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.text.method.DigitsInputFilter;
-import icyllis.modernui.text.style.ForegroundColorSpan;
 import icyllis.modernui.util.ColorStateList;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.util.StateSet;
@@ -286,9 +283,6 @@ public class PreferencesFragment extends Fragment {
             new FloatOption(context, "modernui.center.screen.masterVolumeInactive",
                     Config.CLIENT.mMasterVolumeInactive, 100, onChanged)
                     .create(list, 4);
-            new FloatOption(context, "modernui.center.screen.masterVolumeInactive",
-                    Config.CLIENT.mMasterVolumeInactive, 100, onChanged)
-                    .create(list, 4);
 
             new FloatOption(context, "modernui.center.screen.masterVolumeMinimized",
                     Config.CLIENT.mMasterVolumeMinimized, 100, onChanged)
@@ -391,61 +385,62 @@ public class PreferencesFragment extends Fragment {
         {
             var category = createCategoryList(content, null);
 
+            final LinearLayout firstLine = new LinearLayout(context);
+            firstLine.setOrientation(LinearLayout.HORIZONTAL);
+            var dp6 = firstLine.dp(6);
             {
-                var layout = new LinearLayout(context);
-                layout.setOrientation(LinearLayout.VERTICAL);
+                TextView title = new TextView(context);
+                title.setText(I18n.get("modernui.center.font.firstFont"));
+                title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+                title.setTextSize(14);
 
-                final int dp6 = layout.dp(6);
-                final LinearLayout firstLine = new LinearLayout(context);
-                firstLine.setOrientation(LinearLayout.HORIZONTAL);
-                {
-                    TextView title = new TextView(context);
-                    title.setText(I18n.get("modernui.center.font.firstFont"));
-                    title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-                    title.setTextSize(14);
-
-                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
-                    firstLine.addView(title, params);
-                }
-                Runnable onFontChanged;
-                {
-                    TextView value = new TextView(context);
-                    onFontChanged = () -> {
-                        FontFamily first = ModernUIClient.getInstance().getFirstFontFamily();
-                        if (first != null) {
-                            value.setText(first.getFamilyName(value.getTextLocale()));
-                        } else {
-                            value.setText("NONE");
-                        }
-                    };
-                    onFontChanged.run();
-                    value.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-                    value.setTextSize(14);
-
-                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
-                    firstLine.addView(value, params);
-                }
-
-                firstLine.setOnClickListener(
-                        new PreferredFontAccordion(
-                                layout,
-                                mOnClientConfigChanged,
-                                onFontChanged
-                        )
-                );
-                TypedValue value = new TypedValue();
-                context.getTheme().resolveAttribute(R.ns, R.attr.colorControlHighlight, value, true);
-                firstLine.setBackground(new RippleDrawable(ColorStateList.valueOf(value.data), null,
-                        new ColorDrawable(~0)));
-
-                layout.addView(firstLine);
-
-                var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-                params.gravity = Gravity.CENTER;
-                params.setMargins(dp6, layout.dp(3), dp6, layout.dp(3));
-
-                category.addView(layout, params);
+                var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
+                params.gravity = Gravity.CENTER_VERTICAL;
+                params.setMargins(dp6, 0, dp6, 0);
+                firstLine.addView(title, params);
             }
+            Runnable onFontChanged;
+            {
+                TextView value = new TextView(context);
+                onFontChanged = () -> {
+                    FontFamily first = ModernUIClient.getInstance().getFirstFontFamily();
+                    if (first != null) {
+                        value.setText(first.getFamilyName(value.getTextLocale()));
+                    } else {
+                        value.setText("NONE");
+                    }
+                };
+                onFontChanged.run();
+                value.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+                value.setTextSize(14);
+
+                var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+                params.gravity = Gravity.CENTER_VERTICAL;
+                params.setMargins(dp6, 0, dp6, 0);
+                firstLine.addView(value, params);
+            }
+
+            firstLine.setOnClickListener(
+                    new PreferredFontAccordion(
+                            category,
+                            mOnClientConfigChanged,
+                            onFontChanged
+                    )
+            );
+            TypedValue value = new TypedValue();
+            context.getTheme().resolveAttribute(R.ns, R.attr.colorControlHighlight, value, true);
+            firstLine.setBackground(new RippleDrawable(ColorStateList.valueOf(value.data), null,
+                    new ColorDrawable(~0)));
+
+            firstLine.setMinimumHeight(firstLine.dp(36));
+            var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+            category.addView(firstLine, params);
+
+            content.addView(category);
+        }
+
+        {
+            var category = createCategoryList(content, null);
 
             {
                 var option = createStringListOption(context, "modernui.center.font.fallbackFonts",
@@ -463,9 +458,9 @@ public class PreferencesFragment extends Fragment {
 
             new BooleanOption(context, "modernui.center.font.colorEmoji",
                     Config.CLIENT.mUseColorEmoji, () -> {
-                        mOnClientConfigChanged.run();
-                        reloadDefaultTypeface(context, null);
-                    })
+                mOnClientConfigChanged.run();
+                reloadDefaultTypeface(context, null);
+            })
                     .create(category);
 
             category.addView(createStringListOption(context, "modernui.center.font.fontRegistrationList",
@@ -835,7 +830,6 @@ public class PreferencesFragment extends Fragment {
         layout.setOrientation(LinearLayout.HORIZONTAL);
         layout.setHorizontalGravity(Gravity.START);
 
-        final int dp3 = layout.dp(3);
         final int dp6 = layout.dp(6);
         {
             var title = new TextView(context);
@@ -854,7 +848,6 @@ public class PreferencesFragment extends Fragment {
 
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER_VERTICAL;
-            params.setMargins(0, dp3, 0, dp3);
             layout.addView(button, params);
         }
 
@@ -984,7 +977,6 @@ public class PreferencesFragment extends Fragment {
         layout.setOrientation(LinearLayout.HORIZONTAL);
         layout.setHorizontalGravity(Gravity.START);
 
-        final int dp3 = layout.dp(3);
         final int dp6 = layout.dp(6);
         {
             var title = new TextView(context);
@@ -997,40 +989,32 @@ public class PreferencesFragment extends Fragment {
             layout.addView(title, params);
         }
 
-        var slider = new SeekBar(context);
-        {
-            slider.setClickable(true);
-            var params = new LinearLayout.LayoutParams(slider.dp(200), WRAP_CONTENT);
-            params.gravity = Gravity.CENTER_VERTICAL;
-            layout.addView(slider, params);
-        }
-
         var tv = new TextView(context);
         {
-            tv.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-            tv.setTextSize(14);
-            tv.setPadding(dp3, 0, dp3, 0);
+            tv.setTextAppearance(R.attr.textAppearanceLabelMedium);
+            var value = new TypedValue();
+            context.getTheme().resolveAttribute(R.ns, R.attr.colorError, value, true);
+            tv.setTextColor(value.data);
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER_VERTICAL;
+            params.setMargins(dp6, 0, dp6, 0);
             layout.addView(tv, params);
         }
 
-        int curValue = Minecraft.getInstance().options.guiScale().get();
-        tv.setText(guiScaleToString(curValue));
-        tv.setMinWidth(slider.dp(50));
+        {
+            var spinner = new Spinner(context);
 
-        slider.setMax(MuiModApi.MAX_GUI_SCALE);
-        slider.setProgress(curValue);
-        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                int newValue = seekBar.getProgress();
-                tv.setText(guiScaleToString(newValue));
+            List<GuiScaleItem> values = new ArrayList<>(MuiModApi.MAX_GUI_SCALE);
+            for (int i = 0; i <= MuiModApi.MAX_GUI_SCALE; i++) {
+                if (i == 1) continue;
+                values.add(new GuiScaleItem(i));
             }
 
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {
-                int newValue = seekBar.getProgress();
+            spinner.setAdapter(new ArrayAdapter<>(context, values));
+            int curValue = Minecraft.getInstance().options.guiScale().get();
+            spinner.setSelection(curValue == 0 ? 0 : curValue - 1);
+            spinner.setOnItemSelectedListener((parent, view, position, id) -> {
+                int newValue = position == 0 ? 0 : position + 1;
                 Core.executeOnMainThread(() -> {
                     Minecraft minecraft = Minecraft.getInstance();
                     minecraft.options.guiScale().set(newValue);
@@ -1042,43 +1026,47 @@ public class PreferencesFragment extends Fragment {
                     minecraft.options.save();
                 });
                 tv.setText(guiScaleToString(newValue));
-            }
-        });
+            });
+            tv.setText(guiScaleToString(curValue));
+
+            var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+            params.gravity = Gravity.CENTER_VERTICAL;
+            layout.addView(spinner, params);
+        }
 
         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
         params.gravity = Gravity.CENTER;
         params.setMargins(dp6, 0, dp6, 0);
+        layout.setMinimumHeight(layout.dp(44));
         layout.setLayoutParams(params);
 
         return layout;
     }
 
+    private record GuiScaleItem(int scale) {
+        @Override
+        public String toString() {
+            if (scale == 0) {
+                int r = MuiModApi.calcGuiScales();
+                int auto = r >> 4 & 0xf;
+                return I18n.get("options.guiScale.auto") + " (" + auto + "x)";
+            }
+            return (scale * 50) + "% (" + scale + "x)";
+        }
+    }
+
     private static CharSequence guiScaleToString(int value) {
-        int r = MuiModApi.calcGuiScales();
-        if (value == 0) { // auto
-            int auto = r >> 4 & 0xf;
-            return "A (" + auto + ")";
-        } else {
-            String valueString = Integer.toString(value);
+        if (value != 0) {
+            int r = MuiModApi.calcGuiScales();
             int min = r >> 8 & 0xf;
             int max = r & 0xf;
             if (value < min || value > max) {
-                final String hint;
-                if (value < min) {
-                    hint = (" (" + min + ")");
-                } else {
-                    hint = (" (" + max + ")");
-                }
-                var spannableString = new SpannableString(valueString + hint);
-                spannableString.setSpan(
-                        new ForegroundColorSpan(0xFFFF5555),
-                        0, spannableString.length(),
-                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                );
-                return spannableString;
+                int scale = (value < min ? min : max);
+                //TODO i18n
+                return "Current: " + (scale * 50) + "% (" + scale + "x)";
             }
-            return valueString;
         }
+        return "";
     }
 
     @NonNull

@@ -122,13 +122,12 @@ public class TooltipBorderAccordion implements View.OnClickListener {
         {
             var buttonGroup = new LinearLayout(mParent.getContext());
             buttonGroup.setOrientation(LinearLayout.HORIZONTAL);
+            View.OnClickListener buttonOnClick = (btn) -> mColorPicker.setColors(PRESET_COLORS[btn.getId() - 1]);
             for (int i = 0; i < 4; i++) {
                 var button = new Button(mParent.getContext(), null, R.attr.buttonOutlinedStyle);
+                button.setId((i + 1));
                 button.setText(I18n.get("gui.modernui.preset_s", (i + 1)));
-                final int idx = i;
-                button.setOnClickListener((__) -> mColorPicker.setColors(
-                        PRESET_COLORS[idx])
-                );
+                button.setOnClickListener(buttonOnClick);
                 var p = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, 1);
                 p.setMargins(dp4, 0, dp4, 0);
                 buttonGroup.addView(button, p);
