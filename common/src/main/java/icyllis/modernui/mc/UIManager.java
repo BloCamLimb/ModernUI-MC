@@ -40,8 +40,6 @@ import icyllis.modernui.graphics.pipeline.ArcCanvas;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.lifecycle.*;
 import icyllis.modernui.mc.text.GlyphManager;
-import icyllis.modernui.mc.text.ModernStringSplitter;
-import icyllis.modernui.mc.text.TextLayout;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.resources.TypedValue;
 import icyllis.modernui.text.*;
@@ -53,7 +51,6 @@ import icyllis.modernui.widget.EditText;
 import net.minecraft.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
-import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -64,9 +61,8 @@ import net.minecraft.client.renderer.CoreShaders;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.FormattedText;
-import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
@@ -101,6 +97,8 @@ public abstract class UIManager implements LifecycleOwner {
 
     // configs
     public static volatile boolean sDingEnabled;
+    public static volatile String sDingSound;
+    public static volatile float sDingVolume = 0.25f;
     public static volatile boolean sZoomEnabled;
 
     // the global instance, lazily init
@@ -654,9 +652,26 @@ public abstract class UIManager implements LifecycleOwner {
     public void onGameLoadFinished() {
         if (sDingEnabled) {
             glfwRequestWindowAttention(minecraft.getWindow().getWindow());
-            minecraft.getSoundManager().play(
-                    SimpleSoundInstance.forUI(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0f)
-            );
+            final String sound = sDingSound;
+            final float volume = sDingVolume;
+            if (volume > 0) {
+                ResourceLocation soundEvent = null;
+                if (sound != null && !sound.isEmpty()) {
+                    soundEvent = ResourceLocation.tryParse(sound);
+                    if (soundEvent == null) {
+                        LOGGER.warn(MARKER, "The specified ding sound \"{}\" has wrong format", sound);
+                    } else if (minecraft.getSoundManager().getSoundEvent(soundEvent) == null) {
+                        LOGGER.warn(MARKER, "The specified ding sound \"{}\" is not available", sound);
+                        soundEvent = null;
+                    }
+                }
+                final SoundEvent finalSoundEvent = soundEvent != null
+                        ? SoundEvent.createVariableRangeEvent(soundEvent)
+                        : SoundEvents.EXPERIENCE_ORB_PICKUP;
+                minecraft.getSoundManager().play(
+                        SimpleSoundInstance.forUI(finalSoundEvent, 1.0f, volume)
+                );
+            }
         }
         if (ModernUIMod.isOptiFineLoaded() &&
                 ModernUIMod.isTextEngineEnabled()) {

@@ -245,6 +245,8 @@ public final class ConfigImpl {
         //public final ModConfigSpec.BooleanValue mTooltipLineWrapping;
         //public final ModConfigSpec.IntValue mTooltipDuration;
         public final ModConfigSpec.BooleanValue mDing;
+        public final ModConfigSpec.ConfigValue<String> mDingSound;
+        public final ModConfigSpec.DoubleValue mDingVolume;
         public final ModConfigSpec.BooleanValue mZoom;
         //private final ModConfigSpec.BooleanValue hudBars;
         public final ModConfigSpec.BooleanValue mForceRtl;
@@ -433,6 +435,12 @@ public final class ConfigImpl {
 
             mDing = builder.comment("Play a sound effect when the game is loaded.")
                     .define("ding", true);
+            mDingSound = builder.comment(
+                            "Specify a sound event to custom the ding sound effect.",
+                            "The default is \"minecraft:entity.experience_orb.pickup\"")
+                    .define("dingSound", "");
+            mDingVolume = builder.comment("Specify a volume multiplier to the ding sound effect.")
+                    .defineInRange("dingVolume", 0.25, 0, 10);
             mZoom = builder.comment(
                             "Press 'C' key (by default) to zoom 4x, the same as OptiFine's.",
                             "This is auto disabled when OptiFine is installed.")

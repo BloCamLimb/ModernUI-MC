@@ -107,6 +107,8 @@ public final class Config {
         public final ConfigItem<Integer> mTooltipArrowScrollFactor;
         public final ConfigItem<Boolean> mTooltipLineWrapping;
         public final ConfigItem<Boolean> mDing;
+        public final ConfigItem<String> mDingSound;
+        public final ConfigItem<Double> mDingVolume;
         public final ConfigItem<Boolean> mZoom;
         public final ConfigItem<Boolean> mForceRtl;
         public final ConfigItem<Double> mFontScale;
@@ -161,6 +163,8 @@ public final class Config {
             mTooltipArrowScrollFactor = get(map, "mTooltipArrowScrollFactor");
             mTooltipLineWrapping = get(map, "mTooltipLineWrapping");
             mDing = get(map, "mDing");
+            mDingSound = get(map, "mDingSound");
+            mDingVolume = get(map, "mDingVolume");
             mZoom = get(map, "mZoom");
             mForceRtl = get(map, "mForceRtl");
             mFontScale = get(map, "mFontScale");
@@ -277,6 +281,8 @@ public final class Config {
             }
 
             UIManager.sDingEnabled = mDing.get();
+            UIManager.sDingSound = mDingSound.get();
+            UIManager.sDingVolume = mDingVolume.get().floatValue();
             if (mZoom != null) {
                 UIManager.sZoomEnabled = mZoom.get() && !ModernUIMod.isOptiFineLoaded();
             }
