@@ -90,6 +90,7 @@ public class PreferredFontAccordion implements View.OnClickListener,
             input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
             input.setMinimumWidth(input.dp(100));
             input.setOnFocusChangeListener(this);
+            input.setSingleLine();
 
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER_VERTICAL;
@@ -124,7 +125,7 @@ public class PreferredFontAccordion implements View.OnClickListener,
         {
             var layout = createRowLayout(context, "modernui.center.font.openFontFile");
             var openFile = new Button(context, null, R.attr.buttonOutlinedStyle);
-            openFile.setText("Browse Files");
+            openFile.setText(I18n.get("gui.modernui.browseFiles"));
             openFile.setTextSize(14);
             openFile.setOnClickListener(v1 -> CompletableFuture.runAsync(() -> {
                 String path;

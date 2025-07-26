@@ -227,13 +227,13 @@ public class PreferencesFragment extends Fragment {
 
         @Override
         public CharSequence getPageTitle(int position) {
-            return switch (position) {
-                case 0 -> I18n.get("modernui.center.category.screen");
-                case 1 -> "View";
-                case 2 -> I18n.get("modernui.center.category.font");
-                case 3 -> I18n.get("modernui.center.category.extension");
-                default -> "Text (MC)";
-            };
+            return I18n.get(switch (position) {
+                case 0 -> "modernui.center.category.screen";
+                case 1 -> "modernui.center.category.view";
+                case 2 -> "modernui.center.category.font";
+                case 3 -> "modernui.center.category.extension";
+                default -> "modernui.center.category.text";
+            });
         }
     }
 
@@ -307,43 +307,43 @@ public class PreferencesFragment extends Fragment {
         {
             var list = createCategoryList(content, null);
 
-            new IntegerOption(context, "Scrollbar Size",
+            new IntegerOption(context, "modernui.center.view.scrollbarSize",
                     1, Config.CLIENT.mScrollbarSize, onChanged)
                     .create(list, 4);
-            new IntegerOption(context, "Touch Slop",
+            new IntegerOption(context, "modernui.center.view.touchSlop",
                      1, Config.CLIENT.mTouchSlop, onChanged)
                     .create(list, 4);
-            new IntegerOption(context, "Hover Slop",
+            new IntegerOption(context, "modernui.center.view.hoverSlop",
                      1, Config.CLIENT.mHoverSlop, onChanged)
                     .create(list, 4);
-            new IntegerOption(context, "Minimum Scrollbar Touch Target",
+            new IntegerOption(context, "modernui.center.view.minScrollbarTouchTarget",
                      1, Config.CLIENT.mMinScrollbarTouchTarget, onChanged)
                     .create(list, 4);
-            new IntegerOption(context, "Minimum Fling Velocity",
+            new IntegerOption(context, "modernui.center.view.minimumFlingVelocity",
                      1, Config.CLIENT.mMinimumFlingVelocity, onChanged)
                     .create(list, 4);
-            new IntegerOption(context, "Maximum Fling Velocity",
+            new IntegerOption(context, "modernui.center.view.maximumFlingVelocity",
                      1, Config.CLIENT.mMaximumFlingVelocity, onChanged)
                     .create(list, 4);
-            new FloatOption(context, "Scroll Friction",
+            new FloatOption(context, "modernui.center.view.scrollFriction",
                     Config.CLIENT.mScrollFriction, 1000, onChanged)
                     .create(list, 6);
-            new IntegerOption(context, "Overscroll Distance",
+            new IntegerOption(context, "modernui.center.view.overscrollDistance",
                      1, Config.CLIENT.mOverscrollDistance, onChanged)
                     .create(list, 4);
-            new IntegerOption(context, "Overfling Distance",
+            new IntegerOption(context, "modernui.center.view.overflingDistance",
                      1, Config.CLIENT.mOverflingDistance, onChanged)
                     .create(list, 4);
-            new FloatOption(context, "Horizontal Scroll Factor",
+            new FloatOption(context, "modernui.center.view.horizontalScrollFactor",
                     Config.CLIENT.mHorizontalScrollFactor, 10, onChanged)
                     .create(list, 6);
-            new FloatOption(context, "Vertical Scroll Factor",
+            new FloatOption(context, "modernui.center.view.verticalScrollFactor",
                     Config.CLIENT.mVerticalScrollFactor, 10, onChanged)
                     .create(list, 6);
-            new IntegerOption(context, "Hover Tooltip Show Timeout",
+            new IntegerOption(context, "modernui.center.view.hoverTooltipShowTimeout",
                      1, Config.CLIENT.mHoverTooltipShowTimeout, onChanged)
                     .create(list, 4);
-            new IntegerOption(context, "Hover Tooltip Hide Timeout",
+            new IntegerOption(context, "modernui.center.view.hoverTooltipHideTimeout",
                      1, Config.CLIENT.mHoverTooltipHideTimeout, onChanged)
                     .create(list, 6);
 
@@ -381,6 +381,9 @@ public class PreferencesFragment extends Fragment {
     public LinearLayout createPage3(Context context) {
         var content = new LinearLayout(context);
         content.setOrientation(LinearLayout.VERTICAL);
+        var transition = new LayoutTransition();
+        transition.enableTransitionType(LayoutTransition.CHANGING);
+        content.setLayoutTransition(transition);
 
         {
             var category = createCategoryList(content, null);
@@ -856,13 +859,21 @@ public class PreferencesFragment extends Fragment {
         params.setMargins(dp6, 0, dp6, 0);
         layout.setLayoutParams(params);
 
-        String tooltip = name + "_desc";
+        String tooltip = name + ".tooltip";
         if (I18n.exists(tooltip)) {
             layout.setTooltipText(I18n.get(tooltip));
         }
         layout.setMinimumHeight(layout.dp(44));
 
         return layout;
+    }
+
+    public static final int ID_RESET_TO_DEFAULT = 0x7f000002;
+
+    @NonNull
+    public static MenuItem addResetToDefaultMenuItem(@NonNull Menu menu) {
+        return menu.add(Menu.NONE, ID_RESET_TO_DEFAULT, Menu.CATEGORY_ALTERNATIVE | 0,
+                I18n.get("gui.modernui.resetToDefault"));
     }
 
     public static class BooleanOption implements
@@ -957,7 +968,7 @@ public class PreferencesFragment extends Fragment {
         public void onCreateContextMenu(ContextMenu menu, View v,
                                         ContextMenu.ContextMenuInfo menuInfo) {
             if (button.isChecked() != defaultValue) {
-                menu.add(Menu.NONE, ID_RESET_TO_DEFAULT, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
+                addResetToDefaultMenuItem(menu)
                         .setOnMenuItemClickListener(this);
             }
         }
@@ -980,7 +991,7 @@ public class PreferencesFragment extends Fragment {
         final int dp6 = layout.dp(6);
         {
             var title = new TextView(context);
-            title.setText(I18n.get("options.guiScale"));
+            title.setText(ThemeControl.stripFormattingCodes(I18n.get("options.guiScale")));
             title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
             title.setTextSize(14);
 
@@ -1025,9 +1036,9 @@ public class PreferencesFragment extends Fragment {
                     }
                     minecraft.options.save();
                 });
-                tv.setText(guiScaleToString(newValue));
+                tv.setText(guiScaleToHintText(newValue));
             });
-            tv.setText(guiScaleToString(curValue));
+            tv.setText(guiScaleToHintText(curValue));
 
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER_VERTICAL;
@@ -1051,22 +1062,25 @@ public class PreferencesFragment extends Fragment {
                 int auto = r >> 4 & 0xf;
                 return I18n.get("options.guiScale.auto") + " (" + auto + "x)";
             }
-            return (scale * 50) + "% (" + scale + "x)";
+            return guiScaleToString(scale);
         }
     }
 
-    private static CharSequence guiScaleToString(int value) {
+    private static CharSequence guiScaleToHintText(int value) {
         if (value != 0) {
             int r = MuiModApi.calcGuiScales();
             int min = r >> 8 & 0xf;
             int max = r & 0xf;
             if (value < min || value > max) {
                 int scale = (value < min ? min : max);
-                //TODO i18n
-                return "Current: " + (scale * 50) + "% (" + scale + "x)";
+                return I18n.get("gui.modernui.current_s", guiScaleToString(scale));
             }
         }
         return "";
+    }
+
+    private static String guiScaleToString(int scale) {
+        return (scale * 50) + "% (" + scale + "x)";
     }
 
     @NonNull
@@ -1101,7 +1115,7 @@ public class PreferencesFragment extends Fragment {
         params.setMargins(dp6, 0, dp6, 0);
         layout.setLayoutParams(params);
 
-        String tooltip = name + "_desc";
+        String tooltip = name + ".tooltip";
         if (I18n.exists(tooltip)) {
             layout.setTooltipText(I18n.get(tooltip));
         }
@@ -1124,8 +1138,6 @@ public class PreferencesFragment extends Fragment {
         layout.addView(slider, 1, params);
         return slider;
     }
-
-    public static final int ID_RESET_TO_DEFAULT = 0x7f000002;
 
     public static class IntegerOption implements
             View.OnFocusChangeListener,
@@ -1310,7 +1322,7 @@ public class PreferencesFragment extends Fragment {
                 }
             }
             if (canReset) {
-                menu.add(Menu.NONE, ID_RESET_TO_DEFAULT, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
+                addResetToDefaultMenuItem(menu)
                         .setOnMenuItemClickListener(this);
             }
         }
@@ -1570,7 +1582,7 @@ public class PreferencesFragment extends Fragment {
                 }
             }
             if (canReset) {
-                menu.add(Menu.NONE, ID_RESET_TO_DEFAULT, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
+                addResetToDefaultMenuItem(menu)
                         .setOnMenuItemClickListener(this);
             }
         }
@@ -1632,7 +1644,7 @@ public class PreferencesFragment extends Fragment {
                 title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
                 title.setTextSize(14);
 
-                String tooltip = name + "_desc";
+                String tooltip = name + ".tooltip";
                 if (I18n.exists(tooltip)) {
                     title.setTooltipText(I18n.get(tooltip));
                 }
@@ -1736,7 +1748,7 @@ public class PreferencesFragment extends Fragment {
         public void onCreateContextMenu(ContextMenu menu, View v,
                                         ContextMenu.ContextMenuInfo menuInfo) {
             if (!defaultValue.equals(spinner.getSelectedItem())) {
-                menu.add(Menu.NONE, ID_RESET_TO_DEFAULT, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
+                addResetToDefaultMenuItem(menu)
                         .setOnMenuItemClickListener(this);
             }
         }
@@ -1767,7 +1779,7 @@ public class PreferencesFragment extends Fragment {
             title.setTextSize(14);
             title.setMinWidth(option.dp(60));
 
-            String tooltip = name + "_desc";
+            String tooltip = name + ".tooltip";
             if (I18n.exists(tooltip)) {
                 title.setTooltipText(I18n.get(tooltip));
             }

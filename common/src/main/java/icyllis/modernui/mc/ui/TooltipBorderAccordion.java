@@ -31,10 +31,10 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 public class TooltipBorderAccordion implements View.OnClickListener {
 
     public static final String[][] PRESET_COLORS = {
-            {"#F0AADCF0", "#F0FFC3F7", "#F0BFF2B2", "#F0D27F3D"},
-            {"#F0AADCF0", "#F0DAD0F4", "#F0FFC3F7", "#F0DAD0F4"},
-            {"#F028007F", "#F028007F", "#F014003F", "#F014003F"},
-            {"#F0E0E0E0", "#F0B0B0B0", "#F0FFFFFF", "#F0B0B0B0"}
+            {"#FFAADCF0", "#FFFFC3F7", "#FFBFF2B2", "#FFD27F3D"},
+            {"#FFAADCF0", "#FFDAD0F4", "#FFFFC3F7", "#FFDAD0F4"},
+            {"#FF28007F", "#FF28007F", "#FF14003F", "#FF14003F"},
+            {"#FFE0E0E0", "#FFB0B0B0", "#FFFFFFFF", "#FFB0B0B0"}
     };
 
     final ViewGroup mParent;

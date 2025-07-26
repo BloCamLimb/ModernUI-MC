@@ -31,7 +31,6 @@ import icyllis.modernui.resources.TypedValue;
 import icyllis.modernui.text.InputFilter;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.ContextMenu;
-import icyllis.modernui.view.Menu;
 import icyllis.modernui.widget.EditText;
 import icyllis.modernui.widget.RelativeLayout;
 
@@ -253,7 +252,7 @@ public class FourColorPicker extends RelativeLayout {
     @Override
     protected void onCreateContextMenu(@NonNull ContextMenu menu) {
         super.onCreateContextMenu(menu);
-        menu.add(Menu.NONE, PreferencesFragment.ID_RESET_TO_DEFAULT, Menu.CATEGORY_ALTERNATIVE | 0, "Reset to Default")
+        PreferencesFragment.addResetToDefaultMenuItem(menu)
                 .setOnMenuItemClickListener(item -> {
                     if (item.getItemId() == PreferencesFragment.ID_RESET_TO_DEFAULT) {
                         setColors(mConfig.getDefault());
