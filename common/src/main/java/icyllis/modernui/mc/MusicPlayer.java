@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc;
 
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.audio.*;
 import icyllis.modernui.core.Core;
@@ -88,7 +87,7 @@ public class MusicPlayer {
                 VorbisPullDecoder decoder = new VorbisPullDecoder(nativeEncodedData);
                 return new Track(decoder);
             } catch (IOException e) {
-                ModernUI.LOGGER.error("Failed to open Ogg Vorbis, {}", path, e);
+                ModernUIMod.LOGGER.error("Failed to open Ogg Vorbis, {}", path, e);
                 return null;
             }
         }).whenCompleteAsync((track, ex) -> {

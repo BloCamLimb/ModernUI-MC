@@ -48,7 +48,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.*;
 
-import static icyllis.modernui.ModernUI.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 
 /**
  * Manages all glyphs, font atlases, measures glyph metrics and draw them of

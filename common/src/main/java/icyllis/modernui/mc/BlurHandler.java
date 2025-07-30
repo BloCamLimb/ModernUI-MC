@@ -19,7 +19,6 @@
 package icyllis.modernui.mc;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.animation.ColorEvaluator;
 import icyllis.modernui.mc.mixin.AccessGameRenderer;
 import icyllis.modernui.mc.mixin.AccessGuiGraphics;
@@ -30,6 +29,8 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
@@ -43,6 +44,7 @@ import java.util.*;
 public enum BlurHandler {
     INSTANCE;
 
+    private static final Marker MARKER = MarkerManager.getMarker("Blur");
     private static final ResourceLocation GAUSSIAN_BLUR =
             ModernUIMod.location("gaussian_blur");
 
@@ -155,10 +157,10 @@ public enum BlurHandler {
                     Class<?> clazz = Class.forName(s, false, ModernUIMod.class.getClassLoader());
                     blacklist.add((Class<? extends Screen>) clazz);
                 } catch (ClassNotFoundException e) {
-                    ModernUI.LOGGER.warn(ModernUI.MARKER,
+                    ModernUIMod.LOGGER.warn(MARKER,
                             "Failed to add blur blacklist {}: make sure class name exists", s, e);
                 } catch (ClassCastException e) {
-                    ModernUI.LOGGER.warn(ModernUI.MARKER,
+                    ModernUIMod.LOGGER.warn(MARKER,
                             "Failed to add blur blacklist {}: make sure class is a valid subclass of Screen", s, e);
                 }
             }

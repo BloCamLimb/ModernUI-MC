@@ -23,6 +23,7 @@ import com.ibm.icu.text.BidiRun;
 import com.ibm.icu.text.BreakIterator;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.text.*;
+import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.text.mixin.MixinBidiReorder;
 import icyllis.modernui.mc.text.mixin.MixinClientLanguage;
 import icyllis.modernui.mc.text.mixin.MixinLanguage;
@@ -385,11 +386,11 @@ public class TextLayoutProcessor {
             if (mComputeLineBoundaries &&
                     !mBuilder.isEmpty() &&
                     mBuilder.length() != mLineBoundaries.getInt(mLineBoundaries.size() - 1)) {
-                ModernUI.LOGGER.error("Last char cannot break line?");
+                ModernUIMod.LOGGER.error(TextLayoutEngine.MARKER, "Last char cannot break line?");
             }
             if (mComputeAdvances &&
                     Math.abs(mAdvances.doubleStream().sum() - mTotalAdvance) > 1) {
-                ModernUI.LOGGER.error("Advance error is too large?");
+                ModernUIMod.LOGGER.error(TextLayoutEngine.MARKER, "Advance error is too large?");
             }
         }
         mBuilder.clear();
@@ -416,7 +417,7 @@ public class TextLayoutProcessor {
         StringDecomposer.iterateFormatted(text, style, mSequenceBuilder);
         TextLayout layout = createNewLayout(resLevel, computeFlags);
         if (DEBUG) {
-            ModernUI.LOGGER.info("Performed Vanilla Layout: {}, {}, {}",
+            ModernUIMod.LOGGER.info(TextLayoutEngine.MARKER, "Performed Vanilla Layout: {}, {}, {}",
                     mBuilder.toString(), text, layout.toDetailedString());
         }
         reset();
@@ -429,7 +430,7 @@ public class TextLayoutProcessor {
         text.visit(mContentBuilder, style);
         TextLayout layout = createNewLayout(resLevel, computeFlags);
         if (DEBUG) {
-            ModernUI.LOGGER.info("Performed Text Layout: {}, {}, {}",
+            ModernUIMod.LOGGER.info(TextLayoutEngine.MARKER, "Performed Text Layout: {}, {}, {}",
                     mBuilder.toString(), text, layout.toDetailedString());
         }
         reset();
@@ -442,7 +443,7 @@ public class TextLayoutProcessor {
         sequence.accept(mSequenceBuilder);
         TextLayout layout = createNewLayout(resLevel, computeFlags);
         if (DEBUG) {
-            ModernUI.LOGGER.info("Performed Sequence Layout: {}, {}, {}",
+            ModernUIMod.LOGGER.info(TextLayoutEngine.MARKER, "Performed Sequence Layout: {}, {}, {}",
                     mBuilder.toString(), sequence, layout.toDetailedString());
         }
         reset();
@@ -622,7 +623,7 @@ public class TextLayoutProcessor {
                 && !Bidi.requiresBidi(text, 0, text.length)) {
             /* If text is entirely left-to-right, then insert a node for the entire string */
             if (DEBUG) {
-                ModernUI.LOGGER.info("All LTR");
+                ModernUIMod.LOGGER.info(TextLayoutEngine.MARKER, "All LTR");
             }
             handleBidiRun(text, 0, text.length, false);
         } else {
@@ -645,14 +646,14 @@ public class TextLayoutProcessor {
             /* If text is entirely right-to-left, then insert a node for the entire string */
             if (bidi.isRightToLeft()) {
                 if (DEBUG) {
-                    ModernUI.LOGGER.info("All RTL (analysis)");
+                    ModernUIMod.LOGGER.info(TextLayoutEngine.MARKER, "All RTL (analysis)");
                 }
                 handleBidiRun(text, 0, text.length, true);
             }
             /* If text is entirely left-to-right, then insert a node for the entire string */
             else if (bidi.isLeftToRight()) {
                 if (DEBUG) {
-                    ModernUI.LOGGER.info("All LTR (analysis)");
+                    ModernUIMod.LOGGER.info(TextLayoutEngine.MARKER, "All LTR (analysis)");
                 }
                 handleBidiRun(text, 0, text.length, false);
             }
@@ -680,7 +681,7 @@ public class TextLayoutProcessor {
                     /* An odd numbered level indicates right-to-left ordering */
                     BidiRun run = bidi.getVisualRun(visualIndex);
                     if (DEBUG) {
-                        ModernUI.LOGGER.info("VisualRun {}, {}", visualIndex, run);
+                        ModernUIMod.LOGGER.info(TextLayoutEngine.MARKER, "VisualRun {}, {}", visualIndex, run);
                     }
                     handleBidiRun(text, run.getStart(), run.getLimit(), run.isOddRun());
                 }

@@ -57,6 +57,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.IntStream;
 
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.MARKER;
+
 @Environment(EnvType.CLIENT)
 public class ModernUIFabricClient extends ModernUIClient implements ClientModInitializer {
 

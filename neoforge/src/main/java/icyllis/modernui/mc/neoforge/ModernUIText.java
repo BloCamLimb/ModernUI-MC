@@ -29,7 +29,7 @@ import net.neoforged.neoforge.common.NeoForge;
 
 import javax.annotation.Nonnull;
 
-import static icyllis.modernui.ModernUI.*;
+import static icyllis.modernui.mc.ModernUIMod.*;
 
 /**
  * Modern UI Text for Minecraft can bootstrap independently.

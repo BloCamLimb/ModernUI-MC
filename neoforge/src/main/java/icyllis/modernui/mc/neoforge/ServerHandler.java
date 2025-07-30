@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc.neoforge;
 
-import icyllis.modernui.ModernUI;
+import icyllis.modernui.mc.ModernUIMod;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
@@ -78,17 +78,17 @@ public final class ServerHandler {
                         }
                         target = Math.min(t, target);
                     } else {
-                        ModernUI.LOGGER.warn(ModernUI.MARKER, "Wrong time format while setting auto-shutdown time, " +
+                        ModernUIMod.LOGGER.warn("Wrong time format while setting auto-shutdown time, " +
                                 "input: {}", s);
                     }
                 } catch (NumberFormatException | IndexOutOfBoundsException e) {
-                    ModernUI.LOGGER.error(ModernUI.MARKER, "Wrong time format while setting auto-shutdown time, " +
+                    ModernUIMod.LOGGER.error("Wrong time format while setting auto-shutdown time, " +
                             "input: {}", s, e);
                 }
             }
             if (target < Integer.MAX_VALUE && target > current) {
                 mShutdownTime = Util.getMillis() + (target - current) * 1000L;
-                ModernUI.LOGGER.debug(ModernUI.MARKER, "Server will shutdown at {}",
+                ModernUIMod.LOGGER.debug("Server will shutdown at {}",
                         SimpleDateFormat.getDateTimeInstance().format(new Date(mShutdownTime)));
                 mNextShutdownNotify = mShutdownNotifyTimes[mShutdownNotifyTimes.length - 1];
             } else {
@@ -132,7 +132,7 @@ public final class ServerHandler {
                 key = "message.modernui.server_shutdown_sec";
                 str = "Server will shutdown in %d seconds";
             }
-            ModernUI.LOGGER.info(ModernUI.MARKER, String.format(str, l));
+            ModernUIMod.LOGGER.info(String.format(str, l));
             final Component component = Component.translatable(key, l).withStyle(ChatFormatting.LIGHT_PURPLE);
             ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers().forEach(p -> p.displayClientMessage(component, true));
         }

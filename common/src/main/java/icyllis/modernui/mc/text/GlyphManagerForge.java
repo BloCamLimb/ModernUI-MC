@@ -19,7 +19,7 @@
 package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import icyllis.modernui.ModernUI;
+import icyllis.modernui.mc.ModernUIMod;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -286,7 +286,7 @@ public class GlyphManagerForge {
         allocateGlyphTexture();
         loadPreferredFonts();
         setRenderingHints();
-        ModernUI.LOGGER.debug(MARKER, "Font engine reloaded");
+        ModernUIMod.LOGGER.debug(MARKER, "Font engine reloaded");
     }
 
     private void loadPreferredFonts() {
@@ -300,9 +300,9 @@ public class GlyphManagerForge {
                         Font f = Font.createFont(Font.TRUETYPE_FONT, new File(
                                 cfgFont.replaceAll("\\\\", "/")));
                         mSelectedFonts.add(f);
-                        ModernUI.LOGGER.debug(MARKER, "Preferred font {} was loaded", f.getFamily(Locale.ROOT));
+                        ModernUIMod.LOGGER.debug(MARKER, "Preferred font {} was loaded", f.getFamily(Locale.ROOT));
                     } catch (Exception e) {
-                        ModernUI.LOGGER.warn(MARKER, "Preferred font {} failed to load", cfgFont, e);
+                        ModernUIMod.LOGGER.warn(MARKER, "Preferred font {} failed to load", cfgFont, e);
                     }
                     /*} else {
                         ModernUI.LOGGER.warn(MARKER, "Cannot load external font {} since Java is too old", cfgFont);
@@ -315,7 +315,7 @@ public class GlyphManagerForge {
                         cfgFont);
                     }*/
                 } else {
-                    ModernUI.LOGGER.warn(MARKER, "Preferred font {} is invalid", cfgFont);
+                    ModernUIMod.LOGGER.warn(MARKER, "Preferred font {} is invalid", cfgFont);
                 }
             }/* else {
                 Optional<Font> font =

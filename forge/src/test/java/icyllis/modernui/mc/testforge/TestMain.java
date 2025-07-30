@@ -33,7 +33,6 @@ import icyllis.modernui.graphics.Canvas;
 import icyllis.modernui.graphics.Paint;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.text.*;
-import icyllis.modernui.mc.testforge.shader.GLShaderManager;
 import icyllis.modernui.text.*;
 import icyllis.modernui.text.style.*;
 import icyllis.modernui.view.Gravity;
@@ -51,14 +50,12 @@ import java.awt.font.GlyphVector;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 import java.util.stream.Stream;
 
 import static org.lwjgl.opengl.GL33C.*;
-import static icyllis.modernui.ModernUI.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
 
 @Deprecated
@@ -305,7 +302,7 @@ public class TestMain {
         }*/
         //ModernUI.LOGGER.info(Gravity.TOP & Gravity.BOTTOM);
         new ModernUI();
-        GLShaderManager.getInstance().addListener(mgr -> mgr.getStage(ModernUI.ID, "a.vert"));
+        //GLShaderManager.getInstance().addListener(mgr -> mgr.getStage(ModernUI.ID, "a.vert"));
         try {
             Thread.currentThread().setName("Main-Thread");
             Core.initialize();
@@ -372,7 +369,7 @@ public class TestMain {
         Core.initOpenGL();
         Core.glShowCapsErrorDialog();
         Canvas canvas = null;
-        GLShaderManager.getInstance().reload();
+        //GLShaderManager.getInstance().reload();
         Matrix4 projection = new Matrix4();
         //projection = Matrix4.makePerspective(MathUtil.PI_DIV_2, window.getAspectRatio(), 0.01f, 1000);
 

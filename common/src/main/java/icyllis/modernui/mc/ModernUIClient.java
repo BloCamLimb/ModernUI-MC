@@ -38,6 +38,9 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.MARKER;
+
 public abstract class ModernUIClient extends ModernUI {
 
     private static volatile ModernUIClient sInstance;

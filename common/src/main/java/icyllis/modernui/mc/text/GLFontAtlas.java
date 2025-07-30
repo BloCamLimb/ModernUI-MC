@@ -21,7 +21,6 @@ package icyllis.modernui.mc.text;
 import icyllis.arc3d.core.*;
 import icyllis.arc3d.engine.*;
 import icyllis.arc3d.opengl.*;
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.*;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
@@ -36,6 +35,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static org.lwjgl.opengl.GL33C.*;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 
 /**
  * Maintains a font texture atlas, which is specified with a font strike (style and
@@ -186,7 +186,7 @@ public class GLFontAtlas implements AutoCloseable {
                 pixels
         );
         if (!res) {
-            ModernUI.LOGGER.warn(GlyphManager.MARKER, "Failed to write glyph pixels");
+            LOGGER.warn(GlyphManager.MARKER, "Failed to write glyph pixels");
         }
 
         // exclude border
@@ -215,7 +215,7 @@ public class GLFontAtlas implements AutoCloseable {
             final int oldHeight = mHeight;
 
             if (oldWidth == mMaxTextureSize && oldHeight == mMaxTextureSize) {
-                ModernUI.LOGGER.warn(GlyphManager.MARKER, "Font atlas reached max texture size, " +
+                LOGGER.warn(GlyphManager.MARKER, "Font atlas reached max texture size, " +
                         "mask format: {}, max size: {}, current texture: {}", mMaskFormat, mMaxTextureSize, mTexture);
                 return false;
             }
@@ -249,7 +249,7 @@ public class GLFontAtlas implements AutoCloseable {
                     oldWidth, oldHeight
             );
             if (!res) {
-                ModernUI.LOGGER.warn(GlyphManager.MARKER, "Failed to copy to new texture");
+                LOGGER.warn(GlyphManager.MARKER, "Failed to copy to new texture");
             }
 
             mTexture = RefCnt.move(mTexture, newTexture);
@@ -388,13 +388,13 @@ public class GLFontAtlas implements AutoCloseable {
 
     public void debug(String name, @Nullable String path) {
         if (path == null) {
-            ModernUI.LOGGER.info(GlyphManager.MARKER, name);
+            LOGGER.info(GlyphManager.MARKER, name);
             for (var glyph : mGlyphs.long2ObjectEntrySet()) {
-                ModernUI.LOGGER.info(GlyphManager.MARKER, "Key 0x{}: {}",
+                LOGGER.info(GlyphManager.MARKER, "Key 0x{}: {}",
                         Long.toHexString(glyph.getLongKey()), glyph.getValue());
             }
         } else if (Core.isOnRenderThread()) {
-            ModernUI.LOGGER.info(GlyphManager.MARKER, "{}, Glyphs: {}", name, mGlyphs.size());
+            LOGGER.info(GlyphManager.MARKER, "{}, Glyphs: {}", name, mGlyphs.size());
             if (mTexture == null)
                 return;
             dumpAtlas((GLCaps) mContext.getCaps(), mTexture,
@@ -431,7 +431,7 @@ public class GLFontAtlas implements AutoCloseable {
                 try (bitmap) {
                     bitmap.saveToPath(Bitmap.SaveFormat.PNG, 0, Path.of(path));
                 } catch (IOException e) {
-                    ModernUI.LOGGER.warn(GlyphManager.MARKER, "Failed to save font atlas", e);
+                    LOGGER.warn(GlyphManager.MARKER, "Failed to save font atlas", e);
                 }
             });
         }

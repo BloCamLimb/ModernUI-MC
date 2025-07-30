@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Nonnull;
 
-import static icyllis.modernui.ModernUI.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
 
 @ApiStatus.Internal

@@ -22,6 +22,7 @@ import com.mojang.blaze3d.platform.*;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.mc.ModernUIClient;
+import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.util.DisplayMetrics;
 import org.lwjgl.glfw.GLFW;
@@ -65,7 +66,7 @@ public abstract class MixinWindow {
         int oldScale = (int) guiScale;
         int newScale = (int) scaleFactor;
         if (newScale != scaleFactor) {
-            ModernUI.LOGGER.warn(ModernUI.MARKER,
+            ModernUIMod.LOGGER.warn(ModernUIMod.MARKER,
                     "Gui scale {} should be an integer, some mods break this", scaleFactor);
         }
 
@@ -121,21 +122,21 @@ public abstract class MixinWindow {
             for (int[] version : versions) {
                 GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, version[0]);
                 GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, version[1]);
-                ModernUI.LOGGER.debug(ModernUI.MARKER, "Trying OpenGL {}.{}", version[0], version[1]);
+                ModernUIMod.LOGGER.debug(ModernUIMod.MARKER, "Trying OpenGL {}.{}", version[0], version[1]);
                 window = GLFW.glfwCreateWindow(640, 480, "System Testing", 0, 0);
                 if (window != 0) {
-                    ModernUI.LOGGER.info(ModernUI.MARKER, "Promoted to OpenGL {}.{} Core Profile",
+                    ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Promoted to OpenGL {}.{} Core Profile",
                             version[0], version[1]);
                     return;
                 }
             }
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2);
-            ModernUI.LOGGER.warn(ModernUI.MARKER, "Fallback to OpenGL 3.2 Core Profile");
+            ModernUIMod.LOGGER.warn(ModernUIMod.MARKER, "Fallback to OpenGL 3.2 Core Profile");
         } catch (Exception e) {
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2);
-            ModernUI.LOGGER.warn(ModernUI.MARKER, "Fallback to OpenGL 3.2 Core Profile", e);
+            ModernUIMod.LOGGER.warn(ModernUIMod.MARKER, "Fallback to OpenGL 3.2 Core Profile", e);
         } finally {
             if (window != 0) {
                 GLFW.glfwDestroyWindow(window);

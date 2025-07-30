@@ -82,7 +82,7 @@ import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.util.*;
 
-import static icyllis.modernui.ModernUI.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
 
 /**

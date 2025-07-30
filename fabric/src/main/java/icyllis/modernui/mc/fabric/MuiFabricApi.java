@@ -19,7 +19,6 @@
 package icyllis.modernui.mc.fabric;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessGameRenderer;
@@ -40,7 +39,7 @@ import javax.annotation.Nullable;
 public final class MuiFabricApi extends MuiModApi {
 
     public MuiFabricApi() {
-        ModernUI.LOGGER.info(ModernUI.MARKER, "Created MuiFabricApi");
+        ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Created MuiFabricApi");
     }
 
     @SuppressWarnings("unchecked")

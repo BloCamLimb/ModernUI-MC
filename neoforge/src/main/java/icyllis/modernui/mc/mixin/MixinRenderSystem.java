@@ -20,9 +20,9 @@ package icyllis.modernui.mc.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.engine.ContextOptions;
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIClient;
+import icyllis.modernui.mc.ModernUIMod;
 import net.minecraft.util.TimeSource;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Configuration;
@@ -43,7 +43,7 @@ public class MixinRenderSystem {
         String name = Configuration.OPENGL_LIBRARY_NAME.get();
         if (name != null) {
             // non-system library should load before window creation
-            ModernUI.LOGGER.info(ModernUI.MARKER, "OpenGL library: {}", name);
+            ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "OpenGL library: {}", name);
             Objects.requireNonNull(GL.getFunctionProvider(), "Implicit OpenGL loading is required");
         }
     }

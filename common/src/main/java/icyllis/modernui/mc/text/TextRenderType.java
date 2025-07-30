@@ -40,7 +40,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Objects;
 
-import static icyllis.modernui.ModernUI.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 import static icyllis.modernui.mc.text.TextLayoutEngine.MARKER;
 
 /**
