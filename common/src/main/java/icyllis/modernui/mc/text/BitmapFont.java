@@ -77,6 +77,8 @@ public class BitmapFont implements Font, AutoCloseable {
     @SuppressWarnings("JavadocReference")
     public static final int FONT_TEXTURE_SIZE = 256;
 
+    public static float sBitmapOffset = 0.5f;
+
     private final ResourceLocation mName;
 
     private Bitmap mBitmap;
@@ -457,7 +459,7 @@ public class BitmapFont implements Font, AutoCloseable {
             }
             if (positions != null) {
                 positions.add(x + advance +
-                        scaleUp * 0.5f); // 1px spacing, center it
+                        scaleUp * sBitmapOffset); // 1px spacing, center it
                 positions.add(y);
             }
 

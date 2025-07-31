@@ -773,6 +773,10 @@ public class PreferencesFragment extends Fragment {
                 Config.TEXT.mOutlineOffset, 100, onChanged)
                 .create(category, 4);
 
+        new FloatOption(context, "modernui.center.text.bitmapOffset",
+                Config.TEXT.mBitmapOffset, 20, onChanged)
+                .create(category, 4);
+
         return category;
     }
 

@@ -130,6 +130,7 @@
   "modernui.center.text.baselineShift": "基線位移",
   "modernui.center.text.shadowOffset": "陰影位移",
   "modernui.center.text.outlineOffset": "輪廓位移",
+  "modernui.center.text.bitmapOffset": "位圖位移",
   "modernui.center.text.superSampling": "超級取樣",
   "modernui.center.text.alignPixels": "對齊像素",
   "modernui.center.text.bidiHeuristicAlgo": "雙向文字啟發算法",

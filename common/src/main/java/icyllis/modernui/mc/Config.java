@@ -25,7 +25,9 @@ import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.Color;
+import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.graphics.text.LineBreakConfig;
+import icyllis.modernui.mc.text.BitmapFont;
 import icyllis.modernui.mc.text.GLFontAtlas;
 import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.ModernTextRenderer;
@@ -470,6 +472,7 @@ public final class Config {
         public final ConfigItem<Double> mBaselineShift;
         public final ConfigItem<Double> mShadowOffset;
         public final ConfigItem<Double> mOutlineOffset;
+        public final ConfigItem<Double> mBitmapOffset;
         public final ConfigItem<Integer> mCacheLifespan;
         public final ConfigItem<TextDirection> mTextDirection;
         public final ConfigItem<Boolean> mUseTextShadersInWorld;
@@ -495,6 +498,7 @@ public final class Config {
             mBaselineShift = get(map, "mBaselineShift");
             mShadowOffset = get(map, "mShadowOffset");
             mOutlineOffset = get(map, "mOutlineOffset");
+            mBitmapOffset = get(map, "mBitmapOffset");
             mCacheLifespan = get(map, "mCacheLifespan");
             mTextDirection = get(map, "mTextDirection");
             mUseTextShadersInWorld = get(map, "mUseTextShadersInWorld");
@@ -522,13 +526,18 @@ public final class Config {
                 TextLayoutEngine.sFixedResolution = mFixedResolution.get();
                 reload = true;
             }
-            if (TextLayoutProcessor.sBaseFontSize != mBaseFontSize.get()) {
+            if (TextLayoutProcessor.sBaseFontSize != mBaseFontSize.get().floatValue()) {
                 TextLayoutProcessor.sBaseFontSize = mBaseFontSize.get().floatValue();
                 reloadStrike = true;
             }
             TextLayout.sBaselineOffset = mBaselineShift.get().floatValue();
             ModernTextRenderer.sShadowOffset = mShadowOffset.get().floatValue();
             ModernTextRenderer.sOutlineOffset = mOutlineOffset.get().floatValue();
+            if (BitmapFont.sBitmapOffset != mBitmapOffset.get().floatValue()) {
+                BitmapFont.sBitmapOffset = mBitmapOffset.get().floatValue();
+                reload = true;
+                LayoutCache.clear();
+            }
             /*if (TextLayoutProcessor.sAlignPixels != mAlignPixels.get()) {
                 TextLayoutProcessor.sAlignPixels = mAlignPixels.get();
                 reload = true;

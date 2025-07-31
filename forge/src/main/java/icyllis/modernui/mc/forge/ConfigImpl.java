@@ -651,6 +651,7 @@ public final class ConfigImpl {
         public final ForgeConfigSpec.DoubleValue mBaselineShift;
         public final ForgeConfigSpec.DoubleValue mShadowOffset;
         public final ForgeConfigSpec.DoubleValue mOutlineOffset;
+        public final ForgeConfigSpec.DoubleValue mBitmapOffset;
         //public final ForgeConfigSpec.BooleanValue mSuperSampling;
         //public final ForgeConfigSpec.BooleanValue mAlignPixels;
         public final ForgeConfigSpec.IntValue mCacheLifespan;
@@ -717,6 +718,9 @@ public final class ConfigImpl {
             mOutlineOffset = builder.comment(
                             "Control the text outline offset for vanilla text rendering, in GUI scaled pixels.")
                     .defineInRange("outlineOffset", 0.5, OUTLINE_OFFSET_MIN, OUTLINE_OFFSET_MAX);
+            mBitmapOffset = builder.comment(
+                            "Control the horizontal offset for bitmap fonts, in GUI scaled pixels.")
+                    .defineInRange("bitmapOffset", 0.5, 0, 1);
             /*mSuperSampling = builder.comment(
                             "Super sampling can make the text more smooth with large font size or in the 3D world.",
                             "But it makes the glyph edge too blurry and difficult to read.")

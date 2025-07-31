@@ -131,6 +131,7 @@
   "modernui.center.text.baselineShift": "基线偏移",
   "modernui.center.text.shadowOffset": "阴影偏移",
   "modernui.center.text.outlineOffset": "轮廓偏移",
+  "modernui.center.text.bitmapOffset": "位图偏移",
   "modernui.center.text.superSampling": "超级采样",
   "modernui.center.text.alignPixels": "对齐到像素",
   "modernui.center.text.bidiHeuristicAlgo": "双向文本启发式算法",
