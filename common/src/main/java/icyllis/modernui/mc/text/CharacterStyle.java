@@ -44,8 +44,8 @@ public class CharacterStyle {
      *      11    EFFECT_MASK
      *     1      OBFUSCATED
      *     11111  LAYOUT_MASK
-     *    1       COLOR_EMOJI_REPLACEMENT
-     *   1        BITMAP_REPLACEMENT
+     *    1       ANY_BITMAP_REPLACEMENT
+     *   1        NO_SHADOW_MASK
      *  1         IMPLICIT_COLOR
      * |--------|
      */
@@ -86,19 +86,14 @@ public class CharacterStyle {
     public static final int LAYOUT_MASK = FONT_STYLE_MASK | EFFECT_MASK | OBFUSCATED_MASK;
 
     /**
-     * Represent to use a color emoji.
-     */
-    public static final int COLOR_EMOJI_REPLACEMENT = 0x20000000;
-
-    /**
-     * Represent to use a bitmap glyph.
-     */
-    public static final int BITMAP_REPLACEMENT = 0x40000000;
-
-    /**
      * Represent to use a color emoji or a bitmap glyph.
      */
-    public static final int ANY_BITMAP_REPLACEMENT = COLOR_EMOJI_REPLACEMENT | BITMAP_REPLACEMENT;
+    public static final int ANY_BITMAP_REPLACEMENT = 0x20000000;
+
+    /**
+     * Represent a transparent shadow color (no shadow).
+     */
+    public static final int NO_SHADOW_MASK = 0x40000000;
 
     /**
      * 0xRRGGBB color mask.
@@ -169,6 +164,12 @@ public class CharacterStyle {
         }
         if (style.isObfuscated()) {
             v |= OBFUSCATED_MASK;
+        }
+        Integer shadow = style.getShadowColor();
+        if (shadow != null && shadow >>> 24 == 0) {
+            // We don't support custom shadow color due to bit compression,
+            // but it is practical to support no shadow
+            v |= NO_SHADOW_MASK;
         }
         return v;
     }

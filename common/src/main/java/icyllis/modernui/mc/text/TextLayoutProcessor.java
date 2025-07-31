@@ -859,9 +859,9 @@ public class TextLayoutProcessor {
             int glyphFlags = styleFlags;
             var font = mFontVec.get(mFontIndices.getByte(glyphIndex) & 0xFF);
             if (font instanceof BitmapFont) {
-                glyphFlags |= CharacterStyle.BITMAP_REPLACEMENT;
+                glyphFlags |= CharacterStyle.ANY_BITMAP_REPLACEMENT;
             } else if (font instanceof EmojiFont) {
-                glyphFlags |= CharacterStyle.COLOR_EMOJI_REPLACEMENT;
+                glyphFlags |= CharacterStyle.ANY_BITMAP_REPLACEMENT;
                 mHasColorEmoji = true;
             }
             mGlyphFlags.add(glyphFlags);
