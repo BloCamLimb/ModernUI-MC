@@ -187,6 +187,7 @@ public class CharacterStyle {
                 a.isStrikethrough() == b.isStrikethrough() &&
                 a.isObfuscated() == b.isObfuscated() &&
                 Objects.equals(a.getColor(), b.getColor()) &&
+                Objects.equals(a.getShadowColor(), b.getShadowColor()) &&
                 Objects.equals(a.getFont(), b.getFont()));
     }
 
