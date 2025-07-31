@@ -158,7 +158,7 @@ public final class MuiForgeApi extends MuiModApi {
                         version);
                 return true;
             }
-        } catch (Exception ignored) {
+        } catch (Throwable ignored) {
         }
         return false;
     }

@@ -71,13 +71,19 @@ public final class MuiForgeApi extends MuiModApi {
     @Override
     public boolean isGLVersionPromoted() {
         try {
+            if (!net.neoforged.fml.loading.FMLConfig.getBoolConfigValue(net.neoforged.fml.loading.FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
+                return false;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
             String version = net.neoforged.fml.loading.ImmediateWindowHandler.getGLVersion();
             if (!"3.2".equals(version)) {
                 ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Detected OpenGL {} Core Profile from FML Early Window",
                         version);
                 return true;
             }
-        } catch (Exception ignored) {
+        } catch (Throwable ignored) {
         }
         return false;
     }
