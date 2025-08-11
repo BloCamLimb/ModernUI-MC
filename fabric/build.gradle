@@ -68,8 +68,8 @@ dependencies {
         shadow("icyllis.modernui:ModernUI-Core") {
             transitive = false
         }
-        implementation("icyllis.modernui:ModernUI-Markdown")
-        shadow("icyllis.modernui:ModernUI-Markdown") {
+        implementation("icyllis.modernui:ModernUI-Markflow")
+        shadow("icyllis.modernui:ModernUI-Markflow") {
             transitive = false
         }
     } else {
@@ -77,15 +77,15 @@ dependencies {
         shadow("icyllis.modernui:ModernUI-Core:${core_version}") {
             transitive = false
         }
-        implementation("icyllis.modernui:ModernUI-Markdown:${core_version}")
-        shadow("icyllis.modernui:ModernUI-Markdown:${core_version}") {
+        implementation("icyllis.modernui:ModernUI-Markflow:${core_version}")
+        shadow("icyllis.modernui:ModernUI-Markflow:${core_version}") {
             transitive = false
         }
     }
 
-    implementation("com.vladsch.flexmark:flexmark:${flexmark_version}")
+    //implementation("com.vladsch.flexmark:flexmark:${flexmark_version}")
 
-    include "com.vladsch.flexmark:flexmark:${flexmark_version}"
+    /*include "com.vladsch.flexmark:flexmark:${flexmark_version}"
     include "com.vladsch.flexmark:flexmark-util-ast:${flexmark_version}"
     include "com.vladsch.flexmark:flexmark-util-builder:${flexmark_version}"
     include "com.vladsch.flexmark:flexmark-util-collection:${flexmark_version}"
@@ -95,7 +95,8 @@ dependencies {
     include "com.vladsch.flexmark:flexmark-util-html:${flexmark_version}"
     include "com.vladsch.flexmark:flexmark-util-misc:${flexmark_version}"
     include "com.vladsch.flexmark:flexmark-util-sequence:${flexmark_version}"
-    include "com.vladsch.flexmark:flexmark-util-visitor:${flexmark_version}"
+    include "com.vladsch.flexmark:flexmark-util-visitor:${flexmark_version}"*/
+    include "org.commonmark:commonmark:${commonmark_version}"
 
     shadow ':ModernUI-Fonts-4.0'
 }

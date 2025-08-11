@@ -22,9 +22,9 @@ dependencies {
     if (rootProject.file('../ModernUI').exists()) {
         implementation("icyllis.arc3d:Arc3D")
         implementation("icyllis.modernui:ModernUI-Core")
-        implementation("icyllis.modernui:ModernUI-Markdown")
+        implementation("icyllis.modernui:ModernUI-Markflow")
     } else {
         implementation("icyllis.modernui:ModernUI-Core:${core_version}")
-        implementation("icyllis.modernui:ModernUI-Markdown:${core_version}")
+        implementation("icyllis.modernui:ModernUI-Markflow:${core_version}")
     }
 }

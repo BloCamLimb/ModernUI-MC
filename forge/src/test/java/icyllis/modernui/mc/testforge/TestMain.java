@@ -21,9 +21,6 @@ package icyllis.modernui.mc.testforge;
 import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.text.BreakIterator;
-import com.vladsch.flexmark.parser.Parser;
-import com.vladsch.flexmark.util.ast.Document;
-import com.vladsch.flexmark.util.ast.Node;
 import icyllis.arc3d.core.Matrix4;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.audio.*;
@@ -799,7 +796,7 @@ public class TestMain {
                 3, bengaliHello.length(), bengaliHello.length(), GraphemeBreak.BEFORE)); // output 4, correct
     }
 
-    public static void testMarkdownParsing() {
+    /*public static void testMarkdownParsing() {
         Parser parser = Parser.builder().build();
         Document document = parser.parse("Advanced Page\r\n---\r\nMy **One** Line\r\n> My Two");
         iterateNode(document, 0);
@@ -815,7 +812,7 @@ public class TestMain {
             iterateNode(child, depth);
             child = Node.AST_ADAPTER.getNext(child);
         }
-    }
+    }*/
 
     private static void drawText() {
         LOGGER.info("AWT Headless: {}", GraphicsEnvironment.isHeadless());

@@ -21,8 +21,9 @@ package icyllis.modernui.mc.ui;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.markdown.*;
-import icyllis.modernui.markdown.core.CorePlugin;
+import icyllis.modernui.markflow.Markflow;
+import icyllis.modernui.markflow.MarkflowPlugin;
+import icyllis.modernui.markflow.MarkflowTheme;
 import icyllis.modernui.text.*;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
@@ -30,29 +31,27 @@ import icyllis.modernui.widget.*;
 
 public class MarkdownFragment extends Fragment {
 
-    private Markdown mMarkdown;
+    private Markflow mMarkflow;
 
     private EditText mInput;
     private TextView mPreview;
 
-    private final Runnable mRenderMarkdown = () -> mMarkdown.setMarkdown(mPreview, mInput.getText().toString());
+    private final Runnable mRenderMarkdown = () -> mMarkflow.setMarkdown(mPreview, mInput.getText());
 
     @Override
     public void onCreate(DataSet savedInstanceState) {
         super.onCreate(savedInstanceState);
-        var builder = Markdown.builder(requireContext())
-                .usePlugin(CorePlugin.create());
+        var builder = Markflow.builder(requireContext());
         Typeface monoFont = Typeface.getSystemFont("JetBrains Mono Medium");
         if (monoFont != Typeface.SANS_SERIF) {
-            builder.usePlugin(new MarkdownPlugin() {
+            builder.usePlugin(new MarkflowPlugin() {
                 @Override
-                public void configureTheme(@NonNull MarkdownTheme.Builder builder) {
-                    builder.setCodeTypeface(monoFont);
+                public void configureTheme(@NonNull MarkflowTheme.Builder builder) {
+                    builder.codeTypeface(monoFont);
                 }
             });
         }
-        mMarkdown = builder
-                .setBufferType(TextView.BufferType.EDITABLE)
+        mMarkflow = builder
                 .build();
     }
 
@@ -81,6 +80,8 @@ public class MarkdownFragment extends Fragment {
             preview.setTextDirection(View.TEXT_DIRECTION_FIRST_STRONG_LTR);
             preview.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
             preview.setTextIsSelectable(true);
+            preview.setSpannableFactory(Spannable.NO_COPY_FACTORY);
+            preview.setEditableFactory(Editable.NO_COPY_FACTORY);
 
             var params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT, 1);

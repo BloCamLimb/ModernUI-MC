@@ -25,9 +25,9 @@ import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
-import icyllis.modernui.markdown.Markdown;
-import icyllis.modernui.markdown.core.CorePlugin;
+import icyllis.modernui.markflow.Markflow;
 import icyllis.modernui.mc.StillAlive;
+import icyllis.modernui.text.Spannable;
 import icyllis.modernui.text.method.LinkMovementMethod;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
@@ -91,10 +91,8 @@ public class DashboardFragment extends Fragment {
                 // leading margin is based on para dir, not view dir
                 tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
                 tv.setMovementMethod(LinkMovementMethod.getInstance());
-                Markdown.builder(requireContext())
-                        .usePlugin(CorePlugin.create())
-                        .setBufferType(TextView.BufferType.SPANNABLE)
-                        .build()
+                tv.setSpannableFactory(Spannable.NO_COPY_FACTORY);
+                Markflow.create(requireContext())
                         .setMarkdown(tv, """
                                 What's New in Modern UI 3.11.1
                                 ----
