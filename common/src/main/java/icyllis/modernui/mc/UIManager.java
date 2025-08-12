@@ -27,7 +27,6 @@ import icyllis.arc3d.core.*;
 import icyllis.arc3d.engine.*;
 import icyllis.arc3d.granite.*;
 import icyllis.arc3d.opengl.*;
-import icyllis.arc3d.sketch.Surface;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
 import icyllis.modernui.annotation.*;
@@ -71,6 +70,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL33C;
 import org.lwjgl.system.MemoryUtil;
@@ -79,7 +79,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.reflect.Field;
 import java.util.*;
 
 import static icyllis.modernui.mc.ModernUIMod.LOGGER;
@@ -105,17 +104,6 @@ public abstract class UIManager implements LifecycleOwner {
     protected static volatile UIManager sInstance;
 
     protected static final int fragment_container = 0x01020007;
-
-    private static final Field SURFACE_DEVICE;
-
-    static {
-        try {
-            SURFACE_DEVICE = GraniteSurface.class.getDeclaredField("mDevice");
-            SURFACE_DEVICE.setAccessible(true);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     // minecraft
     protected final Minecraft minecraft = Minecraft.getInstance();
@@ -680,22 +668,16 @@ public abstract class UIManager implements LifecycleOwner {
         }
     }
 
+    @VisibleForTesting
     @SuppressWarnings("resource")
     public void takeScreenshot() {
         @SharedPtr
-        Surface surface = mRoot.getSurface();
+        ImageViewProxy surface = mRoot.getLayer();
         if (surface == null) {
             return;
         }
         @RawPtr
-        GLTexture layer;
-        try {
-            @RawPtr
-            GraniteDevice device = (GraniteDevice) SURFACE_DEVICE.get(surface);
-            layer = (GLTexture) device.getReadView().getImage();
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        GLTexture layer = (GLTexture) surface.getImage();
         final int width = layer.getWidth();
         final int height = layer.getHeight();
         final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
@@ -896,7 +878,7 @@ public abstract class UIManager implements LifecycleOwner {
         @SharedPtr
         Recording recording = frameTask.getLeft();
         @SharedPtr
-        Surface surface = frameTask.getRight();
+        ImageViewProxy surface = frameTask.getRight();
 
         if (recording != null) {
             oldVertexArray = GL33C.glGetInteger(GL33C.GL_VERTEX_ARRAY_BINDING);
@@ -954,16 +936,7 @@ public abstract class UIManager implements LifecycleOwner {
         RenderSystem.viewport(0, 0, width, height);
 
         if (surface != null) {
-            @RawPtr
-            GLTexture layer;
-            try {
-                @RawPtr
-                GraniteDevice device = (GraniteDevice) SURFACE_DEVICE.get(surface);
-                layer = (GLTexture) device.getReadView().getImage();
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-            if (layer != null) {
+            if (surface.getImage() instanceof @RawPtr GLTexture layer) {
                 // draw off-screen target to Minecraft mainTarget (not the default framebuffer)
                 CompiledShaderProgram blitShader = RenderSystem.setShader(CoreShaders.BLIT_SCREEN);
                 Objects.requireNonNull(blitShader, "Blit shader not loaded");
@@ -1203,7 +1176,7 @@ public abstract class UIManager implements LifecycleOwner {
         ContextMenuBuilder mContextMenu;
         MenuHelper mContextMenuHelper;
 
-        Surface mSurface;
+        GraniteSurface mSurface;
         Recording mLastFrameTask;
 
         private long mLastPurgeNanos;
@@ -1326,10 +1299,15 @@ public abstract class UIManager implements LifecycleOwner {
             }
         }
 
+        @Nullable
         @SharedPtr
-        private Surface getSurface() {
+        private ImageViewProxy getLayer() {
             synchronized (mRenderLock) {
-                return RefCnt.create(mSurface);
+                if (mSurface != null) {
+                    return RefCnt.create(mSurface.getDevice().getReadView());
+                } else {
+                    return null;
+                }
             }
         }
 
@@ -1340,13 +1318,17 @@ public abstract class UIManager implements LifecycleOwner {
         }
 
         @RenderThread
-        private Pair<@SharedPtr Recording, @SharedPtr Surface> swapFrameTask() {
+        private Pair<@SharedPtr Recording, @SharedPtr ImageViewProxy> swapFrameTask() {
             @SharedPtr
             Recording recording;
             @SharedPtr
-            Surface surface;
+            ImageViewProxy layer;
             synchronized (mRenderLock) {
-                surface = RefCnt.create(mSurface);
+                if (mSurface != null) {
+                    layer = RefCnt.create(mSurface.getDevice().getReadView());
+                } else {
+                    layer = null;
+                }
                 recording = mLastFrameTask;
                 mLastFrameTask = null;
                 for (int i = 0; i < mPendingRawDrawHandlerOperations.size(); i++) {
@@ -1360,7 +1342,7 @@ public abstract class UIManager implements LifecycleOwner {
                 mPendingRawDrawHandlerOperations.clear();
                 mRenderLock.notifyAll();
             }
-            return Pair.of(recording, surface);
+            return Pair.of(recording, layer);
             /*// wait UI thread, if slow
             synchronized (mRenderLock) {
 
