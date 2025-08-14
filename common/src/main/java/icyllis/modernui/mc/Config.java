@@ -88,6 +88,7 @@ public final class Config {
     public static class Client {
 
         public final ConfigItem<Boolean> mBlurEffect;
+        public final ConfigItem<Boolean> mAdditionalBlurEffect;
         public final ConfigItem<Boolean> mOverrideVanillaBlur;
         public final ConfigItem<Integer> mBackgroundDuration;
         public final ConfigItem<Integer> mBlurRadius;
@@ -144,6 +145,7 @@ public final class Config {
 
         private Client(Map<String, ConfigItem<?>> map) {
             mBlurEffect = get(map, "mBlurEffect");
+            mAdditionalBlurEffect = get(map, "mAdditionalBlurEffect");
             mOverrideVanillaBlur = get(map, "mOverrideVanillaBlur");
             mBackgroundDuration = get(map, "mBackgroundDuration");
             mBlurRadius = get(map, "mBlurRadius");
@@ -200,6 +202,7 @@ public final class Config {
         public void reload() {
             BlurHandler.sBlurEffect = mBlurEffect.get();
             //BlurHandler.sBlurWithBackground = mBlurWithBackground.get();
+            BlurHandler.sBlurForVanillaScreens = mAdditionalBlurEffect.get();
             BlurHandler.sOverrideVanillaBlur = mOverrideVanillaBlur.get();
             BlurHandler.sBackgroundDuration = mBackgroundDuration.get();
             BlurHandler.sBlurRadius = mBlurRadius.get();

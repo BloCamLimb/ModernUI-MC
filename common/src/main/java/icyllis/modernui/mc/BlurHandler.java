@@ -53,6 +53,7 @@ public enum BlurHandler {
      */
     public static volatile boolean sBlurEffect;
     //public static volatile boolean sBlurWithBackground;
+    public static volatile boolean sBlurForVanillaScreens;
     public static volatile boolean sOverrideVanillaBlur;
     public static volatile int sBlurRadius;
     public static volatile int sBackgroundDuration; // milliseconds
@@ -105,7 +106,7 @@ public enum BlurHandler {
                 if (callback != null) {
                     blocked = !callback.shouldBlurBackground();
                 }
-            } else {
+            } else if (sBlurForVanillaScreens) {
                 final Class<?> t = nextScreen.getClass();
                 for (Class<?> c : mBlacklist) {
                     if (c.isAssignableFrom(t)) {
@@ -113,6 +114,8 @@ public enum BlurHandler {
                         break;
                     }
                 }
+            } else {
+                blocked = true;
             }
         }
 

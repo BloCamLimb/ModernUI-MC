@@ -259,6 +259,10 @@ public class PreferencesFragment extends Fragment {
                     Config.CLIENT.mBlurEffect, onChanged)
                     .create(list);
 
+            new BooleanOption(context, "modernui.center.screen.additionalBlurEffect",
+                    Config.CLIENT.mAdditionalBlurEffect, onChanged)
+                    .create(list);
+
             new BooleanOption(context, "modernui.center.screen.overrideVanillaBlur",
                     Config.CLIENT.mOverrideVanillaBlur, onChanged)
                     .create(list);

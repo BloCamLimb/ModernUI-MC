@@ -224,6 +224,7 @@ public final class ConfigImpl {
 
         public final ForgeConfigSpec.BooleanValue mBlurEffect;
         //public final ForgeConfigSpec.BooleanValue mBlurWithBackground;
+        public final ForgeConfigSpec.BooleanValue mAdditionalBlurEffect;
         public final ForgeConfigSpec.BooleanValue mOverrideVanillaBlur;
         public final ForgeConfigSpec.IntValue mBackgroundDuration;
         public final ForgeConfigSpec.IntValue mBlurRadius;
@@ -316,6 +317,9 @@ public final class ConfigImpl {
                             "This option means that blur effect only applies to GUI screens with a background.",
                             "Similar to Minecraft 1.21. Enable this for better optimization & compatibility.")
                     .define("blurWithBackground", true);*/
+            mAdditionalBlurEffect = builder.comment(
+                            "Whether to add blur effect to GUI screens that have a background and do not originate from Modern UI.")
+                    .define("additionalBlurEffect", false);
             mOverrideVanillaBlur = builder.comment(
                             "Whether to replace Vanilla 3-pass box blur with Modern UI Gaussian blur.",
                             "This gives you better quality and performance, recommend setting this to true.")
