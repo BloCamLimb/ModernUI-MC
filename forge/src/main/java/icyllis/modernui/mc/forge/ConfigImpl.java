@@ -283,6 +283,7 @@ public final class ConfigImpl {
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFallbackFontFamilyList;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> mFontRegistrationList;
         public final ForgeConfigSpec.BooleanValue mUseColorEmoji;
+        public final ForgeConfigSpec.BooleanValue mLinearMetrics;
         public final ForgeConfigSpec.BooleanValue mEmojiShortcodes;
 
         /*public final ForgeConfigSpec.BooleanValue mSkipGLCapsError;
@@ -571,6 +572,10 @@ public final class ConfigImpl {
                             "Whether to use Google Noto Color Emoji, otherwise grayscale emoji (faster).",
                             "See Unicode 15.0 specification for details on how this affects text layout.")
                     .define("useColorEmoji", true);
+            mLinearMetrics = builder.comment(
+                            "When enabled, text layout uses fractional metrics with no font hinting and applies sub-pixel positioning.",
+                            "When disabled, text layout uses integer metrics with full font hinting.")
+                    .define("linearMetrics", true);
 
             builder.pop();
         }
@@ -830,7 +835,8 @@ public final class ConfigImpl {
                             "Control the anti-aliasing of raw glyph rasterization.")
                     .define("antiAliasing", true);
             mLinearMetrics = builder.comment(
-                            "Control the FreeType linear metrics and font hinting of raw glyph metrics.",
+                            "When enabled, text layout uses fractional metrics with no font hinting.",
+                            "When disabled, text layout uses integer metrics with full font hinting.",
                             "Disable if on low-res monitor; enable for linear text.")
                     .define("linearMetrics", true);
             mMinPixelDensityForSDF = builder.comment(

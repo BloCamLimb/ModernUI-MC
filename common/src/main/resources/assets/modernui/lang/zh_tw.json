@@ -52,7 +52,7 @@
   "modernui.center.screen.backgroundDuration": "背景淡入持續時間",
   "modernui.center.screen.blurEffect": "背景模糊特效",
   "modernui.center.screen.blurEffect.tooltip": "套用高斯模糊至螢幕背景圖片。",
-  "modernui.center.screen.additionalBlurEffect": "额外背景模糊特效",
+  "modernui.center.screen.additionalBlurEffect": "額外背景模糊特效",
   "modernui.center.screen.additionalBlurEffect.tooltip": "套用高斯模糊至非 Modern UI 螢幕背景圖片。",
   "modernui.center.screen.blurWithBackground": "Blur with Screen Background",
   "modernui.center.screen.blurWithBackground.tooltip": "When enabled, Gaussian blur is applied only when the screen has a default background, similar to Minecraft 1.20.6, with better optimization and compatibility.",

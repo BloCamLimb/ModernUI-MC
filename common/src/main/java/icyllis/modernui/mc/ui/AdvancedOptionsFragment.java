@@ -24,7 +24,6 @@ import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.*;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.BlendMode;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.text.GlyphManager;
@@ -85,17 +84,20 @@ public class AdvancedOptionsFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable DataSet savedInstanceState) {
         var context = requireContext();
-        var sv = new ScrollView(context);
-        sv.addView(createPage(context), MATCH_PARENT, WRAP_CONTENT);
+        var sv = new ClampingScrollView(context);
+        final int dp20 = sv.dp(20);
+        final int maxWidth = sv.dp(800) + dp20 + dp20;
+        sv.setMaxWidth(maxWidth);
+        {
+            ViewGroup layout = createPage(context);
+            layout.setPadding(dp20, 0, dp20, 0);
+            var params = new ScrollView.LayoutParams(MATCH_PARENT, WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
+            sv.addView(layout, params);
+        }
 
         //sv.setEdgeEffectColor(ThemeControl.THEME_COLOR);
-        sv.setTopEdgeEffectBlendMode(BlendMode.SRC_OVER);
-        sv.setBottomEdgeEffectBlendMode(BlendMode.SRC_OVER);
-
-        var params = new FrameLayout.LayoutParams(sv.dp(720), MATCH_PARENT, Gravity.CENTER);
-        var dp6 = sv.dp(6);
-        params.setMargins(dp6, dp6, dp6, dp6);
-        sv.setLayoutParams(params);
+        //sv.setTopEdgeEffectBlendMode(BlendMode.SRC_OVER);
+        //sv.setBottomEdgeEffectBlendMode(BlendMode.SRC_OVER);
 
         return sv;
     }
@@ -150,13 +152,35 @@ public class AdvancedOptionsFragment extends Fragment {
                         Config.CLIENT.mSecurePublicKey, Config.CLIENT::saveAndReloadAsync));*/
             }
             {
-                var layout = createSwitchLayout(context, "Show Layout Bounds");
+                var layout = createSwitchLayout(context, "Show layout bounds");
                 var button = layout.<Switch>requireViewById(R.id.button1);
                 button.setChecked(UIManager.getInstance().isShowingLayoutBounds());
                 button.setOnCheckedChangeListener((__, checked) ->
                         UIManager.getInstance().setShowingLayoutBounds(checked));
                 category.addView(layout);
             }
+            new BooleanOption(context, "Use staging buffers in OpenGL",
+                    () -> Boolean.parseBoolean(
+                            ModernUIClient.getBootstrapProperty(ModernUIClient.BOOTSTRAP_USE_STAGING_BUFFERS_IN_OPENGL)
+                    ),
+                    (value) -> ModernUIClient.setBootstrapProperty(
+                            ModernUIClient.BOOTSTRAP_USE_STAGING_BUFFERS_IN_OPENGL,
+                            Boolean.toString(value)
+                    ))
+                    .setDefaultValue(false)
+                    .setNeedsRestart()
+                    .create(category);
+            new BooleanOption(context, "Allow SPIR-V in OpenGL",
+                    () -> Boolean.parseBoolean(
+                            ModernUIClient.getBootstrapProperty(ModernUIClient.BOOTSTRAP_ALLOW_SPIRV_IN_OPENGL)
+                    ),
+                    (value) -> ModernUIClient.setBootstrapProperty(
+                            ModernUIClient.BOOTSTRAP_ALLOW_SPIRV_IN_OPENGL,
+                            Boolean.toString(value)
+                    ))
+                    .setDefaultValue(false)
+                    .setNeedsRestart()
+                    .create(category);
             {
                 var button = createDebugButton(context, "Take UI screenshot (Y)");
                 button.setOnClickListener((__) ->

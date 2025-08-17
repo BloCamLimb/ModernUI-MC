@@ -139,6 +139,7 @@ public final class Config {
         public final ConfigItem<List<? extends String>> mFallbackFontFamilyList;
         public final ConfigItem<List<? extends String>> mFontRegistrationList;
         public final ConfigItem<Boolean> mUseColorEmoji;
+        public final ConfigItem<Boolean> mLinearMetrics;
         public final ConfigItem<Boolean> mEmojiShortcodes;
 
         public WindowMode mLastWindowMode = WindowMode.NORMAL;
@@ -196,6 +197,7 @@ public final class Config {
             mFallbackFontFamilyList = get(map, "mFallbackFontFamilyList");
             mFontRegistrationList = get(map, "mFontRegistrationList");
             mUseColorEmoji = get(map, "mUseColorEmoji");
+            mLinearMetrics = get(map, "mLinearMetrics");
             mEmojiShortcodes = get(map, "mEmojiShortcodes");
         }
 
@@ -359,6 +361,9 @@ public final class Config {
                     if (resetConfigCache) {
                         ViewConfiguration.resetCache();
                     }
+                    //TODO need some Paint constants to be public
+                    /*if (mLinearMetrics.get()) {
+                    }*/
                 });
             }
 

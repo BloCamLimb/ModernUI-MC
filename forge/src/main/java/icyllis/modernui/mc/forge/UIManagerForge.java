@@ -93,7 +93,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     }
 
     @RenderThread
-    static void initialize() {
+    public static void initialize() {
         Core.checkRenderThread();
         assert sInstance == null;
         sInstance = new UIManagerForge();

@@ -157,12 +157,12 @@ final class Registration {
         private ModClient() {
         }
 
-        @SubscribeEvent
+        /*@SubscribeEvent
         static void loadingClient(RegisterParticleProvidersEvent event) {
             // this event fired after LOAD_REGISTRIES and before COMMON_SETUP on client main thread (render thread)
             // this event fired before AddClientReloadListenersEvent
             UIManagerForge.initialize();
-        }
+        }*/
 
         @SubscribeEvent
         static void registerResourceListener(@Nonnull AddClientReloadListenersEvent event) {

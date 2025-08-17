@@ -53,6 +53,14 @@ public class MixinRenderSystem {
     private static void onInitRenderer(int debugLevel, boolean debugSync, CallbackInfo ci) {
         Core.initialize();
         ContextOptions options = new ContextOptions();
+        String value = ModernUIClient.getBootstrapProperty(ModernUIClient.BOOTSTRAP_USE_STAGING_BUFFERS_IN_OPENGL);
+        if (value != null) {
+            options.mUseStagingBuffers = Boolean.parseBoolean(value);
+        }
+        value = ModernUIClient.getBootstrapProperty(ModernUIClient.BOOTSTRAP_ALLOW_SPIRV_IN_OPENGL);
+        if (value != null) {
+            options.mAllowGLSPIRV = Boolean.parseBoolean(value);
+        }
         options.mDriverBugWorkarounds = ModernUIClient.getGpuDriverBugWorkarounds();
         if (!Core.initOpenGL(options)) {
             Core.glShowCapsErrorDialog();

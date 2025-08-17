@@ -72,6 +72,9 @@ public abstract class ModernUIClient extends ModernUI {
         return props;
     }
 
+    public static final String BOOTSTRAP_USE_STAGING_BUFFERS_IN_OPENGL = "arc3d_context_useStagingBuffers";
+    public static final String BOOTSTRAP_ALLOW_SPIRV_IN_OPENGL = "arc3d_context_allowGLSPIRV";
+
     public static volatile boolean sInventoryPause;
     public static volatile boolean sRemoveTelemetrySession;
     public static volatile float sFontScale = 1;
