@@ -51,11 +51,14 @@ import icyllis.modernui.widget.RadioButton;
 import icyllis.modernui.widget.RadioGroup;
 import icyllis.modernui.widget.TextView;
 import net.minecraft.client.resources.language.I18n;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class CenterFragment2 extends Fragment {
 
+    public static final Marker MARKER = MarkerManager.getMarker("Center");
     private static final int id_tab_container = 0x2002;
 
     @Override
@@ -91,37 +94,6 @@ public class CenterFragment2 extends Fragment {
         base.setOrientation(LinearLayout.HORIZONTAL);
         base.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
         base.setDividerDrawable(ThemeControl.makeDivider(base, true));
-
-        // TITLE
-        if (false) {
-            var title = new TextView(getContext());
-            title.setId(R.id.title);
-            title.setText(I18n.get("modernui.center.title"));
-            title.setTextSize(22);
-            title.setTextStyle(Typeface.BOLD);
-            title.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
-                int height = bottom - top;
-                int oldHeight = oldBottom - oldTop;
-                if (height != oldHeight) {
-                    var tv = (TextView) v;
-                    tv.getPaint().setShader(new LinearGradient(0, 0, height * 2, height,
-                            // Minato Aqua
-                            new int[]{
-                                    0xFFB8DFF4,
-                                    0xFFF8C5CE,
-                                    0xFFFEFDF0
-                            },
-                            null,
-                            Shader.TileMode.MIRROR,
-                            null));
-                }
-            });
-
-            var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
-            params.gravity = Gravity.CENTER;
-            params.setMarginsRelative(0, base.dp(12), 0, base.dp(12));
-            base.addView(title, params);
-        }
 
         // NAV BUTTONS
         {

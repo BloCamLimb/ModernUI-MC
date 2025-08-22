@@ -18,22 +18,43 @@
 
 package icyllis.modernui.mc.ui;
 
+import icyllis.modernui.R;
 import icyllis.modernui.animation.LayoutTransition;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
+import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.graphics.*;
-import icyllis.modernui.graphics.drawable.Drawable;
+import icyllis.modernui.graphics.LinearGradient;
+import icyllis.modernui.graphics.Shader;
 import icyllis.modernui.markflow.Markflow;
+import icyllis.modernui.markflow.MarkflowPlugin;
+import icyllis.modernui.markflow.MarkflowTheme;
+import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.StillAlive;
+import icyllis.modernui.resources.TypedValue;
 import icyllis.modernui.text.Spannable;
+import icyllis.modernui.text.Typeface;
 import icyllis.modernui.text.method.LinkMovementMethod;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
 import icyllis.modernui.widget.*;
+import net.minecraft.client.resources.language.I18n;
 
-import javax.annotation.Nonnull;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.function.Consumer;
+
+import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class DashboardFragment extends Fragment {
 
@@ -44,24 +65,156 @@ public class DashboardFragment extends Fragment {
             (Icyllis Milica)
             Ciallo～(∠・ω< )⌒☆""";
 
+    public static Changelogs sChangelogs;
+
     private ViewGroup mLayout;
     private TextView mSideBox;
     private TextView mInfoBox;
+    private ViewGroup mChangelogList;
+    private Markflow mMarkflow;
 
     @Override
     public void onAttach(@NonNull Context context) {
         super.onAttach(context);
+
+        if (sChangelogs == null) {
+            sChangelogs = new Changelogs(Core.getUiThreadExecutor());
+        }
     }
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable DataSet savedInstanceState) {
-        if (mLayout != null) {
-            return mLayout;
+        var context = requireContext();
+        var layout = new FrameLayout(context);
+        var value = new TypedValue();
+        Markflow markflow; {
+            var builder = Markflow.builder(context);
+            Typeface monoFont = Typeface.getSystemFont("JetBrains Mono Medium");
+            if (monoFont != Typeface.SANS_SERIF) {
+                builder.usePlugin(new MarkflowPlugin() {
+                    @Override
+                    public void configureTheme(@NonNull MarkflowTheme.Builder builder) {
+                        builder.codeTypeface(monoFont);
+                    }
+                });
+            }
+            markflow = builder.build();
         }
-        var layout = new FrameLayout(requireContext());
+        mMarkflow = markflow;
 
         {
+            // two panel layout
+            var content = new WrappingLinearLayout(context);
+            content.setWrapWidth(content.dp(864));
+            content.setMaxWidth(content.dp(746));
+            int dp4 = content.dp(4);
+
+            {
+                var panel = new LinearLayout(context);
+                panel.setOrientation(LinearLayout.VERTICAL);
+                panel.setClipToPadding(false);
+                // TITLE
+                {
+                    var title = new TextView(context);
+                    title.setText(I18n.get("modernui.center.title"));
+                    title.setTextSize(24);
+                    title.setTextStyle(Typeface.BOLD);
+                    title.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+                        int height = bottom - top;
+                        int oldHeight = oldBottom - oldTop;
+                        if (height != oldHeight) {
+                            var tv = (TextView) v;
+                            tv.getPaint().setShader(new LinearGradient(0, 0, height * 2, height,
+                                    // Minato Aqua
+                                    new int[]{
+                                            0xFFB8DFF4,
+                                            0xFFF8C5CE,
+                                            0xFFFEFDF0
+                                    },
+                                    null,
+                                    Shader.TileMode.MIRROR,
+                                    null));
+                        }
+                    });
+
+                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+                    panel.addView(title, params);
+                }
+                {
+                    var info = new TextView(context);
+                    info.setMovementMethod(LinkMovementMethod.getInstance());
+                    markflow.setMarkdown(info, """
+                            Source Code: [ModernUI](https://github.com/BloCamLimb/ModernUI) [ModernUI-MC](https://github.com/BloCamLimb/ModernUI-MC) \s
+                            Mod Releases: [CurseForge](https://www.curseforge.com/minecraft/mc-mods/modern-ui) [Modrinth](https://modrinth.com/mod/modern-ui) \s
+                            """);
+                    var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+                    panel.addView(info, params);
+                }
+
+                ThemeControl.makeElevatedCard(context, panel, value);
+                var params = new LinearLayout.LayoutParams(MATCH_PARENT, content.dp(420), 1);
+                params.setMargins(dp4, dp4, dp4, dp4);
+                content.addView(panel, params);
+            }
+
+            {
+                var panel = new NestedScrollView(context);
+                panel.setClipToPadding(false);
+                panel.setScrollBarStyle(View.SCROLLBARS_INSIDE_INSET);
+
+                {
+                    var inner = new LinearLayout(context);
+                    inner.setOrientation(LinearLayout.VERTICAL);
+                    mChangelogList = inner;
+
+                    {
+                        var tv = new TextView(context);
+                        tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
+                        tv.setMovementMethod(LinkMovementMethod.getInstance());
+                        markflow.setMarkdown(tv, """
+                                What's New in Modern UI 3.12.0
+                                ----
+                                * Brand-New Graphics Engine
+                                * Better Text Rendering
+                                * Better Mod Compatibility
+                                * Emoji 16.0 Support
+                                * Rendering Optimizations""");
+                        var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+                        params.bottomMargin = content.dp(20);
+                        inner.addView(tv, params);
+                    }
+
+                    if (sChangelogs.isDone()) {
+                        addChangelogs(this, sChangelogs.getResult());
+                    } else {
+                        var progressBar = new ProgressBar(context);
+                        progressBar.setIndeterminate(true);
+                        var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+                        params.gravity = Gravity.CENTER;
+                        inner.addView(progressBar, params);
+
+                        final WeakReference<DashboardFragment> weakThis = new WeakReference<>(this);
+                        sChangelogs.addCallback(s -> addChangelogs(weakThis.get(), s));
+                    }
+
+                    panel.addView(inner, MATCH_PARENT, WRAP_CONTENT);
+                }
+
+                ThemeControl.makeElevatedCard(context, panel, value);
+                var params = new LinearLayout.LayoutParams(MATCH_PARENT, content.dp(420), 1);
+                params.setMargins(dp4, dp4, dp4, dp4);
+                content.addView(panel, params);
+            }
+
+            var sv = new ScrollView(context);
+            sv.setPadding(0, 0, 0, sv.dp(20));
+            var params = new ScrollView.LayoutParams(MATCH_PARENT, WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
+            sv.addView(content, params);
+            layout.addView(sv);
+        }
+
+        if (false){
             TextView tv;
             if (mSideBox == null) {
                 tv = new Button(getContext());
@@ -70,7 +223,6 @@ public class DashboardFragment extends Fragment {
                 tv.setTextColor(0xFFDCAE32);
                 tv.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
                 tv.setOnClickListener(this::play);
-                ThemeControl.addBackground(tv);
                 mSideBox = tv;
             } else {
                 tv = mSideBox;
@@ -83,7 +235,7 @@ public class DashboardFragment extends Fragment {
             layout.addView(tv, params);
         }
 
-        {
+        if (false){
             TextView tv;
             if (mInfoBox == null) {
                 tv = new TextView(getContext());
@@ -92,7 +244,7 @@ public class DashboardFragment extends Fragment {
                 tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
                 tv.setMovementMethod(LinkMovementMethod.getInstance());
                 tv.setSpannableFactory(Spannable.NO_COPY_FACTORY);
-                Markflow.create(requireContext())
+                markflow
                         .setMarkdown(tv, """
                                 What's New in Modern UI 3.11.1
                                 ----
@@ -133,6 +285,25 @@ public class DashboardFragment extends Fragment {
         return mLayout = layout;
     }
 
+    private static void addChangelogs(@Nullable DashboardFragment f, @Nullable String result) {
+        if (f == null || f.mChangelogList == null) {
+            // was destroyed
+            return;
+        }
+        ViewGroup list = f.mChangelogList;
+        if (list.getChildCount() > 1) {
+            // remove the progress bar
+            list.removeViewAt(1);
+        }
+        TextView tv = new TextView(list.getContext());
+        tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
+        tv.setMovementMethod(LinkMovementMethod.getInstance());
+        f.mMarkflow.setMarkdown(tv, result != null ? result :
+                """
+                [Full Changelog…](https://github.com/BloCamLimb/ModernUI-MC/blob/master/changelogs.md)""");
+        list.addView(tv);
+    }
+
     final Runnable mUpdateText = this::updateText;
 
     private void play(View button) {
@@ -148,7 +319,7 @@ public class DashboardFragment extends Fragment {
         mLayout.postDelayed(() -> {
             if (mLayout.isAttachedToWindow()) {
                 var view = new View(getContext());
-                view.setBackground(new Background(view));
+                //view.setBackground(new Background(view));
 
                 var params = new FrameLayout.LayoutParams(view.dp(480), view.dp(270));
                 params.setMarginStart(view.dp(60));
@@ -176,42 +347,146 @@ public class DashboardFragment extends Fragment {
     }
 
     @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        mLayout = null;
+        mChangelogList = null;
+    }
+
+    @Override
     public void onDetach() {
         super.onDetach();
         StillAlive.getInstance().stop();
     }
 
-    private static class Background extends Drawable {
+    static class WrappingLinearLayout extends LinearLayout {
 
-        private final float mStrokeWidth;
+        private int mWrapWidth;
+        private int mMaxWidth;
 
-        private Background(View view) {
-            mStrokeWidth = view.dp(2);
+        public WrappingLinearLayout(Context context) {
+            super(context);
+        }
+
+        public void setWrapWidth(int wrapWidth) {
+            mWrapWidth = wrapWidth;
+        }
+
+        public int getWrapWidth() {
+            return mWrapWidth;
+        }
+
+        public void setMaxWidth(int maxWidth) {
+            mMaxWidth = maxWidth;
+        }
+
+        public int getMaxWidth() {
+            return mMaxWidth;
         }
 
         @Override
-        public void draw(@Nonnull Canvas canvas) {
-            //if (canvas instanceof GLSurfaceCanvas) {
-                var bounds = getBounds();
-                var inner = mStrokeWidth * 0.5f;
-                /*((GLSurfaceCanvas) canvas).drawGlowWave(bounds.left + inner * 1.5f, bounds.top + inner * 1.5f,
-                        bounds.right - inner, bounds.bottom - inner);*/
-                var paint = Paint.obtain();
-                paint.setStyle(Paint.STROKE);
-                paint.setColor(ThemeControl.THEME_COLOR);
-                paint.setStrokeWidth(mStrokeWidth);
-                canvas.drawRoundRect(bounds.left + inner, bounds.top + inner, bounds.right - inner,
-                        bounds.bottom - inner, mStrokeWidth * 2, paint);
-                paint.recycle();
-                invalidateSelf();
-            //}
+        protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            int width = MeasureSpec.getSize(widthMeasureSpec);
+            var orientation = width >= mWrapWidth
+                    ? HORIZONTAL : VERTICAL;
+            setOrientation(orientation);
+            if (mMaxWidth > 0) {
+                int limit = orientation == HORIZONTAL
+                        ? getChildCount() * mMaxWidth : mMaxWidth;
+                if (width > limit) {
+                    widthMeasureSpec = MeasureSpec.makeMeasureSpec(limit, MeasureSpec.EXACTLY);
+                }
+            }
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }
+    }
+
+    // UI thread only
+    public static class Changelogs {
+
+        private CompletableFuture<String> future;
+        private String result;
+        private ArrayList<Consumer<String>> callbacks;
+
+        public Changelogs(Executor uiExecutor) {
+            future = CompletableFuture.supplyAsync(() -> {
+                HttpURLConnection connection = null;
+                try {
+                    URL url = new URL("https://raw.githubusercontent.com/BloCamLimb/ModernUI-MC/refs/heads/master/changelogs.md");
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setConnectTimeout(60_000); // 1min
+                    connection.setReadTimeout(180_000); // 3min
+                    connection.connect();
+                    var sb = new StringBuilder();
+                    try (var br = new BufferedReader(new InputStreamReader(
+                            connection.getInputStream(), StandardCharsets.UTF_8))) {
+                        // read at least 300 lines
+                        for (int i = 0; i < 300; i++) {
+                            String line = br.readLine();
+                            if (line == null) {
+                                break;
+                            }
+                            if (line.startsWith("===")) {
+                                // drop the first headline
+                                sb.setLength(0);
+                            } else {
+                                sb.append(line).append('\n');
+                            }
+                        }
+                        // truncate at next heading
+                        for (;;) {
+                            String line = br.readLine();
+                            if (line == null || line.startsWith("### ")) {
+                                break;
+                            }
+                            sb.append(line).append('\n');
+                        }
+                    }
+                    int i = sb.length() - 1;
+                    for (; i >= 0; i--) {
+                        if (!Character.isWhitespace(i)) break;
+                    }
+                    // trim end spaces & line feeds
+                    sb.delete(i + 1, sb.length());
+                    return sb.toString();
+                } catch (IOException e) {
+                    throw new CompletionException(e);
+                } finally {
+                    if (connection != null) {
+                        connection.disconnect();
+                    }
+                }
+            }).whenCompleteAsync((res, ex) -> {
+                if (ex != null) {
+                    Throwable cause = ex instanceof CompletionException ? ex.getCause() : ex;
+                    ModernUIMod.LOGGER.warn(CenterFragment2.MARKER,
+                            "Failed to request changelogs", cause);
+                } else {
+                    result = res;
+                }
+                future = null;
+                if (callbacks != null) {
+                    callbacks.forEach(c -> c.accept(result));
+                }
+                callbacks = null;
+            }, uiExecutor);
         }
 
-        @Override
-        public boolean getPadding(@Nonnull Rect padding) {
-            int inner = (int) Math.ceil(mStrokeWidth * 0.5f);
-            padding.set(inner, inner, inner, inner);
-            return true;
+        public boolean isDone() {
+            return future == null;
+        }
+
+        public void addCallback(@NonNull Consumer<String> cb) {
+            assert !isDone();
+            if (callbacks == null) {
+                callbacks = new ArrayList<>();
+            }
+            callbacks.add(cb);
+        }
+
+        @Nullable
+        public String getResult() {
+            return result;
         }
     }
 }

@@ -794,7 +794,6 @@ public class PreferencesFragment extends Fragment {
         layout.setClipToPadding(false);
 
         final int dp6 = layout.dp(6);
-        final int dp12 = layout.dp(12);
         TypedValue value = new TypedValue();
         if (name != null) {
             var title = new TextView(context);
@@ -809,25 +808,7 @@ public class PreferencesFragment extends Fragment {
             params.setMargins(0, page.getChildCount() == 0 ? dp6 : layout.dp(18), 0, 0);
             page.addView(title, params);
         }
-        // card
-        ShapeDrawable bg = new ShapeDrawable();
-        bg.setCornerRadius(dp12);
-        context.getTheme().resolveAttribute(R.ns, R.attr.colorSurface, value, true);
-        bg.setColor(value.data);
-        int[] strokeColors = new int[2];
-        context.getTheme().resolveAttribute(R.ns, R.attr.colorOutlineVariant, value, true);
-        strokeColors[0] = value.data;
-        context.getTheme().resolveAttribute(R.ns, R.attr.colorOutline, value, true);
-        strokeColors[1] = ColorStateList.modulateColor(value.data, 0.12f);
-        bg.setStroke(layout.dp(1), new ColorStateList(
-                new int[][]{
-                        StateSet.get(StateSet.VIEW_STATE_ENABLED),
-                        StateSet.WILD_CARD
-                },
-                strokeColors
-        ));
-        layout.setBackground(bg);
-        layout.setPadding(dp12, dp12, dp12, dp12);
+        ThemeControl.makeOutlinedCard(context, layout, value);
 
         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
         params.setMargins(0, dp6, 0, dp6);

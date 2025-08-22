@@ -19,11 +19,12 @@
 package icyllis.modernui.mc.ui;
 
 import icyllis.modernui.R;
+import icyllis.modernui.core.Context;
 import icyllis.modernui.graphics.drawable.Drawable;
 import icyllis.modernui.graphics.drawable.ShapeDrawable;
-import icyllis.modernui.graphics.drawable.StateListDrawable;
 import icyllis.modernui.graphics.text.CharSequenceBuilder;
 import icyllis.modernui.resources.TypedValue;
+import icyllis.modernui.util.ColorStateList;
 import icyllis.modernui.util.StateSet;
 import icyllis.modernui.view.View;
 import icyllis.modernui.view.ViewGroup;
@@ -34,7 +35,7 @@ import javax.annotation.Nonnull;
 
 public class ThemeControl {
 
-    public static final int BACKGROUND_COLOR = 0xc0292a2c;
+    /*public static final int BACKGROUND_COLOR = 0xc0292a2c;
     public static final int THEME_COLOR = 0xffcda398;
     public static final int THEME_COLOR_2 = 0xffcd98a3;
 
@@ -64,12 +65,14 @@ public class ThemeControl {
             background.setExitFadeDuration(200);
             sBackgroundState = background.getConstantState();
         }
-    }
+    }*/
 
+    @Nonnull
     public static Drawable makeDivider(@Nonnull View view) {
         return makeDivider(view, false);
     }
 
+    @Nonnull
     public static Drawable makeDivider(@Nonnull View view, boolean vertical) {
         ShapeDrawable drawable = new ShapeDrawable();
         drawable.setShape(vertical ? ShapeDrawable.VLINE : ShapeDrawable.HLINE);
@@ -105,5 +108,51 @@ public class ThemeControl {
                 setViewAndChildrenEnabled(v, enabled);
             }
         }
+    }
+
+    public static void makeOutlinedCard(@Nonnull Context context, @Nonnull ViewGroup layout,
+                                        @Nonnull TypedValue value) {
+        final int dp12 = layout.dp(12);
+        ShapeDrawable bg = new ShapeDrawable();
+        bg.setCornerRadius(dp12);
+        context.getTheme().resolveAttribute(R.ns, R.attr.colorSurface, value, true);
+        bg.setColor(value.data);
+        int[] strokeColors = new int[2];
+        context.getTheme().resolveAttribute(R.ns, R.attr.colorOutlineVariant, value, true);
+        strokeColors[0] = value.data;
+        context.getTheme().resolveAttribute(R.ns, R.attr.colorOutline, value, true);
+        strokeColors[1] = ColorStateList.modulateColor(value.data, 0.12f);
+        bg.setStroke(layout.dp(1), new ColorStateList(
+                new int[][]{
+                        StateSet.get(StateSet.VIEW_STATE_ENABLED),
+                        StateSet.WILD_CARD
+                },
+                strokeColors
+        ));
+        layout.setBackground(bg);
+        layout.setPadding(dp12, dp12, dp12, dp12);
+    }
+
+    public static void makeFilledCard(@Nonnull Context context, @Nonnull ViewGroup layout,
+                                      @Nonnull TypedValue value) {
+        final int dp12 = layout.dp(12);
+        ShapeDrawable bg = new ShapeDrawable();
+        bg.setCornerRadius(dp12);
+        context.getTheme().resolveAttribute(R.ns, R.attr.colorSurfaceContainerHighest, value, true);
+        bg.setColor(value.data);
+        layout.setBackground(bg);
+        layout.setPadding(dp12, dp12, dp12, dp12);
+    }
+
+    public static void makeElevatedCard(@Nonnull Context context, @Nonnull ViewGroup layout,
+                                        @Nonnull TypedValue value) {
+        final int dp12 = layout.dp(12);
+        ShapeDrawable bg = new ShapeDrawable();
+        bg.setCornerRadius(dp12);
+        context.getTheme().resolveAttribute(R.ns, R.attr.colorSurfaceContainerLow, value, true);
+        bg.setColor(value.data);
+        layout.setBackground(bg);
+        layout.setElevation(layout.dp(1));
+        layout.setPadding(dp12, dp12, dp12, dp12);
     }
 }
