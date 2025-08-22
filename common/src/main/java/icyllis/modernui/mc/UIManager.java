@@ -180,6 +180,7 @@ public abstract class UIManager implements LifecycleOwner {
 
     private final StringBuilder mCharInputBuffer = new StringBuilder();
     private final Runnable mCommitCharInput = this::commitCharInput;
+    private final Runnable mSyntheticHoverMove = () -> onHoverMove(false);
 
     protected UIManager() {
         //MuiModApi.addOnScrollListener(this::onScroll);
@@ -391,7 +392,7 @@ public abstract class UIManager implements LifecycleOwner {
         mRoot.setView(mDecor);
         resize(minecraft.getWindow().getWidth(), minecraft.getWindow().getHeight());
 
-        //mDecor.getViewTreeObserver().addOnScrollChangedListener(() -> onHoverMove(false));
+        mDecor.getViewTreeObserver().addOnScrollChangedListener(this::scheduleHoverMoveForScroll);
 
         mFragmentLifecycleRegistry = new LifecycleRegistry(this);
         mViewModelStore = new ViewModelStore();
@@ -464,6 +465,11 @@ public abstract class UIManager implements LifecycleOwner {
         // must delay, some messages are not enqueued
         // currently it is a bit longer than a game tick
         mRoot.mHandler.postDelayed(mLooper::quitSafely, 60);
+    }
+
+    private void scheduleHoverMoveForScroll() {
+        mRoot.mHandler.removeCallbacks(mSyntheticHoverMove);
+        mRoot.mHandler.postDelayed(mSyntheticHoverMove, 60);
     }
 
     /**
