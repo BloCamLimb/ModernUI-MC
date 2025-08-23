@@ -70,7 +70,7 @@ public class DashboardFragment extends Fragment {
     private ViewGroup mLayout;
     private TextView mSideBox;
     private TextView mInfoBox;
-    private ViewGroup mChangelogList;
+    private LinearLayout mChangelogList;
     private Markflow mMarkflow;
 
     @Override
@@ -114,11 +114,12 @@ public class DashboardFragment extends Fragment {
                 var panel = new LinearLayout(context);
                 panel.setOrientation(LinearLayout.VERTICAL);
                 panel.setClipToPadding(false);
+                panel.setGravity(Gravity.CENTER_VERTICAL);
                 // TITLE
                 {
                     var title = new TextView(context);
                     title.setText(I18n.get("modernui.center.title"));
-                    title.setTextSize(24);
+                    title.setTextSize(32);
                     title.setTextStyle(Typeface.BOLD);
                     title.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
                         int height = bottom - top;
@@ -139,6 +140,7 @@ public class DashboardFragment extends Fragment {
                     });
 
                     var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+                    params.bottomMargin = content.dp(40);
                     panel.addView(title, params);
                 }
                 {
@@ -147,8 +149,9 @@ public class DashboardFragment extends Fragment {
                     markflow.setMarkdown(info, """
                             Source Code: [ModernUI](https://github.com/BloCamLimb/ModernUI) [ModernUI-MC](https://github.com/BloCamLimb/ModernUI-MC) \s
                             Mod Releases: [CurseForge](https://www.curseforge.com/minecraft/mc-mods/modern-ui) [Modrinth](https://modrinth.com/mod/modern-ui) \s
-                            """);
+                            Community: [Discord](https://discord.gg/kmyGKt2)""");
                     var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+                    params.bottomMargin = content.dp(40);
                     panel.addView(info, params);
                 }
 
@@ -208,7 +211,6 @@ public class DashboardFragment extends Fragment {
             }
 
             var sv = new ScrollView(context);
-            sv.setPadding(0, 0, 0, sv.dp(20));
             var params = new ScrollView.LayoutParams(MATCH_PARENT, WRAP_CONTENT, Gravity.CENTER_HORIZONTAL);
             sv.addView(content, params);
             layout.addView(sv);
@@ -281,7 +283,9 @@ public class DashboardFragment extends Fragment {
             layout.addView(tv, params);
         }
 
-        layout.setLayoutTransition(new LayoutTransition());
+        var transition = new LayoutTransition();
+        transition.enableTransitionType(LayoutTransition.CHANGING);
+        layout.setLayoutTransition(transition);
         return mLayout = layout;
     }
 
@@ -442,12 +446,7 @@ public class DashboardFragment extends Fragment {
                             sb.append(line).append('\n');
                         }
                     }
-                    int i = sb.length() - 1;
-                    for (; i >= 0; i--) {
-                        if (!Character.isWhitespace(i)) break;
-                    }
-                    // trim end spaces & line feeds
-                    sb.delete(i + 1, sb.length());
+                    sb.append("[Full Changelog…](https://github.com/BloCamLimb/ModernUI-MC/blob/master/changelogs.md)");
                     return sb.toString();
                 } catch (IOException e) {
                     throw new CompletionException(e);

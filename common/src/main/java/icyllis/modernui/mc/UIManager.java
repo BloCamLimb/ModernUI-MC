@@ -203,7 +203,7 @@ public abstract class UIManager implements LifecycleOwner {
     @RenderThread
     public static void initializeRenderer() {
         Core.checkRenderThread();
-        if (ModernUIMod.isDeveloperMode()) {
+        if (ModernUIMod.sDevelopment || DEBUG) {
             Core.glSetupDebugCallback();
         }
         Objects.requireNonNull(sInstance);

@@ -144,7 +144,7 @@
   "modernui.center.font.chooseFont": "選擇一個字型",
   "modernui.center.font.openFontFile": "開啟字型檔案",
   "modernui.center.font.fallbackFonts": "後備字型系列清單",
-  "modernui.center.font.fallbackFonts.tooltip": "預設字型清單的後備字型系列。\n支援輪廓字型（TrueType/OpenType），每行可以是下列兩種情況之一：\n1）英語註冊字型的字型系列名稱，例如：Segoe UI\n2）你 PC 裝置上字型檔案的絕對路徑，例如：D:/Fonts/Andy Bold.ttf",
+  "modernui.center.font.fallbackFonts.tooltip": "預設字型清單的後備字型系列。\n支援輪廓字型（TrueType/OpenType），每行可以是下列兩種情況之一：\n1）英語註冊字型的字型系列名稱，例如：Segoe UI\n2）你 PC 裝置上字型檔案的路徑，例如：../../Fonts/Andy Bold.ttf",
   "modernui.center.font.colorEmoji": "彩色表情圖案",
   "modernui.center.font.colorEmoji.tooltip": "啟用時，Google Noto 彩色表情圖案將包含在字型項目中。否則，表情圖案將以黑白方式呈現。",
   "modernui.center.font.vanillaFont": "使用原版預設字型",

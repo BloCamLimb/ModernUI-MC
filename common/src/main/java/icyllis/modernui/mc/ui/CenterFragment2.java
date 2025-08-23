@@ -28,15 +28,12 @@ import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.fragment.FragmentContainerView;
 import icyllis.modernui.fragment.FragmentTransaction;
 import icyllis.modernui.graphics.Image;
-import icyllis.modernui.graphics.LinearGradient;
-import icyllis.modernui.graphics.Shader;
 import icyllis.modernui.graphics.drawable.ColorDrawable;
 import icyllis.modernui.graphics.drawable.ImageDrawable;
 import icyllis.modernui.graphics.drawable.RippleDrawable;
 import icyllis.modernui.graphics.drawable.ShapeDrawable;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.resources.TypedValue;
-import icyllis.modernui.text.Typeface;
 import icyllis.modernui.util.ColorStateList;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.util.DisplayMetrics;
@@ -49,7 +46,6 @@ import icyllis.modernui.widget.FrameLayout;
 import icyllis.modernui.widget.LinearLayout;
 import icyllis.modernui.widget.RadioButton;
 import icyllis.modernui.widget.RadioGroup;
-import icyllis.modernui.widget.TextView;
 import net.minecraft.client.resources.language.I18n;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
@@ -173,22 +169,22 @@ public class CenterFragment2 extends Fragment {
             buttonGroup.addView(createNavButton(1002, "modernui.center.tab.preferences",
                     itemTextColor, icons, 0, 0,
                     itemIconTint, itemRippleColor, activeIndicatorColor));
-            if (ModernUIMod.isDeveloperMode()) {
-                buttonGroup.addView(createNavButton(1003, "modernui.center.tab.developerOptions",
-                        itemTextColor, icons, 0, 6,
-                        itemIconTint, itemRippleColor, activeIndicatorColor));
-            }
-            buttonGroup.addView(createNavButton(1004, "soundCategory.music",
+            buttonGroup.addView(createNavButton(1003, "modernui.center.tab.developerOptions",
                     itemTextColor, icons, 0, 6,
+                    itemIconTint, itemRippleColor, activeIndicatorColor));
+            buttonGroup.addView(createNavButton(1004, "soundCategory.music",
+                    itemTextColor, icons, 1, 1,
                     itemIconTint, itemRippleColor, activeIndicatorColor));
             if (ModernUIMod.isDeveloperMode()) {
                 buttonGroup.addView(createNavButton(1005, "Dev",
                         itemTextColor, icons, 0, 6,
                         itemIconTint, itemRippleColor, activeIndicatorColor));
             }
-            buttonGroup.addView(createNavButton(1006, "Markdown",
-                    itemTextColor, icons, 0, 6,
-                    itemIconTint, itemRippleColor, activeIndicatorColor));
+            if (ModernUIMod.isDeveloperMode()) {
+                buttonGroup.addView(createNavButton(1006, "Markdown",
+                        itemTextColor, icons, 0, 6,
+                        itemIconTint, itemRippleColor, activeIndicatorColor));
+            }
 
             var args = getArguments();
             buttonGroup.check(args != null && args.getBoolean("navigateToPreferences") ? 1002 : 1001);
@@ -257,7 +253,7 @@ public class CenterFragment2 extends Fragment {
         button.setFocusable(true);
         button.setClickable(true);
         button.setId(id);
-        button.setText(I18n.get(text));
+        button.setText(ThemeControl.stripFormattingCodes(I18n.get(text)));
         button.setTextSize(12);
         button.setTextColor(itemTextColor);
         button.setGravity(Gravity.CENTER);

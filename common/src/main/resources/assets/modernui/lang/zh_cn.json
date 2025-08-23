@@ -145,7 +145,7 @@
   "modernui.center.font.chooseFont": "选择一个字体",
   "modernui.center.font.openFontFile": "打开字体文件",
   "modernui.center.font.fallbackFonts": "回退字体家族列表",
-  "modernui.center.font.fallbackFonts.tooltip": "默认字体列表的一组回退字体家族。\n支持轮廓字体（TrueType/OpenType），每一行可以是以下两种情况之一：\n1) 已注册字体的字体家族英文名，例如：Segoe UI\n2) 字体文件的绝对路径，例如：D:/Fonts/Andy Bold.ttf\n注意，对于 TTC/OTC 字体，推荐先注册再选择其中一个字体家族。否则，只有 TrueType/OpenType 合集中的第一个字体家族会被使用。",
+  "modernui.center.font.fallbackFonts.tooltip": "默认字体列表的一组回退字体家族。\n支持轮廓字体（TrueType/OpenType），每一行可以是以下两种情况之一：\n1) 已注册字体的字体家族英文名，例如：Segoe UI\n2) 字体文件的路径，例如：../../Fonts/Andy Bold.ttf\n注意，对于 TTC/OTC 字体，推荐先注册再选择其中一个字体家族。否则，只有 TrueType/OpenType 合集中的第一个字体家族会被使用。",
   "modernui.center.font.colorEmoji": "彩色表情符号",
   "modernui.center.font.colorEmoji.tooltip": "启用时，Google Noto Color Emoji 会加入字体列表。否则，表情符号将以黑白形式渲染。",
   "modernui.center.font.vanillaFont": "使用原版默认字体",
