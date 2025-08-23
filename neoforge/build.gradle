@@ -87,7 +87,7 @@ dependencies {
     include "com.vladsch.flexmark:flexmark-util-visitor:${flexmark_version}"*/
     include "org.commonmark:commonmark:${commonmark_version}"
 
-    shadow ':ModernUI-Fonts-4.0'
+    shadow ':ModernUI-Fonts-5.0'
 }
 
 tasks.withType(JavaCompile).configureEach {

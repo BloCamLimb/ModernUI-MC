@@ -33,6 +33,7 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.system.Platform;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -532,7 +533,7 @@ public final class ConfigImpl {
             // Microsoft YaHei UI, STHeiti, SimHei, SansSerif
             mFirstFontFamily = builder.comment(
                             "The first font family to use. See fallbackFontFamilyList")
-                    .define("firstFontFamily", "Source Han Sans CN Medium");
+                    .define("firstFontFamily", "Inter Frozen Medium");
             mFallbackFontFamilyList = builder.comment(
                             "A set of fallback font families to determine the typeface to use.",
                             "The order is first > fallbacks. TrueType & OpenType are supported.",
@@ -549,6 +550,7 @@ public final class ConfigImpl {
                             "This is only read once when the game is loaded, you can reload via in-game GUI.")
                     .defineList("fallbackFontFamilyList", () -> {
                         List<String> list = new ArrayList<>();
+                        list.add("Source Han Sans CN Medium");
                         list.add("Noto Sans");
                         list.add("Segoe UI Variable");
                         list.add("Segoe UI");
@@ -838,7 +840,7 @@ public final class ConfigImpl {
                             "When enabled, text layout uses fractional metrics with no font hinting.",
                             "When disabled, text layout uses integer metrics with full font hinting.",
                             "Disable if on low-res monitor; enable for linear text.")
-                    .define("linearMetrics", true);
+                    .define("linearMetrics", Platform.get() != Platform.WINDOWS);
             mMinPixelDensityForSDF = builder.comment(
                             "Control the minimum pixel density for SDF text and text in 3D world rendering.",
                             "This value will be no less than current GUI scale.",

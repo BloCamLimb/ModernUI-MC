@@ -116,7 +116,7 @@ dependencies {
 
     //shadow "io.reactivex.rxjava3:rxjava:${rxjava_version}"
 
-    shadow ':ModernUI-Fonts-4.0'
+    shadow ':ModernUI-Fonts-5.0'
 
     /*implementation('org.apache.maven:maven-artifact') {
         version {
