@@ -27,6 +27,7 @@ import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.util.DisplayMetrics;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.system.Platform;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.*;
@@ -112,37 +113,49 @@ public abstract class MixinWindow {
         if (MuiModApi.get().isGLVersionPromoted()) {
             return;
         }
-        GLFWErrorCallback callback = GLFW.glfwSetErrorCallback(null);
-        GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
-        GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
-        GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE);
-        final int[][] versions = {{4, 6}, {4, 5}, {4, 1}, {3, 3}};
-        long window = 0;
-        try {
-            for (int[] version : versions) {
-                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, version[0]);
-                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, version[1]);
-                ModernUIMod.LOGGER.debug(ModernUIMod.MARKER, "Trying OpenGL {}.{}", version[0], version[1]);
-                window = GLFW.glfwCreateWindow(640, 480, "System Testing", 0, 0);
-                if (window != 0) {
-                    ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Promoted to OpenGL {}.{} Core Profile",
-                            version[0], version[1]);
-                    return;
+        if (Platform.get() == Platform.MACOSX ||
+                Boolean.parseBoolean(ModernUIClient.getBootstrapProperty(
+                        ModernUIClient.BOOTSTRAP_SKIP_GL_VERSION_PROMOTION))) {
+            GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
+            GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE);
+            if (Platform.get() == Platform.MACOSX) {
+                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
+                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 1);
+            } else {
+                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
+                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
+            }
+        } else {
+            GLFWErrorCallback callback = GLFW.glfwSetErrorCallback(null);
+            GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
+            GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
+            GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE);
+            long window = 0;
+            try {
+                for (int minor = 6; minor >= 0; minor--) {
+                    GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 4);
+                    GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, minor);
+                    ModernUIMod.LOGGER.debug(ModernUIMod.MARKER, "Trying OpenGL 4.{}", minor);
+                    window = GLFW.glfwCreateWindow(640, 480, "System Testing", 0, 0);
+                    if (window != 0) {
+                        ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Promoted to OpenGL 4.{} Core Profile",
+                                minor);
+                        return;
+                    }
                 }
+                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
+                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 3);
+            } catch (Throwable e) {
+                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
+                GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2);
+                ModernUIMod.LOGGER.warn(ModernUIMod.MARKER, "Fallback to OpenGL 3.2 Core Profile", e);
+            } finally {
+                if (window != 0) {
+                    GLFW.glfwDestroyWindow(window);
+                }
+                GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_TRUE);
+                GLFW.glfwSetErrorCallback(callback);
             }
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2);
-            ModernUIMod.LOGGER.warn(ModernUIMod.MARKER, "Fallback to OpenGL 3.2 Core Profile");
-        } catch (Exception e) {
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, 3);
-            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, 2);
-            ModernUIMod.LOGGER.warn(ModernUIMod.MARKER, "Fallback to OpenGL 3.2 Core Profile", e);
-        } finally {
-            if (window != 0) {
-                GLFW.glfwDestroyWindow(window);
-            }
-            GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_TRUE);
-            GLFW.glfwSetErrorCallback(callback);
         }
     }
 }

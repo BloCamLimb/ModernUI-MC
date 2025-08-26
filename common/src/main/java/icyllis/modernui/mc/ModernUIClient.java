@@ -74,6 +74,7 @@ public abstract class ModernUIClient extends ModernUI {
 
     public static final String BOOTSTRAP_USE_STAGING_BUFFERS_IN_OPENGL = "arc3d_context_useStagingBuffers";
     public static final String BOOTSTRAP_ALLOW_SPIRV_IN_OPENGL = "arc3d_context_allowGLSPIRV";
+    public static final String BOOTSTRAP_SKIP_GL_VERSION_PROMOTION = "modernui_mc_skipGLPromotion";
 
     public static volatile boolean sInventoryPause;
     public static volatile boolean sRemoveTelemetrySession;
