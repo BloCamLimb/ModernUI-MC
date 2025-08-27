@@ -178,8 +178,8 @@ public class MusicFragment extends Fragment {
             var volumeBar = new SeekLayout(requireContext(), 18);
             content.addView(volumeBar);
 
-            volumeBar.mMinText.setText("\uFE0E\uD83D\uDD07");
-            volumeBar.mMaxText.setText("\uFE0E\uD83D\uDD0A");
+            volumeBar.mMinText.setText("\uD83D\uDD07\uFE0E");
+            volumeBar.mMaxText.setText("\uD83D\uDD0A\uFE0E");
             volumeBar.mSeekBar.setProgress(Math.round(mMusicPlayer.getGain() * 10000));
             volumeBar.mSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                 @Override

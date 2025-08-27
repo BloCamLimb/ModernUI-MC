@@ -27,15 +27,17 @@ import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.LinearGradient;
 import icyllis.modernui.graphics.Shader;
+import icyllis.modernui.graphics.drawable.ColorDrawable;
+import icyllis.modernui.graphics.drawable.RippleDrawable;
 import icyllis.modernui.markflow.Markflow;
 import icyllis.modernui.markflow.MarkflowPlugin;
 import icyllis.modernui.markflow.MarkflowTheme;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.StillAlive;
 import icyllis.modernui.resources.TypedValue;
-import icyllis.modernui.text.Spannable;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.text.method.LinkMovementMethod;
+import icyllis.modernui.util.ColorStateList;
 import icyllis.modernui.util.DataSet;
 import icyllis.modernui.view.*;
 import icyllis.modernui.widget.*;
@@ -58,20 +60,15 @@ import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class DashboardFragment extends Fragment {
 
-    public static final String CREDIT_TEXT = """
-            Modern UI 3.11.1
-            by
-            BloCamLimb
-            (Icyllis Milica)
-            Ciallo～(∠・ω< )⌒☆""";
-
     public static Changelogs sChangelogs;
 
-    private ViewGroup mLayout;
-    private TextView mSideBox;
-    private TextView mInfoBox;
+    private FrameLayout mLayout;
     private LinearLayout mChangelogList;
     private Markflow mMarkflow;
+    private int mClickCount;
+    private TextView mLyricView;
+    private TextView mCreditView;
+    private TextView mArtView;
 
     @Override
     public void onAttach(@NonNull Context context) {
@@ -138,6 +135,11 @@ public class DashboardFragment extends Fragment {
                                     null));
                         }
                     });
+                    context.getTheme().resolveAttribute(R.ns, R.attr.colorControlHighlight, value, true);
+                    title.setBackground(new RippleDrawable(ColorStateList.valueOf(value.data), null,
+                            new ColorDrawable(~0)));
+                    title.setOnClickListener(this::prepare);
+                    mClickCount = 0;
 
                     var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
                     params.bottomMargin = content.dp(40);
@@ -216,63 +218,6 @@ public class DashboardFragment extends Fragment {
             layout.addView(sv);
         }
 
-        if (false){
-            TextView tv;
-            if (mSideBox == null) {
-                tv = new Button(getContext());
-                tv.setText("Still Alive");
-                tv.setTextSize(16);
-                tv.setTextColor(0xFFDCAE32);
-                tv.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-                tv.setOnClickListener(this::play);
-                mSideBox = tv;
-            } else {
-                tv = mSideBox;
-            }
-
-            var params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-            params.setMarginEnd(tv.dp(120));
-            params.gravity = Gravity.END | Gravity.CENTER_VERTICAL;
-            layout.addView(tv, params);
-        }
-
-        if (false){
-            TextView tv;
-            if (mInfoBox == null) {
-                tv = new TextView(getContext());
-                tv.setTextSize(16);
-                // leading margin is based on para dir, not view dir
-                tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
-                tv.setMovementMethod(LinkMovementMethod.getInstance());
-                tv.setSpannableFactory(Spannable.NO_COPY_FACTORY);
-                markflow
-                        .setMarkdown(tv, """
-                                What's New in Modern UI 3.11.1
-                                ----
-                                * Brand-New Graphics Engine
-                                * Better Text Rendering
-                                * Better Mod Compatibility
-                                * Emoji 16.0 Support
-                                * Rendering Optimizations
-                                * [Full Changelog…](https://github.com/BloCamLimb/ModernUI/blob/master/changelogs.md)
-                                * [Full Changelog…](https://github.com/BloCamLimb/ModernUI-MC/blob/master/changelogs.md)
-                                \s
-                                > Author: BloCamLimb \s
-                                  Source Code: [Modern UI](https://github.com/BloCamLimb/ModernUI) \s
-                                  Source Code: [Modern UI (MC)](https://github.com/BloCamLimb/ModernUI-MC)""");
-                mInfoBox = tv;
-            } else {
-                tv = mInfoBox;
-            }
-
-            var params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-            params.setMarginStart(tv.dp(120));
-            params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
-            layout.addView(tv, params);
-        }
-
         {
             var tv = new TextView(getContext());
             tv.setTextSize(12);
@@ -284,17 +229,16 @@ public class DashboardFragment extends Fragment {
         }
 
         var transition = new LayoutTransition();
-        transition.enableTransitionType(LayoutTransition.CHANGING);
         layout.setLayoutTransition(transition);
         return mLayout = layout;
     }
 
     private static void addChangelogs(@Nullable DashboardFragment f, @Nullable String result) {
-        if (f == null || f.mChangelogList == null) {
+        ViewGroup list;
+        if (f == null || (list = f.mChangelogList) == null) {
             // was destroyed
             return;
         }
-        ViewGroup list = f.mChangelogList;
         if (list.getChildCount() > 1) {
             // remove the progress bar
             list.removeViewAt(1);
@@ -303,49 +247,180 @@ public class DashboardFragment extends Fragment {
         tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
         tv.setMovementMethod(LinkMovementMethod.getInstance());
         f.mMarkflow.setMarkdown(tv, result != null ? result :
-                """
-                [Full Changelog…](https://github.com/BloCamLimb/ModernUI-MC/blob/master/changelogs.md)""");
+                "[Full Changelog…](https://github.com/BloCamLimb/ModernUI-MC/blob/master/changelogs.md)");
         list.addView(tv);
     }
 
-    final Runnable mUpdateText = this::updateText;
+    private Runnable mUpdateText;
 
-    private void play(View button) {
-        var tv = (TextView) button;
-        tv.setText("", TextView.BufferType.EDITABLE);
-        tv.setClickable(false);
-        if (mInfoBox != null) {
-            mInfoBox.setVisibility(View.GONE);
+    // all events
+    private StillAlive.Event[] mEvents;
+    private int mEventIndex;
+    private long mEventStartTime;
+    // current line
+    private String mLyricLine;
+    private int mLyricIndex;
+    private int mLyricStartTime;
+    private int mLyricInterval;
+    private boolean mLyricNeedsWrap;
+
+    private int mCreditIndex;
+    private int mCreditStartTime;
+    private int mCreditInterval;
+
+    private void prepare(View button) {
+        if (++mClickCount == 10) {
+            mLayout.removeAllViews();
+            mChangelogList = null;
+
+            mLayout.postDelayed(this::play, 2000);
         }
-
-        StillAlive.getInstance().start();
-
-        mLayout.postDelayed(() -> {
-            if (mLayout.isAttachedToWindow()) {
-                var view = new View(getContext());
-                //view.setBackground(new Background(view));
-
-                var params = new FrameLayout.LayoutParams(view.dp(480), view.dp(270));
-                params.setMarginStart(view.dp(60));
-                params.setMarginEnd(view.dp(30));
-                params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
-
-                mLayout.addView(view, params);
-            }
-        }, 18000);
-
-        mLayout.postDelayed(mUpdateText, 2000);
     }
 
-    private void updateText() {
-        if (!mSideBox.isAttachedToWindow()) {
+    private void play() {
+        Context context = requireContext();
+        GridLayout gridLayout = new GridLayout(context);
+        gridLayout.setRowCount(2);
+        gridLayout.setColumnCount(2);
+        gridLayout.setUseDefaultMargins(true);
+
+        Typeface monoFont = Typeface.getSystemFont("JetBrains Mono Medium");
+        if (monoFont == Typeface.SANS_SERIF) {
+            monoFont = Typeface.MONOSPACED;
+        }
+        TypedValue value = new TypedValue();
+        {
+            var tv = new TextView(context);
+            tv.setTypeface(monoFont);
+            tv.setTextSize(14);
+            tv.setLineSpacing(0, 1.5f / 1.1f);
+            tv.setText("", TextView.BufferType.EDITABLE);
+            tv.setTextDirection(View.TEXT_DIRECTION_LTR);
+            ThemeControl.makeOutlinedCard(context, tv, value);
+
+            var params = new GridLayout.LayoutParams();
+            params.rowSpec = GridLayout.spec(0, 2, 1F);
+            params.columnSpec = GridLayout.spec(0, 1, 1F);
+            params.width = 0;
+            params.height = 0;
+            gridLayout.addView(tv, params);
+            mLyricView = tv;
+        }
+
+        {
+            var tv = new TextView(context);
+            tv.setTypeface(monoFont);
+            tv.setTextSize(14);
+            tv.setLineSpacing(0, 1.5f / 1.1f);
+            tv.setText("", TextView.BufferType.EDITABLE);
+            tv.setTextDirection(View.TEXT_DIRECTION_LTR);
+            tv.setGravity(Gravity.BOTTOM);
+            ThemeControl.makeOutlinedCard(context, tv, value);
+
+            var params = new GridLayout.LayoutParams();
+            params.rowSpec = GridLayout.spec(0, 1F);
+            params.columnSpec = GridLayout.spec(1, 1F);
+            params.width = 0;
+            params.height = 0;
+            gridLayout.addView(tv, params);
+            mCreditView = tv;
+        }
+
+        {
+            var tv = new TextView(context);
+            tv.setTypeface(monoFont);
+            tv.setTextSize(14);
+            tv.setLineSpacing(0, 1f / 1.1f);
+            tv.setTextDirection(View.TEXT_DIRECTION_LTR);
+            tv.setGravity(Gravity.CENTER);
+            ThemeControl.makeOutlinedCard(context, tv, value);
+
+            var params = new GridLayout.LayoutParams();
+            params.rowSpec = GridLayout.spec(1, 1.1F);
+            params.columnSpec = GridLayout.spec(1, 1F);
+            params.width = 0;
+            params.height = 0;
+            gridLayout.addView(tv, params);
+            mArtView = tv;
+        }
+
+        mLayout.addView(gridLayout);
+
+        mEvents = StillAlive.Event.getEvents();
+        mEventIndex = 0;
+        mEventStartTime = System.nanoTime();
+        mCreditInterval = 0;
+
+        mUpdateText = this::tick;
+        tick();
+    }
+
+    private void tick() {
+        if (mLayout == null || !mLayout.isAttachedToWindow()) {
             return;
         }
-        var editable = mSideBox.getEditableText();
-        if (editable.length() < CREDIT_TEXT.length()) {
-            editable.append(CREDIT_TEXT.charAt(editable.length()));
-            if (editable.length() < CREDIT_TEXT.length()) {
-                mSideBox.postDelayed(mUpdateText, 250);
+        int time = (int) ((System.nanoTime() - mEventStartTime) / 1000000L);
+        while (mEventIndex < mEvents.length) {
+            var e = mEvents[mEventIndex];
+            if (time < e.time()) {
+                break;
+            }
+            tickLyric(time);
+            switch (e.kind()) {
+                case StillAlive.Event.WORDS_WRAP, StillAlive.Event.WORDS_NOWRAP -> {
+                    mLyricLine = e.payload();
+                    mLyricIndex = 0;
+                    mLyricStartTime = e.time();
+                    int interval = e.arg();
+                    if (interval < 0) {
+                        mLyricInterval = mEvents[mEventIndex + 1].time() - mLyricStartTime;
+                    } else {
+                        mLyricInterval = interval;
+                    }
+                    mLyricNeedsWrap = e.kind() == StillAlive.Event.WORDS_WRAP;
+                }
+                case StillAlive.Event.ASCII_ART -> mArtView.setText(StillAlive.ASCII_ARTS[e.arg()]);
+                case StillAlive.Event.CLEAR_SCREEN -> mLyricView.getEditableText().clear();
+                case StillAlive.Event.PLAY_MUSIC -> StillAlive.getInstance().start();
+                case StillAlive.Event.SHOW_CREDITS -> {
+                    mCreditIndex = 0;
+                    mCreditStartTime = e.time();
+                    mCreditInterval = mEvents[mEvents.length - 1].time() - mCreditStartTime;
+                }
+            }
+            mEventIndex++;
+        }
+        if (mEventIndex == mEvents.length) {
+            mEvents = null;
+            mLyricLine = null;
+            return;
+        }
+        tickLyric(time);
+        mLayout.postDelayed(mUpdateText, 50);
+    }
+
+    private void tickLyric(int time) {
+        if (mLyricLine == null) {
+            return;
+        }
+        int count = mLyricLine.length();
+        if (mLyricIndex < count) {
+            int end = Math.min((time - mLyricStartTime) * count / mLyricInterval + 1, count);
+            if (mLyricIndex < end) {
+                mLyricView.getEditableText().append(mLyricLine, mLyricIndex, end);
+                mLyricIndex = end;
+            }
+        }
+        if (mLyricNeedsWrap && mLyricIndex == count) {
+            mLyricView.getEditableText().append('\n');
+            mLyricNeedsWrap = false;
+        }
+        if (mCreditInterval > 0) {
+            count = StillAlive.CREDITS.length();
+            int end = Math.min((time - mCreditStartTime) * count / mCreditInterval + 1, count);
+            if (mCreditIndex < end) {
+                mCreditView.getEditableText().append(StillAlive.CREDITS, mCreditIndex, end);
+                mCreditIndex = end;
             }
         }
     }
@@ -355,12 +430,7 @@ public class DashboardFragment extends Fragment {
         super.onDestroyView();
         mLayout = null;
         mChangelogList = null;
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        StillAlive.getInstance().stop();
+        StillAlive.stop();
     }
 
     static class WrappingLinearLayout extends LinearLayout {

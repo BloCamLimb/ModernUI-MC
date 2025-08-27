@@ -110,7 +110,7 @@ public class ThemeControl {
         }
     }
 
-    public static void makeOutlinedCard(@Nonnull Context context, @Nonnull ViewGroup layout,
+    public static void makeOutlinedCard(@Nonnull Context context, @Nonnull View layout,
                                         @Nonnull TypedValue value) {
         final int dp12 = layout.dp(12);
         ShapeDrawable bg = new ShapeDrawable();
@@ -133,7 +133,7 @@ public class ThemeControl {
         layout.setPadding(dp12, dp12, dp12, dp12);
     }
 
-    public static void makeFilledCard(@Nonnull Context context, @Nonnull ViewGroup layout,
+    public static void makeFilledCard(@Nonnull Context context, @Nonnull View layout,
                                       @Nonnull TypedValue value) {
         final int dp12 = layout.dp(12);
         ShapeDrawable bg = new ShapeDrawable();
@@ -144,7 +144,7 @@ public class ThemeControl {
         layout.setPadding(dp12, dp12, dp12, dp12);
     }
 
-    public static void makeElevatedCard(@Nonnull Context context, @Nonnull ViewGroup layout,
+    public static void makeElevatedCard(@Nonnull Context context, @Nonnull View layout,
                                         @Nonnull TypedValue value) {
         final int dp12 = layout.dp(12);
         ShapeDrawable bg = new ShapeDrawable();
