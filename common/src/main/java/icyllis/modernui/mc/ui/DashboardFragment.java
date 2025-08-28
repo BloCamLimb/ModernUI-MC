@@ -148,10 +148,18 @@ public class DashboardFragment extends Fragment {
                 {
                     var info = new TextView(context);
                     info.setMovementMethod(LinkMovementMethod.getInstance());
-                    markflow.setMarkdown(info, """
-                            Source Code: [ModernUI](https://github.com/BloCamLimb/ModernUI) [ModernUI-MC](https://github.com/BloCamLimb/ModernUI-MC) \s
-                            Mod Releases: [CurseForge](https://www.curseforge.com/minecraft/mc-mods/modern-ui) [Modrinth](https://modrinth.com/mod/modern-ui) \s
-                            Community: [Discord](https://discord.gg/kmyGKt2)""");
+                    markflow.setMarkdown(info,
+                            I18n.get("gui.modernui.sourceCode_ssss",
+                                    "[ModernUI](https://github.com/BloCamLimb/ModernUI)",
+                                    "[ModernUI-MC](https://github.com/BloCamLimb/ModernUI-MC)",
+                                    "", "") + "  \n" +
+                                    I18n.get("gui.modernui.modReleases_ssss",
+                                            "[CurseForge](https://www.curseforge.com/minecraft/mc-mods/modern-ui)",
+                                            "[Modrinth](https://modrinth.com/mod/modern-ui)",
+                                            "", "") + "  \n" +
+                                    I18n.get("gui.modernui.community_ssss",
+                                            "[Discord](https://discord.gg/kmyGKt2)",
+                                            "", "", ""));
                     var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
                     params.bottomMargin = content.dp(40);
                     panel.addView(info, params);
@@ -177,14 +185,15 @@ public class DashboardFragment extends Fragment {
                         var tv = new TextView(context);
                         tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
                         tv.setMovementMethod(LinkMovementMethod.getInstance());
-                        markflow.setMarkdown(tv, """
-                                What's New in Modern UI 3.12.0
+                        markflow.setMarkdown(tv, I18n.get("gui.modernui.whatsNewIn_s",
+                                "Modern UI 3.12.0") + """
+                                
                                 ----
-                                * Brand-New Graphics Engine
-                                * Better Text Rendering
-                                * Better Mod Compatibility
-                                * Emoji 16.0 Support
-                                * Rendering Optimizations""");
+                                * Brand-New Themes & Styles
+                                * New Visual Effects & Animations
+                                * New Graphics & Typography API
+                                * New UI Components & Features
+                                * Massive Optimizations""");
                         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
                         params.bottomMargin = content.dp(20);
                         inner.addView(tv, params);
@@ -269,7 +278,7 @@ public class DashboardFragment extends Fragment {
     private int mCreditInterval;
 
     private void prepare(View button) {
-        if (++mClickCount == 10) {
+        if (++mClickCount == 7) {
             mLayout.removeAllViews();
             mChangelogList = null;
 
