@@ -20,7 +20,6 @@ package icyllis.modernui.mc.neoforge;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
 import net.minecraft.client.KeyMapping;
@@ -46,7 +45,7 @@ import java.io.IOException;
 public final class MuiForgeApi extends MuiModApi {
 
     public MuiForgeApi() {
-        ModernUI.LOGGER.info(ModernUI.MARKER, "Created MuiForgeAPI");
+        ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Created MuiForgeAPI");
     }
 
     @SuppressWarnings("unchecked")
@@ -76,13 +75,19 @@ public final class MuiForgeApi extends MuiModApi {
     @Override
     public boolean isGLVersionPromoted() {
         try {
+            if (!net.neoforged.fml.loading.FMLConfig.getBoolConfigValue(net.neoforged.fml.loading.FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
+                return false;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
             String version = net.neoforged.fml.loading.ImmediateWindowHandler.getGLVersion();
             if (!"3.2".equals(version)) {
-                ModernUI.LOGGER.info(ModernUI.MARKER, "Detected OpenGL {} Core Profile from FML Early Window",
+                ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Detected OpenGL {} Core Profile from FML Early Window",
                         version);
                 return true;
             }
-        } catch (Exception ignored) {
+        } catch (Throwable ignored) {
         }
         return false;
     }

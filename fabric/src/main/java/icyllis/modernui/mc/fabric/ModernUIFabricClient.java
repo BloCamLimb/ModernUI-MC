@@ -62,7 +62,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.stream.IntStream;
 
-import static icyllis.modernui.mc.ModernUIMod.*;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.MARKER;
 
 @Environment(EnvType.CLIENT)
 public class ModernUIFabricClient extends ModernUIClient implements ClientModInitializer {
@@ -108,7 +109,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                 // FML may throw ex, so it can be null
                 if (handler != null) {
                     // Call in lambda, not in creating the lambda
-                    handler.post(() -> UIManager.getInstance().updateLayoutDir(Config.CLIENT.mForceRtl.get()));
+                    handler.post(() -> UIManager.getInstance().updateLayoutDir(ConfigImpl.CLIENT.mForceRtl.get()));
                 }
                 BlurHandler.INSTANCE.loadEffect();
             }
@@ -133,15 +134,15 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             }
         });
 
-        NeoForgeModConfigEvents.loading(ID).register(Config::reloadAnyClient);
-        NeoForgeModConfigEvents.reloading(ID).register(Config::reloadAnyClient);
+        NeoForgeModConfigEvents.loading(ID).register(ConfigImpl::reloadAnyClient);
+        NeoForgeModConfigEvents.reloading(ID).register(ConfigImpl::reloadAnyClient);
 
         ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
             UIManagerFabric.initializeRenderer();
             // ensure it's applied and positioned
             Config.CLIENT.mLastWindowMode.apply();
 
-            if (Config.CLIENT.mUseNewGuiScale.get()) {
+            if (ConfigImpl.CLIENT.mUseNewGuiScale.get()) {
                 final OptionInstance<Integer> newGuiScale = new OptionInstance<>(
                         /*caption*/ "options.guiScale",
                         /*tooltip*/ OptionInstance.noTooltip(),
@@ -191,14 +192,10 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             }
         });
 
-        Config.initClientConfig(
-                spec -> NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
-                        ModernUI.NAME_CPT + "/client.toml")
-        );
-        Config.initTextConfig(
-                spec -> NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, spec,
-                        ModernUI.NAME_CPT + "/text.toml")
-        );
+        NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
+                ModernUI.NAME_CPT + "/client.toml");
+        NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
+                ModernUI.NAME_CPT + "/text.toml");
 
         FontResourceManager.getInstance();
         if (ModernUIMod.isTextEngineEnabled()) {

@@ -20,6 +20,7 @@ package icyllis.modernui.mc.fabric;
 
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
+import icyllis.modernui.mc.ui.CenterFragment2;
 import icyllis.modernui.util.DataSet;
 
 public final class MuiModMenuApi implements ModMenuApi {

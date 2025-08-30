@@ -501,7 +501,6 @@ public final class ModernStringSplitter extends StringSplitter {
     public void computeLineBreaks(@Nonnull String text, float width, @Nonnull Style base,
                                   @Nonnull StringSplitter.LinePosConsumer consumer) {
         if (text.isEmpty()) {
-            consumer.accept(base, 0, 0);
             return;
         }
         width = Math.max(width, 0.0f);
@@ -601,7 +600,6 @@ public final class ModernStringSplitter extends StringSplitter {
     public void computeLineBreaks(@Nonnull FormattedText text, float width, @Nonnull Style base,
                                   @Nonnull BiConsumer<FormattedText, Boolean> consumer) {
         if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
-            consumer.accept(FormattedText.EMPTY, Boolean.FALSE);
             return;
         }
         width = Math.max(width, 0.0f);
@@ -609,6 +607,9 @@ public final class ModernStringSplitter extends StringSplitter {
         final TextLayout layout = mEngine.lookupFormattedLayout(text, base,
                 TextLayoutEngine.COMPUTE_ADVANCES | TextLayoutEngine.COMPUTE_LINE_BOUNDARIES);
         final char[] buf = layout.getTextBuf();
+        if (buf.length == 0) {
+            return;
+        }
         if (width >= layout.getTotalAdvance()) {
             boolean hasLineFeed = false;
             for (int i = 0, e = layout.getCharCount(); i < e; i++) {

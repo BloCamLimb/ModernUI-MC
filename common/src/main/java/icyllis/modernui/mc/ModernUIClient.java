@@ -20,6 +20,7 @@ package icyllis.modernui.mc;
 
 import icyllis.arc3d.engine.DriverBugWorkarounds;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.R;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
@@ -36,6 +37,9 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.MARKER;
 
 public abstract class ModernUIClient extends ModernUI {
 
@@ -68,6 +72,10 @@ public abstract class ModernUIClient extends ModernUI {
         return props;
     }
 
+    public static final String BOOTSTRAP_USE_STAGING_BUFFERS_IN_OPENGL = "arc3d_context_useStagingBuffers";
+    public static final String BOOTSTRAP_ALLOW_SPIRV_IN_OPENGL = "arc3d_context_allowGLSPIRV";
+    public static final String BOOTSTRAP_SKIP_GL_VERSION_PROMOTION = "modernui_mc_skipGLPromotion";
+
     public static volatile boolean sInventoryPause;
     public static volatile boolean sRemoveTelemetrySession;
     public static volatile float sFontScale = 1;
@@ -84,6 +92,8 @@ public abstract class ModernUIClient extends ModernUI {
     protected ModernUIClient() {
         super();
         sInstance = this;
+        setTheme(R.style.Theme_Material3_Dark);
+        getTheme().applyStyle(R.style.ThemeOverlay_Material3_Dark_Rust, true);
     }
 
     @Nonnull

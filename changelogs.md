@@ -1,5 +1,8 @@
 Changelogs
 ===
+###
+* Disable blur effect by default when OptiFine is installed
+
 ### Modern UI 3.11.1.9
 This is a Minecraft-only update, the Modern UI core does not change.  
 **Modern UI** is likely to be renamed to **ModernUI** in the next version.

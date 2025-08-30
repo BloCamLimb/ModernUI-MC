@@ -19,7 +19,7 @@
 package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.font.SpaceProvider;
-import icyllis.arc3d.core.Typeface;
+import icyllis.arc3d.sketch.Typeface;
 import icyllis.modernui.graphics.Rect;
 import icyllis.modernui.graphics.text.*;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;

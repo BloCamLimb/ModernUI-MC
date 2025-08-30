@@ -38,7 +38,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-import static icyllis.modernui.ModernUI.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 
 /**
  * Load extra font resources for Modern UI.
@@ -89,7 +89,7 @@ public class FontResourceManager implements PreparableReloadListener {
                         sInstance = new TextLayoutEngine();
                     } else {
                         sInstance = new FontResourceManager();
-                        LOGGER.info(ModernUI.MARKER, "Created FontResourceManager");
+                        LOGGER.info(ModernUIMod.MARKER, "Created FontResourceManager");
                     }
                 }
             }

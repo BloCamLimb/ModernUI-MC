@@ -27,6 +27,7 @@ import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.lifecycle.LifecycleOwner;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessNativeImage;
+import icyllis.modernui.mc.ui.CenterFragment2;
 import icyllis.modernui.text.TextUtils;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
@@ -49,7 +50,7 @@ import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.util.Map;
 
-import static icyllis.modernui.ModernUI.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 import static org.lwjgl.glfw.GLFW.*;
 
 /**
@@ -89,7 +90,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     }
 
     @RenderThread
-    static void initialize() {
+    public static void initialize() {
         Core.checkRenderThread();
         assert sInstance == null;
         sInstance = new UIManagerForge();

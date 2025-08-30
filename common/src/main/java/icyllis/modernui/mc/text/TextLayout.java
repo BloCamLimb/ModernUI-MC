@@ -34,7 +34,7 @@ import java.util.Random;
  * The layout contains all glyph layout information and rendering information.
  * <p>
  * This is a Minecraft alternative of {@link icyllis.modernui.graphics.text.ShapedText},
- * {@link icyllis.arc3d.core.TextBlob} and {@link icyllis.arc3d.granite.BakedTextBlob}.
+ * {@link icyllis.arc3d.sketch.TextBlob} and {@link icyllis.arc3d.granite.BakedTextBlob}.
  */
 public class TextLayout {
 
@@ -391,6 +391,10 @@ public class TextLayout {
             int ascent = 0;
             net.minecraft.client.gui.Font.DisplayMode vanillaDisplayMode = null;
             boolean isBitmapFont = false;
+            boolean isColorEmoji = false;
+            if ((bits & CharacterStyle.NO_SHADOW_MASK) != 0 && isShadow) {
+                continue;
+            }
             if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
                 var chars = (GlyphManager.FastCharSet) glyph;
                 int fastIndex = RANDOM.nextInt(chars.glyphs.size());
@@ -404,13 +408,13 @@ public class TextLayout {
                     scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
                     isBitmapFont = true;
                 } else {
-                    assert (bits & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0;
                     if (isShadow) {
                         continue;
                     }
                     texture = GlyphManager.getInstance().getEmojiTexture();
                     ascent = TextLayout.STANDARD_BASELINE_OFFSET;
                     scaleFactor = TextLayoutProcessor.sBaseFontSize / GlyphManager.EMOJI_BASE;
+                    isColorEmoji = true;
                 }
                 fakeItalic = (bits & CharacterStyle.ITALIC_MASK) != 0;
                 rx = x + positions[i << 1] + glyph.x * scaleFactor;
@@ -449,7 +453,7 @@ public class TextLayout {
                 rx = Math.round(rx * density) * invDensity;
                 ry = Math.round(ry * density) * invDensity;
             }
-            if ((bits & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0) {
+            if (isColorEmoji) {
                 r = 0xff;
                 g = 0xff;
                 b = 0xff;
@@ -921,7 +925,7 @@ public class TextLayout {
     }
 
     @Nonnull
-    private static String toEscapeChars(@Nonnull char[] a) {
+    public static String toEscapeChars(@Nonnull char[] a) {
         int iMax = a.length - 1;
         if (iMax == -1)
             return "";
@@ -997,13 +1001,13 @@ public class TextLayout {
         } else {
             b.append(' ');
         }
-        if ((flag & CharacterStyle.COLOR_EMOJI_REPLACEMENT) != 0) {
-            b.append('E');
+        if ((flag & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
+            b.append('M');
         } else {
             b.append(' ');
         }
-        if ((flag & CharacterStyle.BITMAP_REPLACEMENT) != 0) {
-            b.append('M');
+        if ((flag & CharacterStyle.NO_SHADOW_MASK) != 0) {
+            b.append('W');
         } else {
             b.append(' ');
         }

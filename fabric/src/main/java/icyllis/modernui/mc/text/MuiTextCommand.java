@@ -166,7 +166,7 @@ public class MuiTextCommand {
                 Component.literal(result)
                         .setStyle(Style.EMPTY.withFont(JB_MONO))
         );
-        Util.ioPool().execute(() -> ModernUI.LOGGER.info(TextLayoutEngine.MARKER, result));
+        Util.ioPool().execute(() -> ModernUIMod.LOGGER.info(TextLayoutEngine.MARKER, result));
     }
 
     private static void splitLines(FabricClientCommandSource source,
@@ -204,6 +204,6 @@ public class MuiTextCommand {
         String result = b.getString();
         source.sendFeedback(component);
         source.sendFeedback(b);
-        Util.ioPool().execute(() -> ModernUI.LOGGER.info(TextLayoutEngine.MARKER, result));
+        Util.ioPool().execute(() -> ModernUIMod.LOGGER.info(TextLayoutEngine.MARKER, result));
     }
 }
