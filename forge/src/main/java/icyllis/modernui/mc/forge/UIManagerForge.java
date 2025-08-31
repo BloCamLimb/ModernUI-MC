@@ -21,7 +21,6 @@ package icyllis.modernui.mc.forge;
 import com.mojang.blaze3d.platform.InputConstants;
 import icyllis.arc3d.opengl.GLDevice;
 import icyllis.modernui.annotation.MainThread;
-import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.lifecycle.LifecycleOwner;
@@ -92,9 +91,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         MinecraftForge.EVENT_BUS.register(this);
     }
 
-    @RenderThread
-    public static void initialize() {
-        Core.checkRenderThread();
+    static void initialize() {
         assert sInstance == null;
         sInstance = new UIManagerForge();
         LOGGER.info(MARKER, "UI manager initialized");

@@ -146,6 +146,7 @@ public final class ModernUIForge extends ModernUIMod {
 
         private Client(FMLJavaModLoadingContext context) {
             super();
+            UIManagerForge.initialize();
             context.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
                     ModernUI.NAME_CPT + "/client.toml");
             context.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
