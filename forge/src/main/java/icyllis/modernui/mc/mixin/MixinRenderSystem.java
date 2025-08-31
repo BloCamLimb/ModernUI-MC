@@ -23,7 +23,6 @@ import icyllis.arc3d.engine.ContextOptions;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.mc.ModernUIMod;
-import icyllis.modernui.mc.forge.UIManagerForge;
 import net.minecraft.util.TimeSource;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Configuration;
@@ -65,7 +64,6 @@ public class MixinRenderSystem {
         if (!Core.initOpenGL(options)) {
             Core.glShowCapsErrorDialog();
         }
-        UIManagerForge.initialize();
     }
 
     /**
