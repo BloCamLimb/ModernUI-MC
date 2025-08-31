@@ -944,6 +944,7 @@ public abstract class UIManager implements LifecycleOwner {
             if (surface.getImage() instanceof @RawPtr GLTexture layer) {
                 // draw off-screen target to Minecraft mainTarget (not the default framebuffer)
                 ShaderInstance blitShader = minecraft.gameRenderer.blitShader;
+                Objects.requireNonNull(blitShader, "Blit shader not loaded");
                 blitShader.setSampler("DiffuseSampler", layer.getHandle());
                 // using the nearest sampler is performant
                 @SharedPtr
@@ -953,29 +954,16 @@ public abstract class UIManager implements LifecycleOwner {
                     // XXX: we assume the binding unit is 0 since 'DiffuseSampler' is the only sampler
                     GL33C.glBindSampler(0, sampler.getHandle());
                 }
-                // z is 0
-                Matrix4f projection = new Matrix4f()
-                        .setOrtho(0.0F, width, height, 0.0F, 1000.0F, 3000.0F);
-                if (blitShader.MODEL_VIEW_MATRIX != null) {
-                    blitShader.MODEL_VIEW_MATRIX.set(new Matrix4f().translation(0.0F, 0.0F, -2000.0F));
-                }
-                if (blitShader.PROJECTION_MATRIX != null) {
-                    blitShader.PROJECTION_MATRIX.set(projection);
-                }
-                RenderSystem.setShaderColor(1F, 1F, 1F, 1F);
-                if (blitShader.COLOR_MODULATOR != null) {
-                    blitShader.COLOR_MODULATOR.set(RenderSystem.getShaderColor());
-                }
                 blitShader.apply();
                 // override blend with src over
                 RenderSystem.blendFuncSeparate(GL33C.GL_ONE, GL33C.GL_ONE_MINUS_SRC_ALPHA,
                         GL33C.GL_ONE, GL33C.GL_ONE_MINUS_SRC_ALPHA);
-                BufferBuilder bufferBuilder = Tesselator.getInstance()
-                        .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-                bufferBuilder.addVertex(0, height, 0).setUv(0, 0).setColor(~0);
-                bufferBuilder.addVertex(width, height, 0).setUv(1, 0).setColor(~0);
-                bufferBuilder.addVertex(width, 0, 0).setUv(1, 1).setColor(~0);
-                bufferBuilder.addVertex(0, 0, 0).setUv(0, 1).setColor(~0);
+                BufferBuilder bufferBuilder = RenderSystem.renderThreadTesselator()
+                        .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLIT_SCREEN);
+                bufferBuilder.addVertex(0.0F, 0.0F, 0.0F);
+                bufferBuilder.addVertex(1.0F, 0.0F, 0.0F);
+                bufferBuilder.addVertex(1.0F, 1.0F, 0.0F);
+                bufferBuilder.addVertex(0.0F, 1.0F, 0.0F);
                 BufferUploader.draw(bufferBuilder.buildOrThrow());
                 blitShader.clear();
                 if (sampler != null) {
