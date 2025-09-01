@@ -45,7 +45,7 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 
-import static icyllis.modernui.ModernUI.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 import static icyllis.modernui.mc.text.TextLayoutEngine.MARKER;
 
 /**

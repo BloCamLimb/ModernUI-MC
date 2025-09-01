@@ -20,7 +20,6 @@ package icyllis.modernui.mc;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.text.*;
 import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.TextLayoutEngine;
@@ -38,7 +37,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
-import static icyllis.modernui.ModernUI.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 
 /**
  * Load extra font resources for Modern UI.
@@ -89,7 +88,7 @@ public class FontResourceManager implements PreparableReloadListener {
                         sInstance = new TextLayoutEngine();
                     } else {
                         sInstance = new FontResourceManager();
-                        LOGGER.info(ModernUI.MARKER, "Created FontResourceManager");
+                        LOGGER.info(ModernUIMod.MARKER, "Created FontResourceManager");
                     }
                 }
             }

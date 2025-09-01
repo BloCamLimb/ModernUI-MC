@@ -24,7 +24,7 @@ import com.mojang.blaze3d.font.SheetGlyphInfo;
 import icyllis.arc3d.core.*;
 import icyllis.arc3d.engine.*;
 import icyllis.arc3d.opengl.*;
-import icyllis.modernui.ModernUI;
+import icyllis.arc3d.sketch.Typeface;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.*;
@@ -45,6 +45,8 @@ import javax.annotation.Nullable;
 import java.io.InputStream;
 import java.util.*;
 import java.util.function.Function;
+
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 
 /**
  * Directly provides a bitmap (mask format may be RGBA or grayscale) to replace
@@ -74,6 +76,8 @@ public class BitmapFont implements Font, AutoCloseable {
      */
     @SuppressWarnings("JavadocReference")
     public static final int FONT_TEXTURE_SIZE = 256;
+
+    public static float sBitmapOffset = 0.5f;
 
     private final ResourceLocation mName;
 
@@ -134,7 +138,7 @@ public class BitmapFont implements Font, AutoCloseable {
                         c * mSpriteWidth, r * mSpriteHeight,
                         actualWidth <= 0);
                 if (mGlyphs.put(ch, glyph) != null) {
-                    ModernUI.LOGGER.warn(GlyphManager.MARKER, "Codepoint '{}' declared multiple times in {}",
+                    LOGGER.warn(GlyphManager.MARKER, "Codepoint '{}' declared multiple times in {}",
                             Integer.toHexString(ch), mName);
                 }
                 if (useDedicatedTexture) {
@@ -222,7 +226,7 @@ public class BitmapFont implements Font, AutoCloseable {
                         mName.toString()
                 );
         if (mTexture == null) {
-            ModernUI.LOGGER.error(GlyphManager.MARKER, "Failed to create font texture for {}", mName);
+            LOGGER.error(GlyphManager.MARKER, "Failed to create font texture for {}", mName);
             return;
         }
         boolean res = ((GLDevice) context.getDevice()).writePixels(
@@ -242,7 +246,7 @@ public class BitmapFont implements Font, AutoCloseable {
     }
 
     public void dumpAtlas(int index, String path) {
-        ModernUI.LOGGER.info(GlyphManager.MARKER, "BitmapFont {}: {}, ascent: {}, descent: {}, numGlyphs: {}, " +
+        LOGGER.info(GlyphManager.MARKER, "BitmapFont {}: {}, ascent: {}, descent: {}, numGlyphs: {}, " +
                         "nothingToDraw: {}, fitsInAtlas: {}, dedicatedTexture: {}",
                 index, mName, getAscent(), getDescent(), mGlyphs.size(),
                 nothingToDraw(), fitsInAtlas(), mTexture);
@@ -455,7 +459,7 @@ public class BitmapFont implements Font, AutoCloseable {
             }
             if (positions != null) {
                 positions.add(x + advance +
-                        scaleUp * 0.5f); // 1px spacing, center it
+                        scaleUp * sBitmapOffset); // 1px spacing, center it
                 positions.add(y);
             }
 

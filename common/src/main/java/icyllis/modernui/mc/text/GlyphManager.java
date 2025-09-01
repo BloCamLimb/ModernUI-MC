@@ -48,7 +48,7 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.*;
 
-import static icyllis.modernui.ModernUI.LOGGER;
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 
 /**
  * Manages all glyphs, font atlases, measures glyph metrics and draw them of
@@ -665,6 +665,7 @@ public class GlyphManager {
         if (font instanceof OutlineFont) {
             java.awt.Font awtFont = ((OutlineFont) font).chooseFont(fontSize);
             GlyphStrike strike = mFontTable.get(awtFont);
+            assert strike != null;
             if (!strike.mPreloadedFastChars) {
                 cacheFastChars(font, fontSize, awtFont);
                 strike.mPreloadedFastChars = true;
@@ -674,6 +675,10 @@ public class GlyphManager {
         } else {
             BitmapFont bitmapFont = (BitmapFont) font;
             GlyphStrike strike = mBitmapFontTable.get(bitmapFont);
+            if (strike == null) {
+                // nothing to draw, or too large for atlasing
+                return null;
+            }
             if (!strike.mPreloadedFastChars) {
                 cacheFastChars(bitmapFont);
                 strike.mPreloadedFastChars = true;

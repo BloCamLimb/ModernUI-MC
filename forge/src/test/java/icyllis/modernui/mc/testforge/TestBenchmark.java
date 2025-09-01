@@ -18,13 +18,14 @@
 
 package icyllis.modernui.mc.testforge;
 
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.text.TextUtils;
 import icyllis.modernui.util.DataSet;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.ints.*;
 import it.unimi.dsi.fastutil.shorts.ShortArrayList;
 import net.minecraft.nbt.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.github.jamm.MemoryMeter;
 import org.lwjgl.system.MemoryUtil;
 import org.openjdk.jmh.annotations.*;
@@ -41,6 +42,8 @@ import java.util.*;
 @Measurement(iterations = 5, time = 1)
 public class TestBenchmark {
 
+    public static final Logger LOGGER = LogManager.getLogger();
+
     // "--add-opens"
     // "java.base/java.util=ALL-UNNAMED"
     // "--add-opens"
@@ -55,12 +58,12 @@ public class TestBenchmark {
                 .build())
                 .run();
 
-        ModernUI.LOGGER.info("DataSet: {}", TextUtils.binaryCompact(meter.measureDeep(sDataSet)));
-        ModernUI.LOGGER.info("CompoundTag: {}", TextUtils.binaryCompact(meter.measureDeep(sCompoundTag)));
+        LOGGER.info("DataSet: {}", TextUtils.binaryCompact(meter.measureDeep(sDataSet)));
+        LOGGER.info("CompoundTag: {}", TextUtils.binaryCompact(meter.measureDeep(sCompoundTag)));
 
-        ModernUI.LOGGER.info("HashMap: {}", TextUtils.binaryCompact(meter.measureDeep(sHashMap)));
-        ModernUI.LOGGER.info("OpenHashMap: {}", TextUtils.binaryCompact(meter.measureDeep(sInt2ObjectOpenHashMap)));
-        ModernUI.LOGGER.info("RBTreeMap: {}", TextUtils.binaryCompact(meter.measureDeep(sStringInt2ObjectRBTreeMap)));
+        LOGGER.info("HashMap: {}", TextUtils.binaryCompact(meter.measureDeep(sHashMap)));
+        LOGGER.info("OpenHashMap: {}", TextUtils.binaryCompact(meter.measureDeep(sInt2ObjectOpenHashMap)));
+        LOGGER.info("RBTreeMap: {}", TextUtils.binaryCompact(meter.measureDeep(sStringInt2ObjectRBTreeMap)));
     }
 
     public static DataSet sDataSet = new DataSet();

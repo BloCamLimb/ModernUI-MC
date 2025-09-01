@@ -73,26 +73,26 @@ public final class StillAlive {
                 14674, 14736, 14800, 14994, 15054, 15184, 15305, 15888, 16018, 16083, 16272, 16397, 16526, 16592,
                 16777, 16841, 16978, 17609, 17683, 17746, 17808, 17872, 17938, 18633, 18707, 18770, 18832, 18896,
                 19090, 19150, 19344, 19401, 19984, 20114, 20179, 20368, 20493, 20622, 20688, 20809, 20878, 20944,
-                21009, 21072, 21134, 21196, 21258, 21385, 21450, 21513, 21516, 21649, 21644, 21772, 21776, 21838,
-                21902, 21964, 22026, 22030, 22092, 22154, 22156, 22281, 22284, 22409, 22474, 22540, 22537, 22673,
-                22668, 22803, 22800, 22865, 22928, 22990, 23050, 23054, 23120, 23178, 23185, 23308, 23313, 23443,
-                23509, 23574, 23569, 23633, 23638, 23697, 23701, 23827, 23824, 23953, 24019, 24081, 24085, 24149,
-                24145, 24208, 24211, 24273, 24334, 24337, 24462, 24524, 24590, 24657, 24721, 24784, 24845, 24909,
-                24912, 24978, 25042, 26899, 26962, 27024, 27088, 27218, 27849, 27923, 27986, 28048, 28112, 28306,
-                28366, 28560, 28617, 29200, 29330, 29395, 29584, 29709, 29838, 29904, 30089, 30153, 30290, 30995,
-                31058, 31120, 31184, 31314, 32019, 32082, 32144, 32208, 32402, 32462, 32656, 32713, -32240, -32110,
-                -32045, -31856, -31731, -31602, -31536, -31415, -31346, -31280, -31210, -31215, -31152, -31087,
-                -31082, -31090, -31023, -31018, -31028, -30839, -30774, -30708, -30711, -30575, -30580, -30448,
-                -30386, -30322, -30260, -30198, -30194, -30132, -30070, -30068, -29940, -29943, -29815, -29750,
-                -29684, -29687, -29556, -29551, -29421, -29428, -29359, -29296, -29234, -29174, -29170, -29104,
-                -29046, -29039, -28911, -28916, -28781, -28715, -28650, -28655, -28591, -28586, -28523, -28527,
-                -28461, -28400, -28397, -28271, -28205, -28139, -28143, -28075, -28079, -28013, -28016, -27951,
-                -27890, -27887, -27762, -27700, -27634, -27567, -27503, -27440, -27379, -27315, -27312, -27246,
-                -27182, -26731, -26667, -26601, -26610, -26539, -26478, -26418, -26288, -26222, -26158, -25771,
-                -25707, -25643, -25577, -25586, -25515, -25454, -25394, -25264, -25198, -25134, -24747, -24683,
-                -24619, -24553, -24562, -24491, -24430, -24370, -24240, -24174, -24110, -23659, -23595, -23529,
-                -23538, -23467, -23406, -23346, -23216, -23150, -23086, -22699, -22635, -22571, -22505, -22514,
-                -22443, -22382, -22322, -22192, -22126, -22062, -21677, -21611, -21547, -21165, -21102, -21038
+                21009, 21072, 21134, 21196, 21385, 21450, 21513, 21516, 21649, 21644, 21772, 21776, 21838, 21902,
+                21964, 22026, 22030, 22092, 22154, 22156, 22281, 22284, 22409, 22474, 22540, 22537, 22673, 22668,
+                22803, 22800, 22865, 22928, 22990, 23050, 23054, 23120, 23178, 23185, 23308, 23313, 23443, 23509,
+                23574, 23569, 23633, 23638, 23697, 23701, 23827, 23824, 23953, 24019, 24081, 24085, 24149, 24145,
+                24208, 24211, 24273, 24334, 24337, 24462, 24524, 24590, 24657, 24721, 24784, 24845, 24909, 24912,
+                24978, 25042, 26899, 26962, 27024, 27088, 27218, 27849, 27923, 27986, 28048, 28112, 28306, 28366,
+                28560, 28617, 29200, 29330, 29395, 29584, 29709, 29838, 29904, 30089, 30153, 30290, 30995, 31058,
+                31120, 31184, 31314, 32019, 32082, 32144, 32208, 32402, 32462, 32656, 32713, -32240, -32110, -32045,
+                -31856, -31731, -31602, -31536, -31415, -31346, -31280, -31215, -31152, -31090, -31028, -30839,
+                -30774, -30708, -30711, -30575, -30580, -30448, -30386, -30322, -30260, -30198, -30194, -30132,
+                -30070, -30068, -29940, -29943, -29815, -29750, -29684, -29687, -29556, -29551, -29421, -29428,
+                -29359, -29296, -29234, -29174, -29170, -29104, -29046, -29039, -28911, -28916, -28781, -28715,
+                -28650, -28655, -28591, -28586, -28523, -28527, -28461, -28400, -28397, -28271, -28205, -28139,
+                -28143, -28075, -28079, -28013, -28016, -27951, -27890, -27887, -27762, -27700, -27634, -27567,
+                -27503, -27440, -27379, -27315, -27312, -27246, -27182, -26731, -26667, -26601, -26610, -26539,
+                -26478, -26418, -26288, -26222, -26158, -25771, -25707, -25643, -25577, -25586, -25515, -25454,
+                -25394, -25264, -25198, -25134, -24747, -24683, -24619, -24553, -24562, -24491, -24430, -24370,
+                -24240, -24174, -24110, -23659, -23595, -23529, -23538, -23467, -23406, -23346, -23216, -23150,
+                -23086, -22699, -22635, -22571, -22505, -22514, -22443, -22382, -22322, -22192, -22126, -22062,
+                -21677, -21611, -21547, -21165, -21102, -21038
         }));
         mTracks.add(new Track(NoteBlockInstrument.HARP, 1.0F, 0, new short[]{
                 521, 590, 658, 718, 779, 846, 914, 974, 1033, 1102, 1170, 1230, 1291, 1358, 1426, 1486, 1545, 1614,
@@ -119,7 +119,7 @@ public final class StillAlive {
                 18886, 18899, 19017, 19086, 19093, 19154, 19145, 19270, 19339, 19347, 19398, 19406, 19529, 19602,
                 19598, 19657, 19726, 19782, 19858, 19854, 19915, 19989, 19994, 20048, 20181, 20186, 20240, 20309,
                 20373, 20378, 20496, 20501, 20688, 20693, 20697, 20749, 20873, 20885, 20941, 21002, 21009, 21014,
-                21018, 21130, 21137, 21142, 21258, 21265, 21393, 21386, 21521, 21644, 21653, 21705, 21779, 21836,
+                21018, 21130, 21137, 21142, 21258, 21265, 21270, 21393, 21386, 21521, 21644, 21653, 21705, 21779, 21836,
                 21907, 21904, 21964, 22033, 22161, 22218, 22289, 22409, 22417, 22476, 22545, 22673, 22668, 22677,
                 22729, 22803, 22808, 22860, 22931, 22928, 22988, 23057, 23185, 23178, 23317, 23433, 23445, 23500,
                 23562, 23578, 23642, 23706, 23754, 23832, 23884, 23960, 24012, 24081, 24088, 24208, 24216, 24334,
@@ -189,8 +189,8 @@ public final class StillAlive {
                 27923, 27986, 28048, 28112, 28306, 28366, 28560, 28617, 29200, 29330, 29395, 29584, 29709, 29838,
                 29904, 30089, 30153, 30290, 30995, 31058, 31120, 31184, 31314, 32019, 32082, 32144, 32208, 32402,
                 32462, 32656, 32713, -32242, -32240, -32247, -32110, -32114, -32119, -32050, -32045, -32055, -31858,
-                -31856, -31863, -31731, -31740, -31602, -31610, -31536, -31545, -31415, -31346, -31280, -31215,
-                -31152, -31090, -31028, -21677, -21611, -21547, -21165, -21102, -21038
+                -31856, -31863, -31731, -31740, -31602, -31610, -31536, -31545, -31415, -31346, -31280, -31222,
+                -31215, -31152, -31094, -31090, -31030, -31028, -21677, -21611, -21547, -21165, -21102, -21038
         }));
         mTracks.add(new Track(NoteBlockInstrument.BIT, 0.6F, 0, new short[]{
                 21393, 21459, 21525, 21656, 21910, 21973, 22038, 22101, 22165, 22293, 22419, 22481, 22540, 22677,
@@ -357,7 +357,7 @@ public final class StillAlive {
 
     private StillAlive() {
         mSoundManager = Minecraft.getInstance().getSoundManager();
-        // mTracks.stream().mapToInt(t -> t.mNotes.length).sum(); // 3673 notes
+        // mTracks.stream().mapToInt(t -> t.mNotes.length).sum(); // 3671 notes
     }
 
     public static StillAlive getInstance() {
@@ -383,15 +383,19 @@ public final class StillAlive {
         mTracks.forEach(Track::rewind);
     }
 
-    public void stop() {
-        mPlaying = false;
+    public static void stop() {
+        if (sInstance != null) {
+            sInstance.mPlaying = false;
+        }
     }
 
     void onTick() {
         if (mPlaying) {
             var now = System.nanoTime();
             var stop = true;
-            for (var track : mTracks) {
+            //noinspection ForLoopReplaceableByForEach
+            for (int i = 0; i < mTracks.size(); i++) {
+                var track = mTracks.get(i);
                 while (track.mPosition < track.mNotes.length) {
                     var note = track.mNotes[track.mPosition];
                     var time = mStartTimeNanos + (note & 0xFFE0) * 3906250L;
@@ -405,7 +409,7 @@ public final class StillAlive {
                 stop &= track.mPosition == track.mNotes.length;
             }
             if (stop) {
-                stop();
+                mPlaying = false;
             }
         }
     }
@@ -419,5 +423,612 @@ public final class StillAlive {
                 /*looping*/false, /*delay*/0, SoundInstance.Attenuation.NONE,
                 x, /*y*/0, z, /*relative*/true);
         mSoundManager.play(soundInstance);
+    }
+
+    public static final String[] ASCII_ARTS = {
+            """
+                              .,-:;//;:=,              \s
+                          . :H@@@MM@M#H/.,+%;,         \s
+                       ,/X+ +M@@M@MM%=,-%HMMM@X/,      \s
+                     -+@MM; #M@@MH+-,;XMMMM@MMMM@+-    \s
+                    ;@M@@M- XM@X;. -+XXXXXHHH@M@M#@/.  \s
+                  ,%MM@@MH ,@%=            .---=-=:=,. \s
+                  =@#@@@MX .,              -%HX##%%%+; \s
+                 =-./@M@M$                  .;@MMMM@MM:\s
+                 X@/ -#MM/                    .+MM@@@M$\s
+                ,@M@H: :@:                    . =X#@@@@-
+                ,@@@MMX, .                    /H- ;@M@M=
+                .H@@@@M@+,                    %MM+..%#$.
+                 /MMMM@MMH/.                  XM@MH; =;\s
+                  /%+%#XHH@$=              , .H@@@@MX, \s
+                   .=--------.           -%H.,@@@@@MX, \s
+                   .%MM@@@HHHXX###%+= .:#MMX =M@@MM%.  \s
+                     =XMMM@MM@MM#H;,-+HMM@M+ /MMMX=    \s
+                       =%@M@M#@$-.=#@MM@@@M; %M%=      \s
+                         ,:+$+-,/H#MMMMMMM@= =,        \s
+                               =++%%%%+/:-.            \s""",
+            """
+                             =+$HM####@H%;,            \s
+                          /H###############M$,         \s
+                          ,@################+          \s
+                           .H##############+           \s
+                             X############/            \s
+                              $##########/             \s
+                               %########/              \s
+                                /X/;;+X/               \s
+                                 -XHHX-                \s
+                                ,######,               \s
+                #############X  .M####M.  X#############
+                ##############-   -//-   -##############
+                X##############%,      ,+##############X
+                -##############X        X##############-
+                 %############%          %############%\s
+                  %##########;            ;##########% \s
+                   ;#######M=              =M#######;  \s
+                    .+M###@,                ,@###M+.   \s
+                       :XH.                  .HX:      \s
+                                                       \s""",
+            """
+                                 =/;;/-                \s
+                                +:    //               \s
+                               /;      /;              \s
+                              -X        H.             \s
+                .//;;;:;;-,   X=        :+   .-;:=;:;%;.
+                M-       ,=;;;#:,      ,:#;;:=,       ,@
+                :%           :%.=/++++/=.$=           %=
+                 ,%;         %/:+/;,,/++:+/         ;+.\s
+                   ,+/.    ,;@+,        ,%H;,    ,/+,  \s
+                      ;+;;/= @.  .H##X   -X :///+;     \s
+                      ;+=;;;.@,  .XM@$.  =X.//;=%/.    \s
+                   ,;:      :@%=        =$H:     .+%-  \s
+                 ,%=         %;-///==///-//         =%,\s
+                ;+           :%-;;;:;;;;-X-           +:
+                @-      .-;;;;M-        =M/;;;-.      -X
+                 :;;::;;-.    %-        :+    ,-;;-;:==\s
+                              ,X        H.             \s
+                               ;/      %=              \s
+                                //    +;               \s
+                                 ,////,                \s""",
+            """
+                                          .,---.       \s
+                                        ,/XM#MMMX;,    \s
+                                      -%##########M%,  \s
+                                     -@######%  $###@= \s
+                      .,--,         -H#######$   $###M:\s
+                   ,;$M###MMX;     .;##########$;HM###X=
+                 ,/@##########H=      ;################+
+                -+#############M/,      %##############+
+                %M###############=      /##############:
+                H################      .M#############;.
+                @###############M      ,@###########M:.\s
+                X################,      -$=X#######@:  \s
+                /@##################%-     +######$-   \s
+                .;##################X     .X#####+,    \s
+                 .;H################/     -X####+.     \s
+                   ,;X##############,       .MM/       \s
+                      ,:+$H@M#######M#$-    .$$=       \s
+                           .,-=;+$@###X:    ;/=.       \s
+                                  .,/X$;   .::,        \s
+                                      .,    ..         \s""",
+            """
+                            .+                         \s
+                             /M;                       \s
+                              H#@:              ;,     \s
+                              -###H-          -@/      \s
+                               %####$.  -;  .%#X       \s
+                                M#####+;#H :M#M.       \s
+                ..          .+/;%#########X###-        \s
+                 -/%H%+;-,    +##############/         \s
+                    .:$M###MH$%+############X  ,--=;-  \s
+                        -/H#####################H+=.   \s
+                           .+#################X.       \s
+                         =%M####################H;.    \s
+                            /@###############+;;/%%;,  \s
+                         -%###################$.       \s
+                       ;H######################M=      \s
+                    ,%#####MH$%;+#####M###-/@####%     \s
+                  :$H%+;=-      -####X.,H#   -+M##@-   \s
+                 .              ,###;    ;      =$##+  \s
+                                .#H,               :XH,\s
+                                 +                   .;-""",
+            """
+                                     -$-               \s
+                                    .H##H,             \s
+                                   +######+            \s
+                                .+#########H.          \s
+                              -$############@.         \s
+                            =H###############@  -X:    \s
+                          .$##################:  @#@-  \s
+                     ,;  .M###################;  H###; \s
+                   ;@#:  @###################@  ,#####:\s
+                 -M###.  M#################@.  ;######H\s
+                 M####-  +###############$   =@#######X\s
+                 H####$   -M###########+   :#########M,\s
+                  /####X-   =########%   :M########@/. \s
+                    ,;%H@X;   .$###X   :##MM@%+;:-     \s
+                                 ..                    \s
+                  -/;:-,.              ,,-==+M########H\s
+                 -##################@HX%%+%%$%%%+:,,   \s
+                   .-/H%%%+%%$H@###############M@+=:/+:\s
+                /XHX%:#####MH%=    ,---:;;;;/%%XHM,:###$
+                $@#MX %+;-                           . \s""",
+            """
+                                                     :X-
+                                                  :X###\s
+                                                ;@####@\s
+                                              ;M######X\s
+                                            -@########$\s
+                                          .$##########@\s
+                                         =M############-
+                                        +##############$
+                                      .H############$=.\s
+                         ,/:         ,M##########M;.   \s
+                      -+@###;       =##########M;      \s
+                   =%M#######;     :#########M/        \s
+                -$M###########;   :#########/          \s
+                 ,;X###########; =########$.           \s
+                     ;H#########+#######M=             \s
+                       ,+##############+               \s
+                          /M#########@-                \s
+                            ;M######%                  \s
+                              +####:                   \s
+                               ,$M-                    \s""",
+            """
+                           .-;+$XHHHHHHX$+;-.          \s
+                        ,;X@@X%/;=----=:/%X@@X/,       \s
+                      =$@@%=.              .=+H@X:     \s
+                    -XMX:                      =XMX=   \s
+                   /@@:                          =H@+  \s
+                  %@X,                            .$@$ \s
+                 +@X.                               $@%\s
+                -@@,                                .@@=
+                %@%                                  +@$
+                H@:                                  :@H
+                H@:         :HHHHHHHHHHHHHHHHHHX,    =@H
+                %@%         ;@M@@@@@@@@@@@@@@@@@H-   +@$
+                =@@,        :@@@@@@@@@@@@@@@@@@@@@= .@@:
+                 +@X        :@@@@@@@@@@@@@@@M@@@@@@:%@%\s
+                  $@$,      ;@@@@@@@@@@@@@@@@@M@@@@@@$.\s
+                   +@@HHHHHHH@@@@@@@@@@@@@@@@@@@@@@@+  \s
+                    =X@@@@@@@@@@@@@@@@@@@@@@@@@@@@X=   \s
+                      :$@@@@@@@@@@@@@@@@@@@M@@@@$:     \s
+                        ,;$@@@@@@@@@@@@@@@@@@X/-       \s
+                           .-;+$XXHHHHHX$+;-.          \s""",
+            """
+                            ,:/+/-                     \s
+                            /M/              .,-=;//;- \s
+                       .:/= ;MH/,    ,=/+%$XH@MM#@:    \s
+                      -$##@+$###@H@MMM#######H:.    -/H#
+                 .,H@H@ X######@ -H#####@+-     -+H###@\s
+                  .,@##H;      +XM##M/,     =%@###@X;- \s
+                X%-  :M##########$.    .:%M###@%:      \s
+                M##H,   +H@@@$/-.  ,;$M###@%,          -
+                M####M=,,---,.-%%H####M$:          ,+@##
+                @##################@/.         :%H##@$-\s
+                M###############H,         ;HM##M$=    \s
+                #################.    .=$M##M$=        \s
+                ################H..;XM##M$=          .:+
+                M###################@%=           =+@MH%
+                @################M/.          =+H#X%=  \s
+                =+M##############M,       -/X#X+;.     \s
+                  .;XM##########H=    ,/X#H+:,         \s
+                     .=+HM######M+/+HM@+=.             \s
+                         ,:/%XM####H/.                 \s
+                              ,.:=-.                   \s""",
+            """
+                       #+ @      # #              M#@  \s
+                 .    .X  X.%##@;# #   +@#######X. @#% \s
+                   ,==.   ,######M+  -#####%M####M-    #
+                  :H##M%:=##+ .M##M,;#####/+#######% ,M#
+                 .M########=  =@#@.=#####M=M#######=  X#
+                 :@@MMM##M.  -##M.,#######M#######. =  M
+                             @##..###:.    .H####. @@ X,
+                   ############: ###,/####;  /##= @#. M\s
+                           ,M## ;##,@#M;/M#M  @# X#% X#\s
+                .%=   ######M## ##.M#:   ./#M ,M #M ,#$\s
+                ##/         $## #+;#: #### ;#/ M M- @# :
+                #+ #M@MM###M-;M #:$#-##$H# .#X @ + $#. #
+                      ######/.: #%=# M#:MM./#.-#  @#: H#
+                +,.=   @###: /@ %#,@  ##@X #,-#@.##% .@#
+                #####+;/##/ @##  @#,+       /#M    . X,\s
+                   ;###M#@ M###H .#M-     ,##M  ;@@; ###
+                   .M#M##H ;####X ,@#######M/ -M###$  -H
+                    .M###%  X####H  .@@MM@;  ;@#M@     \s
+                      H#M    /@####/      ,++.  / ==-, \s
+                               ,=/:, .+X@MMH@#H  #####$="""
+    };
+
+    // This is the original credit list, I'm not in it
+    public static String CREDITS = """
+            >LIST PERSONNEL
+            
+            
+            Gautam Babbar
+            Ted Backman
+            Kelly Bailey
+            Jeff Ballinger
+            Aaron Barber
+            Jeep Barnett
+            Jeremy Bennett
+            Dan Berger
+            Yahn Bernier
+            Ken Birdwell
+            Derrick Birum
+            Mike Blaszczak
+            Iestyn Bleasdale-Shepherd
+            Chris Bokitch
+            Steve Bond
+            Matt Boone
+            Antoine Bourdon
+            Jamaal Bradley
+            Jason Brashill
+            Charlie Brown
+            Charlie Burgin
+            Andrew Burke
+            Augusta Butlin
+            Julie Caldwell
+            Dario Casali
+            Chris Chin
+            Jess Cliffe
+            Phil Co
+            John Cook
+            Christen Coomer
+            Greg Coomer
+            Scott Dalton
+            Kerry Davis
+            Jason Deakins
+            Joe Demers
+            Ariel Diaz
+            Quintin Doroquez
+            Jim Dose
+            Chris Douglass
+            Laura Dubuk
+            Mike Dunkle
+            Mike Durand
+            Mike Dussault
+            Dhabih Eng
+            Katie Engel
+            Chet Faliszek
+            Adrian Finol
+            Bill Fletcher
+            Moby Francke
+            Stephane Gaudette
+            Kathy Gehrig
+            Vitaliy Genkin
+            Paul Graham
+            Chris Green
+            Chris Grinstead
+            John Guthrie
+            Aaron Halifax
+            Reagan Halifax
+            Leslie Hall
+            Jeff Hameluck
+            Joe Han
+            Don Holden
+            Jason Holtman
+            Gray Horsfield
+            Keith Huggins
+            Jim Hughes
+            Jon Huisingh
+            Brian Jacobson
+            Lars Jensvold
+            Erik Johnson
+            Jakob Jungels
+            Rich Kaethler
+            Steve Kalning
+            Aaron Kearly
+            Iikka Keranen
+            David Kircher
+            Eric Kirchmer
+            Scott Klintworth
+            Alden Kroll
+            Marc Laidlaw
+            Jeff Lane
+            Tim Larkin
+            Dan LeFree
+            Isabelle LeMay
+            Tom Leonard
+            Jeff Lind
+            Doug Lombardi
+            Bianca Loomis
+            Richard Lord
+            Realm Lovejoy
+            Randy Lundeen
+            Scott Lynch
+            Ido Magal
+            Nick Maggiore
+            John McCaskey
+            Patrick McClard
+            Steve McClure
+            Hamish McKenzie
+            Gary McTaggart
+            Jason Mitchell
+            Mike Morasky
+            John Morello II
+            Bryn Moslow
+            Arsenio Navarro
+            Gabe Newell
+            Milton Ngan
+            Jake Nicholson
+            Martin Otten
+            Nick Papineau
+            Karen Prell
+            Bay Raitt
+            Tristan Reidford
+            Alfred Reynolds
+            Matt Rhoten
+            Garret Rickey
+            Dave Riller
+            Elan Ruskin
+            Matthew Russell
+            Jason Ruymen
+            David Sawyer
+            Marc Scaparro
+            Wade Schin
+            Matthew Scott
+            Aaron Seeler
+            Jennifer Seeley
+            Taylor Sherman
+            Eric Smith
+            Jeff Sorensen
+            David Speyrer
+            Jay Stelly
+            Jeremy Stone
+            Eric Strand
+            Kim Swift
+            Kelly Thornton
+            Eric Twelker
+            Carl Uhlman
+            Doug Valente
+            Bill Van Buren
+            Gabe Van Engel
+            Alex Vlachos
+            Robin Walker
+            Joshua Weier
+            Andrea Wicklund
+            Greg Winkler
+            Erik Wolpaw
+            Doug Wood
+            Matt T. Wood
+            Danika Wright
+            Matt Wright
+            Shawn Zabecki
+            Torsten Zabka
+            
+            
+            
+            
+            'Still Alive' by:
+            Jonathan Coulton
+            
+            
+            
+            Voices:
+            Ellen McLain - GlaDOS, Turrets
+            Mike Patton - THE ANGER SPHERE
+            
+            
+            
+            Voice Casting:
+            Shana Landsburg\\Teri Fiddleman
+            
+            
+            
+            
+            Voice Recording:
+            Pure Audio, Seattle, WA
+            
+            
+            
+            
+            Voice recording
+            scheduling and logistics:
+            Pat Cockburn, Pure Audio
+            
+            
+            
+            
+            Translations:
+            SDL
+            
+            
+            
+            
+            Crack Legal Team:
+            Liam Lavery
+            Karl Quackenbush
+            Kristen Boraas
+            Kevin Rosenfield
+            Alan Bruggeman
+            Dennis Tessier
+            
+            
+            
+            Thanks for the use of their face:
+            Alesia Glidewell - Chell
+            
+            
+            
+            Special thanks to everyone at:
+            Alienware
+            ATI
+            Dell
+            Falcon Northwest
+            Havok
+            SOFTIMAGE
+            and Don Kemmis, SLK Technologies
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            THANK YOU FOR PARTICIPATING
+            IN THIS
+            ENRICHMENT CENTER ACTIVITY!!
+            
+            
+            
+            
+            
+            """;
+
+    public record Event(int kind, int time, int arg, String payload) {
+        public static final int
+                WORDS_WRAP = 0,
+                WORDS_NOWRAP = 1,
+                ASCII_ART = 2,
+                CLEAR_SCREEN = 3,
+                PLAY_MUSIC = 4,
+                SHOW_CREDITS = 5,
+                EOF = -1;
+        public Event(int kind, int time, int arg) {
+            this(kind, time, arg, null);
+        }
+        public Event(int kind, int time) {
+            this(kind, time, 0, null);
+        }
+
+        // NOTE: This is from me watching the video frame by frame,
+        // timeline is not guaranteed to be 100% accurate
+        public static Event[] getEvents() {
+            return new Event[]{
+                    // Page 1
+                    new Event(WORDS_WRAP, 0, -1, "Forms FORM-29827281-12:"),
+                    new Event(WORDS_WRAP, 2000, -1, "Test Assessment Report"),
+                    new Event(WORDS_WRAP, 4000, -1, ""),
+                    new Event(WORDS_WRAP, 4000, -1, ""),
+                    new Event(PLAY_MUSIC, 6300),
+                    new Event(WORDS_WRAP, 7300, 2100, "This was a triumph."),
+                    new Event(SHOW_CREDITS, 9400),
+                    new Event(WORDS_WRAP, 11230, 2000, "I'm making a note here:"),
+                    new Event(WORDS_WRAP, 13470, 1700, "HUGE SUCCESS."),
+                    new Event(WORDS_WRAP, 16270, -1, "It's hard to overstate"),
+                    new Event(WORDS_WRAP, 18730, 2600, "my satisfaction."),
+                    new Event(WORDS_WRAP, 23500, 1800, "Aperture Science"),
+                    new Event(ASCII_ART, 23500, 0),
+                    new Event(WORDS_WRAP, 27330, 1600, "We do what we must"),
+                    new Event(WORDS_WRAP, 29100, 1570, "because we can."),
+                    new Event(WORDS_WRAP, 32370, -1, "For the good of all of us."),
+                    new Event(ASCII_ART, 35370, 1),
+                    new Event(WORDS_WRAP, 35670, -1, "Except the ones who are dead."),
+                    new Event(WORDS_WRAP, 37370, 50, ""),
+                    new Event(ASCII_ART, 37420, 0),
+                    new Event(WORDS_WRAP, 37870, -1, "But there's no sense crying"),
+                    new Event(WORDS_WRAP, 39730, 1770, "over every mistake."),
+                    new Event(WORDS_WRAP, 41700, -1, "You just keep on trying"),
+                    new Event(WORDS_WRAP, 43700, -1, "till you run out of cake."),
+                    new Event(ASCII_ART, 45500, 2),
+                    new Event(WORDS_WRAP, 45700, -1, "And the Science gets done."),
+                    new Event(WORDS_WRAP, 47670, -1, "And you make a neat gun."),
+                    new Event(ASCII_ART, 49530, 0),
+                    new Event(WORDS_WRAP, 49730, -1, "For the people who are"),
+                    new Event(WORDS_WRAP, 51100, 2000, "still alive."),
+
+                    // Page 2
+                    new Event(CLEAR_SCREEN, 54130),
+                    new Event(WORDS_WRAP, 54130, -1, "Forms FORM-55551-5:"),
+                    new Event(WORDS_WRAP, 54770, 1160, "Personnel File Addendum:"),
+                    new Event(WORDS_WRAP, 56500, -1, ""),
+                    new Event(WORDS_WRAP, 56500, -1, "Dear <<Subject Name Here>>,"),
+                    new Event(WORDS_WRAP, 59000, -1, ""),
+                    new Event(WORDS_WRAP, 59000, 1880, "I'm not even angry."),
+                    new Event(WORDS_NOWRAP, 63200, -1, "I'm being "),
+                    new Event(WORDS_NOWRAP, 64130, -1, "so "),
+                    new Event(WORDS_WRAP, 64700, 2000, "sincere right now."),
+                    new Event(WORDS_NOWRAP, 68270, -1, "Even though you "),
+                    new Event(ASCII_ART, 70170, 3),
+                    new Event(WORDS_WRAP, 70170, -1, "broke my heart."),
+                    new Event(WORDS_WRAP, 71700, 1350, "And killed me."),
+                    new Event(ASCII_ART, 75000, 4),
+                    new Event(WORDS_WRAP, 75050, 1770, "And tore me to pieces."),
+                    new Event(WORDS_NOWRAP, 79050, -1, "And threw every piece "),
+                    new Event(WORDS_WRAP, 80850, 1800, "into a fire."),
+                    new Event(ASCII_ART, 81700, 5),
+                    new Event(WORDS_WRAP, 84300, 2600, "As they burned it hurt because"),
+                    new Event(ASCII_ART, 87500, 6),
+                    new Event(WORDS_WRAP, 87600, 1570, "I was so happy for you!"),
+                    new Event(WORDS_WRAP, 89600, -1, "Now, these points of data"),
+                    new Event(WORDS_WRAP, 91670, -1, "make a beautiful line."),
+                    new Event(WORDS_WRAP, 93570, -1, "And we're out of beta."),
+                    new Event(WORDS_WRAP, 95600, -1, "We're releasing on time."),
+                    new Event(ASCII_ART, 97500, 4),
+                    new Event(WORDS_WRAP, 97500, -1, "So I'm GLaD. I got burned."),
+                    new Event(ASCII_ART, 99680, 2),
+                    new Event(WORDS_WRAP, 99680, -1, "Think of all the things we learned"),
+                    new Event(ASCII_ART, 101680, 0),
+                    new Event(WORDS_WRAP, 101680, -1, "for the people who are"),
+                    new Event(WORDS_NOWRAP, 103320, -1, "still "),
+                    new Event(WORDS_WRAP, 103860, 1240, "alive."),
+
+                    // Page 3
+                    new Event(CLEAR_SCREEN, 106600),
+                    new Event(WORDS_WRAP, 106630, -1, "Forms FORM-55551-6:"),
+                    new Event(WORDS_WRAP, 107100, 1360, "Personnel File Addendum Addendum:"),
+                    new Event(WORDS_WRAP, 109100, -1, ""),
+                    new Event(WORDS_WRAP, 109100, -1, "One last thing:"),
+                    new Event(WORDS_WRAP, 111300, -1, ""),
+                    new Event(WORDS_NOWRAP, 111300, -1, "Go ahead and leave "),
+                    new Event(WORDS_WRAP, 112800, 500, "me."),
+                    new Event(WORDS_NOWRAP, 115070, -1, "I think I prefer to stay "),
+                    new Event(WORDS_WRAP, 117870, 1130, "inside."),
+                    new Event(WORDS_WRAP, 120370, -1, "Maybe you'll find someone else"),
+                    new Event(WORDS_WRAP, 123900, 1230, "to help you."),
+                    new Event(WORDS_NOWRAP, 127370, 850, "Maybe Black "),
+                    new Event(ASCII_ART, 127870, 7),
+                    new Event(WORDS_NOWRAP, 128430, -1, "Mesa"),
+                    new Event(WORDS_WRAP, 129430, 2000, "..."),
+                    new Event(WORDS_NOWRAP, 131470, 1460, "THAT WAS A JOKE. "),
+                    new Event(WORDS_WRAP, 133870, 1100, "FAT CHANCE."),
+                    new Event(WORDS_NOWRAP, 136600, 1460, "Anyway, "),
+                    new Event(ASCII_ART, 137800, 8),
+                    new Event(WORDS_WRAP, 138100, -1, "this cake is great."),
+                    new Event(WORDS_WRAP, 139630, 2000, "It's so delicious and moist."),
+                    new Event(ASCII_ART, 141900, 9),
+                    new Event(WORDS_WRAP, 141930, -1, "Look at me still talking"),
+                    new Event(ASCII_ART, 143870, 1),
+                    new Event(WORDS_WRAP, 143900, -1, "when there's Science to do."),
+                    new Event(ASCII_ART, 145940, 0),
+                    new Event(WORDS_WRAP, 145970, -1, "When I look out there,"),
+                    new Event(WORDS_WRAP, 147670, -1, "it makes me GLaD I'm not you."),
+                    new Event(ASCII_ART, 149800, 2),
+                    new Event(WORDS_WRAP, 149830, -1, "I've experiments to run."),
+                    new Event(ASCII_ART, 151870, 4),
+                    new Event(WORDS_WRAP, 151900, -1, "There is research to be done."),
+                    new Event(ASCII_ART, 153870, 0),
+                    new Event(WORDS_WRAP, 153900, -1, "On the people who are"),
+                    new Event(WORDS_NOWRAP, 155560, -1, "still "),
+                    new Event(WORDS_WRAP, 155960, 1400, "alive."),
+
+                    // Page 4
+                    new Event(CLEAR_SCREEN, 157530),
+                    new Event(WORDS_WRAP, 157570, -1, ""),
+                    new Event(WORDS_WRAP, 157630, -1, ""),
+                    new Event(WORDS_WRAP, 157690, -1, ""),
+                    new Event(WORDS_WRAP, 157750, -1, "PS: And believe me I am"),
+                    new Event(WORDS_WRAP, 159600, 1130, "still alive."),
+                    new Event(WORDS_WRAP, 161500, -1, "PPS: I'm doing Science and I'm"),
+                    new Event(WORDS_WRAP, 163630, 1130, "still alive."),
+                    new Event(WORDS_WRAP, 165500, -1, "PPPS: I feel FANTASTIC and I'm"),
+                    new Event(WORDS_WRAP, 167600, -1, "still alive."),
+                    new Event(WORDS_WRAP, 168600, -1, ""),
+                    new Event(WORDS_WRAP, 168600, -1, "FINAL THOUGH:"),
+                    new Event(WORDS_WRAP, 169930, -1, "While you're dying I'll be"),
+                    new Event(WORDS_WRAP, 171570, -1, "still alive."),
+                    new Event(WORDS_WRAP, 172770, -1, ""),
+                    new Event(WORDS_WRAP, 172770, -1, "FINAL THOUGH PS:"),
+                    new Event(WORDS_WRAP, 173670, -1, "And when you're dead I will be"),
+                    new Event(WORDS_WRAP, 175500, 1130, "still alive."),
+                    new Event(WORDS_WRAP, 177600, -1, ""),
+                    new Event(WORDS_WRAP, 177600, -1, ""),
+                    new Event(WORDS_WRAP, 177600, 1130, "STILL ALIVE"),
+
+                    new Event(CLEAR_SCREEN, 179000),
+                    new Event(EOF, 182300),
+            };
+        }
     }
 }

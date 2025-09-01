@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc.forge;
 
-import icyllis.modernui.ModernUI;
+import icyllis.modernui.mc.ModernUIMod;
 import org.spongepowered.asm.mixin.Mixins;
 import org.spongepowered.asm.mixin.connect.IMixinConnector;
 
@@ -28,6 +28,6 @@ public class MixinConnector implements IMixinConnector {
     @Override
     public void connect() {
         Mixins.addConfiguration("mixins.modernui-forge.json");
-        ModernUI.LOGGER.debug(ModernUI.MARKER, "Connected to mixin system");
+        ModernUIMod.LOGGER.debug(ModernUIMod.MARKER, "Connected to mixin system");
     }
 }

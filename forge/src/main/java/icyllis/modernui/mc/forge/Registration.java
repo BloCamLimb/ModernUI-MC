@@ -66,7 +66,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 
-import static icyllis.modernui.ModernUI.*;
+import static icyllis.modernui.mc.ModernUIMod.*;
 
 /**
  * This class handles mod loading events, all registry entries are only available under the development mode.
@@ -169,12 +169,12 @@ final class Registration {
         private ModClient() {
         }
 
-        @SubscribeEvent
+        /*@SubscribeEvent
         static void loadingClient(RegisterParticleProvidersEvent event) {
             // this event fired after LOAD_REGISTRIES and before COMMON_SETUP on client main thread (render thread)
             // this event fired before RegisterClientReloadListenersEvent
             UIManagerForge.initialize();
-        }
+        }*/
 
         @SubscribeEvent
         static void registerResourceListener(@Nonnull RegisterClientReloadListenersEvent event) {
@@ -186,7 +186,7 @@ final class Registration {
                 // FML may throw ex, so it can be null
                 if (handler != null) {
                     // Call in lambda, not in creating the lambda
-                    handler.post(() -> UIManager.getInstance().updateLayoutDir(Config.CLIENT.mForceRtl.get()));
+                    handler.post(() -> UIManager.getInstance().updateLayoutDir(ConfigImpl.CLIENT.mForceRtl.get()));
                 }
                 BlurHandler.INSTANCE.loadEffect();
             });
@@ -250,7 +250,7 @@ final class Registration {
                             .guiScale))))
             );*/
 
-            if (Config.CLIENT.mUseNewGuiScale.get()) {
+            if (ConfigImpl.CLIENT.mUseNewGuiScale.get()) {
                 final OptionInstance<Integer> newGuiScale = new OptionInstance<>(
                         /*caption*/ "options.guiScale",
                         /*tooltip*/ OptionInstance.noTooltip(),

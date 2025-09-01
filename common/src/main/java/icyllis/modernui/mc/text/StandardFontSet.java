@@ -124,7 +124,7 @@ public class StandardFontSet extends FontSet {
                             0, chars.length,
                             mStandardPaint, null, null,
                             0, 0);
-                    return new StandardGlyphInfo((int) (adv / mResLevel + 0.95f));
+                    return new StandardGlyphInfo((adv / mResLevel));
                 }
             }
         }
@@ -242,7 +242,7 @@ public class StandardFontSet extends FontSet {
 
         private final float mAdvance;
 
-        public StandardGlyphInfo(int advance) {
+        public StandardGlyphInfo(float advance) {
             mAdvance = advance;
         }
 

@@ -20,7 +20,6 @@ package icyllis.modernui.mc;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.animation.ColorEvaluator;
 import icyllis.modernui.mc.mixin.AccessPostChain;
 import net.minecraft.client.Minecraft;
@@ -30,6 +29,8 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
@@ -43,6 +44,7 @@ import java.util.*;
 public enum BlurHandler {
     INSTANCE;
 
+    private static final Marker MARKER = MarkerManager.getMarker("Blur");
     // minecraft namespace
     private static final ResourceLocation GAUSSIAN_BLUR =
             new ResourceLocation("shaders/post/modern_gaussian_blur.json");
@@ -195,7 +197,7 @@ public enum BlurHandler {
                         minecraft.getResourceManager(), minecraft.getMainRenderTarget(), GAUSSIAN_BLUR);
                 mBlurEffect.resize(minecraft.getWindow().getWidth(), minecraft.getWindow().getHeight());
             } catch (Exception e) {
-                ModernUI.LOGGER.warn(ModernUI.MARKER, "Failed to load blur effect", e);
+                ModernUIMod.LOGGER.warn(MARKER, "Failed to load blur effect", e);
             }
             if (mBlurEffect == null) {
                 mBlurring = false;
@@ -221,10 +223,10 @@ public enum BlurHandler {
                     Class<?> clazz = Class.forName(s, false, ModernUIMod.class.getClassLoader());
                     blacklist.add((Class<? extends Screen>) clazz);
                 } catch (ClassNotFoundException e) {
-                    ModernUI.LOGGER.warn(ModernUI.MARKER,
+                    ModernUIMod.LOGGER.warn(MARKER,
                             "Failed to add blur blacklist {}: make sure class name exists", s, e);
                 } catch (ClassCastException e) {
-                    ModernUI.LOGGER.warn(ModernUI.MARKER,
+                    ModernUIMod.LOGGER.warn(MARKER,
                             "Failed to add blur blacklist {}: make sure class is a valid subclass of Screen", s, e);
                 }
             }
@@ -306,13 +308,13 @@ public enum BlurHandler {
         int z = 0;
         if (minecraft.level == null) {
             consumer.vertex(pose, x2, y1, z)
-                    .color(30, 31, 34, 255).endVertex();
+                    .color(25, 25, 25, 255).endVertex();
             consumer.vertex(pose, x1, y1, z)
-                    .color(30, 31, 34, 255).endVertex();
+                    .color(25, 25, 25, 255).endVertex();
             consumer.vertex(pose, x1, y2, z)
-                    .color(30, 31, 34, 255).endVertex();
+                    .color(25, 25, 25, 255).endVertex();
             consumer.vertex(pose, x2, y2, z)
-                    .color(30, 31, 34, 255).endVertex();
+                    .color(25, 25, 25, 255).endVertex();
         } else {
             if (mBlurring && sBlurWithBackground && mBlurEffect != null) {
                 updateRadius(mBlurEffect, mBlurRadius);

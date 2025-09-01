@@ -20,6 +20,7 @@ package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.ui.CenterFragment2;
 import icyllis.modernui.util.DataSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.LanguageManager;
@@ -83,14 +84,11 @@ public final class ModernUIForge extends ModernUIMod {
         sLegendaryTooltipsLoaded = ModList.get().isLoaded("legendarytooltips");
         sUntranslatedItemsLoaded = ModList.get().isLoaded("untranslateditems");
 
-        Config.initCommonConfig(
-                spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, spec,
-                        ModernUI.NAME_CPT + "/common.toml")
-        );
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, ConfigImpl.COMMON_SPEC,
+                ModernUI.NAME_CPT + "/common.toml");
         FMLJavaModLoadingContext.get().getModEventBus().addListener(
-                (Consumer<ModConfigEvent>) event -> Config.reloadCommon(event.getConfig())
+                (Consumer<ModConfigEvent>) event -> ConfigImpl.reloadCommon(event.getConfig())
         );
-        LocalStorage.init();
 
         DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> Loader::init);
 
@@ -148,21 +146,18 @@ public final class ModernUIForge extends ModernUIMod {
 
         private Client() {
             super();
-            Config.initClientConfig(
-                    spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
-                            ModernUI.NAME_CPT + "/client.toml")
-            );
-            Config.initTextConfig(
-                    spec -> ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, spec,
-                            ModernUI.NAME_CPT + "/text.toml")
-            );
+            UIManagerForge.initialize();
+            ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
+                    ModernUI.NAME_CPT + "/client.toml");
+            ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
+                    ModernUI.NAME_CPT + "/text.toml");
             FontResourceManager.getInstance();
             if (ModernUIMod.isTextEngineEnabled()) {
                 ModernUIText.init();
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
             FMLJavaModLoadingContext.get().getModEventBus().addListener(
-                    (Consumer<ModConfigEvent>) event -> Config.reloadAnyClient(event.getConfig())
+                    (Consumer<ModConfigEvent>) event -> ConfigImpl.reloadAnyClient(event.getConfig())
             );
             ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
                     () -> new ConfigScreenHandler.ConfigScreenFactory(
