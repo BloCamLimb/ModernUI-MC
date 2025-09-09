@@ -18,16 +18,15 @@
 
 package icyllis.modernui.mc;
 
-import com.mojang.blaze3d.shaders.AbstractUniform;
-import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.mc.mixin.AccessClientTextTooltip;
-import icyllis.modernui.mc.mixin.AccessGuiGraphics;
 import icyllis.modernui.mc.text.CharacterStyle;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.screens.inventory.tooltip.*;
 import net.minecraft.client.renderer.*;
 import net.minecraft.network.chat.Style;
@@ -36,7 +35,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.*;
 import net.minecraft.world.item.*;
 import org.jetbrains.annotations.ApiStatus;
-import org.joml.Matrix4f;
+import org.joml.Matrix3x2f;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -506,14 +505,14 @@ public final class TooltipRenderer implements ScrollController.IListener {
         }
     }
 
-    void chooseBorderColor(int corner, AbstractUniform uniform) {
+    /*void chooseBorderColor(int corner, AbstractUniform uniform) {
         int color = chooseBorderColor(corner);
         int a = (color >>> 24);
         int r = ((color >> 16) & 0xff);
         int g = ((color >> 8) & 0xff);
         int b = (color & 0xff);
         uniform.set(r / 255f, g / 255f, b / 255f, a / 255f);
-    }
+    }*/
 
     public void drawTooltip(@Nonnull ItemStack itemStack, @Nonnull GuiGraphics gr,
                             @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
@@ -653,24 +652,20 @@ public final class TooltipRenderer implements ScrollController.IListener {
             updateBorderColor();
         }
 
-        gr.flush();
-        gr.pose().pushPose();
-        // because of the order of draw calls, we actually don't need z-shifting
-        gr.pose().translate(0, -mScroll, 400);
-        final Matrix4f pose = gr.pose().last().pose();
+        gr.pose().pushMatrix();
+        gr.pose().translate(0, -mScroll);
 
         if (tooltipStyle == null) {
-            // we should disable depth test, because texts may be translucent
-            // for compatibility reasons, we keep this enabled, and it doesn't seem to be a big problem
-            RenderSystem.enableDepthTest();
-            RenderSystem.enableBlend();
-            RenderSystem.defaultBlendFunc();
-            if (sRoundedShapes) {
+            // make an immutable copy and shared by multiple calls
+            final Matrix3x2f pose = new Matrix3x2f(gr.pose());
+            final ScreenRectangle scissor = MuiModApi.get().peekScissorStack(gr);
+            //FIXME rounded tooltip
+            /*if (sRoundedShapes) {
                 drawRoundedBackground(gr, pose,
                         tooltipX, tooltipY, tooltipWidth, tooltipHeight,
                         titleGap, titleBreakHeight);
-            } else {
-                drawVanillaBackground(gr, pose,
+            } else */{
+                drawVanillaBackground(gr, pose, scissor,
                         tooltipX, tooltipY, tooltipWidth, tooltipHeight,
                         titleGap, titleBreakHeight);
             }
@@ -679,34 +674,34 @@ public final class TooltipRenderer implements ScrollController.IListener {
         final int drawX = (int) tooltipX;
         int drawY = (int) tooltipY;
 
-        RenderSystem.enableDepthTest();
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
 
-        final MultiBufferSource.BufferSource source = ((AccessGuiGraphics) gr).getBufferSource();
-        // With rounded borders, we create a new matrix and do not perform matrix * vector
-        // on the CPU side. There are floating-point errors, and we found that this can cause
-        // text to be discarded by LEqual depth test on some GPUs, so lift it up by 0.1.
-        gr.pose().translate(partialX, partialY, tooltipStyle == null && sRoundedShapes ? 0.1f : 0);
+
+
+
+
+
+
+
+        gr.pose().translate(partialX, partialY);
         if (tooltipStyle != null) {
             TooltipRenderUtil.renderTooltipBackground(gr, drawX, drawY,
-                    tooltipWidth, tooltipHeight, 0, tooltipStyle);
+                    tooltipWidth, tooltipHeight, tooltipStyle);
         }
         for (int i = 0; i < list.size(); i++) {
             ClientTooltipComponent component = list.get(i);
             if (titleGap && i == 0 && sCenterTitle) {
-                component.renderText(font, drawX + (tooltipWidth - component.getWidth(font)) / 2, drawY, pose, source);
+                component.renderText(gr, font, drawX + (tooltipWidth - component.getWidth(font)) / 2, drawY);
             } else if (mLayoutRTL) {
-                component.renderText(font, drawX + tooltipWidth - component.getWidth(font), drawY, pose, source);
+                component.renderText(gr, font, drawX + tooltipWidth - component.getWidth(font), drawY);
             } else {
-                component.renderText(font, drawX, drawY, pose, source);
+                component.renderText(gr, font, drawX, drawY);
             }
             if (titleGap && i == 0) {
                 drawY += TITLE_GAP;
             }
             drawY += component.getHeight(font);
         }
-        gr.flush();
+
 
         drawY = (int) tooltipY;
 
@@ -722,10 +717,10 @@ public final class TooltipRenderer implements ScrollController.IListener {
             }
             drawY += component.getHeight(font);
         }
-        gr.pose().popPose();
+        gr.pose().popMatrix();
     }
 
-    private void drawRoundedBackground(@Nonnull GuiGraphics gr, Matrix4f pose,
+    /*private void drawRoundedBackground(@Nonnull GuiGraphics gr, Matrix4f pose,
                                        float tooltipX, float tooltipY,
                                        int tooltipWidth, int tooltipHeight,
                                        boolean titleGap, int titleBreakHeight) {
@@ -788,9 +783,10 @@ public final class TooltipRenderer implements ScrollController.IListener {
                     0.08f, // lift it up by 0.08
                     0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8);
         }
-    }
+    }*/
 
-    private void drawVanillaBackground(@Nonnull GuiGraphics gr, Matrix4f pose,
+    private void drawVanillaBackground(@Nonnull GuiGraphics gr, Matrix3x2f pose,
+                                       ScreenRectangle scissor,
                                        float tooltipX, float tooltipY,
                                        int tooltipWidth, int tooltipHeight,
                                        boolean titleGap, int titleBreakHeight) {
@@ -800,71 +796,61 @@ public final class TooltipRenderer implements ScrollController.IListener {
         float bottom = tooltipY + tooltipHeight + V_BORDER;
 
         // top
-        fillGrad(gr, pose, left, top - 1, right, top, 0,
+        fillGrad(gr, pose, scissor, left, top - 1, right, top,
                 sFillColor[0], sFillColor[1], sFillColor[1], sFillColor[0]);
         // bottom
-        fillGrad(gr, pose, left, bottom, right, bottom + 1, 0,
+        fillGrad(gr, pose, scissor, left, bottom, right, bottom + 1,
                 sFillColor[3], sFillColor[2], sFillColor[2], sFillColor[3]);
         // center
-        fillGrad(gr, pose, left, top, right, bottom, 0,
+        fillGrad(gr, pose, scissor, left, top, right, bottom,
                 sFillColor[0], sFillColor[1], sFillColor[2], sFillColor[3]);
         // left
-        fillGrad(gr, pose, left - 1, top, left, bottom, 0,
+        fillGrad(gr, pose, scissor, left - 1, top, left, bottom,
                 sFillColor[0], sFillColor[0], sFillColor[3], sFillColor[3]);
         // right
-        fillGrad(gr, pose, right, top, right + 1, bottom, 0,
+        fillGrad(gr, pose, scissor, right, top, right + 1, bottom,
                 sFillColor[1], sFillColor[1], sFillColor[2], sFillColor[2]);
 
         if (titleGap && sTitleBreak) {
-            fillGrad(gr, pose,
+            fillGrad(gr, pose, scissor,
                     tooltipX, tooltipY + titleBreakHeight - 0.5f,
-                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f, 0,
+                    tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f,
                     0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8);
         }
 
         // top
-        fillGrad(gr, pose,
-                left, top, right, top + 1, 0,
+        fillGrad(gr, pose, scissor,
+                left, top, right, top + 1,
                 chooseBorderColor(0), chooseBorderColor(1),
                 chooseBorderColor(1), chooseBorderColor(0));
         // right
-        fillGrad(gr, pose,
-                right - 1, top, right, bottom, 0,
+        fillGrad(gr, pose, scissor,
+                right - 1, top, right, bottom,
                 chooseBorderColor(1), chooseBorderColor(1),
                 chooseBorderColor(2), chooseBorderColor(2));
         // bottom
-        fillGrad(gr, pose,
-                left, bottom - 1, right, bottom, 0,
+        fillGrad(gr, pose, scissor,
+                left, bottom - 1, right, bottom,
                 chooseBorderColor(3), chooseBorderColor(2),
                 chooseBorderColor(2), chooseBorderColor(3));
         // left
-        fillGrad(gr, pose, left, top, left + 1, bottom, 0,
+        fillGrad(gr, pose, scissor,
+                left, top, left + 1, bottom,
                 chooseBorderColor(0), chooseBorderColor(0),
                 chooseBorderColor(3), chooseBorderColor(3));
     }
 
-    private static void fillGrad(GuiGraphics gr, Matrix4f pose,
-                                 float left, float top, float right, float bottom, float z,
+    private static void fillGrad(GuiGraphics gr, Matrix3x2f pose, ScreenRectangle scissor,
+                                 float left, float top, float right, float bottom,
                                  int colorUL, int colorUR, int colorLR, int colorLL) {
-        var buffer = ((AccessGuiGraphics) gr).getBufferSource().getBuffer(RenderType.gui());
-
-        // CCW
-        int color = colorLR;
-        buffer.addVertex(pose, right, bottom, z)
-                .setColor(color);
-
-        color = colorUR;
-        buffer.addVertex(pose, right, top, z)
-                .setColor(color);
-
-        color = colorUL;
-        buffer.addVertex(pose, left, top, z)
-                .setColor(color);
-
-        color = colorLL;
-        buffer.addVertex(pose, left, bottom, z)
-                .setColor(color);
-
-        gr.flush();
+        MuiModApi.get().submitGuiElementRenderState(gr,
+                new GradientRectangleRenderState(
+                        RenderPipelines.GUI,
+                        TextureSetup.noTexture(),
+                        pose,
+                        left, top, right, bottom,
+                        colorUL, colorUR, colorLR, colorLL,
+                        scissor
+                ));
     }
 }

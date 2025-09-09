@@ -25,7 +25,6 @@ import icyllis.modernui.util.DataSet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.*;
 import net.neoforged.fml.common.Mod;
@@ -107,7 +106,6 @@ public final class ModernUIForge extends ModernUIMod {
         }
     }*/
 
-    @OnlyIn(Dist.CLIENT)
     @Mod(value = ModernUI.ID, dist = {Dist.CLIENT})
     public static class Client extends ModernUIClient {
 
@@ -118,7 +116,6 @@ public final class ModernUIForge extends ModernUIMod {
         // mod-loading thread
         public Client(IEventBus modEventBus, ModContainer modContainer) {
             super();
-            UIManagerForge.initialize();
             modContainer.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
                     ModernUI.NAME_CPT + "/client.toml");
             modContainer.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,

@@ -3,21 +3,28 @@
 // Licensed under LGPL-3.0-or-later.
 #version 150
 
+#moj_import <minecraft:globals.glsl>
+
 uniform sampler2D InSampler;
+
+layout(std140) uniform SamplerInfo {
+    vec2 OutSize;
+    vec2 InSize;
+};
+
+layout(std140) uniform BlurInfo {
+    vec2 BlurDir;
+};
 
 in vec2 texCoord;
 in vec2 oneTexel;
-
-uniform vec2 InSize;
-uniform vec2 BlurDir;
-uniform float Progress;
 
 out vec4 fragColor;
 
 void main() {
     vec4 blur = vec4(0.0);
 
-    int radius = int(Progress);
+    int radius = MenuBlurRadius;
     // sigma = radius / 2.0
     // base = -0.5 / (sigma * sigma)
     // factor = 1.0 / (sigma * sqrt(2*PI))

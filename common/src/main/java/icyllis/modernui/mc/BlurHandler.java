@@ -18,12 +18,12 @@
 
 package icyllis.modernui.mc;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import icyllis.modernui.animation.ColorEvaluator;
-import icyllis.modernui.mc.mixin.AccessGameRenderer;
-import icyllis.modernui.mc.mixin.AccessGuiGraphics;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.*;
 import net.minecraft.resources.ResourceLocation;
@@ -31,7 +31,7 @@ import net.minecraft.sounds.SoundSource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
-import org.joml.Matrix4f;
+import org.joml.Matrix3x2f;
 import org.lwjgl.glfw.GLFW;
 
 import javax.annotation.Nonnull;
@@ -194,14 +194,6 @@ public enum BlurHandler {
         mBlurRadius = radius;
     }
 
-    private void updateRadius(@Nonnull PostChain effect, float radius) {
-        /*List<PostPass> passes = ((AccessPostChain) effect).getPasses();
-        for (PostPass s : passes) {
-            s.getEffect().safeGetUniform("Progress").set(radius);
-        }*/
-        effect.setUniform("Progress", radius);
-    }
-
     public void onClientTick() {
         float targetVolumeMultiplier;
         if (minecraft.isWindowActive()) {
@@ -232,60 +224,52 @@ public enum BlurHandler {
 
     // INTERNAL HOOK
     public void drawScreenBackground(@Nonnull GuiGraphics gr, int x1, int y1, int x2, int y2) {
-        VertexConsumer consumer = ((AccessGuiGraphics) gr).getBufferSource().getBuffer(RenderType.gui());
-        Matrix4f pose = gr.pose().last().pose();
-        int z = 0;
         if (minecraft.level == null) {
-            consumer.addVertex(pose, x2, y1, z)
-                    .setColor(30, 31, 34, 255);
-            consumer.addVertex(pose, x1, y1, z)
-                    .setColor(30, 31, 34, 255);
-            consumer.addVertex(pose, x1, y2, z)
-                    .setColor(30, 31, 34, 255);
-            consumer.addVertex(pose, x2, y2, z)
-                    .setColor(30, 31, 34, 255);
+            gr.fill(x1, y1, x2, y2, 0xFF191919);
         } else {
             if (mBlurring) {
-                PostChain blurEffect = minecraft.getShaderManager().getPostChain(
-                        GAUSSIAN_BLUR, LevelTargetBundle.MAIN_TARGETS);
-                if (blurEffect != null) {
-                    updateRadius(blurEffect, mBlurRadius);
-                    blurEffect.process(minecraft.getMainRenderTarget(),
-                            ((AccessGameRenderer) minecraft.gameRenderer).getResourcePool());
-                    minecraft.getMainRenderTarget().bindWrite(false);
-                } else {
-                    mBlurring = false;
-                }
+                gr.blurBeforeThisStratum();
             }
-            int color = mBackgroundColor[1];
-            consumer.addVertex(pose, x2, y1, z)
-                    .setColor(color);
-            color = mBackgroundColor[0];
-            consumer.addVertex(pose, x1, y1, z)
-                    .setColor(color);
-            color = mBackgroundColor[3];
-            consumer.addVertex(pose, x1, y2, z)
-                    .setColor(color);
-            color = mBackgroundColor[2];
-            consumer.addVertex(pose, x2, y2, z)
-                    .setColor(color);
+            ScreenRectangle scissorArea = MuiModApi.get().peekScissorStack(gr);
+            MuiModApi.get().submitGuiElementRenderState(gr,
+                    new GradientRectangleRenderState(
+                            RenderPipelines.GUI,
+                            TextureSetup.noTexture(),
+                            new Matrix3x2f(gr.pose()),
+                            x1, y1, x2, y2,
+                            mBackgroundColor[0], mBackgroundColor[1], mBackgroundColor[2], mBackgroundColor[3],
+                            scissorArea
+                    ));
         }
-        gr.flush();
     }
 
     // INTERNAL HOOK
-    public void processBlurEffect(GameRenderer gameRenderer) {
-        // Vanilla 3-pass box blur to ModernUI 1-pass gaussian blur
-        // radius is approximately 1.8 times, performance is better
-        float radius = minecraft.options.getMenuBackgroundBlurriness() * 1.8f;
-        if (radius >= 1.0f) {
-            PostChain blurEffect = minecraft.getShaderManager().getPostChain(
-                    GAUSSIAN_BLUR, LevelTargetBundle.MAIN_TARGETS);
-            if (blurEffect != null) {
-                updateRadius(blurEffect, radius);
-                blurEffect.process(minecraft.getMainRenderTarget(),
-                        ((AccessGameRenderer) gameRenderer).getResourcePool());
+    public int getBlurRadius(int option) {
+        float radius;
+        if (mBlurring) {
+            if (sOverrideVanillaBlur) {
+                radius = mBlurRadius;
+            } else {
+                radius = Math.max(mBlurRadius / 1.8f, 1.0f);
             }
+        } else {
+            if (sOverrideVanillaBlur) {
+                // Vanilla 3-pass box blur to ModernUI 1-pass gaussian blur
+                // radius is approximately 1.8 times, performance is better
+                radius = option * 1.8f;
+            } else {
+                radius = option;
+            }
+        }
+        return (int) radius;
+    }
+
+    // INTERNAL HOOK
+    public void processBlurEffect(GraphicsResourceAllocator resourceAllocator) {
+        PostChain blurEffect = minecraft.getShaderManager().getPostChain(
+                GAUSSIAN_BLUR, LevelTargetBundle.MAIN_TARGETS);
+        if (blurEffect != null) {
+            blurEffect.process(minecraft.getMainRenderTarget(), resourceAllocator);
         }
     }
 }

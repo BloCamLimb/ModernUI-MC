@@ -97,12 +97,8 @@ public class MinecraftSurfaceView extends View {
         /**
          * Called to draw the current frame.
          * <p>
-         * The current render target will be {@link Minecraft#getMainRenderTarget()},
-         * it has a color buffer and depth buffer, and framebuffer binding must remain
-         * unchanged. The current global projection matrix is an orthographic projection
-         * matrix, which Z range is defined by the current modding API (NeoForge, Forge...).
-         * The current global model view matrix is translated to view's position in
-         * screen space, regardless of {@link GuiGraphics#pose()}.
+         * The current pose matrix is translated to view's position in GUI scaled
+         * coordinates.
          * <p>
          * The draw's local coordinates are defined in Minecraft GUI scaled coordinates
          * instead of screen coordinates in pixels, the left top point is (0, 0);
@@ -110,8 +106,8 @@ public class MinecraftSurfaceView extends View {
          * <var>alpha</var> is synchronized with view's alpha value. Because there is
          * no real surface, the implementer needs to handle alpha on their own.
          * <p>
-         * You may not use {@link GuiGraphics#enableScissor(int, int, int, int)} and
-         * {@link GuiGraphics#disableScissor()}.
+         * On Minecraft 1.21.6 and above, when this method is called, scissor stack
+         * is unaffected by surface bounds.
          *
          * @param gr        a GUI graphics to render objects
          * @param mouseX    mouse x-position in GUI scaled coordinates

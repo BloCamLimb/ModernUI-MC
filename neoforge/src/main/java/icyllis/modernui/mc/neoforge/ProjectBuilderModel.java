@@ -20,8 +20,6 @@ package icyllis.modernui.mc.neoforge;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import icyllis.modernui.mc.ModernUIMod;
-import net.minecraft.client.resources.model.BakedModel;
-import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.world.item.ItemDisplayContext;
 import org.jetbrains.annotations.ApiStatus;
 

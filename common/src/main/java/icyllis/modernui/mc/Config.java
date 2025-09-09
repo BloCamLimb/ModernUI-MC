@@ -142,7 +142,17 @@ public final class Config {
         public final ConfigItem<Boolean> mLinearMetrics;
         public final ConfigItem<Boolean> mEmojiShortcodes;
 
-        public WindowMode mLastWindowMode = WindowMode.NORMAL;
+        public volatile WindowMode mLastWindowMode = WindowMode.NORMAL;
+
+        // Used to test whether config values are loaded.
+        // We can't rely on ConfigSpec.isLoaded because it's not thread-safe,
+        // and when that method returns true, the cached values in ConfigValue may
+        // not have been cleared. This field is set on the Load/Reload event is fired,
+        // and sets up a barrier to load config values safely, especially under race condition.
+        public volatile boolean mLoaded;
+        // Set to true to allow to propagate changes to listeners.
+        // If configs load too early, we will not trigger listeners until the game is loaded.
+        public volatile boolean mPropagate;
 
         private Client(Map<String, ConfigItem<?>> map) {
             mBlurEffect = get(map, "mBlurEffect");
@@ -202,6 +212,29 @@ public final class Config {
         }
 
         public void reload() {
+            mLoaded = true;
+
+
+            ModernUIClient.sInventoryPause = mInventoryPause.get();
+            //ModernUIForge.sRemoveMessageSignature = mRemoveSignature.get();
+            ModernUIClient.sRemoveTelemetrySession = mRemoveTelemetry.get();
+            //ModernUIForge.sSecureProfilePublicKey = mSecurePublicKey.get();
+
+
+            ModernUIClient.sUseColorEmoji = mUseColorEmoji.get();
+            ModernUIClient.sEmojiShortcodes = mEmojiShortcodes.get();
+            ModernUIClient.sFirstFontFamily = mFirstFontFamily.get();
+            ModernUIClient.sFallbackFontFamilyList = mFallbackFontFamilyList.get();
+            ModernUIClient.sFontRegistrationList = mFontRegistrationList.get();
+
+            if (mPropagate) {
+                apply();
+            }
+        }
+
+        public void apply() {
+            mPropagate = true;
+
             BlurHandler.sBlurEffect = mBlurEffect.get();
             //BlurHandler.sBlurWithBackground = mBlurWithBackground.get();
             BlurHandler.sBlurForVanillaScreens = mAdditionalBlurEffect.get();
@@ -237,11 +270,6 @@ public final class Config {
             BlurHandler.sBackgroundColor = resultColors;
 
             BlurHandler.INSTANCE.loadBlacklist(mBlurBlacklist.get());
-
-            ModernUIClient.sInventoryPause = mInventoryPause.get();
-            //ModernUIForge.sRemoveMessageSignature = mRemoveSignature.get();
-            ModernUIClient.sRemoveTelemetrySession = mRemoveTelemetry.get();
-            //ModernUIForge.sSecureProfilePublicKey = mSecurePublicKey.get();
 
             TooltipRenderer.sTooltip = mTooltip.get();
 
@@ -366,12 +394,6 @@ public final class Config {
                     }*/
                 });
             }
-
-            ModernUIClient.sUseColorEmoji = mUseColorEmoji.get();
-            ModernUIClient.sEmojiShortcodes = mEmojiShortcodes.get();
-            ModernUIClient.sFirstFontFamily = mFirstFontFamily.get();
-            ModernUIClient.sFallbackFontFamilyList = mFallbackFontFamilyList.get();
-            ModernUIClient.sFontRegistrationList = mFontRegistrationList.get();
         }
 
         public enum WindowMode {
@@ -499,6 +521,9 @@ public final class Config {
         public final ConfigItem<Integer> mMinPixelDensityForSDF;
         public final ConfigItem<Boolean> mLinearSamplingA8Atlas;
 
+        public volatile boolean mLoaded;
+        public volatile boolean mPropagate;
+
         private Text(Map<String, ConfigItem<?>> map) {
             mAllowShadow = get(map, "mAllowShadow");
             mFixedResolution = get(map, "mFixedResolution");
@@ -527,6 +552,16 @@ public final class Config {
         }
 
         public void reload() {
+            mLoaded = true;
+
+            if (mPropagate) {
+                apply();
+            }
+        }
+
+        public void apply() {
+            mPropagate = true;
+
             boolean reload = false;
             boolean reloadStrike = false;
             ModernTextRenderer.sAllowShadow = mAllowShadow.get();

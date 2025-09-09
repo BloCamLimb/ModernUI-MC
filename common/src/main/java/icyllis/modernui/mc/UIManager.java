@@ -18,9 +18,11 @@
 
 package icyllis.modernui.mc;
 
+import com.mojang.blaze3d.opengl.GlStateManager;
+import com.mojang.blaze3d.opengl.GlTextureView;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.vertex.*;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.arc3d.core.*;
@@ -38,6 +40,7 @@ import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.pipeline.ArcCanvas;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.lifecycle.*;
+import icyllis.modernui.mc.b3d.GlTexture_Wrapped;
 import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.resources.TypedValue;
@@ -52,11 +55,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.render.TextureSetup;
+import net.minecraft.client.gui.render.state.BlitRenderState;
+import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.tooltip.*;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.CompiledShaderProgram;
-import net.minecraft.client.renderer.CoreShaders;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -71,7 +76,7 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.VisibleForTesting;
-import org.joml.Matrix4f;
+import org.joml.Matrix3x2f;
 import org.lwjgl.opengl.GL33C;
 import org.lwjgl.system.MemoryUtil;
 
@@ -150,6 +155,9 @@ public abstract class UIManager implements LifecycleOwner {
     protected boolean mAlwaysClearMainTarget = false;
     private long mLastPurgeNanos;
 
+    private GlTexture_Wrapped mLayerTexture;
+    private GlTextureView mLayerTextureView;
+
     protected final TooltipRenderer mTooltipRenderer = new TooltipRenderer();
 
 
@@ -208,7 +216,6 @@ public abstract class UIManager implements LifecycleOwner {
         }
         Objects.requireNonNull(sInstance);
         Core.requireImmediateContext();
-        BufferUploader.invalidate();
         LOGGER.info(MARKER, "UI renderer initialized");
     }
 
@@ -862,7 +869,7 @@ public abstract class UIManager implements LifecycleOwner {
     }
 
     @RenderThread
-    public void render(@Nullable GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
+    public void render(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
         if (mNoRender) {
             /*if (mScreen != null) {
                 String error = Language.getInstance().getOrDefault("error.modernui.gl_caps");
@@ -873,8 +880,7 @@ public abstract class UIManager implements LifecycleOwner {
             return;
         }
 
-        int oldVertexArray = 0;
-        int oldProgram = 0;
+
 
 
         @RawPtr
@@ -887,8 +893,6 @@ public abstract class UIManager implements LifecycleOwner {
         ImageViewProxy surface = frameTask.getRight();
 
         if (recording != null) {
-            oldVertexArray = GL33C.glGetInteger(GL33C.GL_VERTEX_ARRAY_BINDING);
-            oldProgram = GL33C.glGetInteger(GL33C.GL_CURRENT_PROGRAM);
             boolean added = context.addTask(recording);
             recording.close();
             if (!added) {
@@ -900,81 +904,79 @@ public abstract class UIManager implements LifecycleOwner {
 
         if (recording != null) {
             context.submit();
-            GL33C.glBindFramebuffer(GL33C.GL_FRAMEBUFFER, minecraft.getMainRenderTarget().frameBufferId);
-            GL33C.glBindVertexArray(oldVertexArray);
-            GL33C.glUseProgram(oldProgram);
         } else {
             context.checkForFinishedWork();
         }
 
-        BufferUploader.invalidate();
+
 
         // force changing Blaze3D state
         for (int i = 0; i <= 3; i++) {
             GL33C.glBindSampler(i, 0);
         }
         GL33C.glDisable(GL33C.GL_STENCIL_TEST);
-        RenderSystem.disableScissor();
+        GlStateManager._disableScissorTest();
         GL33C.glDisable(GL33C.GL_SCISSOR_TEST);
-        RenderSystem.defaultBlendFunc();
+        GlStateManager._blendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
         GL33C.glBlendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
-        RenderSystem.enableBlend();
+        GlStateManager._enableBlend();
         GL33C.glEnable(GL33C.GL_BLEND);
-        RenderSystem.blendEquation(GL33C.GL_FUNC_ADD);
         GL33C.glBlendEquation(GL33C.GL_FUNC_ADD);
-        RenderSystem.disableDepthTest();
+        GlStateManager._disableDepthTest();
         GL33C.glDisable(GL33C.GL_DEPTH_TEST);
-        RenderSystem.depthFunc(GL33C.GL_LEQUAL);
+        GlStateManager._depthFunc(GL33C.GL_LEQUAL);
         GL33C.glDepthFunc(GL33C.GL_LEQUAL);
-        RenderSystem.depthMask(true);
+        GlStateManager._depthMask(true);
         GL33C.glDepthMask(true);
         for (int i = 3; i >= 0; i--) {
-            RenderSystem.activeTexture(GL33C.GL_TEXTURE0 + i);
-            RenderSystem.bindTexture(0);
+            GlStateManager._activeTexture(GL33C.GL_TEXTURE0 + i);
+            GlStateManager._bindTexture(0);
         }
         GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
-        RenderSystem.disableCull();
-        RenderSystem.lineWidth(1);
+        GlStateManager._disableCull();
 
-        int width = minecraft.getWindow().getWidth();
-        int height = minecraft.getWindow().getHeight();
 
-        RenderSystem.viewport(0, 0, width, height);
+
+
+
 
         if (surface != null) {
             if (surface.getImage() instanceof @RawPtr GLTexture layer) {
                 // draw off-screen target to Minecraft mainTarget (not the default framebuffer)
-                CompiledShaderProgram blitShader = RenderSystem.setShader(CoreShaders.BLIT_SCREEN);
-                Objects.requireNonNull(blitShader, "Blit shader not loaded");
-                blitShader.bindSampler("InSampler", layer.getHandle());
-                // using the nearest sampler is performant
-                @SharedPtr
-                GLSampler sampler = (GLSampler) context.getResourceProvider()
-                        .findOrCreateCompatibleSampler(SamplerDesc.NEAREST);
-                if (sampler != null) {
-                    // XXX: we assume the binding unit is 0 since 'InSampler' is the only sampler
-                    GL33C.glBindSampler(0, sampler.getHandle());
+                if (mLayerTexture == null || mLayerTexture.source != layer) {
+                    if (mLayerTexture != null) {
+                        mLayerTextureView.close();
+                        mLayerTexture.close();
+                    }
+                    layer.ref();
+                    mLayerTexture = new GlTexture_Wrapped(layer); // move
+                    // using the nearest sampler is performant
+                    // Arc3D always uses a sampler object, so we don't care if the
+                    // texture parameters are modified by Blaze3D
+                    mLayerTexture.setTextureFilter(FilterMode.NEAREST, /*useMipmaps*/ false);
+                    mLayerTextureView = (GlTextureView) MuiModApi.get().getRealGpuDevice()
+                            .createTextureView(mLayerTexture);
+                } else {
+                    // ensure there's ref before submitting to the GPU
+                    mLayerTexture.touch();
                 }
-                // override blend with src over
-                RenderSystem.blendFuncSeparate(GL33C.GL_ONE, GL33C.GL_ONE_MINUS_SRC_ALPHA,
-                        GL33C.GL_ONE, GL33C.GL_ONE_MINUS_SRC_ALPHA);
-                BufferBuilder bufferBuilder = RenderSystem.renderThreadTesselator()
-                        .begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLIT_SCREEN);
-                bufferBuilder.addVertex(0.0F, 0.0F, 0.0F);
-                bufferBuilder.addVertex(1.0F, 0.0F, 0.0F);
-                bufferBuilder.addVertex(1.0F, 1.0F, 0.0F);
-                bufferBuilder.addVertex(0.0F, 1.0F, 0.0F);
-                BufferUploader.drawWithShader(bufferBuilder.buildOrThrow());
-                if (sampler != null) {
-                    GL33C.glBindSampler(0, 0);
-                    sampler.unref();
-                }
+                gr.nextStratum();
+                MuiModApi.get().submitGuiElementRenderState(gr, new BlitRenderState(
+                        // render target is always premultiplied
+                        RenderPipelines.GUI_TEXTURED_PREMULTIPLIED_ALPHA,
+                        TextureSetup.singleTexture(mLayerTextureView),
+                        new Matrix3x2f().scale(1.0F / mWindow.getGuiScale()),
+                        0, 0, mWindow.getWidth(), mWindow.getHeight(),
+                        // since the projection is flipped, we need to flip the texture coordinates
+                        0.0F, 1.0F, 1.0F, 0.0F,
+                        ~0,
+                        /*scissorArea*/ null
+                ));
             }
         }
-        RenderSystem.defaultBlendFunc();
         RefCnt.move(surface);
 
-        if (gr != null) {
+        if (mScreen != null) {
             for (var handler : mRoot.mRawDrawHandlers) {
                 handler.render(gr, mouseX, mouseY, deltaTick, mWindow);
             }
@@ -1044,7 +1046,7 @@ public abstract class UIManager implements LifecycleOwner {
             positioner = null;
         }
         if (x == mouseX && y == mouseY && positioner == null &&
-                isIdentity(graphics.pose().last().pose())) {
+                isIdentity(graphics.pose())) {
             // use our exact pixel positioning
             partialX = (float) (cursorX - mouseX);
             partialY = (float) (cursorY - mouseY);
@@ -1060,26 +1062,21 @@ public abstract class UIManager implements LifecycleOwner {
                 partialX, partialY, positioner, tooltipStyle);
     }
 
-    private static boolean isIdentity(Matrix4f ctm) {
-        if ((ctm.properties() & Matrix4f.PROPERTY_IDENTITY) != 0) {
-            return true;
-        }
+    private static boolean isIdentity(Matrix3x2f ctm) {
         return MathUtil.isApproxEqual(ctm.m00(), 1) &&
                 MathUtil.isApproxZero(ctm.m01()) &&
-                MathUtil.isApproxZero(ctm.m02()) &&
-                MathUtil.isApproxZero(ctm.m03()) &&
                 MathUtil.isApproxZero(ctm.m10()) &&
                 MathUtil.isApproxEqual(ctm.m11(), 1) &&
-                MathUtil.isApproxZero(ctm.m12()) &&
-                MathUtil.isApproxZero(ctm.m13()) &&
                 MathUtil.isApproxZero(ctm.m20()) &&
-                MathUtil.isApproxZero(ctm.m21()) &&
-                MathUtil.isApproxEqual(ctm.m22(), 1) &&
-                MathUtil.isApproxZero(ctm.m23()) &&
-                MathUtil.isApproxZero(ctm.m30()) &&
-                MathUtil.isApproxZero(ctm.m31()) &&
-                /* MathUtil.isApproxZero(ctm.m32()) && */ // translation-z is ignored
-                MathUtil.isApproxEqual(ctm.m33(), 1);
+                MathUtil.isApproxZero(ctm.m21());
+    }
+
+    public void renderAbove(GuiRenderState guiRenderState) {
+        if (minecraft.isRunning() && mRunning &&
+                mScreen == null && minecraft.getOverlay() == null) {
+            // Render the UI above everything
+            render(new GuiGraphics(minecraft, guiRenderState), 0, 0, 0);
+        }
     }
 
     protected void onRenderTick(boolean isEnd) {
@@ -1114,14 +1111,19 @@ public abstract class UIManager implements LifecycleOwner {
                 context.performDeferredCleanup(120_000);
                 GlyphManager.getInstance().compact();
             }
+            if (mLayerTexture != null) {
+                // we can drop the ref after submitting to the GPU
+                mLayerTexture.close();
+            }
             if (!minecraft.isRunning() && mRunning) {
                 mRunning = false;
                 mRoot.mHandler.post(this::finish);
+                if (mLayerTexture != null) {
+                    mLayerTextureView.close();
+                    mLayerTextureView = null;
+                    mLayerTexture = null;
+                }
                 // later destroy() will be called
-            } else if (minecraft.isRunning() && mRunning &&
-                    mScreen == null && minecraft.getOverlay() == null) {
-                // Render the UI above everything
-                render(null, 0, 0, 0);
             }
         }
         /* else {

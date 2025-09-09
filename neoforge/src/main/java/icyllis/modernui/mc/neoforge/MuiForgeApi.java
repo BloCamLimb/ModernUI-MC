@@ -19,9 +19,15 @@
 package icyllis.modernui.mc.neoforge;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.state.GuiElementRenderState;
+import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
@@ -31,13 +37,11 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Rarity;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.client.blaze3d.validation.ValidationGpuDevice;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-@OnlyIn(Dist.CLIENT)
 public final class MuiForgeApi extends MuiModApi {
 
     public MuiForgeApi() {
@@ -70,17 +74,10 @@ public final class MuiForgeApi extends MuiModApi {
 
     @Override
     public boolean isGLVersionPromoted() {
+        // FIXME newer FancyModLoader no longer promotes GL version, we must disable early window control
         try {
-            if (!net.neoforged.fml.loading.FMLConfig.getBoolConfigValue(net.neoforged.fml.loading.FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
-                return false;
-            }
-        } catch (Throwable ignored) {
-        }
-        try {
-            String version = net.neoforged.fml.loading.ImmediateWindowHandler.getGLVersion();
-            if (!"3.2".equals(version)) {
-                ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Detected OpenGL {} Core Profile from FML Early Window",
-                        version);
+            if (net.neoforged.fml.loading.FMLConfig.getBoolConfigValue(net.neoforged.fml.loading.FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
+                net.neoforged.fml.loading.FMLConfig.updateConfig(net.neoforged.fml.loading.FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL, Boolean.FALSE);
                 return true;
             }
         } catch (Throwable ignored) {
@@ -108,5 +105,31 @@ public final class MuiForgeApi extends MuiModApi {
     @Override
     public Style applyRarityTo(Rarity rarity, Style baseStyle) {
         return rarity.getStyleModifier().apply(baseStyle);
+    }
+
+    @Override
+    public GpuDevice getRealGpuDevice() {
+        GpuDevice gpuDevice = RenderSystem.getDevice();
+        // The ValidationGpuDevice prevents you from creating external textures, that's terrible
+        if (gpuDevice instanceof ValidationGpuDevice validationGpuDevice) {
+            gpuDevice = validationGpuDevice.getRealDevice();
+        }
+        return gpuDevice;
+    }
+
+    @Override
+    public void submitGuiElementRenderState(GuiGraphics graphics, GuiElementRenderState renderState) {
+        graphics.submitGuiElementRenderState(renderState);
+    }
+
+    @Override
+    public void submitPictureInPictureRenderState(GuiGraphics graphics, PictureInPictureRenderState renderState) {
+        graphics.submitPictureInPictureRenderState(renderState);
+    }
+
+    @Nullable
+    @Override
+    public ScreenRectangle peekScissorStack(GuiGraphics graphics) {
+        return graphics.peekScissorStack();
     }
 }

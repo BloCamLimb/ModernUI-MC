@@ -62,7 +62,7 @@ import static icyllis.modernui.mc.ModernUIMod.*;
 /**
  * This class handles mod loading events, all registry entries are only available under the development mode.
  */
-@EventBusSubscriber(modid = ModernUI.ID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = ModernUI.ID)
 final class Registration {
 
     private Registration() {
@@ -147,7 +147,7 @@ final class Registration {
         return sb.toString();
     }*/
 
-    @EventBusSubscriber(modid = ModernUI.ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = ModernUI.ID, value = Dist.CLIENT)
     static class ModClient {
 
         static {

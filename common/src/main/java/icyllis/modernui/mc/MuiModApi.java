@@ -20,6 +20,7 @@ package icyllis.modernui.mc;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
+import com.mojang.blaze3d.systems.GpuDevice;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
@@ -32,6 +33,11 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.state.GuiElementRenderState;
+import net.minecraft.client.gui.render.state.GuiRenderState;
+import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
@@ -396,6 +402,15 @@ public abstract class MuiModApi {
     public abstract boolean isKeyBindingMatches(KeyMapping keyMapping, InputConstants.Key key);
 
     public abstract Style applyRarityTo(Rarity rarity, Style baseStyle);
+
+    public abstract GpuDevice getRealGpuDevice();
+
+    public abstract void submitGuiElementRenderState(GuiGraphics graphics, GuiElementRenderState renderState);
+
+    public abstract void submitPictureInPictureRenderState(GuiGraphics graphics, PictureInPictureRenderState renderState);
+
+    @Nullable
+    public abstract ScreenRectangle peekScissorStack(GuiGraphics graphics);
 
     /*
      * Registers a callback to be called when {@link org.lwjgl.glfw.GLFWScrollCallback} is called.

@@ -40,7 +40,7 @@ import javax.annotation.Nullable;
 public abstract class MixinWindow {
 
     @Shadow
-    private double guiScale;
+    private int guiScale;
 
     @Shadow
     public abstract int getWidth();
@@ -63,13 +63,9 @@ public abstract class MixinWindow {
     }
 
     @Inject(method = "setGuiScale", at = @At("HEAD"))
-    private void onSetGuiScale(double scaleFactor, CallbackInfo ci) {
+    private void onSetGuiScale(int scaleFactor, CallbackInfo ci) {
         int oldScale = (int) guiScale;
         int newScale = (int) scaleFactor;
-        if (newScale != scaleFactor) {
-            ModernUIMod.LOGGER.warn(ModernUIMod.MARKER,
-                    "Gui scale {} should be an integer, some mods break this", scaleFactor);
-        }
 
         DisplayMetrics metrics = new DisplayMetrics();
         metrics.setToDefaults();

@@ -18,36 +18,31 @@
 
 package icyllis.modernui.mc;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import icyllis.modernui.mc.mixin.AccessGuiGraphics;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.CompiledShaderProgram;
-import net.minecraft.client.renderer.MultiBufferSource;
-import org.joml.Matrix4f;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.TextureSetup;
+import net.minecraft.client.renderer.RenderPipelines;
+import org.joml.Matrix3x2f;
+import org.joml.Matrix3x2fStack;
 
 import javax.annotation.Nonnull;
 
 /**
- * Extension of {@link GuiGraphics}, add methods to draw rounded rectangles
- * in Minecraft GUI system.
+ * Extension of {@link GuiGraphics}.
  * <p>
  * Each time you want to use this class, you create a new ExtendedGuiGraphics
  * using an existing GuiGraphics instance. There is no difference in operating
  * on this instance and the original instance.
  * <p>
- * Unlike vanilla {@link GuiGraphics}, this class cannot use batch rendering,
- * thus each draw call will be flushed immediately.
- * <p>
- * Due to precision problem, if {@link #pose()} is not a pure translation, then
- * you should increase z by 0.1 for subsequent draws.
+ * Deprecation note: Due to GUI changes in Minecraft 1.21.6, methods that draw
+ * rounded rectangles no longer works as of that version, and there is no alternative.
+ * At the same time, we provide several helper methods.
  *
  * @since 3.11.1
  */
 public class ExtendedGuiGraphics {
 
     private final GuiGraphics guiGraphics;
-    private final MultiBufferSource.BufferSource bufferSource;
 
     private int mColorTL = ~0;
     private int mColorTR = ~0;
@@ -59,13 +54,12 @@ public class ExtendedGuiGraphics {
 
     public ExtendedGuiGraphics(@Nonnull GuiGraphics guiGraphics) {
         this.guiGraphics = guiGraphics;
-        this.bufferSource = ((AccessGuiGraphics) guiGraphics).getBufferSource();
     }
 
     /**
      * Reference to pose stack to transform geometries' local coordinates.
      */
-    public PoseStack pose() {
+    public Matrix3x2fStack pose() {
         return guiGraphics.pose();
     }
 
@@ -145,13 +139,20 @@ public class ExtendedGuiGraphics {
         }
     }
 
+    /**
+     * @deprecated see the note above
+     */
+    @Deprecated
     public float getDepth() {
         return mDepth;
     }
 
     /**
      * Set the depth of the draw.
+     *
+     * @deprecated see the note above
      */
+    @Deprecated
     public void setDepth(float depth) {
         mDepth = depth;
     }
@@ -171,17 +172,43 @@ public class ExtendedGuiGraphics {
     }
 
     /**
+     * Draw a rectangle within a rectangular bounds. The
+     * rectangle will be filled with the current color.
+     *
+     * @param left   the left of the rectangular bounds
+     * @param top    the top of the rectangular bounds
+     * @param right  the right of the rectangular bounds
+     * @param bottom the bottom of the rectangular bounds
+     */
+    public void fillRect(float left, float top, float right, float bottom) {
+        if (!(left < right && top < bottom)) { // also capture NaN
+            return;
+        }
+        ScreenRectangle scissorArea = MuiModApi.get().peekScissorStack(guiGraphics);
+        MuiModApi.get().submitGuiElementRenderState(guiGraphics,
+                new GradientRectangleRenderState(
+                        RenderPipelines.GUI,
+                        TextureSetup.noTexture(),
+                        new Matrix3x2f(pose()),
+                        left, top, right, bottom,
+                        mColorTL, mColorTR, mColorBR, mColorBL,
+                        scissorArea
+                ));
+    }
+
+    /**
      * Draw a circle at (centerX, centerY) with radius. The
      * circle will be filled with the current color.
      *
      * @param centerX the x-coordinate of the center of the circle to be drawn
      * @param centerY the y-coordinate of the center of the circle to be drawn
      * @param radius  the radius of the circle to be drawn
+     * @deprecated see the note above
      */
+    @Deprecated
     public void fillCircle(float centerX, float centerY, float radius) {
-        drawRoundRect(centerX - radius, centerY - radius,
-                centerX + radius, centerY + radius,
-                mDepth, radius, -1.0f);
+        fillRect(centerX - radius, centerY - radius,
+                centerX + radius, centerY + radius);
     }
 
     /**
@@ -192,11 +219,10 @@ public class ExtendedGuiGraphics {
      * @param centerY the y-coordinate of the center of the circle to be drawn
      * @param radius  the radius of the circle to be drawn
      * @see #setStrokeWidth(float)
+     * @deprecated see the note above
      */
+    @Deprecated
     public void strokeCircle(float centerX, float centerY, float radius) {
-        drawRoundRect(centerX - radius, centerY - radius,
-                centerX + radius, centerY + radius,
-                mDepth, radius, mWidth * 0.5f);
     }
 
     /**
@@ -208,11 +234,12 @@ public class ExtendedGuiGraphics {
      * @param right  the right of the rectangular bounds
      * @param bottom the bottom of the rectangular bounds
      * @param radius the radius used to round the corners
+     * @deprecated see the note above
      */
+    @Deprecated
     public void fillRoundRect(float left, float top, float right, float bottom,
                               float radius) {
-        drawRoundRect(left, top, right, bottom,
-                mDepth, radius, -1.0f);
+        fillRect(left, top, right, bottom);
     }
 
     /**
@@ -225,11 +252,11 @@ public class ExtendedGuiGraphics {
      * @param bottom the bottom of the rectangular bounds
      * @param radius the radius used to round the corners
      * @see #setStrokeWidth(float)
+     * @deprecated see the note above
      */
+    @Deprecated
     public void strokeRoundRect(float left, float top, float right, float bottom,
                                 float radius) {
-        drawRoundRect(left, top, right, bottom,
-                mDepth, radius, mWidth * 0.5f);
     }
 
     /**
@@ -268,64 +295,5 @@ public class ExtendedGuiGraphics {
          * draw the gradient from the top-left to the bottom-right
          */
         TL_BR,
-    }
-
-    private void drawRoundRect(float left, float top, float right, float bottom,
-                               float depth, float radius, float thickness) {
-        if (!(left < right && top < bottom)) { // also capture NaN
-            return;
-        }
-        if (thickness == 0.0f) {
-            return;
-        }
-        if (!Float.isFinite(radius) || radius < 0.0f) { // NaN, Inf, negative
-            radius = 0;
-        }
-        CompiledShaderProgram shader = RenderSystem.setShader(GuiRenderType.SHADER_ROUND_RECT);
-        if (shader == null) {
-            return;
-        }
-        Matrix4f pose = guiGraphics.pose().last().pose();
-        float centerX = (left + right) * 0.5f;
-        float centerY = (top + bottom) * 0.5f;
-        float extentX = (right - left) * 0.5f;
-        float extentY = (bottom - top) * 0.5f;
-        radius = Math.min(radius, Math.min(extentX, extentY));
-        float outset = 1 + thickness; // conservative
-        if ((pose.properties() & Matrix4f.PROPERTY_TRANSLATION) != 0) {
-            // pure translation
-            shader.safeGetUniform("u_Rect")
-                    .set(centerX + pose.m30(), centerY + pose.m31(), extentX, extentY);
-            shader.safeGetUniform("u_Radii")
-                    .set(radius, thickness);
-            var buffer = bufferSource.getBuffer(GuiRenderType.roundRect());
-            buffer.addVertex(pose, left - outset, top - outset, depth).setColor(mColorTL);
-            buffer.addVertex(pose, left - outset, bottom + outset, depth).setColor(mColorBL);
-            buffer.addVertex(pose, right + outset, bottom + outset, depth).setColor(mColorBR);
-            buffer.addVertex(pose, right + outset, top - outset, depth).setColor(mColorTR);
-
-            // we modify uniform for each draw, so cannot do batch rendering
-            guiGraphics.flush();
-        } else {
-            // here we modify global model view, so cannot do batch rendering
-            guiGraphics.flush();
-
-            // we expect local coordinates, concat pose with model view
-            RenderSystem.getModelViewStack().pushMatrix();
-            RenderSystem.getModelViewStack().mul(pose);
-            shader.safeGetUniform("u_Rect")
-                    .set(centerX, centerY, extentX, extentY);
-            shader.safeGetUniform("u_Radii")
-                    .set(radius, thickness);
-            var buffer = bufferSource.getBuffer(GuiRenderType.roundRect());
-            buffer.addVertex(left - outset, top - outset, depth).setColor(mColorTL);
-            buffer.addVertex(left - outset, bottom + outset, depth).setColor(mColorBL);
-            buffer.addVertex(right + outset, bottom + outset, depth).setColor(mColorBR);
-            buffer.addVertex(right + outset, top - outset, depth).setColor(mColorTR);
-
-            // we modify uniform for each draw, so cannot do batch rendering
-            guiGraphics.flush();
-            RenderSystem.getModelViewStack().popMatrix();
-        }
     }
 }

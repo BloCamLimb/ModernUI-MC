@@ -18,11 +18,9 @@
 
 package icyllis.modernui.mc.mixin;
 
-import com.mojang.blaze3d.resource.CrossFrameResourcePool;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(GameRenderer.class)
@@ -30,7 +28,4 @@ public interface AccessGameRenderer {
 
     @Invoker("setPostEffect")
     void invokeSetPostEffect(ResourceLocation location);
-
-    @Accessor("resourcePool")
-    CrossFrameResourcePool getResourcePool();
 }

@@ -17,7 +17,7 @@ minivan {
 
 dependencies {
     compileOnly 'org.spongepowered:mixin:0.8.7'
-    compileOnly 'org.ow2.asm:asm-tree:9.7'
+    compileOnly 'org.ow2.asm:asm-tree:9.8'
 
     if (rootProject.file('../ModernUI').exists()) {
         implementation("icyllis.arc3d:Arc3D")

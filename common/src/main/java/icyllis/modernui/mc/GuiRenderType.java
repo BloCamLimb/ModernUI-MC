@@ -27,10 +27,11 @@ import org.jetbrains.annotations.ApiStatus;
 /**
  * Modern GUI.
  */
+//FIXME rounded tooltip
 @ApiStatus.Internal
-public class GuiRenderType extends RenderType {
+public abstract class GuiRenderType extends RenderType {
 
-    public static final ShaderProgram SHADER_TOOLTIP = new ShaderProgram(
+    /*public static final ShaderProgram SHADER_TOOLTIP = new ShaderProgram(
             ModernUIMod.location("core/rendertype_modern_tooltip"),
             DefaultVertexFormat.POSITION,
             ShaderDefines.EMPTY);
@@ -83,19 +84,18 @@ public class GuiRenderType extends RenderType {
     static final RenderType
             ROUND_RECT = new GuiRenderType("modern_round_rect", DefaultVertexFormat.POSITION_COLOR, 1536,
             () -> ROUND_RECT_STATES.forEach(RenderStateShard::setupRenderState),
-            () -> ROUND_RECT_STATES.forEach(RenderStateShard::clearRenderState));
+            () -> ROUND_RECT_STATES.forEach(RenderStateShard::clearRenderState));*/
 
     private GuiRenderType(String name, VertexFormat vertexFormat, int bufferSize,
                           Runnable setupState, Runnable clearState) {
-        super(name, vertexFormat, VertexFormat.Mode.QUADS,
-                bufferSize, false, false, setupState, clearState);
+        super(name, bufferSize, false, false, setupState, clearState);
     }
 
     public static RenderType tooltip() {
-        return TOOLTIP;
+        return null;//TOOLTIP;
     }
 
     public static RenderType roundRect() {
-        return ROUND_RECT;
+        return null;//ROUND_RECT;
     }
 }

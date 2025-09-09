@@ -33,7 +33,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(Gui.class)
 public abstract class MixinIngameGui {
 
-    @Redirect(
+    /*@Redirect(
             method = "renderExperienceLevel",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;drawString" +
                     "(Lnet/minecraft/client/gui/Font;Ljava/lang/String;IIIZ)I")
@@ -61,5 +61,5 @@ public abstract class MixinIngameGui {
             gr.flush();
         }
         return x;
-    }
+    }*/
 }

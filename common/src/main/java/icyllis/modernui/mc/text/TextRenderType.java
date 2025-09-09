@@ -60,7 +60,7 @@ public class TextRenderType extends RenderType {
      */
     public static final int MODE_UNIFORM_SCALE = 4; // <- must be power of 2
 
-    public static final ShaderProgram SHADER_NORMAL = new ShaderProgram(
+    /*public static final ShaderProgram SHADER_NORMAL = new ShaderProgram(
             ModernUIMod.location("core/rendertype_modern_text_normal"),
             DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
             ShaderDefines.EMPTY
@@ -89,7 +89,7 @@ public class TextRenderType extends RenderType {
             ModernUIMod.location("core/rendertype_modern_text_sdf_stroke_400"),
             DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP,
             ShaderDefines.EMPTY
-    );
+    );*/
 
     /*static final ShaderStateShard
             RENDERTYPE_MODERN_TEXT_NORMAL = new ShaderStateShard(TextRenderType::getShaderNormal),
@@ -129,7 +129,7 @@ public class TextRenderType extends RenderType {
     static {
         NORMAL_STATES = ImmutableList.of(
                 //RENDERTYPE_MODERN_TEXT_NORMAL,
-                TRANSLUCENT_TRANSPARENCY,
+                /*TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,
                 LIGHTMAP,
@@ -138,11 +138,11 @@ public class TextRenderType extends RenderType {
                 MAIN_TARGET,
                 DEFAULT_TEXTURING,
                 COLOR_DEPTH_WRITE,
-                DEFAULT_LINE
+                DEFAULT_LINE*/
         );
         SDF_FILL_STATES = ImmutableList.of(
                 //RENDERTYPE_MODERN_TEXT_SDF_FILL,
-                TRANSLUCENT_TRANSPARENCY,
+                /*TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,
                 LIGHTMAP,
@@ -151,11 +151,11 @@ public class TextRenderType extends RenderType {
                 MAIN_TARGET,
                 DEFAULT_TEXTURING,
                 COLOR_DEPTH_WRITE,
-                DEFAULT_LINE
+                DEFAULT_LINE*/
         );
         SDF_STROKE_STATES = ImmutableList.of(
                 //RENDERTYPE_MODERN_TEXT_SDF_STROKE,
-                TRANSLUCENT_TRANSPARENCY,
+                /*TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,
                 LIGHTMAP,
@@ -164,10 +164,10 @@ public class TextRenderType extends RenderType {
                 MAIN_TARGET,
                 DEFAULT_TEXTURING,
                 COLOR_DEPTH_WRITE,
-                DEFAULT_LINE
+                DEFAULT_LINE*/
         );
         VANILLA_STATES = ImmutableList.of(
-                RENDERTYPE_TEXT_SHADER,
+                /*RENDERTYPE_TEXT_SHADER,
                 TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,
@@ -177,10 +177,10 @@ public class TextRenderType extends RenderType {
                 MAIN_TARGET,
                 DEFAULT_TEXTURING,
                 COLOR_DEPTH_WRITE,
-                DEFAULT_LINE
+                DEFAULT_LINE*/
         );
         SEE_THROUGH_STATES = ImmutableList.of(
-                RENDERTYPE_TEXT_SEE_THROUGH_SHADER,
+                /*RENDERTYPE_TEXT_SEE_THROUGH_SHADER,
                 TRANSLUCENT_TRANSPARENCY,
                 NO_DEPTH_TEST,
                 CULL,
@@ -190,10 +190,10 @@ public class TextRenderType extends RenderType {
                 MAIN_TARGET,
                 DEFAULT_TEXTURING,
                 COLOR_WRITE,
-                DEFAULT_LINE
+                DEFAULT_LINE*/
         );
         POLYGON_OFFSET_STATES = ImmutableList.of(
-                RENDERTYPE_TEXT_SHADER,
+                /*RENDERTYPE_TEXT_SHADER,
                 TRANSLUCENT_TRANSPARENCY,
                 LEQUAL_DEPTH_TEST,
                 CULL,
@@ -203,12 +203,12 @@ public class TextRenderType extends RenderType {
                 MAIN_TARGET,
                 DEFAULT_TEXTURING,
                 COLOR_DEPTH_WRITE,
-                DEFAULT_LINE
+                DEFAULT_LINE*/
         );
     }
 
     private TextRenderType(String name, int bufferSize, Runnable setupState, Runnable clearState) {
-        super(name, DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS,
+        super(name, /*DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS,*/
                 bufferSize, false, true, setupState, clearState);
     }
 
@@ -237,9 +237,9 @@ public class TextRenderType extends RenderType {
     @Nonnull
     private static TextRenderType makeNormalType(int texture) {
         return new TextRenderType("modern_text_normal", 256, () -> {
-            RenderSystem.setShader(getShaderNormal());
+            //RenderSystem.setShader(getShaderNormal());
             NORMAL_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, texture);
+            //RenderSystem.setShaderTexture(0, texture);
         }, () -> NORMAL_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
@@ -257,9 +257,9 @@ public class TextRenderType extends RenderType {
     private static TextRenderType makeSDFFillType(int texture) {
         ensureLinearFontSampler();
         TextRenderType renderType = new TextRenderType("modern_text_sdf_fill", 256, () -> {
-            RenderSystem.setShader(getShaderSDFFill());
+            //RenderSystem.setShader(getShaderSDFFill());
             SDF_FILL_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, texture);
+            //RenderSystem.setShaderTexture(0, texture);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
                 GL33C.glBindSampler(0, sLinearFontSampler.getHandle());
             }
@@ -288,9 +288,9 @@ public class TextRenderType extends RenderType {
     private static TextRenderType makeSDFStrokeType(int texture) {
         ensureLinearFontSampler();
         TextRenderType renderType = new TextRenderType("modern_text_sdf_stroke", 256, () -> {
-            RenderSystem.setShader(getShaderSDFStroke());
+            //RenderSystem.setShader(getShaderSDFStroke());
             SDF_STROKE_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, texture);
+            //RenderSystem.setShaderTexture(0, texture);
             if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
                 GL33C.glBindSampler(0, sLinearFontSampler.getHandle());
             }
@@ -319,7 +319,7 @@ public class TextRenderType extends RenderType {
     private static TextRenderType makeVanillaType(int texture) {
         return new TextRenderType("modern_text_vanilla", 256, () -> {
             VANILLA_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, texture);
+            //RenderSystem.setShaderTexture(0, texture);
         }, () -> VANILLA_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
@@ -327,7 +327,7 @@ public class TextRenderType extends RenderType {
     private static TextRenderType makeSeeThroughType(int texture) {
         return new TextRenderType("modern_text_see_through", 256, () -> {
             SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, texture);
+            //RenderSystem.setShaderTexture(0, texture);
         }, () -> SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
@@ -335,7 +335,7 @@ public class TextRenderType extends RenderType {
     private static TextRenderType makePolygonOffsetType(int texture) {
         return new TextRenderType("modern_text_polygon_offset", 256, () -> {
             POLYGON_OFFSET_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, texture);
+            //RenderSystem.setShaderTexture(0, texture);
         }, () -> POLYGON_OFFSET_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
@@ -388,12 +388,12 @@ public class TextRenderType extends RenderType {
         sFirstSDFStrokeBuffer.clear();
         if (cleanup) {
             sLinearFontSampler = RefCnt.move(sLinearFontSampler);
-            sCurrentShaderSDFFill = null;
-            sCurrentShaderSDFStroke = null;
+            /*sCurrentShaderSDFFill = null;
+            sCurrentShaderSDFStroke = null;*/
         }
     }
 
-    public static ShaderProgram getShaderNormal() {
+    /*public static ShaderProgram getShaderNormal() {
         if (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld) {
             return CoreShaders.RENDERTYPE_TEXT;
         }
@@ -409,11 +409,11 @@ public class TextRenderType extends RenderType {
 
     public static ShaderProgram getShaderSDFStroke() {
         return sCurrentShaderSDFStroke;
-    }
+    }*/
 
     // RT only
     public static synchronized void toggleSDFShaders(boolean smart) {
-        if (smart) {
+        /*if (smart) {
             if (((GLCaps) Core.requireImmediateContext()
                     .getCaps()).getGLSLVersion() >= 400) {
                 sCurrentShaderSDFFill = SHADER_SDF_FILL_SMART;
@@ -424,7 +424,22 @@ public class TextRenderType extends RenderType {
             }
         }
         sCurrentShaderSDFFill = SHADER_SDF_FILL;
-        sCurrentShaderSDFStroke = SHADER_SDF_STROKE;
+        sCurrentShaderSDFStroke = SHADER_SDF_STROKE;*/
+    }
+
+    @Override
+    public void draw(MeshData meshData) {
+
+    }
+
+    @Override
+    public VertexFormat format() {
+        return null;
+    }
+
+    @Override
+    public VertexFormat.Mode mode() {
+        return null;
     }
 
     /*

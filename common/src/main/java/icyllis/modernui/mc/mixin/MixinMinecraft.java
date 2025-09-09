@@ -55,12 +55,30 @@ public abstract class MixinMinecraft {
         MuiModApi.dispatchOnScreenChange(screen, guiScreen);
     }
 
+    @Inject(method = "onGameLoadFinished", at = @At("HEAD"))
+    private void beforeGameLoadFinished(@Coerce Object cookie, CallbackInfo ci) {
+        try {
+            // due to config loading timing and possible parallel loading errors,
+            // we only try to apply configs just before the game is loaded.
+            if (Config.CLIENT.mLoaded) {
+                Config.CLIENT.apply();
+            }
+            if (Config.TEXT.mLoaded) {
+                Config.TEXT.apply();
+            }
+        } catch (Throwable e) {
+            // happen in broken mod state
+            ModernUIMod.LOGGER.error(ModernUIMod.MARKER, "Failed to apply configs", e);
+        }
+    }
+
     @Inject(method = "onGameLoadFinished", at = @At("TAIL"))
     private void onGameLoadFinished(@Coerce Object cookie, CallbackInfo ci) {
         try {
             UIManager.getInstance().onGameLoadFinished();
-        } catch (IllegalStateException ignored) {
+        } catch (Throwable e) {
             // happen in broken mod state
+            ModernUIMod.LOGGER.error(ModernUIMod.MARKER, "Failed to load game", e);
         }
     }
 

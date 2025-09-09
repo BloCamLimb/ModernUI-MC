@@ -20,6 +20,7 @@ package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.arc3d.core.ColorInfo;
 import icyllis.arc3d.core.RefCnt;
@@ -50,20 +51,20 @@ public class EffectRenderType extends RenderType {
     static {
         TYPE = new EffectRenderType("modern_text_effect", 256, () -> {
             TextRenderType.VANILLA_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, WHITE.getHandle());
+            //RenderSystem.setShaderTexture(0, WHITE.getHandle());
         }, () -> TextRenderType.VANILLA_STATES.forEach(RenderStateShard::clearRenderState));
         SEE_THROUGH_TYPE = new EffectRenderType("modern_text_effect_see_through", 256, () -> {
             TextRenderType.SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, WHITE.getHandle());
+            //RenderSystem.setShaderTexture(0, WHITE.getHandle());
         }, () -> TextRenderType.SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));
         POLYGON_OFFSET_TYPE = new EffectRenderType("modern_text_effect_polygon_offset", 256, () -> {
             TextRenderType.POLYGON_OFFSET_STATES.forEach(RenderStateShard::setupRenderState);
-            RenderSystem.setShaderTexture(0, WHITE.getHandle());
+            //RenderSystem.setShaderTexture(0, WHITE.getHandle());
         }, () -> TextRenderType.POLYGON_OFFSET_STATES.forEach(RenderStateShard::clearRenderState));
     }
 
     private EffectRenderType(String name, int bufferSize, Runnable setupState, Runnable clearState) {
-        super(name, DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS,
+        super(name, /*DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS,*/
                 bufferSize, false, true, setupState, clearState);
     }
 
@@ -129,5 +130,20 @@ public class EffectRenderType extends RenderType {
 
             GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);
         }
+    }
+
+    @Override
+    public void draw(MeshData meshData) {
+
+    }
+
+    @Override
+    public VertexFormat format() {
+        return null;
+    }
+
+    @Override
+    public VertexFormat.Mode mode() {
+        return null;
     }
 }

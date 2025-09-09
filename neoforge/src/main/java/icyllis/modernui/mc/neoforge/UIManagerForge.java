@@ -19,13 +19,12 @@
 package icyllis.modernui.mc.neoforge;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import icyllis.arc3d.opengl.GLDevice;
 import icyllis.modernui.annotation.MainThread;
+import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.lifecycle.LifecycleOwner;
 import icyllis.modernui.mc.*;
-import icyllis.modernui.mc.mixin.AccessNativeImage;
 import icyllis.modernui.mc.ui.CenterFragment2;
 import icyllis.modernui.text.TextUtils;
 import net.minecraft.client.KeyMapping;
@@ -42,7 +41,6 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.client.settings.KeyModifier;
 import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.*;
-import org.lwjgl.opengl.GL45C;
 
 import javax.annotation.Nonnull;
 import java.io.PrintWriter;
@@ -79,8 +77,8 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             ObfuscationReflectionHelper.findField(TextureAtlasSprite.class, "f_118342_");
     public static final Field IMAGE_PIXELS =
             ObfuscationReflectionHelper.findField(NativeImage.class, "f_84964_");*/
-    public static final Field TEXTURE_ID =
-            ObfuscationReflectionHelper.findField(AbstractTexture.class, "id");
+    /*public static final Field TEXTURE_ID =
+            ObfuscationReflectionHelper.findField(AbstractTexture.class, "id");*/
 
     // captured tooltip style from MixinGuiGraphics
     public static ResourceLocation sTooltipStyle;
@@ -91,7 +89,9 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         NeoForge.EVENT_BUS.register(this);
     }
 
-    static void initialize() {
+    @RenderThread
+    public static void initialize() {
+        Core.checkRenderThread();
         assert sInstance == null;
         sInstance = new UIManagerForge();
         LOGGER.info(MARKER, "UI manager initialized");
@@ -171,8 +171,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
-        GLDevice device = (GLDevice) Core.requireImmediateContext().getDevice();
-        if (textureMap != null && device.getCaps().hasDSASupport()) {
+        if (textureMap != null) {
             long gpuSize = 0;
             long cpuSize = 0;
             int dynamicTextures = 0;
@@ -180,32 +179,23 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             int atlasSprites = 0;
             for (var texture : textureMap.values()) {
                 try {
-                    int tex = TEXTURE_ID.getInt(texture);
-                    if (GL45C.glIsTexture(tex)) {
-                        int internalFormat = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_INTERNAL_FORMAT);
-                        long width = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_WIDTH);
-                        long height = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_HEIGHT);
-                        int maxLevel = GL45C.glGetTextureParameteri(tex, GL45C.GL_TEXTURE_MAX_LEVEL);
-                        int bpp = switch (internalFormat) {
-                            case GL45C.GL_R8, GL45C.GL_RED -> 1;
-                            case GL45C.GL_RG8, GL45C.GL_RG -> 2;
-                            case GL45C.GL_RGB8, GL45C.GL_RGBA8, GL45C.GL_RGB, GL45C.GL_RGBA -> 4;
-                            default -> 0;
-                        };
-                        long size = width * height * bpp;
-                        if (maxLevel > 0) {
-                            size = ((size - (size >> ((maxLevel + 1) << 1))) << 2) / 3;
-                        }
-                        gpuSize += size;
+                    var tex = texture.getTexture();
+                    long width = tex.getWidth(0);
+                    long height = tex.getHeight(0);
+                    int mipLevels = tex.getMipLevels();
+                    int bpp = tex.getFormat().pixelSize();
+                    long size = width * height * bpp;
+                    if (mipLevels > 1) {
+                        size = ((size - (size >> (mipLevels << 1))) << 2) / 3;
                     }
+                    gpuSize += size;
                 } catch (Exception ignored) {
                 }
 
                 if (texture instanceof DynamicTexture dynamicTexture) {
                     var image = dynamicTexture.getPixels();
                     try {
-                        //noinspection ConstantValue,DataFlowIssue
-                        if (image != null && ((AccessNativeImage) (Object) image).getPixels() != 0) {
+                        if (image != null && image.getPointer() != 0) {
                             cpuSize += (long) image.getWidth() * image.getHeight() * image.format().components();
                         }
                     } catch (Exception ignored) {
@@ -216,15 +206,15 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                     try {
                         Map<ResourceLocation, TextureAtlasSprite> textures =
                                 (Map<ResourceLocation, TextureAtlasSprite>) TEXTURES_BY_NAME.get(textureAtlas);
-                        /*for (var sprite : textures.values()) {
-                            for (var image : (com.mojang.blaze3d.platform.NativeImage[]) MAIN_IMAGE.get(sprite)) {
-                                if (image != null && IMAGE_PIXELS.getLong(image) != 0) {
+                        for (var sprite : textures.values()) {
+                            for (var image : sprite.contents().byMipLevel) {
+                                if (image != null && image.getPointer() != 0) {
                                     cpuSize += (long) image.getWidth() * image.getHeight() * image.format()
-                                    .components();
+                                            .components();
                                 }
                             }
                             atlasSprites++;
-                        }*/
+                        }
                         atlasSprites += textures.size();
                     } catch (Exception ignored) {
                     }

@@ -120,7 +120,7 @@ public abstract class MixinEditBox extends AbstractWidget {
      * @author BloCamLimb
      * @reason Modern Text Engine
      */
-    @Inject(
+    /*@Inject(
             method = "renderWidget",
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/components/EditBox;isEditable:Z",
                     opcode = Opcodes.GETFIELD),
@@ -271,5 +271,5 @@ public abstract class MixinEditBox extends AbstractWidget {
         }
         // unconditional
         ci.cancel();
-    }
+    }*/
 }

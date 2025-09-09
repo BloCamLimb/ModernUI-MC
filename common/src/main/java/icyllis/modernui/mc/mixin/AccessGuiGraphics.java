@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2024-2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,13 +19,17 @@
 package icyllis.modernui.mc.mixin;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.gui.render.state.GuiRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
+@Deprecated
 @Mixin(GuiGraphics.class)
 public interface AccessGuiGraphics {
 
-    @Accessor("bufferSource")
-    MultiBufferSource.BufferSource getBufferSource();
+    /*@Accessor("bufferSource")
+    MultiBufferSource.BufferSource getBufferSource();*/
+
+    @Accessor("guiRenderState")
+    GuiRenderState getGuiRenderState();
 }

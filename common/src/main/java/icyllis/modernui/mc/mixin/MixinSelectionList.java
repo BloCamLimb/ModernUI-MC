@@ -83,30 +83,30 @@ public abstract class MixinSelectionList extends AbstractContainerWidget impleme
     @Inject(method = "renderWidget", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client" +
             "/gui/components/AbstractSelectionList;renderHeader(Lnet/minecraft/client/gui/GuiGraphics;II)V"))
     private void preRenderHeader(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        gr.pose().pushPose();
+        gr.pose().pushMatrix();
         gr.pose().translate(0,
-                ((int) (((int) scrollAmount() - scrollAmount()) * minecraft.getWindow().getGuiScale())) / minecraft.getWindow().getGuiScale(), 0);
+                ((int) (((int) scrollAmount() - scrollAmount()) * (float) minecraft.getWindow().getGuiScale())) / (float) minecraft.getWindow().getGuiScale());
     }
 
     @Inject(method = "renderWidget", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client" +
             "/gui/components/AbstractSelectionList;renderHeader(Lnet/minecraft/client/gui/GuiGraphics;II)V"))
     private void postRenderHeader(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks,
                                   CallbackInfo ci) {
-        gr.pose().popPose();
+        gr.pose().popMatrix();
     }
 
     @Inject(method = "renderWidget", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraft/client" +
             "/gui/components/AbstractSelectionList;renderListItems(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
     private void preRenderList(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        gr.pose().pushPose();
+        gr.pose().pushMatrix();
         gr.pose().translate(0,
-                ((int) (((int) scrollAmount() - scrollAmount()) * minecraft.getWindow().getGuiScale())) / minecraft.getWindow().getGuiScale(), 0);
+                ((int) (((int) scrollAmount() - scrollAmount()) * (float) minecraft.getWindow().getGuiScale())) / (float) minecraft.getWindow().getGuiScale());
     }
 
     @Inject(method = "renderWidget", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraft/client" +
             "/gui/components/AbstractSelectionList;renderListItems(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
     private void postRenderList(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        gr.pose().popPose();
+        gr.pose().popMatrix();
     }
 
     /**

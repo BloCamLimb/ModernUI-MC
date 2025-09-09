@@ -32,8 +32,10 @@ import javax.annotation.Nonnull;
 /**
  * ContainerMenuView can be used to display and interact with a {@link AbstractContainerMenu ContainerMenu}
  * in the view system.
+ *
+ * @deprecated use menu screen directly
  */
-//TODO WIP
+@Deprecated
 public class ContainerMenuView extends View implements CustomDrawable {
 
     private AbstractContainerMenu mContainerMenu;

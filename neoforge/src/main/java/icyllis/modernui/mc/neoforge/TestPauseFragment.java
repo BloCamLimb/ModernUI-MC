@@ -21,12 +21,13 @@ package icyllis.modernui.mc.neoforge;
 import com.ibm.icu.text.DateFormat;
 import com.ibm.icu.text.SimpleDateFormat;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.R;
 import icyllis.modernui.animation.*;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.*;
-import icyllis.modernui.graphics.drawable.Drawable;
+import icyllis.modernui.graphics.drawable.ImageDrawable;
 import icyllis.modernui.graphics.drawable.ShapeDrawable;
 import icyllis.modernui.mc.ExtendedGuiGraphics;
 import icyllis.modernui.mc.MinecraftSurfaceView;
@@ -67,9 +68,16 @@ public class TestPauseFragment extends Fragment {
         if (mButtonIcon == null) {
             mButtonIcon = Image.create(ModernUI.ID, "gui/gui_icon.png");
         }
+        if (mButtonIcon != null) {
+            mButtonIcon.setDensity(DisplayMetrics.DENSITY_DEFAULT / 24 * 64);
+        }
 
         for (int i = 0; i < 8; i++) {
-            var button = new NavigationButton(getContext(), mButtonIcon, i * 32);
+            var button = new ImageButton(getContext(), null,
+                    R.attr.iconButtonStyle);
+            var icon = new ImageDrawable(getContext().getResources(), mButtonIcon);
+            icon.setSrcRect(i * 32, 352, i * 32 + 32, 384);
+            button.setImageDrawable(icon);
             var params = new LinearLayout.LayoutParams(navigation.dp(32), navigation.dp(32));
             button.setClickable(true);
             params.setMarginsRelative(i == 7 ? 26 : 2, 2, 2, 6);
@@ -136,8 +144,11 @@ public class TestPauseFragment extends Fragment {
             v.setBackground(background);
             v.setPadding(dp3, 1, dp3, 1);
             v.setTextSize(16);
+            var icon = new ImageDrawable(getContext().getResources(), mButtonIcon);
+            int srcLeft = (((i + 1) % 3) + 1) * 64;
+            icon.setSrcRect(srcLeft, 192, srcLeft + 64, 256);
             v.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    new TextFieldStart(v, mButtonIcon, (((i + 1) % 3) + 1) * 64), null, null, null);
+                    icon, null, null, null);
             v.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
 
             var params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -196,7 +207,7 @@ public class TestPauseFragment extends Fragment {
         }
     }*/
 
-    private static class TextFieldStart extends Drawable {
+    /*private static class TextFieldStart extends Drawable {
 
         private final Image mImage;
         private final int mSrcLeft;
@@ -231,7 +242,7 @@ public class TestPauseFragment extends Fragment {
             padding.set(h, v, h, v);
             return true;
         }
-    }
+    }*/
 
     /*private static class TextFieldBackground extends Drawable {
 
@@ -263,7 +274,7 @@ public class TestPauseFragment extends Fragment {
         }
     }*/
 
-    private static class NavigationButton extends View {
+    /*private static class NavigationButton extends View {
 
         private final Image mImage;
         private final int mSrcLeft;
@@ -289,7 +300,7 @@ public class TestPauseFragment extends Fragment {
             super.onHoverChanged(hovered);
             invalidate();
         }
-    }
+    }*/
 
     private static class ConnectorView extends FrameLayout {
 
@@ -386,6 +397,7 @@ public class TestPauseFragment extends Fragment {
                 LayoutParams params = new LayoutParams(mSize * 4, mSize * 5, Gravity.CENTER);
                 addView(mItemView, params);
             }
+            setWillNotDraw(false);
         }
 
         @Override

@@ -18,11 +18,18 @@
 
 package icyllis.modernui.mc.mixin;
 
+import com.mojang.blaze3d.resource.CrossFrameResourcePool;
 import icyllis.modernui.mc.BlurHandler;
+import icyllis.modernui.mc.UIManager;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.renderer.GameRenderer;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
@@ -32,11 +39,34 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(GameRenderer.class)
 public class MixinGameRenderer {
 
+    @Shadow
+    @Final
+    private CrossFrameResourcePool resourcePool;
+
+    @Shadow
+    @Final
+    private GuiRenderState guiRenderState;
+
     @Inject(method = "processBlurEffect", at = @At("HEAD"), cancellable = true)
     private void onProcessBlurEffect(CallbackInfo ci) {
         if (BlurHandler.sOverrideVanillaBlur) {
-            BlurHandler.INSTANCE.processBlurEffect((GameRenderer) (Object) this);
+            BlurHandler.INSTANCE.processBlurEffect(resourcePool);
             ci.cancel();
         }
+    }
+
+    @ModifyArg(method = "render",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/GlobalSettingsUniform;update" +
+                    "(IIDJLnet/minecraft/client/DeltaTracker;I)V"),
+            index = 5)
+    private int onGetBlurRadius(int option) {
+        return BlurHandler.INSTANCE.getBlurRadius(option);
+    }
+
+    @Inject(method = "render",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;getToastManager()" +
+                    "Lnet/minecraft/client/gui/components/toasts/ToastManager;"))
+    private void onRenderToasts(DeltaTracker ticker, boolean isTicking, CallbackInfo ci) {
+        UIManager.getInstance().renderAbove(guiRenderState);
     }
 }

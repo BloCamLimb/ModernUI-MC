@@ -280,7 +280,7 @@ public class StandardFontSet extends FontSet {
         public StandardBakedGlyph(@Nullable BitmapFont bitmapFont,
                                   float u0, float u1, float v0, float v1,
                                   float left, float right, float up, float down) {
-            super(EMPTY_TYPES,
+            super(EMPTY_TYPES, null,
                     u0, u1, v0, v1,
                     left, right, up, down);
             mBitmapFont = bitmapFont;

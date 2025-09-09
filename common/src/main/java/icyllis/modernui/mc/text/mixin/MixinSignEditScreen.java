@@ -31,6 +31,6 @@ public class MixinSignEditScreen {
     @Inject(method = "renderSignText", at = @At("HEAD"))
     private void onRenderSignText(GuiGraphics gr, CallbackInfo ci) {
         // prevent sorting
-        gr.flush();
+        //gr.flush();
     }
 }

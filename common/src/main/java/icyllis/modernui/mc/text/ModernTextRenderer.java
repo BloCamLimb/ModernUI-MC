@@ -156,7 +156,7 @@ public final class ModernTextRenderer {
                 ((mode == TextRenderType.MODE_NORMAL && (matrix.properties() & Matrix4f.PROPERTY_TRANSLATION) != 0) ||
                         mode == TextRenderType.MODE_UNIFORM_SCALE)) {
             // here we are in 2D, and have scale/translate only ctm (not bilinear fallback)
-            Matrix4f projection = RenderSystem.getProjectionMatrix();
+            Matrix4f projection = new Matrix4f(); // RenderSystem.getProjectionMatrix();
             if (RenderSystem.getProjectionType() == ProjectionType.ORTHOGRAPHIC &&
                     projection.m23() == 0.0f) { // fast check it's a 2D projection
                 // find additional scaling in projection
