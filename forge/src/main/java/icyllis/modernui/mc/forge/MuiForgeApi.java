@@ -19,34 +19,37 @@
 package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.MuiScreen;
+import icyllis.modernui.mc.ScreenCallback;
+import icyllis.modernui.mc.UIManager;
 import icyllis.modernui.mc.mixin.AccessGameRenderer;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.state.GuiElementRenderState;
+import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.MenuConstructor;
 import net.minecraft.world.item.Rarity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.event.entity.player.PlayerContainerEvent;
-import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -188,103 +191,26 @@ public final class MuiForgeApi extends MuiModApi {
         return baseStyle.withColor(rarity.color());
     }
 
-    /**
-     * Create a container menu on server-side with the given {@link MenuProvider}, generate a
-     * container id represents the next screen. Then send a packet to the player to request to
-     * open a GUI on the client. This method must be called from server thread,
-     * {@link net.minecraftforge.network.IContainerFactory#create(int, Inventory, FriendlyByteBuf)}
-     * and {@link MenuScreenFactory#createFragment(AbstractContainerMenu)} will be called on client.
-     * <p>
-     * This is served as a client/server interaction model, there must be a running server.
-     * <p>
-     * Do not use this, use {@link ServerPlayer#openMenu(MenuProvider, Consumer)}
-     * because Modern UI is client-only.
-     *
-     * @param player   the server player to open the screen for
-     * @param provider a provider to create a menu on server side
-     * @see #openMenu(Player, MenuProvider, Consumer)
-     * @see net.minecraftforge.common.extensions.IForgeMenuType#create(net.minecraftforge.network.IContainerFactory)
-     */
-    @ApiStatus.Internal
-    public static void openMenu(@Nonnull Player player, @Nonnull MenuProvider provider) {
-        openMenu(player, provider, (Consumer<FriendlyByteBuf>) null);
+    @Override
+    public GpuDevice getRealGpuDevice() {
+        GpuDevice gpuDevice = RenderSystem.getDevice();
+        return gpuDevice;
     }
 
-    /**
-     * Create a container menu on server-side with the given {@link MenuProvider}, generate a
-     * container id represents the next screen. Then send a packet to the player to request to
-     * open a GUI on the client. This method must be called from server thread,
-     * {@link net.minecraftforge.network.IContainerFactory#create(int, Inventory, FriendlyByteBuf)}
-     * and {@link MenuScreenFactory#createFragment(AbstractContainerMenu)} will be called on client.
-     * <p>
-     * This is served as a client/server interaction model, there must be a running server.
-     * <p>
-     * Do not use this, use {@link ServerPlayer#openMenu(MenuProvider, Consumer)}
-     * because Modern UI is client-only.
-     *
-     * @param player   the server player to open the screen for
-     * @param provider a provider to create a menu on server side
-     * @param pos      a block pos to send to client, this will be passed to
-     *                 the menu supplier that registered on client
-     * @see #openMenu(Player, MenuProvider, Consumer)
-     * @see net.minecraftforge.common.extensions.IForgeMenuType#create(net.minecraftforge.network.IContainerFactory)
-     */
-    @ApiStatus.Internal
-    public static void openMenu(@Nonnull Player player, @Nonnull MenuProvider provider, @Nonnull BlockPos pos) {
-        openMenu(player, provider, buf -> buf.writeBlockPos(pos));
+    @Override
+    public void submitGuiElementRenderState(GuiGraphics graphics, GuiElementRenderState renderState) {
+        graphics.getRenderState().submitGuiElement(renderState);
     }
 
-    /**
-     * Create a container menu on server-side with the given {@link MenuProvider}, generate a
-     * container id represents the next screen. Then send a packet to the player to request to
-     * open a GUI on the client. This method must be called from server thread,
-     * {@link net.minecraftforge.network.IContainerFactory#create(int, Inventory, FriendlyByteBuf)}
-     * and {@link MenuScreenFactory#createFragment(AbstractContainerMenu)} will be called on client.
-     * <p>
-     * This is served as a client/server interaction model, there must be a running server.
-     * <p>
-     * Do not use this, use {@link ServerPlayer#openMenu(MenuProvider, Consumer)}
-     * because Modern UI is client-only.
-     *
-     * @param player   the server player to open the screen for
-     * @param provider a provider to create a menu on server side
-     * @param writer   a data writer to send additional data to client, this will be passed
-     *                 to the menu supplier (IContainerFactory) that registered on client
-     * @see net.minecraftforge.common.extensions.IForgeMenuType#create(net.minecraftforge.network.IContainerFactory)
-     */
-    @ApiStatus.Internal
-    public static void openMenu(@Nonnull Player player, @Nonnull MenuProvider provider,
-                                @Nullable Consumer<FriendlyByteBuf> writer) {
-        if (!(player instanceof ServerPlayer p)) {
-            ModernUIMod.LOGGER.warn("openMenu() is not called from logical server",
-                    new Exception().fillInStackTrace());
-            return;
-        }
-        p.openMenu(provider, writer);
+    @Override
+    public void submitPictureInPictureRenderState(GuiGraphics graphics, PictureInPictureRenderState renderState) {
+        graphics.getRenderState().submitPicturesInPictureState(renderState);
     }
 
-    @Deprecated
-    @ApiStatus.Internal
-    static void openMenu0(@Nonnull Player player, @Nonnull MenuConstructor provider,
-                          @Nullable Consumer<FriendlyByteBuf> writer) {
-        if (!(player instanceof ServerPlayer p)) {
-            ModernUIMod.LOGGER.warn("openMenu() is not called from logical server",
-                    new Exception().fillInStackTrace());
-            return;
-        }
-        // do the same thing as ServerPlayer.openMenu()
-        if (p.containerMenu != p.inventoryMenu) {
-            p.closeContainer();
-        }
-        p.nextContainerCounter();
-        AbstractContainerMenu menu = provider.createMenu(p.containerCounter, p.getInventory(), p);
-        if (menu == null) {
-            return;
-        }
-        NetworkMessages.openMenu(menu, writer).sendToPlayer(p);
-        p.initMenu(menu);
-        p.containerMenu = menu;
-        MinecraftForge.EVENT_BUS.post(new PlayerContainerEvent.Open(p, menu));
+    @Nullable
+    @Override
+    public ScreenRectangle peekScissorStack(GuiGraphics graphics) {
+        return graphics.getScissorStack().peek();
     }
 
     /* Screen */

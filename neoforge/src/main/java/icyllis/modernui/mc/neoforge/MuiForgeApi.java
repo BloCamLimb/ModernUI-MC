@@ -74,10 +74,13 @@ public final class MuiForgeApi extends MuiModApi {
 
     @Override
     public boolean isGLVersionPromoted() {
-        // FIXME newer FancyModLoader no longer promotes GL version, we must disable early window control
         try {
             if (net.neoforged.fml.loading.FMLConfig.getBoolConfigValue(net.neoforged.fml.loading.FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
+                // Newer FancyModLoader no longer promotes GL version, we must disable early window control.
+                // However, when Arc3D is updated, or we update to Minecraft 1.21.9, this will no longer be necessary.
+                // Ideally we can use GraphicsBootstrapper to avoid the first boot crash, but that requires a service layer.
                 net.neoforged.fml.loading.FMLConfig.updateConfig(net.neoforged.fml.loading.FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL, Boolean.FALSE);
+                ModernUIMod.LOGGER.warn(ModernUIMod.MARKER, "Disable early window control to promote GL version, you need to launch the game again!");
                 return true;
             }
         } catch (Throwable ignored) {

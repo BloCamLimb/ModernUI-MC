@@ -27,21 +27,16 @@ import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.ConfigScreenHandler;
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.IModBusEvent;
 import net.minecraftforge.fml.event.config.ModConfigEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.javafmlmod.FMLModContainer;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.*;
-import java.util.function.Consumer;
 
 /**
  * Mod class. INTERNAL.
@@ -58,7 +53,7 @@ public final class ModernUIForge extends ModernUIMod {
     //public static boolean sRemoveMessageSignature;
     //public static boolean sSecureProfilePublicKey;
 
-    private static final Map<String, IEventBus> sModEventBuses = new HashMap<>();
+    //private static final Map<String, IEventBus> sModEventBuses = new HashMap<>();
 
     // mod-loading thread
     public ModernUIForge(FMLJavaModLoadingContext context) {
@@ -86,18 +81,24 @@ public final class ModernUIForge extends ModernUIMod {
 
         context.registerConfig(ModConfig.Type.COMMON, ConfigImpl.COMMON_SPEC,
                 ModernUI.NAME_CPT + "/common.toml");
-        context.getModEventBus().addListener(
-                (Consumer<ModConfigEvent>) event -> ConfigImpl.reloadCommon(event.getConfig())
+        BusGroup modBusGroup = context.getModBusGroup();
+        ModConfigEvent.Loading.getBus(modBusGroup).addListener(
+                event -> ConfigImpl.reloadCommon(event.getConfig())
+        );
+        ModConfigEvent.Reloading.getBus(modBusGroup).addListener(
+                event -> ConfigImpl.reloadCommon(event.getConfig())
         );
 
-        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> () -> Loader.init(context));
+        if (FMLEnvironment.dist.isClient()) {
+            Loader.init(context);
+        }
 
         /*if ((getBootstrapLevel() & BOOTSTRAP_ENABLE_DEBUG_INJECTORS) != 0) {
             MinecraftForge.EVENT_BUS.register(EventHandler.ClientDebug.class);
             LOGGER.debug(MARKER, "Enable Modern UI debug injectors");
         }*/
 
-        if (ModernUIMod.sDevelopment) {
+        /*if (ModernUIMod.sDevelopment) {
             ModList.get().forEachModContainer((modid, container) -> {
                 if (container instanceof FMLModContainer) {
                     final String namespace = container.getNamespace();
@@ -106,7 +107,7 @@ public final class ModernUIForge extends ModernUIMod {
                     }
                 }
             });
-        }
+        }*/
 
         LOGGER.info(MARKER, "Initialized Modern UI");
     }
@@ -115,7 +116,7 @@ public final class ModernUIForge extends ModernUIMod {
         ModLoader.get().addWarning(new ModLoadingWarning(null, ModLoadingStage.SIDED_SETUP, key, args));
     }
 
-    @SuppressWarnings("UnusedReturnValue")
+    /*@SuppressWarnings("UnusedReturnValue")
     public static <E extends Event & IModBusEvent> boolean post(@Nullable String ns, @Nonnull E e) {
         if (ns == null) {
             boolean handled = false;
@@ -127,7 +128,7 @@ public final class ModernUIForge extends ModernUIMod {
             IEventBus bus = sModEventBuses.get(ns);
             return bus != null && bus.post(e);
         }
-    }
+    }*/
 
     private static class Loader {
 
@@ -156,8 +157,12 @@ public final class ModernUIForge extends ModernUIMod {
                 ModernUIText.init(context);
                 LOGGER.info(MARKER, "Initialized Modern UI text engine");
             }
-            context.getModEventBus().addListener(
-                    (Consumer<ModConfigEvent>) event -> ConfigImpl.reloadAnyClient(event.getConfig())
+            BusGroup modBusGroup = context.getModBusGroup();
+            ModConfigEvent.Loading.getBus(modBusGroup).addListener(
+                    event -> ConfigImpl.reloadAnyClient(event.getConfig())
+            );
+            ModConfigEvent.Reloading.getBus(modBusGroup).addListener(
+                    event -> ConfigImpl.reloadAnyClient(event.getConfig())
             );
             context.registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
                     () -> new ConfigScreenHandler.ConfigScreenFactory(

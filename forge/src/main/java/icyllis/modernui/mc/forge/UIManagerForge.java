@@ -19,13 +19,11 @@
 package icyllis.modernui.mc.forge;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import icyllis.arc3d.opengl.GLDevice;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.lifecycle.LifecycleOwner;
 import icyllis.modernui.mc.*;
-import icyllis.modernui.mc.mixin.AccessNativeImage;
 import icyllis.modernui.mc.ui.CenterFragment2;
 import icyllis.modernui.text.TextUtils;
 import net.minecraft.client.KeyMapping;
@@ -36,16 +34,16 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.client.event.*;
 import net.minecraftforge.client.settings.KeyConflictContext;
 import net.minecraftforge.client.settings.KeyModifier;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
+import net.minecraftforge.eventbus.api.listener.Priority;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
 import org.jetbrains.annotations.*;
-import org.lwjgl.opengl.GL45C;
 
 import javax.annotation.Nonnull;
 import java.io.PrintWriter;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.Map;
 
@@ -79,8 +77,8 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             ObfuscationReflectionHelper.findField(TextureAtlasSprite.class, "f_118342_");
     public static final Field IMAGE_PIXELS =
             ObfuscationReflectionHelper.findField(NativeImage.class, "f_84964_");*/
-    public static final Field TEXTURE_ID =
-            ObfuscationReflectionHelper.findField(AbstractTexture.class, "f_117950_");
+    /*public static final Field TEXTURE_ID =
+            ObfuscationReflectionHelper.findField(AbstractTexture.class, "f_117950_");*/
 
     // captured tooltip style from MixinGuiGraphics
     public static ResourceLocation sTooltipStyle;
@@ -88,7 +86,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     private UIManagerForge() {
         super();
         // events
-        MinecraftForge.EVENT_BUS.register(this);
+        BusGroup.DEFAULT.register(MethodHandles.lookup(), this);
     }
 
     static void initialize() {
@@ -171,8 +169,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
-        GLDevice device = (GLDevice) Core.requireImmediateContext().getDevice();
-        if (textureMap != null && device.getCaps().hasDSASupport()) {
+        if (textureMap != null) {
             long gpuSize = 0;
             long cpuSize = 0;
             int dynamicTextures = 0;
@@ -180,32 +177,23 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             int atlasSprites = 0;
             for (var texture : textureMap.values()) {
                 try {
-                    int tex = TEXTURE_ID.getInt(texture);
-                    if (GL45C.glIsTexture(tex)) {
-                        int internalFormat = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_INTERNAL_FORMAT);
-                        long width = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_WIDTH);
-                        long height = GL45C.glGetTextureLevelParameteri(tex, 0, GL45C.GL_TEXTURE_HEIGHT);
-                        int maxLevel = GL45C.glGetTextureParameteri(tex, GL45C.GL_TEXTURE_MAX_LEVEL);
-                        int bpp = switch (internalFormat) {
-                            case GL45C.GL_R8, GL45C.GL_RED -> 1;
-                            case GL45C.GL_RG8, GL45C.GL_RG -> 2;
-                            case GL45C.GL_RGB8, GL45C.GL_RGBA8, GL45C.GL_RGB, GL45C.GL_RGBA -> 4;
-                            default -> 0;
-                        };
-                        long size = width * height * bpp;
-                        if (maxLevel > 0) {
-                            size = ((size - (size >> ((maxLevel + 1) << 1))) << 2) / 3;
-                        }
-                        gpuSize += size;
+                    var tex = texture.getTexture();
+                    long width = tex.getWidth(0);
+                    long height = tex.getHeight(0);
+                    int mipLevels = tex.getMipLevels();
+                    int bpp = tex.getFormat().pixelSize();
+                    long size = width * height * bpp;
+                    if (mipLevels > 1) {
+                        size = ((size - (size >> (mipLevels << 1))) << 2) / 3;
                     }
+                    gpuSize += size;
                 } catch (Exception ignored) {
                 }
 
                 if (texture instanceof DynamicTexture dynamicTexture) {
                     var image = dynamicTexture.getPixels();
                     try {
-                        //noinspection ConstantValue,DataFlowIssue
-                        if (image != null && ((AccessNativeImage) (Object) image).getPixels() != 0) {
+                        if (image != null && image.getPointer() != 0) {
                             cpuSize += (long) image.getWidth() * image.getHeight() * image.format().components();
                         }
                     } catch (Exception ignored) {
@@ -216,15 +204,15 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                     try {
                         Map<ResourceLocation, TextureAtlasSprite> textures =
                                 (Map<ResourceLocation, TextureAtlasSprite>) TEXTURES_BY_NAME.get(textureAtlas);
-                        /*for (var sprite : textures.values()) {
-                            for (var image : (com.mojang.blaze3d.platform.NativeImage[]) MAIN_IMAGE.get(sprite)) {
-                                if (image != null && IMAGE_PIXELS.getLong(image) != 0) {
+                        for (var sprite : textures.values()) {
+                            for (var image : sprite.contents().byMipLevel) {
+                                if (image != null && image.getPointer() != 0) {
                                     cpuSize += (long) image.getWidth() * image.getHeight() * image.format()
-                                    .components();
+                                            .components();
                                 }
                             }
                             atlasSprites++;
-                        }*/
+                        }
                         atlasSprites += textures.size();
                     } catch (Exception ignored) {
                     }
@@ -273,7 +261,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     // We use HIGH priority to render the background and border, and other mods can draw
     // additional content using NORMAL priority event, finally, we use LOW priority to cancel
     // the event to override the vanilla tooltip style.
-    @SubscribeEvent(priority = EventPriority.HIGH)
+    @SubscribeEvent(priority = Priority.HIGH)
     void onRenderTooltipH(@Nonnull RenderTooltipEvent.Pre event) {
         if (TooltipRenderer.sTooltip) {
             /*if (!(minecraft.font instanceof ModernFontRenderer)) {
@@ -294,21 +282,29 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.LOW)
-    void onRenderTooltipL(@Nonnull RenderTooltipEvent.Pre event) {
-        if (TooltipRenderer.sTooltip) {
-            event.setCanceled(true);
-        }
+    @SubscribeEvent(priority = Priority.LOW)
+    boolean onRenderTooltipL(@Nonnull RenderTooltipEvent.Pre event) {
+        return TooltipRenderer.sTooltip;
     }
 
     @SubscribeEvent
-    void onRenderTick(@Nonnull TickEvent.RenderTickEvent event) {
-        super.onRenderTick(event.phase == TickEvent.Phase.END);
+    void onRenderTickPre(@Nonnull TickEvent.RenderTickEvent.Pre event) {
+        super.onRenderTick(/*isEnd*/ false);
     }
 
     @SubscribeEvent
-    void onClientTick(@Nonnull TickEvent.ClientTickEvent event) {
-        super.onClientTick(event.phase == TickEvent.Phase.END);
+    void onRenderTickPost(@Nonnull TickEvent.RenderTickEvent.Post event) {
+        super.onRenderTick(/*isEnd*/ true);
+    }
+
+    @SubscribeEvent
+    void onClientTickPre(@Nonnull TickEvent.ClientTickEvent.Pre event) {
+        super.onClientTick(/*isEnd*/ false);
+    }
+
+    @SubscribeEvent
+    void onClientTickPost(@Nonnull TickEvent.ClientTickEvent.Post event) {
+        super.onClientTick(/*isEnd*/ true);
     }
 
     @SubscribeEvent

@@ -89,12 +89,15 @@ final class MenuScreen<T extends AbstractContainerMenu>
     }
 
     @Override
-    public void render(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
+    public void renderBackground(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
         ScreenCallback callback = getCallback();
         if (callback == null || callback.hasDefaultBackground()) {
-            renderBackground(gr, mouseX, mouseY, deltaTick);
+            super.renderBackground(gr, mouseX, mouseY, deltaTick);
         }
-        gr.flush();
+    }
+
+    @Override
+    public void render(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
         mHost.render(gr, mouseX, mouseY, deltaTick);
     }
 

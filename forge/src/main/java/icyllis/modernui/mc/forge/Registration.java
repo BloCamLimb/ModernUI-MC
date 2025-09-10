@@ -42,9 +42,9 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.*;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.extensions.IForgeMenuType;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.CrashReportCallables;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
@@ -57,6 +57,7 @@ import org.apache.commons.io.output.StringBuilderWriter;
 
 import javax.annotation.Nonnull;
 import java.io.PrintWriter;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.IntStream;
@@ -117,7 +118,7 @@ final class Registration {
             throw new IllegalStateException();
         }*/
 
-        MinecraftForge.EVENT_BUS.register(ServerHandler.INSTANCE);
+        BusGroup.DEFAULT.register(MethodHandles.lookup(), ServerHandler.INSTANCE);
     }
 
     /*@Nonnull
@@ -387,14 +388,14 @@ final class Registration {
             }
         }
 
-        @SubscribeEvent
+        /*@SubscribeEvent
         static void onMenuOpen(@Nonnull OpenMenuEvent event) {
             if (ModernUIMod.sDevelopment) {
                 if (event.getMenu() instanceof TestContainerMenu c) {
                     event.set(new TestPauseFragment());
                 }
             }
-        }
+        }*/
 
         // tooltip is not a required shader, let it lazy init
         /*@SubscribeEvent

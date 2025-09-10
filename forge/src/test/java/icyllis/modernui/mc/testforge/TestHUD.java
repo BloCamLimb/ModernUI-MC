@@ -56,10 +56,10 @@ public class TestHUD {
 
     @Deprecated
     private void drawBars(@Nonnull Canvas canvas) {
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
+        //RenderSystem.enableBlend();
+        //RenderSystem.defaultBlendFunc();
         //RenderSystem.disableAlphaTest();
-        RenderSystem.disableDepthTest();
+        //RenderSystem.disableDepthTest();
 
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPushMatrix();
@@ -151,7 +151,7 @@ public class TestHUD {
         canvas.drawText(String.format("%d / %.2f / %.2f", foodData.getFoodLevel(), foodData.getSaturationLevel(),
                 ((AccessFoodData) foodData).getExhaustionLevel()), 70, -1);*/
 
-        RenderSystem.enableDepthTest();
+        //RenderSystem.enableDepthTest();
         GL11.glPopMatrix();
         GL11.glMatrixMode(GL11.GL_PROJECTION);
         GL11.glPopMatrix();
@@ -159,7 +159,7 @@ public class TestHUD {
 
         //RenderSystem.enableTexture();
         //RenderSystem.enableAlphaTest();
-        RenderSystem.disableBlend();
+        //RenderSystem.disableBlend();
 
         //minecraft.getTextureManager().bind(GuiComponent.GUI_ICONS_LOCATION);
     }

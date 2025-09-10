@@ -21,18 +21,25 @@ package icyllis.modernui.mc.testforge;
 import com.ibm.icu.text.DateFormat;
 import com.ibm.icu.text.SimpleDateFormat;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.R;
 import icyllis.modernui.animation.*;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.core.Context;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.*;
 import icyllis.modernui.graphics.drawable.Drawable;
+import icyllis.modernui.graphics.drawable.ImageDrawable;
+import icyllis.modernui.graphics.drawable.ShapeDrawable;
 import icyllis.modernui.mc.ContainerDrawHelper;
+import icyllis.modernui.mc.ExtendedGuiGraphics;
+import icyllis.modernui.mc.MinecraftSurfaceView;
 import icyllis.modernui.text.*;
 import icyllis.modernui.text.style.ForegroundColorSpan;
 import icyllis.modernui.util.*;
 import icyllis.modernui.view.*;
 import icyllis.modernui.widget.*;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -62,9 +69,16 @@ public class TestPauseFragment extends Fragment {
         if (mButtonIcon == null) {
             mButtonIcon = Image.create(ModernUI.ID, "gui/gui_icon.png");
         }
+        if (mButtonIcon != null) {
+            mButtonIcon.setDensity(DisplayMetrics.DENSITY_DEFAULT / 24 * 64);
+        }
 
         for (int i = 0; i < 8; i++) {
-            var button = new NavigationButton(getContext(), mButtonIcon, i * 32);
+            var button = new ImageButton(getContext(), null,
+                    R.attr.iconButtonStyle);
+            var icon = new ImageDrawable(getContext().getResources(), mButtonIcon);
+            icon.setSrcRect(i * 32, 352, i * 32 + 32, 384);
+            button.setImageDrawable(icon);
             var params = new LinearLayout.LayoutParams(navigation.dp(32), navigation.dp(32));
             button.setClickable(true);
             params.setMarginsRelative(i == 7 ? 26 : 2, 2, 2, 6);
@@ -99,7 +113,11 @@ public class TestPauseFragment extends Fragment {
         var tab = new LinearLayout(getContext());
         tab.setOrientation(LinearLayout.VERTICAL);
         tab.setLayoutTransition(new LayoutTransition());
-        tab.setBackground(new TabBackground(tab));
+        var tabBackground = new ShapeDrawable();
+        tabBackground.setCornerRadius(tab.dp(16));
+        tabBackground.setColor(0xB4000000);
+        tabBackground.setStroke(tab.dp(4), NETWORK_COLOR);
+        tab.setBackground(tabBackground);
 
         for (int i = 0; i < 3; i++) {
             var v = new EditText(getContext());
@@ -120,10 +138,18 @@ public class TestPauseFragment extends Fragment {
                     yield "Transfer Limit";
             });
             v.setSingleLine();
-            v.setBackground(new TextFieldBackground(v));
+            int dp3 = v.dp(3);
+            ShapeDrawable background = new ShapeDrawable();
+            background.setCornerRadius(dp3);
+            background.setStroke(dp3, NETWORK_COLOR);
+            v.setBackground(background);
+            v.setPadding(dp3, 1, dp3, 1);
             v.setTextSize(16);
+            var icon = new ImageDrawable(getContext().getResources(), mButtonIcon);
+            int srcLeft = (((i + 1) % 3) + 1) * 64;
+            icon.setSrcRect(srcLeft, 192, srcLeft + 64, 256);
             v.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                    new TextFieldStart(v, mButtonIcon, (((i + 1) % 3) + 1) * 64), null, null, null);
+                    icon, null, null, null);
             v.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
 
             var params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -151,7 +177,7 @@ public class TestPauseFragment extends Fragment {
         return content;
     }
 
-    private static class TabBackground extends Drawable {
+    /*private static class TabBackground extends Drawable {
 
         private final float mRadius;
         private final TextPaint mTextPaint;
@@ -176,13 +202,13 @@ public class TestPauseFragment extends Fragment {
             paint.setColor(NETWORK_COLOR);
             canvas.drawRoundRect(b.left + start, b.top + start, b.right - start, b.bottom - start, mRadius, paint);
 
-            /*canvas.drawText("BloCamLimb's Network", 0, 20, b.exactCenterX(), b.top + mRadius * 1.8f,
-                    mTextPaint);*/
+            *//*canvas.drawText("BloCamLimb's Network", 0, 20, b.exactCenterX(), b.top + mRadius * 1.8f,
+                    mTextPaint);*//*
             paint.recycle();
         }
-    }
+    }*/
 
-    private static class TextFieldStart extends Drawable {
+    /*private static class TextFieldStart extends Drawable {
 
         private final Image mImage;
         private final int mSrcLeft;
@@ -217,9 +243,9 @@ public class TestPauseFragment extends Fragment {
             padding.set(h, v, h, v);
             return true;
         }
-    }
+    }*/
 
-    private static class TextFieldBackground extends Drawable {
+    /*private static class TextFieldBackground extends Drawable {
 
         private final float mRadius;
 
@@ -247,9 +273,9 @@ public class TestPauseFragment extends Fragment {
             padding.set(h, v, h, v);
             return true;
         }
-    }
+    }*/
 
-    private static class NavigationButton extends View {
+    /*private static class NavigationButton extends View {
 
         private final Image mImage;
         private final int mSrcLeft;
@@ -275,9 +301,9 @@ public class TestPauseFragment extends Fragment {
             super.onHoverChanged(hovered);
             invalidate();
         }
-    }
+    }*/
 
-    private static class ConnectorView extends View {
+    private static class ConnectorView extends FrameLayout {
 
         private final Image mImage;
         private final int mSize;
@@ -286,6 +312,8 @@ public class TestPauseFragment extends Fragment {
 
         private final ObjectAnimator mRodAnimator;
         private final ObjectAnimator mBoxAnimator;
+
+        private final MinecraftSurfaceView mItemView;
 
         private final ItemStack mItem = Items.DIAMOND_BLOCK.getDefaultInstance();
 
@@ -317,17 +345,60 @@ public class TestPauseFragment extends Fragment {
                 @Override
                 public void setValue(@Nonnull Paint object, int value) {
                     object.setAlpha(value);
+                    if (value > 0) {
+                        mItemView.setVisibility(View.VISIBLE);
+                    }
                     invalidate();
                 }
 
                 @Override
                 public Integer get(@Nonnull Paint object) {
-                    return object.getColor() >>> 24;
+                    return object.getAlpha();
                 }
             }, 0, 128);
             mRodAnimator.setInterpolator(TimeInterpolator.LINEAR);
             mBoxAnimator.setDuration(400);
             mBoxPaint.setRGBA(64, 64, 64, 0);
+            {
+                mItemView = new MinecraftSurfaceView(context);
+                mItemView.setVisibility(INVISIBLE);
+                mItemView.setRenderer(new MinecraftSurfaceView.Renderer() {
+                    int mSurfaceWidth;
+                    int mSurfaceHeight;
+
+                    @Override
+                    public void onSurfaceChanged(int width, int height) {
+                        mSurfaceWidth = width;
+                        mSurfaceHeight = height;
+                    }
+
+                    @Override
+                    public void onDraw(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick,
+                                       double guiScale, float alpha) {
+                        int guiScaledWidth = (int) (mSurfaceWidth / guiScale);
+                        int guiScaledHeight = (int) (mSurfaceHeight / guiScale);
+                        int itemX = guiScaledWidth / 2 - 8;
+                        int itemY = Math.round(guiScaledHeight * 0.120625F) - 8;
+
+                        var exGr = new ExtendedGuiGraphics(gr);
+                        exGr.setGradient(ExtendedGuiGraphics.Orientation.TL_BR,
+                                Color.argb(128, 45, 212, 191),
+                                Color.argb(255, 14, 165, 233));
+                        exGr.fillRoundRect(
+                                itemX - 1, itemY - 1, itemX + 17, itemY + 17,
+                                3
+                        );
+                        // the text should not be clipped
+                        gr.drawString(Minecraft.getInstance().font,
+                                "A", itemX, itemY, ~0);
+
+                        gr.renderItem(mItem, itemX, itemY);
+                    }
+                });
+                LayoutParams params = new LayoutParams(mSize * 4, mSize * 5, Gravity.CENTER);
+                addView(mItemView, params);
+            }
+            setWillNotDraw(false);
         }
 
         @Override
@@ -345,7 +416,7 @@ public class TestPauseFragment extends Fragment {
             float centerX = getWidth() / 2f;
             float centerY = getHeight() / 2f;
 
-            int boxAlpha = mBoxPaint.getColor() >>> 24;
+            int boxAlpha = mBoxPaint.getAlpha();
 
             float px1l = centerX - (15 / 64f) * mSize;
             float py1 = centerY + (8 / 64f) * mSize;
@@ -409,7 +480,6 @@ public class TestPauseFragment extends Fragment {
             if (boxAlpha > 0) {
                 canvas.drawRect(centerX - mSize * .5f, py2 - mSize * 2.1f,
                         centerX + mSize * .5f, py2 - mSize * 1.1f, mBoxPaint);
-                ContainerDrawHelper.drawItem(canvas, mItem, centerX, py2 - mSize * 1.6f, 0, mSize, 0);
             }
             paint.recycle();
         }

@@ -93,7 +93,7 @@ public class TestBenchmark {
             CompoundTag tag = new CompoundTag();
             tag.putInt("id", i + 1);
             tag.putInt("color", 0xFF7766);
-            tag.putUUID("owner", UUID.randomUUID());
+            //tag.putUUID("owner", UUID.randomUUID());
             tag.putString("pw", "abcedf");
             tag.putIntArray("data", new int[]{3, 0, 5, 2, 7, 7, 7, 7});
             listTag.add(tag);

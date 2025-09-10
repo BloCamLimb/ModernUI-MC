@@ -22,14 +22,16 @@ import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.bus.BusGroup;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
 import javax.annotation.Nonnull;
+
+import java.lang.invoke.MethodHandles;
 
 import static icyllis.modernui.mc.ModernUIMod.*;
 
@@ -46,7 +48,8 @@ public final class ModernUIText {
     }
 
     public static void init(FMLJavaModLoadingContext context) {
-        context.getModEventBus().register(ModernUIText.class);
+        FMLClientSetupEvent.getBus(context.getModBusGroup())
+                .addListener(ModernUIText::setupClient);
     }
 
     /*@SubscribeEvent
@@ -56,14 +59,14 @@ public final class ModernUIText {
         LOGGER.debug(MARKER, "Registered language reload listener");
     }*/
 
-    @SubscribeEvent
+    //@SubscribeEvent
     static void setupClient(@Nonnull FMLClientSetupEvent event) {
         // preload text engine, note that this event is fired after client config first load
         // so that the typeface config is valid
         //Minecraft.getInstance().execute(ModernUI::getSelectedTypeface);
         MuiModApi.addOnWindowResizeListener(TextLayoutEngine.getInstance());
         MuiModApi.addOnDebugDumpListener(TextLayoutEngine.getInstance());
-        MinecraftForge.EVENT_BUS.register(EventHandler.class);
+        BusGroup.DEFAULT.register(MethodHandles.lookup(), EventHandler.class);
         LOGGER.info(MARKER, "Loaded modern text engine");
     }
 
@@ -125,10 +128,8 @@ public final class ModernUIText {
         }*/
 
         @SubscribeEvent
-        static void onClientTick(@Nonnull TickEvent.ClientTickEvent event) {
-            if (event.phase == TickEvent.Phase.END) {
-                TextLayoutEngine.getInstance().onEndClientTick();
-            }
+        static void onClientTick(@Nonnull TickEvent.ClientTickEvent.Post event) {
+            TextLayoutEngine.getInstance().onEndClientTick();
         }
 
         @SubscribeEvent

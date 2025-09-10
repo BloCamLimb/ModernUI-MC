@@ -20,8 +20,8 @@ package icyllis.modernui.mc.fabric;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
-import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeConfigRegistry;
-import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeModConfigEvents;
+import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
+import fuzs.forgeconfigapiport.fabric.api.v5.ModConfigEvents;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
@@ -121,8 +121,8 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             }
         });*/
 
-        NeoForgeModConfigEvents.loading(ID).register(ConfigImpl::reloadAnyClient);
-        NeoForgeModConfigEvents.reloading(ID).register(ConfigImpl::reloadAnyClient);
+        ModConfigEvents.loading(ID).register(ConfigImpl::reloadAnyClient);
+        ModConfigEvents.reloading(ID).register(ConfigImpl::reloadAnyClient);
 
         ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
             UIManagerFabric.initializeRenderer();
@@ -179,9 +179,9 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             }
         });
 
-        NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
+        ConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
                 ModernUI.NAME_CPT + "/client.toml");
-        NeoForgeConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
+        ConfigRegistry.INSTANCE.register(ID, ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
                 ModernUI.NAME_CPT + "/text.toml");
 
         FontResourceManager.getInstance();

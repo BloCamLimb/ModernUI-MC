@@ -82,19 +82,17 @@ public abstract class MixinScrollPanel implements ScrollController.IListener {
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/minecraftforge" +
-            "/client/gui/widget/ScrollPanel;drawPanel(Lnet/minecraft/client/gui/GuiGraphics;" +
-            "IILcom/mojang/blaze3d/vertex/Tesselator;II)V"), remap = false)
+            "/client/gui/widget/ScrollPanel;drawPanel(Lnet/minecraft/client/gui/GuiGraphics;IIII)V"), remap = false)
     private void preDrawPanel(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        gr.pose().pushPose();
+        gr.pose().pushMatrix();
         gr.pose().translate(0,
-                ((int) (((int) scrollDistance - scrollDistance) * client.getWindow().getGuiScale())) / client.getWindow().getGuiScale(), 0);
+                ((int) (((int) scrollDistance - scrollDistance) * (float) client.getWindow().getGuiScale())) / (float) client.getWindow().getGuiScale());
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/minecraftforge" +
-            "/client/gui/widget/ScrollPanel;drawPanel(Lnet/minecraft/client/gui/GuiGraphics;" +
-            "IILcom/mojang/blaze3d/vertex/Tesselator;II)V"), remap = false)
+            "/client/gui/widget/ScrollPanel;drawPanel(Lnet/minecraft/client/gui/GuiGraphics;IIII)V"), remap = false)
     private void postDrawPanel(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
-        gr.pose().popPose();
+        gr.pose().popMatrix();
     }
 
     @Override

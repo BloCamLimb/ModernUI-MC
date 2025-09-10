@@ -25,8 +25,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.listener.Priority;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 import javax.annotation.Nonnull;
@@ -99,9 +99,9 @@ public final class ServerHandler {
         }
     }
 
-    @SubscribeEvent(priority = EventPriority.LOWEST)
-    void onLastEndTick(@Nonnull TickEvent.ServerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && mShutdownTime > 0) {
+    @SubscribeEvent(priority = Priority.LOWEST)
+    void onLastEndTick(@Nonnull TickEvent.ServerTickEvent.Post event) {
+        if (mShutdownTime > 0) {
             long countdown = mShutdownTime - Util.getMillis();
             sendShutdownNotification(countdown);
             if (countdown <= 0) {

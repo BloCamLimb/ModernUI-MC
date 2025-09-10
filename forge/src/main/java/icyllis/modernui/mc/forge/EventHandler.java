@@ -34,7 +34,7 @@ import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
@@ -43,7 +43,7 @@ import javax.annotation.Nonnull;
 /**
  * Handles game server or client events from Forge event bus
  */
-@Mod.EventBusSubscriber(modid = ModernUI.ID)
+@Mod.EventBusSubscriber(modid = ModernUI.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 final class EventHandler {
 
     @SubscribeEvent
@@ -91,7 +91,7 @@ final class EventHandler {
     /**
      * Handles game client events from Forge event bus
      */
-    @Mod.EventBusSubscriber(modid = ModernUI.ID, value = Dist.CLIENT)
+    @Mod.EventBusSubscriber(modid = ModernUI.ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
     static class Client {
 
         static {

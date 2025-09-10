@@ -36,10 +36,10 @@
   "accessWidener" : "modernui.accesswidener",
   "depends": {
     "fabricloader": ">=0.15.0",
-    "minecraft": ">=1.21.4 <1.21.5",
+    "minecraft": ">=1.21.6 <1.21.9",
     "java": ">=21",
     "fabric-api": ">=0.90.7",
-    "forgeconfigapiport": ">=21.4.0"
+    "forgeconfigapiport": ">=21.6.0"
   },
   "conflicts": {
     "blur": "*",

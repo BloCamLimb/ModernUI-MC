@@ -25,8 +25,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.common.MinecraftForge;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -79,17 +77,19 @@ final class SimpleScreen extends Screen implements MuiScreen {
     }
 
     @Override
-    public void render(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
+    public void renderBackground(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
         ScreenCallback callback = getCallback();
         if (callback == null || callback.hasDefaultBackground()) {
             if (minecraft != null && minecraft.level == null) {
-                renderBackground(gr, mouseX, mouseY, deltaTick);
+                super.renderBackground(gr, mouseX, mouseY, deltaTick);
             } else {
                 BlurHandler.INSTANCE.drawScreenBackground(gr, 0, 0, this.width, this.height);
-                MinecraftForge.EVENT_BUS.post(new ScreenEvent.BackgroundRendered(this, gr));
             }
         }
-        gr.flush();
+    }
+
+    @Override
+    public void render(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
         mHost.render(gr, mouseX, mouseY, deltaTick);
     }
 

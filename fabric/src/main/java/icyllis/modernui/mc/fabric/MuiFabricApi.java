@@ -19,10 +19,16 @@
 package icyllis.modernui.mc.fabric;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessGameRenderer;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.state.GuiElementRenderState;
+import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
@@ -94,5 +100,26 @@ public final class MuiFabricApi extends MuiModApi {
     @Override
     public Style applyRarityTo(Rarity rarity, Style baseStyle) {
         return baseStyle.withColor(rarity.color());
+    }
+
+    @Override
+    public GpuDevice getRealGpuDevice() {
+        GpuDevice gpuDevice = RenderSystem.getDevice();
+        return gpuDevice;
+    }
+
+    @Override
+    public void submitGuiElementRenderState(GuiGraphics graphics, GuiElementRenderState renderState) {
+        graphics.guiRenderState.submitGuiElement(renderState);
+    }
+
+    @Override
+    public void submitPictureInPictureRenderState(GuiGraphics graphics, PictureInPictureRenderState renderState) {
+        graphics.guiRenderState.submitPicturesInPictureState(renderState);
+    }
+
+    @Override
+    public ScreenRectangle peekScissorStack(GuiGraphics graphics) {
+        return graphics.scissorStack.peek();
     }
 }

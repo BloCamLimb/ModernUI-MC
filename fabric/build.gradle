@@ -1,7 +1,7 @@
 import net.fabricmc.loom.task.RemapJarTask
 
 plugins {
-    id 'dev.architectury.loom' version '1.7-SNAPSHOT'
+    id 'dev.architectury.loom' version '1.11-SNAPSHOT'
     //id 'com.matthewprenger.cursegradle' version '1.4.0'
     id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
@@ -51,11 +51,11 @@ dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings loom.officialMojangMappings()
 
-    modImplementation "net.fabricmc:fabric-loader:0.16.10"
-    modApi "net.fabricmc.fabric-api:fabric-api:0.115.1+1.21.4"
+    modImplementation "net.fabricmc:fabric-loader:0.17.2"
+    modApi "net.fabricmc.fabric-api:fabric-api:0.133.0+1.21.8"
 
-    modImplementation "com.terraformersmc:modmenu:13.0.1"
-    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:21.4.1"
+    modImplementation "com.terraformersmc:modmenu:15.0.0"
+    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:21.8.1"
 
     implementation project(':common')
 

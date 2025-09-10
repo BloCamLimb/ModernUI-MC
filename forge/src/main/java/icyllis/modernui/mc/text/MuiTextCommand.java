@@ -44,7 +44,7 @@ public class MuiTextCommand {
                                         .executes(ctx -> {
                                             layout(
                                                     ctx.getSource(),
-                                                    ComponentArgument.getComponent(ctx, "message")
+                                                    ComponentArgument.getRawComponent(ctx, "message")
                                             );
                                             return Command.SINGLE_SUCCESS;
                                         })
@@ -56,7 +56,7 @@ public class MuiTextCommand {
                                                 .executes(ctx -> {
                                                     splitLines(
                                                             ctx.getSource(),
-                                                            ComponentArgument.getComponent(ctx, "message"),
+                                                            ComponentArgument.getRawComponent(ctx, "message"),
                                                             FloatArgumentType.getFloat(ctx, "width")
                                                     );
                                                     return Command.SINGLE_SUCCESS;

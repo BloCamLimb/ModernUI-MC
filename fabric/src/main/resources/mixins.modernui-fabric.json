@@ -8,8 +8,6 @@
   "client": [
     "AccessClientTextTooltip",
     "AccessGameRenderer",
-    "AccessGuiGraphics",
-    "AccessNativeImage",
     "AccessOptions",
     "MixinChatFormatting",
     "MixinChatScreen",
