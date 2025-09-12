@@ -155,7 +155,7 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
                                  @Nullable ResourceLocation tooltipStyle,
                                  CallbackInfo ci) {
         ItemStack capturedTooltipStack = modernUI_MC$deferredTooltipStack;
-        modernUI_MC$deferredTooltipStack = null;
+        modernUI_MC$deferredTooltipStack = ItemStack.EMPTY;
         if (TooltipRenderer.sTooltip) {
             if (!components.isEmpty()) {
                 UIManager.getInstance().drawExtTooltip(capturedTooltipStack,

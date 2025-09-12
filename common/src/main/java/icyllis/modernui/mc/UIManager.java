@@ -158,7 +158,7 @@ public abstract class UIManager implements LifecycleOwner {
     private GlTexture_Wrapped mLayerTexture;
     private GlTextureView mLayerTextureView;
 
-    protected final TooltipRenderer mTooltipRenderer = new TooltipRenderer();
+    public final TooltipRenderer mTooltipRenderer = new TooltipRenderer();
 
 
     /// User Interface \\\

@@ -18,6 +18,8 @@
 
 package icyllis.modernui.mc;
 
+import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.modernui.graphics.Color;
 import icyllis.modernui.mc.mixin.AccessClientTextTooltip;
@@ -36,6 +38,9 @@ import net.minecraft.util.*;
 import net.minecraft.world.item.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.joml.Matrix3x2f;
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
+import org.joml.Vector4f;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -108,6 +113,10 @@ public final class TooltipRenderer implements ScrollController.IListener {
     // true to use spectrum colors
     private boolean mUseSpectrum;
 
+    // at most one rounded tooltip is allowed per frame
+    public GpuBufferSlice mUniforms;
+    private int mNumDrawsInThisFrame;
+
     public TooltipRenderer() {
     }
 
@@ -139,6 +148,8 @@ public final class TooltipRenderer implements ScrollController.IListener {
         }
         mCurrTimeMillis = timeMillis;
         mCurrDeltaMillis = deltaMillis;
+        mUniforms = null;
+        mNumDrawsInThisFrame = 0;
     }
 
     public void updateArrowMovement(int move) {
@@ -157,8 +168,8 @@ public final class TooltipRenderer implements ScrollController.IListener {
     // compute a gradient for the given item
     void computeWorkingColor(@Nonnull ItemStack item) {
         if (sAdaptiveColors && !item.isEmpty()) {
-            if (sRoundedShapes && (item.is(Items.DRAGON_EGG) ||
-                    item.is(Items.DEBUG_STICK))) {
+            if (sRoundedShapes && mNumDrawsInThisFrame == 0 &&
+                    (item.is(Items.DRAGON_EGG) || item.is(Items.DEBUG_STICK))) {
                 mUseSpectrum = true;
                 return;
             }
@@ -195,7 +206,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
                 if (!hsvColors.isEmpty()) {
                     int size = hsvColors.size();
                     if (size > 4) {
-                        if (sRoundedShapes) {
+                        if (sRoundedShapes && mNumDrawsInThisFrame == 0) {
                             mUseSpectrum = true;
                             return;
                         }
@@ -505,14 +516,14 @@ public final class TooltipRenderer implements ScrollController.IListener {
         }
     }
 
-    /*void chooseBorderColor(int corner, AbstractUniform uniform) {
+    Vector4f chooseBorderColor(int corner, Vector4f uniform) {
         int color = chooseBorderColor(corner);
         int a = (color >>> 24);
         int r = ((color >> 16) & 0xff);
         int g = ((color >> 8) & 0xff);
         int b = (color & 0xff);
-        uniform.set(r / 255f, g / 255f, b / 255f, a / 255f);
-    }*/
+        return uniform.set(r / 255f, g / 255f, b / 255f, a / 255f);
+    }
 
     public void drawTooltip(@Nonnull ItemStack itemStack, @Nonnull GuiGraphics gr,
                             @Nonnull List<ClientTooltipComponent> list, int mouseX, int mouseY,
@@ -521,7 +532,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
                             @Nullable ResourceLocation tooltipStyle) {
         mDraw = true;
 
-        if (itemStack != mLastSeenItem) {
+        if (itemStack != mLastSeenItem || mNumDrawsInThisFrame > 0) {
             mLastSeenItem = itemStack;
             computeWorkingColor(itemStack);
         }
@@ -659,17 +670,19 @@ public final class TooltipRenderer implements ScrollController.IListener {
             // make an immutable copy and shared by multiple calls
             final Matrix3x2f pose = new Matrix3x2f(gr.pose());
             final ScreenRectangle scissor = MuiModApi.get().peekScissorStack(gr);
-            //FIXME rounded tooltip
-            /*if (sRoundedShapes) {
-                drawRoundedBackground(gr, pose,
+            if (sRoundedShapes && mNumDrawsInThisFrame == 0) {
+                drawRoundedBackground(gr, pose, scissor,
                         tooltipX, tooltipY, tooltipWidth, tooltipHeight,
                         titleGap, titleBreakHeight);
-            } else */{
+            } else {
                 drawVanillaBackground(gr, pose, scissor,
                         tooltipX, tooltipY, tooltipWidth, tooltipHeight,
                         titleGap, titleBreakHeight);
             }
         }
+        // To handle multiple calls or recursive calls.
+        // Subsequent operations use only variables on the stack instead of member variables.
+        ++mNumDrawsInThisFrame;
 
         final int drawX = (int) tooltipX;
         int drawY = (int) tooltipY;
@@ -720,7 +733,8 @@ public final class TooltipRenderer implements ScrollController.IListener {
         gr.pose().popMatrix();
     }
 
-    /*private void drawRoundedBackground(@Nonnull GuiGraphics gr, Matrix4f pose,
+    private void drawRoundedBackground(@Nonnull GuiGraphics gr, Matrix3x2f pose,
+                                       ScreenRectangle scissor,
                                        float tooltipX, float tooltipY,
                                        int tooltipWidth, int tooltipHeight,
                                        boolean titleGap, int titleBreakHeight) {
@@ -732,12 +746,7 @@ public final class TooltipRenderer implements ScrollController.IListener {
         float sizeY = halfHeight + V_BORDER;
         float shadowRadius = Math.max(sShadowRadius, 0.00001f);
 
-        CompiledShaderProgram shader = RenderSystem.setShader(GuiRenderType.SHADER_TOOLTIP);
-        if (shader == null) {
-            return;
-        }
-        shader.safeGetUniform("u_PushData0")
-                .set(sizeX, sizeY, sCornerRadius, sBorderWidth / 2f);
+        Vector4f pushData0 = new Vector4f(sizeX, sizeY, sCornerRadius, sBorderWidth / 2f);
         float rainbowOffset = 0;
         if (mUseSpectrum) {
             rainbowOffset = 1;
@@ -749,41 +758,57 @@ public final class TooltipRenderer implements ScrollController.IListener {
                 rainbowOffset = -rainbowOffset;
             }
         }
-        shader.safeGetUniform("u_PushData1")
-                .set(sShadowAlpha, 1.25f / shadowRadius, (sFillColor[0] >>> 24) / 255f, rainbowOffset);
+        Vector3f pushData1 = new Vector3f(sShadowAlpha, 1.25f / shadowRadius, (sFillColor[0] >>> 24) / 255f);
+        Matrix4f colorMatrix = new Matrix4f();
         if (rainbowOffset == 0) {
-            chooseBorderColor(0, shader.safeGetUniform("u_PushData2"));
-            chooseBorderColor(1, shader.safeGetUniform("u_PushData3"));
-            chooseBorderColor(3, shader.safeGetUniform("u_PushData4"));
-            chooseBorderColor(2, shader.safeGetUniform("u_PushData5"));
+            Vector4f colorColumn = new Vector4f();
+            colorMatrix.setColumn(0, chooseBorderColor(0, colorColumn));
+            colorMatrix.setColumn(1, chooseBorderColor(1, colorColumn));
+            colorMatrix.setColumn(2, chooseBorderColor(3, colorColumn));
+            colorMatrix.setColumn(3, chooseBorderColor(2, colorColumn));
+        } else {
+            colorMatrix.zero();
         }
 
-        var buffer = ((AccessGuiGraphics) gr).getBufferSource().getBuffer(GuiRenderType.tooltip());
-
         // we expect local coordinates, concat pose with model view
-        RenderSystem.getModelViewStack().pushMatrix();
-        RenderSystem.getModelViewStack().mul(pose);
-        RenderSystem.getModelViewStack().translate(centerX, centerY, 0);
+        Matrix3x2f localMatrix = new Matrix3x2f(pose);
+        localMatrix.translate(centerX, centerY);
+
+        mUniforms = RenderSystem.getDynamicUniforms()
+                .writeTransform(
+                        new Matrix4f().mul(localMatrix),
+                        pushData0,
+                        pushData1,
+                        colorMatrix,
+                        rainbowOffset
+                );
         // estimate the draw bounds, half stroke width + 0.5 AA bloat + shadow spread
         float extent = sBorderWidth / 2f + 0.5f + shadowRadius * 1.2f;
         float extentX = sizeX + extent;
         float extentY = sizeY + extent;
-        buffer.addVertex(extentX, extentY, 0);
-        buffer.addVertex(extentX, -extentY, 0);
-        buffer.addVertex(-extentX, -extentY, 0);
-        buffer.addVertex(-extentX, extentY, 0);
+        ScreenRectangle bounds = GradientRectangleRenderState.getBounds(
+                -extentX, -extentY, extentX, extentY,
+                localMatrix, scissor
+        );
 
-        gr.flush();
-        RenderSystem.getModelViewStack().popMatrix();
+        MuiModApi.get().submitGuiElementRenderState(gr,
+                new GradientRectangleRenderState(
+                        GuiRenderType.PIPELINE_TOOLTIP,
+                        TextureSetup.noTexture(),
+                        new Matrix3x2f(),
+                        -extentX, -extentY, extentX, extentY,
+                        ~0, ~0, ~0, ~0,
+                        scissor,
+                        bounds
+                ));
 
         if (titleGap && sTitleBreak) {
-            fillGrad(gr, pose,
+            fillGrad(gr, pose, scissor,
                     tooltipX, tooltipY + titleBreakHeight - 0.5f,
                     tooltipX + tooltipWidth, tooltipY + titleBreakHeight + 0.5f,
-                    0.08f, // lift it up by 0.08
                     0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8, 0xE0C8C8C8);
         }
-    }*/
+    }
 
     private void drawVanillaBackground(@Nonnull GuiGraphics gr, Matrix3x2f pose,
                                        ScreenRectangle scissor,

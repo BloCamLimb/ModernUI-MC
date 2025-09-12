@@ -3,12 +3,16 @@
 // Licensed under LGPL-3.0-or-later.
 #version 150
 
-uniform vec4 u_PushData0;
-uniform vec4 u_PushData1;
-uniform vec4 u_PushData2;
-uniform vec4 u_PushData3;
-uniform vec4 u_PushData4;
-uniform vec4 u_PushData5;
+layout(std140) uniform ModernTooltip {
+    mat4 u_LocalMat;
+    vec4 u_PushData0;
+    vec3 u_PushData1;
+    vec4 u_PushData2;
+    vec4 u_PushData3;
+    vec4 u_PushData4;
+    vec4 u_PushData5;
+    float u_RainbowOffset;
+};
 
 #define u_Size u_PushData0.xy
 #define u_Radius u_PushData0.z
@@ -16,7 +20,6 @@ uniform vec4 u_PushData5;
 #define u_ShadowAlpha u_PushData1.x
 #define u_ShadowSpread u_PushData1.y
 #define u_BackgroundAlpha u_PushData1.z
-#define u_RainbowOffset u_PushData1.w
 
 in vec2 f_Position;
 

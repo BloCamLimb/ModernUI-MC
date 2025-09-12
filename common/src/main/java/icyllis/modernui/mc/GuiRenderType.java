@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2024-2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,18 +18,29 @@
 
 package icyllis.modernui.mc;
 
-import com.google.common.collect.ImmutableList;
+import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.minecraft.client.renderer.*;
 import org.jetbrains.annotations.ApiStatus;
 
 /**
  * Modern GUI.
  */
-//FIXME rounded tooltip
 @ApiStatus.Internal
-public abstract class GuiRenderType extends RenderType {
+public abstract class GuiRenderType {
+
+    public static final RenderPipeline PIPELINE_TOOLTIP = RenderPipeline.builder()
+            .withLocation(ModernUIMod.location("pipeline/modern_tooltip"))
+            .withVertexShader(ModernUIMod.location("core/rendertype_modern_tooltip"))
+            .withFragmentShader(ModernUIMod.location("core/rendertype_modern_tooltip"))
+            .withUniform("DynamicTransforms", UniformType.UNIFORM_BUFFER)
+            .withUniform("Projection", UniformType.UNIFORM_BUFFER)
+            .withUniform("ModernTooltip", UniformType.UNIFORM_BUFFER)
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.QUADS)
+            .build();
 
     /*public static final ShaderProgram SHADER_TOOLTIP = new ShaderProgram(
             ModernUIMod.location("core/rendertype_modern_tooltip"),
@@ -86,7 +97,7 @@ public abstract class GuiRenderType extends RenderType {
             () -> ROUND_RECT_STATES.forEach(RenderStateShard::setupRenderState),
             () -> ROUND_RECT_STATES.forEach(RenderStateShard::clearRenderState));*/
 
-    private GuiRenderType(String name, VertexFormat vertexFormat, int bufferSize,
+    /*private GuiRenderType(String name, VertexFormat vertexFormat, int bufferSize,
                           Runnable setupState, Runnable clearState) {
         super(name, bufferSize, false, false, setupState, clearState);
     }
@@ -97,5 +108,5 @@ public abstract class GuiRenderType extends RenderType {
 
     public static RenderType roundRect() {
         return null;//ROUND_RECT;
-    }
+    }*/
 }
