@@ -103,14 +103,14 @@ dependencies {
   // Markdown (<=3.11.1) / Markflow (>=3.12.0) is required, others are optional
   implementation "icyllis.modernui:ModernUI-Markflow:${modernui_version}"
   // Choose one of Fabric or NeoForge
-  modImplementation("icyllis.modernui:ModernUI-Fabric:${minecraft_version}-${modernui_version}.+")
+  modImplementation("icyllis.modernui:ModernUI-Fabric:${minecraft_version}-${modernui_version}")
 }
 ```
 ##### ModDevGradle
 ```groovy
 dependencies {
   // Modern UI
-  implementation("icyllis.modernui:ModernUI-NeoForge:${minecraft_version}-${modernui_version}.+")
+  implementation("icyllis.modernui:ModernUI-NeoForge:${minecraft_version}-${modernui_version}")
   additionalRuntimeClasspath(compileOnly("icyllis.modernui:ModernUI-Core:${modernui_version}")) {
     exclude group: "org.slf4j", module: "slf4j-api"
     exclude group: "org.apache.logging.log4j", module: "log4j-core"
@@ -181,7 +181,7 @@ dependencies {
       exclude group: "it.unimi.dsi", module: "fastutil"
     }
     // Modern UI for Minecraft Forge
-    implementation fg.deobf("icyllis.modernui:ModernUI-Forge:${minecraft_version}-${modernui_version}.+")
+    implementation fg.deobf("icyllis.modernui:ModernUI-Forge:${minecraft_version}-${modernui_version}")
 }
 ```
 #### Building Modern UI for Minecraft
