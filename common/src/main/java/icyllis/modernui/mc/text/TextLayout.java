@@ -18,15 +18,21 @@
 
 package icyllis.modernui.mc.text;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import icyllis.arc3d.core.Rect2f;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.util.SparseArray;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.renderer.MultiBufferSource;
+import org.joml.Matrix3x2f;
 import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -41,7 +47,7 @@ public class TextLayout {
     /**
      * For obfuscated characters.
      */
-    private static final Random RANDOM = new Random();
+    static final Random RANDOM = new Random();
 
     /**
      * Sometimes naive, too simple.
@@ -65,7 +71,7 @@ public class TextLayout {
         public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
                               float x, float top, int r, int g, int b, int a, boolean isShadow,
                               int preferredMode, boolean polygonOffset, float uniformScale,
-                              int bgColor, int packedLight, boolean inverseDepth) {
+                              int bgColor, int packedLight) {
             return 0;
         }
 
@@ -319,7 +325,6 @@ public class TextLayout {
      * @param uniformScale  additional scale factor if uniform scale
      * @param bgColor       the background color of the text in 0xAARRGGBB format
      * @param packedLight   see {@link net.minecraft.client.renderer.LightTexture}
-     * @param inverseDepth  inverse depth for background and effect
      * @return the total advance, always positive
      */
     public float drawText(@Nonnull final Matrix4f matrix,
@@ -328,8 +333,7 @@ public class TextLayout {
                           int r, int g, int b, final int a,
                           final boolean isShadow, int preferredMode,
                           final boolean polygonOffset, final float uniformScale,
-                          final int bgColor, final int packedLight,
-                          final boolean inverseDepth) {
+                          final int bgColor, final int packedLight) {
         final int startR = r;
         final int startG = g;
         final int startB = b;
@@ -369,17 +373,17 @@ public class TextLayout {
 
         final float baseline = top + sBaselineOffset;
 
-        int prevTexture = -1;
+        GpuTextureView prevTexture = null;
         int prevMode = -1;
         net.minecraft.client.gui.Font.DisplayMode prevVanillaDisplayMode = null;
         VertexConsumer builder = null;
 
-        int fontTexture = -1;
+        GpuTextureView fontTexture = null;
 
         final boolean seeThrough = preferredMode == TextRenderType.MODE_SEE_THROUGH;
         if ((bgColor & 0xFF000000) != 0) {
             builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough, polygonOffset));
-            float effectDepth = inverseDepth ? -TextRenderEffect.EFFECT_DEPTH : TextRenderEffect.EFFECT_DEPTH;
+            float effectDepth = -TextRenderEffect.EFFECT_DEPTH;
             builder.addVertex(matrix, x - 1, top + 9, effectDepth)
                     .setColor(bgColor).setUv(0, 1).setLight(packedLight);
             builder.addVertex(matrix, x + mTotalAdvance + 1, top + 9, effectDepth)
@@ -402,7 +406,7 @@ public class TextLayout {
             final float w;
             final float h;
             final int mode;
-            final int texture;
+            final GpuTextureView texture;
             boolean fakeItalic = false;
             int ascent = 0;
             net.minecraft.client.gui.Font.DisplayMode vanillaDisplayMode = null;
@@ -459,7 +463,7 @@ public class TextLayout {
 
                 w = glyph.width * invDensity;
                 h = glyph.height * invDensity;
-                if (fontTexture == -1) {
+                if (fontTexture == null) {
                     fontTexture = GlyphManager.getInstance().getFontTexture();
                 }
                 texture = fontTexture;
@@ -546,11 +550,11 @@ public class TextLayout {
                 final float rx2 = x + ((i + 1 == e) ? mTotalAdvance : positions[(i + 1) << 1]);
                 if ((bits & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
                     TextRenderEffect.drawStrikethrough(matrix, builder, rx1, rx2, baseline,
-                            r, g, b, a, packedLight, inverseDepth);
+                            r, g, b, a, packedLight);
                 }
                 if ((bits & CharacterStyle.UNDERLINE_MASK) != 0) {
                     TextRenderEffect.drawUnderline(matrix, builder, rx1, rx2, baseline,
-                            r, g, b, a, packedLight, inverseDepth);
+                            r, g, b, a, packedLight);
                 }
             }
         }
@@ -588,10 +592,10 @@ public class TextLayout {
 
         final float baseline = top + sBaselineOffset;
 
-        int prevTexture = -1;
+        GpuTextureView prevTexture = null;
         VertexConsumer builder = null;
 
-        int fontTexture = -1;
+        GpuTextureView fontTexture = null;
 
         // outset glyph bounds
         final float sBloat = 1.0f / resLevel;
@@ -605,7 +609,7 @@ public class TextLayout {
             final float ry;
             final float w;
             final float h;
-            final int texture;
+            final GpuTextureView texture;
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 continue;
             } else {
@@ -619,7 +623,7 @@ public class TextLayout {
 
                 w = glyph.width / resLevel;
                 h = glyph.height / resLevel;
-                if (fontTexture == -1) {
+                if (fontTexture == null) {
                     fontTexture = GlyphManager.getInstance().getFontTexture();
                 }
                 texture = fontTexture;
@@ -653,6 +657,171 @@ public class TextLayout {
                     .setUv(glyph.u2 + uBloat, glyph.v1 - vBloat)
                     .setLight(packedLight);
         }
+    }
+
+    /**
+     * Special version for GUI text rendering.
+     */
+    public ModernPreparedText prepareTextWithDensity(float x, float top,
+                                                     final int color, final boolean dropShadow,
+                                                     int preferredMode, final float uniformScale,
+                                                     final int bgColor) {
+        final float density;
+        final GLBakedGlyph[] glyphs;
+        if (preferredMode == TextRenderType.MODE_SDF_FILL) {
+            int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
+            glyphs = getGlyphs(resLevel);
+            density = resLevel;
+        } else if (preferredMode == TextRenderType.MODE_UNIFORM_SCALE) {
+            if (uniformScale <= 0.001f) {
+                // drop if flipped or too small
+                return ModernPreparedText.EMPTY;
+            }
+            density = mCreatedResLevel * uniformScale;
+            glyphs = getGlyphsUniformScale(density);
+            preferredMode = TextRenderType.MODE_NORMAL;
+        } else {
+            glyphs = getGlyphs(mCreatedResLevel);
+            density = mCreatedResLevel;
+        }
+        final float invDensity = 1.0f / density;
+        float shadowOffset = 0;
+        if (dropShadow) {
+            shadowOffset = ModernTextRenderer.sShadowOffset;
+            if (preferredMode == TextRenderType.MODE_NORMAL) {
+                // align to screen pixel center in 2D
+                shadowOffset = Math.round(shadowOffset * density) * invDensity;
+            }
+        }
+
+        final var positions = mPositions;
+        final var flags = mGlyphFlags;
+        //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
+
+        final float baseline = top + sBaselineOffset;
+
+        GpuTextureView prevTexture = null;
+        int prevMode = -1;
+        RenderPipeline pipeline = null;
+
+        GpuTextureView fontTexture = null;
+        GpuTextureView whiteTexture;
+
+        Rect2f bounds = Rect2f.makeInfiniteInverted();
+
+        assert preferredMode != TextRenderType.MODE_SEE_THROUGH;
+        //TODO FIXME
+        if ((bgColor & 0xFF000000) != 0) {
+            /*builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough, polygonOffset));
+            float effectDepth = inverseDepth ? -TextRenderEffect.EFFECT_DEPTH : TextRenderEffect.EFFECT_DEPTH;
+            builder.addVertex(matrix, x - 1, top + 9, effectDepth)
+                    .setColor(bgColor).setUv(0, 1).setLight(packedLight);
+            builder.addVertex(matrix, x + mTotalAdvance + 1, top + 9, effectDepth)
+                    .setColor(bgColor).setUv(1, 1).setLight(packedLight);
+            builder.addVertex(matrix, x + mTotalAdvance + 1, top - 1, effectDepth)
+                    .setColor(bgColor).setUv(1, 0).setLight(packedLight);
+            builder.addVertex(matrix, x - 1, top - 1, effectDepth)
+                    .setColor(bgColor).setUv(0, 0).setLight(packedLight);
+            builder = null;*/
+        }
+
+        ArrayList<ModernPreparedText.TextRun> textRuns = new ArrayList<>();
+
+        for (int i = 0, e = glyphs.length; i < e; i++) {
+            var glyph = glyphs[i];
+            if (glyph == null) {
+                continue;
+            }
+            final int bits = flags[i];
+            float rx;
+            float ry;
+            final float w;
+            final float h;
+            final int mode;
+            final GpuTextureView texture;
+            boolean fakeItalic = false;
+            int ascent = 0;
+            boolean isBitmapFont = false;
+            boolean isColorEmoji = false;
+            if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
+                var chars = (GlyphManager.FastCharSet) glyph;
+                int fastIndex = RANDOM.nextInt(chars.glyphs.size());
+                glyph = chars.glyphs.get(fastIndex);
+            }
+            if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
+                final float scaleFactor;
+                if (getFont(i) instanceof BitmapFont bitmapFont) {
+                    texture = GlyphManager.getInstance().getCurrentTexture(bitmapFont);
+                    ascent = bitmapFont.getAscent();
+                    scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
+                    isBitmapFont = true;
+                } else {
+                    texture = GlyphManager.getInstance().getEmojiTexture();
+                    ascent = TextLayout.STANDARD_BASELINE_OFFSET;
+                    scaleFactor = TextLayoutProcessor.sBaseFontSize / GlyphManager.EMOJI_BASE;
+                    isColorEmoji = true;
+                }
+                fakeItalic = (bits & CharacterStyle.ITALIC_MASK) != 0;
+                rx = x + positions[i << 1] + glyph.x * scaleFactor;
+                ry = baseline + positions[i << 1 | 1] + glyph.y * scaleFactor;
+
+                w = glyph.width * scaleFactor;
+                h = glyph.height * scaleFactor;
+                mode = TextRenderType.MODE_NORMAL; // for color emoji
+            } else {
+                mode = preferredMode;
+                rx = x + positions[i << 1] + glyph.x * invDensity;
+                ry = baseline + positions[i << 1 | 1] + glyph.y * invDensity;
+
+                w = glyph.width * invDensity;
+                h = glyph.height * invDensity;
+                if (fontTexture == null) {
+                    fontTexture = GlyphManager.getInstance().getFontTexture();
+                }
+                texture = fontTexture;
+            }
+            if (pipeline == null || prevTexture != texture || prevMode != mode) {
+                // no need to check isBitmapFont
+                prevTexture = texture;
+                prevMode = mode;
+                pipeline = TextRenderType.getPipelineForGui(mode, isBitmapFont);
+                if (!textRuns.isEmpty()) {
+                    textRuns.getLast().glyphEnd = i;
+                }
+                textRuns.add(new ModernPreparedText.TextRun(pipeline, texture, i, isColorEmoji,
+                        preferredMode == TextRenderType.MODE_NORMAL));
+            }
+            float upSkew = 0;
+            float downSkew = 0;
+            if (fakeItalic) {
+                upSkew = 0.25f * ascent;
+                downSkew = 0.25f * (ascent - h);
+            }
+            bounds.joinNoCheck(
+                    rx + downSkew, ry, rx + w + upSkew, ry + h
+            );
+        }
+        if (!textRuns.isEmpty()) {
+            textRuns.getLast().glyphEnd = glyphs.length;
+        }
+        if (dropShadow && !bounds.isEmpty()) {
+            bounds.mRight += Math.max(1, shadowOffset);
+        }
+
+        if (mHasEffect) {
+
+        }
+
+        ScreenRectangle finalBounds = null;
+        if (!bounds.isEmpty()) {
+            int L = (int) Math.floor(bounds.left()), T = (int) Math.floor(bounds.top()),
+                   R = (int) Math.ceil(bounds.right()), B = (int) Math.ceil(bounds.bottom());
+            finalBounds = new ScreenRectangle(L, T, R - L, B - T);
+        }
+
+        return new ModernPreparedText(density, shadowOffset,
+                dropShadow, color, bgColor, x, top, finalBounds, textRuns,
+                mHasEffect, glyphs, positions, flags);
     }
 
     /**
@@ -783,6 +952,10 @@ public class TextLayout {
      */
     public boolean hasColorEmoji() {
         return mHasColorEmoji;
+    }
+
+    public int getCreatedResLevel() {
+        return mCreatedResLevel;
     }
 
     /**

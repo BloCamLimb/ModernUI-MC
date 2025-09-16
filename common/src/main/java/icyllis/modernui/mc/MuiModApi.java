@@ -18,9 +18,11 @@
 
 package icyllis.modernui.mc;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.GpuDevice;
+import com.mojang.blaze3d.textures.GpuTexture;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
@@ -36,11 +38,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderStateShard;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
@@ -377,8 +380,9 @@ public abstract class MuiModApi {
      * Get the {@link ChatFormatting} by the given formatting code. Vanilla's method is
      * overwritten by this, see {@link MixinChatFormatting}.
      * <p>
-     * Vanilla would create a new String from the char, call String.toLowerCase() and
-     * String.charAt(0), search this char with a clone of ChatFormatting values. However,
+     * Optimized version of {@link ChatFormatting#getByCode(char)}.
+     * Vanilla would call Character.toLowerCase() and
+     * linear search this char with a clone of ChatFormatting values. However,
      * it is unnecessary to consider non-ASCII compatibility, so we simplify it to a LUT.
      *
      * @param code c, case-insensitive
@@ -390,6 +394,7 @@ public abstract class MuiModApi {
         return code < 128 ? FORMATTING_TABLE[code] : null;
     }
 
+    @ApiStatus.Internal
     public abstract boolean isGLVersionPromoted();
 
     @ApiStatus.Internal
@@ -405,12 +410,21 @@ public abstract class MuiModApi {
 
     public abstract GpuDevice getRealGpuDevice();
 
+    public abstract GpuTexture getRealGpuTexture(GpuTexture faker);
+
     public abstract void submitGuiElementRenderState(GuiGraphics graphics, GuiElementRenderState renderState);
 
     public abstract void submitPictureInPictureRenderState(GuiGraphics graphics, PictureInPictureRenderState renderState);
 
     @Nullable
     public abstract ScreenRectangle peekScissorStack(GuiGraphics graphics);
+
+    // textureState must subclass RenderStateShard.EmptyTextureStateShard, null = NO_TEXTURE
+    public abstract RenderType createRenderType(String name, int bufferSize,
+                                                boolean affectsCrumbling, boolean sortOnUpload,
+                                                RenderPipeline renderPipeline,
+                                                @Nullable RenderStateShard textureState,
+                                                boolean lightmap);
 
     /*
      * Registers a callback to be called when {@link org.lwjgl.glfw.GLFWScrollCallback} is called.

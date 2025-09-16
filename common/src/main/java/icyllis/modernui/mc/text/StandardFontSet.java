@@ -20,6 +20,8 @@ package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.font.GlyphInfo;
 import com.mojang.blaze3d.font.SheetGlyphInfo;
+import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.modernui.graphics.text.*;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.minecraft.client.gui.font.*;
@@ -284,6 +286,23 @@ public class StandardFontSet extends FontSet {
                     u0, u1, v0, v1,
                     left, right, up, down);
             mBitmapFont = bitmapFont;
+        }
+
+        @Nullable
+        @Override
+        public GpuTextureView textureView() {
+            // OpenGL texture ID can be changing
+            if (mBitmapFont != null) {
+                return GlyphManager.getInstance().getCurrentTexture(mBitmapFont);
+            } else {
+                return GlyphManager.getInstance().getFontTexture();
+            }
+        }
+
+        @Nonnull
+        @Override
+        public RenderPipeline guiPipeline() {
+            return TextRenderType.getPipelineForGui(TextRenderType.MODE_NORMAL, /*isBitmap*/mBitmapFont != null);
         }
 
         @Nonnull

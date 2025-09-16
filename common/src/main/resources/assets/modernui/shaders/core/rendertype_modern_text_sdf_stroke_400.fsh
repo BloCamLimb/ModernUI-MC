@@ -3,16 +3,13 @@
 // Licensed under LGPL-3.0-or-later.
 #version 400
 
-#moj_import <fog.glsl>
+#moj_import <minecraft:fog.glsl>
+#moj_import <minecraft:dynamictransforms.glsl>
 
 uniform sampler2D Sampler0;
 
-uniform vec4 ColorModulator;
-uniform float FogStart;
-uniform float FogEnd;
-uniform vec4 FogColor;
-
-in float vertexDistance;
+in float sphericalVertexDistance;
+in float cylindricalVertexDistance;
 in vec4 vertexColor;
 in vec2 texCoord0;
 
@@ -53,5 +50,5 @@ void main() {
     vec4 color = vertexColor * ColorModulator;
     color.a *= 1.0 - clamp(dist / fwidth(dist) + 0.5, 0.0, 1.0);
     if (color.a < 0.01) discard;
-    fragColor = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
+    fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
 }

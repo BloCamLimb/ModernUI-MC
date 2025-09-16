@@ -18,9 +18,11 @@
 
 package icyllis.modernui.mc.neoforge;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
 import net.minecraft.client.KeyMapping;
@@ -31,13 +33,14 @@ import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderStateShard;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Rarity;
-import net.neoforged.neoforge.client.blaze3d.validation.ValidationGpuDevice;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -113,11 +116,28 @@ public final class MuiForgeApi extends MuiModApi {
     @Override
     public GpuDevice getRealGpuDevice() {
         GpuDevice gpuDevice = RenderSystem.getDevice();
-        // The ValidationGpuDevice prevents you from creating external textures, that's terrible
-        if (gpuDevice instanceof ValidationGpuDevice validationGpuDevice) {
-            gpuDevice = validationGpuDevice.getRealDevice();
+        try {
+            // The ValidationGpuDevice prevents you from creating external textures, that's terrible
+            if (gpuDevice instanceof net.neoforged.neoforge.client.blaze3d.validation.ValidationGpuDevice validationGpuDevice) {
+                gpuDevice = validationGpuDevice.getRealDevice();
+            }
+        } catch (Throwable ignored) {
+
         }
         return gpuDevice;
+    }
+
+    @Override
+    public GpuTexture getRealGpuTexture(GpuTexture faker) {
+        GpuTexture gpuTexture = faker;
+        try {
+            if (gpuTexture instanceof net.neoforged.neoforge.client.blaze3d.validation.ValidationGpuTexture validationGpuTexture) {
+                gpuTexture = validationGpuTexture.getRealTexture();
+            }
+        } catch (Throwable ignored) {
+
+        }
+        return gpuTexture;
     }
 
     @Override
@@ -134,5 +154,24 @@ public final class MuiForgeApi extends MuiModApi {
     @Override
     public ScreenRectangle peekScissorStack(GuiGraphics graphics) {
         return graphics.peekScissorStack();
+    }
+
+    @Override
+    public RenderType createRenderType(String name, int bufferSize,
+                                       boolean affectsCrumbling, boolean sortOnUpload,
+                                       RenderPipeline renderPipeline,
+                                       @Nullable RenderStateShard textureState,
+                                       boolean lightmap) {
+        var builder = RenderType.CompositeState.builder();
+        if (textureState != null) {
+            builder.setTextureState((RenderStateShard.EmptyTextureStateShard) textureState);
+        }
+        if (lightmap) {
+            builder.setLightmapState(RenderStateShard.LIGHTMAP);
+        }
+        return RenderType.create(
+                name, bufferSize, affectsCrumbling, sortOnUpload, renderPipeline,
+                builder.createCompositeState(false)
+        );
     }
 }

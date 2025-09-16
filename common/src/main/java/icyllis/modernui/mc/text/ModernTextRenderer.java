@@ -96,20 +96,19 @@ public final class ModernTextRenderer {
         }
 
         TextLayout layout = mEngine.lookupVanillaLayout(text);
-        x += drawText(layout, x, y, color, dropShadow, matrix, source, displayMode, colorBackground, packedLight, true);
+        x += drawText(layout, x, y, color, dropShadow, matrix, source, displayMode, colorBackground, packedLight);
         return x;
     }
 
     public float drawText(@Nonnull FormattedText text, float x, float y, int color, boolean dropShadow,
                           @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
-                          Font.DisplayMode displayMode, int colorBackground, int packedLight,
-                          boolean inverseDepth) {
+                          Font.DisplayMode displayMode, int colorBackground, int packedLight) {
         if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
             return x;
         }
 
         TextLayout layout = mEngine.lookupFormattedLayout(text);
-        x += drawText(layout, x, y, color, dropShadow, matrix, source, displayMode, colorBackground, packedLight, inverseDepth);
+        x += drawText(layout, x, y, color, dropShadow, matrix, source, displayMode, colorBackground, packedLight);
         return x;
     }
 
@@ -121,14 +120,13 @@ public final class ModernTextRenderer {
         }
 
         TextLayout layout = mEngine.lookupFormattedLayout(text);
-        x += drawText(layout, x, y, color, dropShadow, matrix, source, displayMode, colorBackground, packedLight, true);
+        x += drawText(layout, x, y, color, dropShadow, matrix, source, displayMode, colorBackground, packedLight);
         return x;
     }
 
     public float drawText(@Nonnull TextLayout layout, float x, float y, int color, boolean dropShadow,
                           @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
-                          Font.DisplayMode displayMode, int colorBackground, int packedLight,
-                          boolean inverseDepth) {
+                          Font.DisplayMode displayMode, int colorBackground, int packedLight) {
         // ensure alpha, color can be ARGB, or can be RGB
         // we check if alpha <= 1, then make alpha = 255 (fully opaque)
         /*if ((color & 0xfe000000) == 0) {
@@ -136,7 +134,6 @@ public final class ModernTextRenderer {
         }*/
 
         int a = color >>> 24;
-        if (a <= 2) a = 255;
         int r = color >> 16 & 0xff;
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
@@ -152,6 +149,7 @@ public final class ModernTextRenderer {
         boolean matrixIsCopied = false;
         // compute exact font size and position
         float uniformScale = 1;
+        //TODO maybe cleanup
         if (sComputeDeviceFontSize &&
                 ((mode == TextRenderType.MODE_NORMAL && (matrix.properties() & Matrix4f.PROPERTY_TRANSLATION) != 0) ||
                         mode == TextRenderType.MODE_UNIFORM_SCALE)) {
@@ -198,7 +196,7 @@ public final class ModernTextRenderer {
         }
         if (dropShadow && sAllowShadow) {
             layout.drawText(matrix, source, x, y, r >> 2, g >> 2, b >> 2, a, true,
-                    mode, polygonOffset, uniformScale, colorBackground, packedLight, inverseDepth);
+                    mode, polygonOffset, uniformScale, colorBackground, packedLight);
             if (!matrixIsCopied) {
                 matrix = new Matrix4f(matrix);
             }
@@ -206,7 +204,7 @@ public final class ModernTextRenderer {
         }
 
         return layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                mode, polygonOffset, uniformScale, colorBackground, packedLight, inverseDepth);
+                mode, polygonOffset, uniformScale, colorBackground, packedLight);
     }
 
     public int chooseMode(Matrix4f ctm, Font.DisplayMode displayMode) {
@@ -281,7 +279,6 @@ public final class ModernTextRenderer {
             color = outlineColor;
         }
         int a = color >>> 24;
-        if (a <= 2) a = 255;
         int r = color >> 16 & 0xff;
         int g = color >> 8 & 0xff;
         int b = color & 0xff;
@@ -293,7 +290,7 @@ public final class ModernTextRenderer {
         }
 
         layout.drawText(matrix, source, x, y, r, g, b, a, false,
-                TextRenderType.MODE_SDF_FILL, false, 1, 0, packedLight, true);
+                TextRenderType.MODE_SDF_FILL, false, 1, 0, packedLight);
 
         // disable outline if either text color is BLACK or SDF shader is unavailable
         if (isBlack ||
@@ -303,7 +300,6 @@ public final class ModernTextRenderer {
         matrix = new Matrix4f(matrix);
 
         a = outlineColor >>> 24;
-        if (a <= 2) a = 255;
         r = outlineColor >> 16 & 0xff;
         g = outlineColor >> 8 & 0xff;
         b = outlineColor & 0xff;

@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2021-2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,12 +18,26 @@
 
 package icyllis.modernui.mc.text;
 
-import icyllis.arc3d.core.*;
-import icyllis.arc3d.engine.*;
-import icyllis.arc3d.opengl.*;
-import icyllis.modernui.annotation.*;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuTextureView;
+import icyllis.arc3d.core.ColorInfo;
+import icyllis.arc3d.core.MathUtil;
+import icyllis.arc3d.core.RawPtr;
+import icyllis.arc3d.core.Rect2i;
+import icyllis.arc3d.core.RectanglePacker;
+import icyllis.arc3d.engine.Engine;
+import icyllis.arc3d.engine.ISurface;
+import icyllis.arc3d.engine.ImmediateContext;
+import icyllis.arc3d.opengl.GLCaps;
+import icyllis.arc3d.opengl.GLDevice;
+import icyllis.arc3d.opengl.GLTexture;
+import icyllis.modernui.annotation.NonNull;
+import icyllis.modernui.annotation.Nullable;
+import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
+import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.b3d.GlTexture_Wrapped;
 import icyllis.modernui.text.TextUtils;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.lwjgl.opengl.GL45C;
@@ -31,11 +45,13 @@ import org.lwjgl.opengl.GL45C;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
-import static org.lwjgl.opengl.GL33C.*;
 import static icyllis.modernui.mc.ModernUIMod.LOGGER;
+import static org.lwjgl.opengl.GL33C.*;
 
 /**
  * Maintains a font texture atlas, which is specified with a font strike (style and
@@ -69,8 +85,10 @@ public class GLFontAtlas implements AutoCloseable {
     private final Long2ObjectOpenHashMap<GLBakedGlyph> mGlyphs = new Long2ObjectOpenHashMap<>();
 
     // texture can change by resizing
-    @SharedPtr
-    GLTexture mTexture = null;
+    @RawPtr
+    GLTexture mTexture = null; // managed by wrapper
+    GlTexture_Wrapped mTextureWrapper = null;
+    GpuTextureView mTextureWrapperView = null;
 
     private final List<Chunk> mChunks = new ArrayList<>();
 
@@ -157,6 +175,7 @@ public class GLFontAtlas implements AutoCloseable {
         }
         if (!inserted) {
             // add new chunks
+            //TODO defer resize to end of frame
             invalidated = resize();
             for (Chunk chunk : mChunks) {
                 if (chunk.packer.addRect(rect)) {
@@ -205,6 +224,8 @@ public class GLFontAtlas implements AutoCloseable {
                     ? CHUNK_SIZE * 4
                     : CHUNK_SIZE * 2;
             mTexture = createTexture();
+            mTextureWrapper = new GlTexture_Wrapped(mTexture); // transfer ownership
+            mTextureWrapperView = MuiModApi.get().getRealGpuDevice().createTextureView(mTextureWrapper);
             for (int x = 0; x < mWidth; x += CHUNK_SIZE) {
                 for (int y = 0; y < mHeight; y += CHUNK_SIZE) {
                     mChunks.add(new Chunk(x, y, RectanglePacker.make(CHUNK_SIZE, CHUNK_SIZE)));
@@ -252,7 +273,11 @@ public class GLFontAtlas implements AutoCloseable {
                 LOGGER.warn(GlyphManager.MARKER, "Failed to copy to new texture");
             }
 
-            mTexture = RefCnt.move(mTexture, newTexture);
+            mTextureWrapperView.close();
+            mTextureWrapper.close();
+            mTexture = newTexture;
+            mTextureWrapper = new GlTexture_Wrapped(mTexture); // transfer ownership
+            mTextureWrapperView = MuiModApi.get().getRealGpuDevice().createTextureView(mTextureWrapper);
 
             if (vertical) {
                 //mTexture.clear(0, 0, mHeight >> 1, mWidth, mHeight >> 1);
@@ -282,7 +307,7 @@ public class GLFontAtlas implements AutoCloseable {
 
         // this is a fallback sampling method, generally used for direct mask, NEAREST is performant
         // when used for SDF, a sampler object will override this setting
-        glTexParameteri(
+        /*glTexParameteri(
                 GL_TEXTURE_2D,
                 GL_TEXTURE_MAG_FILTER,
                 GL_NEAREST
@@ -294,7 +319,10 @@ public class GLFontAtlas implements AutoCloseable {
                         mMaskFormat == Engine.MASK_FORMAT_ARGB)   // color emoji requires linear sampling
                         ? GL_LINEAR_MIPMAP_LINEAR
                         : GL_NEAREST
-        );
+        );*/
+        boolean linear = mLinearSampling && (sLinearSamplingA8Atlas ||
+                mMaskFormat == Engine.MASK_FORMAT_ARGB);   // color emoji requires linear sampling
+        mTextureWrapper.setTextureFilter(linear ? FilterMode.LINEAR : FilterMode.NEAREST, FilterMode.NEAREST, linear);
 
         if (mMaskFormat == Engine.MASK_FORMAT_A8) {
             //XXX: un-premultiplied, so 111r rather than rrrr
@@ -439,7 +467,13 @@ public class GLFontAtlas implements AutoCloseable {
 
     @Override
     public void close() {
-        mTexture = RefCnt.move(mTexture);
+        if (mTexture != null) {
+            mTextureWrapperView.close();
+            mTextureWrapper.close();
+            mTexture = null;
+            mTextureWrapper = null;
+            mTextureWrapperView = null;
+        }
     }
 
     public int getWidth() {

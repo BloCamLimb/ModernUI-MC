@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2020-2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,21 +18,21 @@
 
 package icyllis.modernui.mc.text;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.MeshData;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.arc3d.core.ColorInfo;
-import icyllis.arc3d.core.RefCnt;
-import icyllis.arc3d.engine.*;
+import icyllis.arc3d.engine.Engine;
+import icyllis.arc3d.engine.ISurface;
+import icyllis.arc3d.engine.ImageDesc;
+import icyllis.arc3d.engine.ImmediateContext;
 import icyllis.arc3d.opengl.GLDevice;
 import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.RenderStateShard;
+import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.b3d.GlTexture_Wrapped;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.RenderType;
-import org.lwjgl.opengl.GL33C;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
@@ -40,15 +40,20 @@ import javax.annotation.Nonnull;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 
-public class EffectRenderType extends RenderType {
+/**
+ * @since 2.0.1
+ */
+public abstract class EffectRenderType extends RenderType {
 
     private static GLTexture WHITE;
+    private static GlTexture_Wrapped WHITE_WRAPPER = null;
+    private static GpuTextureView WHITE_WRAPPER_VIEW = null;
 
-    private static final EffectRenderType TYPE;
-    private static final EffectRenderType SEE_THROUGH_TYPE;
-    private static final EffectRenderType POLYGON_OFFSET_TYPE;
+    private static RenderType TYPE;
+    private static RenderType SEE_THROUGH_TYPE;
+    private static RenderType POLYGON_OFFSET_TYPE;
 
-    static {
+    /*static {
         TYPE = new EffectRenderType("modern_text_effect", 256, () -> {
             TextRenderType.VANILLA_STATES.forEach(RenderStateShard::setupRenderState);
             //RenderSystem.setShaderTexture(0, WHITE.getHandle());
@@ -61,7 +66,7 @@ public class EffectRenderType extends RenderType {
             TextRenderType.POLYGON_OFFSET_STATES.forEach(RenderStateShard::setupRenderState);
             //RenderSystem.setShaderTexture(0, WHITE.getHandle());
         }, () -> TextRenderType.POLYGON_OFFSET_STATES.forEach(RenderStateShard::clearRenderState));
-    }
+    }*/
 
     private EffectRenderType(String name, int bufferSize, Runnable setupState, Runnable clearState) {
         super(name, /*DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS,*/
@@ -70,13 +75,13 @@ public class EffectRenderType extends RenderType {
 
     @RenderThread
     @Nonnull
-    public static EffectRenderType getRenderType(boolean seeThrough, boolean polygonOffset) {
+    public static RenderType getRenderType(boolean seeThrough, boolean polygonOffset) {
         if (WHITE == null)
             makeWhiteTexture();
         return polygonOffset ? POLYGON_OFFSET_TYPE : seeThrough ? SEE_THROUGH_TYPE : TYPE;
     }
 
-    @RenderThread
+    /*@RenderThread
     @Nonnull
     public static EffectRenderType getRenderType(Font.DisplayMode mode) {
         return switch (mode) {
@@ -84,10 +89,16 @@ public class EffectRenderType extends RenderType {
             case POLYGON_OFFSET -> POLYGON_OFFSET_TYPE;
             default -> TYPE;
         };
-    }
+    }*/
 
     public static void clear() {
-        WHITE = RefCnt.move(WHITE);
+        if (WHITE != null) {
+            WHITE_WRAPPER_VIEW.close();
+            WHITE_WRAPPER.close();
+            WHITE = null;
+            WHITE_WRAPPER = null;
+            WHITE_WRAPPER_VIEW = null;
+        }
     }
 
     private static void makeWhiteTexture() {
@@ -122,28 +133,31 @@ public class EffectRenderType extends RenderType {
             );
             assert res;
 
-            int boundTexture = GL33C.glGetInteger(GL33C.GL_TEXTURE_BINDING_2D);
+            /*int boundTexture = GL33C.glGetInteger(GL33C.GL_TEXTURE_BINDING_2D);
             GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, WHITE.getHandle());
 
             GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MAG_FILTER, GL33C.GL_NEAREST);
             GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MIN_FILTER, GL33C.GL_NEAREST);
 
-            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);
+            GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);*/
         }
-    }
 
-    @Override
-    public void draw(MeshData meshData) {
+        WHITE_WRAPPER = new GlTexture_Wrapped(WHITE); // transfer ownership
+        WHITE_WRAPPER_VIEW = MuiModApi.get().getRealGpuDevice().createTextureView(WHITE_WRAPPER);
 
-    }
+        WHITE_WRAPPER.setTextureFilter(FilterMode.NEAREST, false);
 
-    @Override
-    public VertexFormat format() {
-        return null;
-    }
-
-    @Override
-    public VertexFormat.Mode mode() {
-        return null;
+        TYPE = MuiModApi.get().createRenderType("modern_text_effect", 256,
+                false, true, RenderPipelines.TEXT,
+                new TextRenderType.ExtendedTextureStateShard(WHITE_WRAPPER_VIEW),
+                true);
+        SEE_THROUGH_TYPE = MuiModApi.get().createRenderType("modern_text_effect_see_through", 256,
+                false, true, RenderPipelines.TEXT_SEE_THROUGH,
+                new TextRenderType.ExtendedTextureStateShard(WHITE_WRAPPER_VIEW),
+                true);
+        POLYGON_OFFSET_TYPE = MuiModApi.get().createRenderType("modern_text_effect_polygon_offset", 256,
+                false, true, RenderPipelines.TEXT_POLYGON_OFFSET,
+                new TextRenderType.ExtendedTextureStateShard(WHITE_WRAPPER_VIEW),
+                true);
     }
 }

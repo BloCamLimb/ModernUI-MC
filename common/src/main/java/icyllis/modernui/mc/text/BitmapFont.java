@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2022-2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,15 +21,28 @@ package icyllis.modernui.mc.text;
 import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.font.GlyphInfo;
 import com.mojang.blaze3d.font.SheetGlyphInfo;
-import icyllis.arc3d.core.*;
-import icyllis.arc3d.engine.*;
-import icyllis.arc3d.opengl.*;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuTextureView;
+import icyllis.arc3d.core.PixelUtils;
+import icyllis.arc3d.core.RawPtr;
+import icyllis.arc3d.engine.Engine;
+import icyllis.arc3d.engine.ISurface;
+import icyllis.arc3d.engine.ImageDesc;
+import icyllis.arc3d.engine.ImmediateContext;
+import icyllis.arc3d.opengl.GLCaps;
+import icyllis.arc3d.opengl.GLDevice;
+import icyllis.arc3d.opengl.GLTexture;
 import icyllis.arc3d.sketch.Typeface;
 import icyllis.modernui.core.Core;
+import icyllis.modernui.graphics.Bitmap;
+import icyllis.modernui.graphics.BitmapFactory;
 import icyllis.modernui.graphics.MathUtil;
-import icyllis.modernui.graphics.*;
+import icyllis.modernui.graphics.Rect;
 import icyllis.modernui.graphics.text.Font;
-import icyllis.modernui.graphics.text.*;
+import icyllis.modernui.graphics.text.FontMetricsInt;
+import icyllis.modernui.graphics.text.FontPaint;
+import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.b3d.GlTexture_Wrapped;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -38,12 +51,13 @@ import net.minecraft.client.gui.font.providers.BitmapProvider;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.Unmodifiable;
-import org.lwjgl.opengl.GL33C;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.function.Function;
 
 import static icyllis.modernui.mc.ModernUIMod.LOGGER;
@@ -85,8 +99,10 @@ public class BitmapFont implements Font, AutoCloseable {
     private final Int2ObjectOpenHashMap<Glyph> mGlyphs = new Int2ObjectOpenHashMap<>();
 
     // used if mSpriteWidth or mSpriteHeight > MAX_ATLAS_DIMENSION
-    @SharedPtr
-    private GLTexture mTexture; // lazy init
+    @RawPtr
+    private GLTexture mTexture; // lazy init, managed by wrapper
+    private GlTexture_Wrapped mTextureWrapper = null;
+    private GpuTextureView mTextureWrapperView = null;
     private Int2ObjectOpenHashMap<GLBakedGlyph> mBakedGlyphs;
 
     private final int mAscent;  // positive
@@ -236,13 +252,18 @@ public class BitmapFont implements Font, AutoCloseable {
         );
         assert res;
 
-        int boundTexture = GL33C.glGetInteger(GL33C.GL_TEXTURE_BINDING_2D);
+        /*int boundTexture = GL33C.glGetInteger(GL33C.GL_TEXTURE_BINDING_2D);
         GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, mTexture.getHandle());
 
         GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MAG_FILTER, GL33C.GL_NEAREST);
         GL33C.glTexParameteri(GL33C.GL_TEXTURE_2D, GL33C.GL_TEXTURE_MIN_FILTER, GL33C.GL_NEAREST);
 
-        GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);
+        GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);*/
+
+        mTextureWrapper = new GlTexture_Wrapped(mTexture); // transfer ownership
+        mTextureWrapperView = MuiModApi.get().getRealGpuDevice().createTextureView(mTextureWrapper);
+
+        mTextureWrapper.setTextureFilter(FilterMode.NEAREST, false);
     }
 
     public void dumpAtlas(int index, String path) {
@@ -365,8 +386,8 @@ public class BitmapFont implements Font, AutoCloseable {
      * Called by {@link GlyphManager} to fetch the dedicated texture info.
      */
     // Render thread only
-    public int getCurrentTexture() {
-        return mTexture != null ? mTexture.getHandle() : 0;
+    public GpuTextureView getCurrentTexture() {
+        return mTexture != null ? mTextureWrapperView : null;
     }
 
     // positive
@@ -501,7 +522,13 @@ public class BitmapFont implements Font, AutoCloseable {
             mBitmap.close();
             mBitmap = null;
         }
-        mTexture = RefCnt.move(mTexture);
+        if (mTexture != null) {
+            mTextureWrapperView.close();
+            mTextureWrapper.close();
+            mTexture = null;
+            mTextureWrapper = null;
+            mTextureWrapperView = null;
+        }
     }
 
     public static class Glyph implements GlyphInfo {

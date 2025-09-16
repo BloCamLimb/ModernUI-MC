@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2020-2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.text;
 
+import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.arc3d.engine.Engine;
 import icyllis.arc3d.engine.ImmediateContext;
 import icyllis.arc3d.opengl.GLDevice;
@@ -363,45 +364,44 @@ public class GlyphManager {
     }
 
     @RenderThread
-    public int getCurrentTexture(int maskFormat) {
+    public GpuTextureView getCurrentTexture(int maskFormat) {
         if (maskFormat == Engine.MASK_FORMAT_A8) {
             GLTexture texture;
             if (mFontAtlas != null && (texture = mFontAtlas.mTexture) != null) {
                 mDevice.generateMipmaps(texture);
-                return texture.getHandle();
+                return mFontAtlas.mTextureWrapperView;
             }
         } else if (maskFormat == Engine.MASK_FORMAT_ARGB) {
             GLTexture texture;
             if (mEmojiAtlas != null && (texture = mEmojiAtlas.mTexture) != null) {
                 mDevice.generateMipmaps(texture);
-                return texture.getHandle();
+                return mEmojiAtlas.mTextureWrapperView;
             }
         }
-        return 0;
+        return null;
     }
 
-    public int getFontTexture() {
+    public GpuTextureView getFontTexture() {
         return getCurrentTexture(Engine.MASK_FORMAT_A8);
     }
 
-    public int getEmojiTexture() {
+    public GpuTextureView getEmojiTexture() {
         return getCurrentTexture(Engine.MASK_FORMAT_ARGB);
     }
 
     @RenderThread
-    public int getCurrentTexture(BitmapFont font) {
+    public GpuTextureView getCurrentTexture(BitmapFont font) {
         if (font.nothingToDraw()) {
-            return 0;
+            return null;
         }
         if (font.fitsInAtlas()) {
-            GLTexture texture;
-            if (mBitmapAtlas != null && (texture = mBitmapAtlas.mTexture) != null) {
-                return texture.getHandle();
+            if (mBitmapAtlas != null && mBitmapAtlas.mTexture != null) {
+                return mBitmapAtlas.mTextureWrapperView;
             }
         } else {
             return font.getCurrentTexture();
         }
-        return 0;
+        return null;
     }
 
     /**

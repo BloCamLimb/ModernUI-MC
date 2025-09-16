@@ -18,9 +18,11 @@
 
 package icyllis.modernui.mc.fabric;
 
+import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.GpuTexture;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessGameRenderer;
@@ -32,6 +34,8 @@ import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderStateShard;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
@@ -109,6 +113,12 @@ public final class MuiFabricApi extends MuiModApi {
     }
 
     @Override
+    public GpuTexture getRealGpuTexture(GpuTexture faker) {
+        GpuTexture gpuTexture = faker;
+        return gpuTexture;
+    }
+
+    @Override
     public void submitGuiElementRenderState(GuiGraphics graphics, GuiElementRenderState renderState) {
         graphics.guiRenderState.submitGuiElement(renderState);
     }
@@ -121,5 +131,24 @@ public final class MuiFabricApi extends MuiModApi {
     @Override
     public ScreenRectangle peekScissorStack(GuiGraphics graphics) {
         return graphics.scissorStack.peek();
+    }
+
+    @Override
+    public RenderType createRenderType(String name, int bufferSize,
+                                       boolean affectsCrumbling, boolean sortOnUpload,
+                                       RenderPipeline renderPipeline,
+                                       @Nullable RenderStateShard textureState,
+                                       boolean lightmap) {
+        var builder = RenderType.CompositeState.builder();
+        if (textureState != null) {
+            builder.setTextureState((RenderStateShard.EmptyTextureStateShard) textureState);
+        }
+        if (lightmap) {
+            builder.setLightmapState(RenderStateShard.LIGHTMAP);
+        }
+        return RenderType.create(
+                name, bufferSize, affectsCrumbling, sortOnUpload, renderPipeline,
+                builder.createCompositeState(false)
+        );
     }
 }

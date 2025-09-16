@@ -91,22 +91,21 @@ public class TextRenderEffect {
 
     public static void drawUnderline(@Nonnull Matrix4f matrix, @Nonnull VertexConsumer builder,
                                      float start, float end, float baseline,
-                                     int r, int g, int b, int a, int light, boolean inverseDepth) {
+                                     int r, int g, int b, int a, int light) {
         baseline += UNDERLINE_OFFSET;
-        float effectDepth = inverseDepth ? EFFECT_DEPTH : -EFFECT_DEPTH;
-        builder.addVertex(matrix, start, baseline + UNDERLINE_THICKNESS, effectDepth)
+        builder.addVertex(matrix, start, baseline + UNDERLINE_THICKNESS, EFFECT_DEPTH)
                 .setColor(r, g, b, a)
                 .setUv(0, 1)
                 .setLight(light);
-        builder.addVertex(matrix, end, baseline + UNDERLINE_THICKNESS, effectDepth)
+        builder.addVertex(matrix, end, baseline + UNDERLINE_THICKNESS, EFFECT_DEPTH)
                 .setColor(r, g, b, a)
                 .setUv(1, 1)
                 .setLight(light);
-        builder.addVertex(matrix, end, baseline, effectDepth)
+        builder.addVertex(matrix, end, baseline, EFFECT_DEPTH)
                 .setColor(r, g, b, a)
                 .setUv(1, 0)
                 .setLight(light);
-        builder.addVertex(matrix, start, baseline, effectDepth)
+        builder.addVertex(matrix, start, baseline, EFFECT_DEPTH)
                 .setColor(r, g, b, a)
                 .setUv(0, 0)
                 .setLight(light);
@@ -127,22 +126,21 @@ public class TextRenderEffect {
 
     public static void drawStrikethrough(@Nonnull Matrix4f matrix, @Nonnull VertexConsumer builder,
                                          float start, float end, float baseline,
-                                         int r, int g, int b, int a, int light, boolean inverseDepth) {
+                                         int r, int g, int b, int a, int light) {
         baseline += STRIKETHROUGH_OFFSET;
-        float effectDepth = inverseDepth ? EFFECT_DEPTH : -EFFECT_DEPTH;
-        builder.addVertex(matrix, start, baseline + STRIKETHROUGH_THICKNESS, effectDepth)
+        builder.addVertex(matrix, start, baseline + STRIKETHROUGH_THICKNESS, EFFECT_DEPTH)
                 .setColor(r, g, b, a)
                 .setUv(0, 1)
                 .setLight(light);
-        builder.addVertex(matrix, end, baseline + STRIKETHROUGH_THICKNESS, effectDepth)
+        builder.addVertex(matrix, end, baseline + STRIKETHROUGH_THICKNESS, EFFECT_DEPTH)
                 .setColor(r, g, b, a)
                 .setUv(1, 1)
                 .setLight(light);
-        builder.addVertex(matrix, end, baseline, effectDepth)
+        builder.addVertex(matrix, end, baseline, EFFECT_DEPTH)
                 .setColor(r, g, b, a)
                 .setUv(1, 0)
                 .setLight(light);
-        builder.addVertex(matrix, start, baseline, effectDepth)
+        builder.addVertex(matrix, start, baseline, EFFECT_DEPTH)
                 .setColor(r, g, b, a)
                 .setUv(0, 0)
                 .setLight(light);
