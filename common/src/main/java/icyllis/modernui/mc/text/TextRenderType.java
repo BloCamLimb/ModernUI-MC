@@ -514,20 +514,30 @@ public abstract class TextRenderType extends RenderType {
         return sCurrentShaderSDFStroke;
     }*/
 
-    // RT only
-    public static synchronized void toggleSDFShaders(boolean smart) {
+    public static synchronized boolean toggleSDFShaders(boolean smart) {
         if (smart) {
-            if (((GLCaps) Core.requireImmediateContext()
-                    .getCaps()).getGLSLVersion() >= 400) {
-                sCurrentPipelineSDFFill = PIPELINE_SDF_FILL_SMART;
-                sCurrentPipelineSDFStroke = PIPELINE_SDF_STROKE_SMART;
-                return;
-            } else {
+            try {
+                // Caps is thread-safe, there's safe publication
+                if (((GLCaps) Core.peekImmediateContext()
+                        .getCaps()).getGLSLVersion() >= 400) {
+                    if (sCurrentPipelineSDFFill != PIPELINE_SDF_FILL_SMART) {
+                        sCurrentPipelineSDFFill = PIPELINE_SDF_FILL_SMART;
+                        sCurrentPipelineSDFStroke = PIPELINE_SDF_STROKE_SMART;
+                        return true;
+                    }
+                    return false;
+                }
                 LOGGER.info(MARKER, "No GLSL 400, smart SDF text shaders disabled");
+            } catch (Throwable e) {
+                LOGGER.warn(MARKER, "No GLSL 400, smart SDF text shaders disabled", e);
             }
         }
-        sCurrentPipelineSDFFill = PIPELINE_SDF_FILL;
-        sCurrentPipelineSDFStroke = PIPELINE_SDF_STROKE;
+        if (sCurrentPipelineSDFFill != PIPELINE_SDF_FILL) {
+            sCurrentPipelineSDFFill = PIPELINE_SDF_FILL;
+            sCurrentPipelineSDFStroke = PIPELINE_SDF_STROKE;
+            return true;
+        }
+        return false;
     }
 
     public static class ExtendedTextureStateShard extends EmptyTextureStateShard {

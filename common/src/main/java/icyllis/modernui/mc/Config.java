@@ -613,7 +613,7 @@ public final class Config {
             }
 
             final boolean smartShaders = mSmartSDFShaders.get();
-            Minecraft.getInstance().submit(() -> TextRenderType.toggleSDFShaders(smartShaders));
+            reload |= TextRenderType.toggleSDFShaders(smartShaders);
 
             ModernTextRenderer.sComputeDeviceFontSize = mComputeDeviceFontSize.get();
             ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();
