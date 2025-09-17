@@ -26,13 +26,14 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
+@Deprecated
 @Mixin(CommandSuggestions.class)
 public abstract class MixinCommandSuggestions {
 
-    @Redirect(method = "formatChat", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/FormattedCharSequence;" +
+    /*@Redirect(method = "formatChat", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/FormattedCharSequence;" +
             "forward(Ljava/lang/String;Lnet/minecraft/network/chat/Style;)Lnet/minecraft/util/FormattedCharSequence;"))
     private FormattedCharSequence onFormatChat(String viewText, Style style) {
         // fast path
         return new VanillaTextWrapper(viewText);
-    }
+    }*/
 }

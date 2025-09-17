@@ -18,8 +18,8 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import icyllis.modernui.mc.mixin.AccessGuiGraphics;
+import icyllis.modernui.mc.GradientRectangleRenderState;
+import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.text.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
@@ -27,12 +27,14 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
+import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.renderer.*;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
-import org.joml.Matrix4f;
+import org.joml.Matrix3x2f;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -88,27 +90,38 @@ public abstract class MixinEditBox extends AbstractWidget {
     private long focusedTime;
 
     @Shadow
-    private boolean bordered;
-
-    @Shadow
     @Nullable
     private String suggestion;
 
     @Shadow
     private BiFunction<String, Integer, FormattedCharSequence> formatter;
 
+    @Shadow
+    private int textX;
+
+    @Shadow
+    private int textY;
+
+    @Shadow
+    @Final
+    private Font font;
+
+    @Shadow
+    @Nullable
+    private Component hint;
+
     public MixinEditBox(int x, int y, int w, int h, Component msg) {
         super(x, y, w, h, msg);
     }
 
-    @Inject(method = "<init>(Lnet/minecraft/client/gui/Font;IIIILnet/minecraft/client/gui/components/EditBox;" +
+    /*@Inject(method = "<init>(Lnet/minecraft/client/gui/Font;IIIILnet/minecraft/client/gui/components/EditBox;" +
             "Lnet/minecraft/network/chat/Component;)V",
             at = @At("RETURN"))
     public void EditBox(Font font, int x, int y, int w, int h, @Nullable EditBox src, Component msg,
                         CallbackInfo ci) {
         // fast path
         formatter = (s, i) -> new VanillaTextWrapper(s);
-    }
+    }*/
 
     @Shadow
     public abstract int getInnerWidth();
@@ -120,7 +133,7 @@ public abstract class MixinEditBox extends AbstractWidget {
      * @author BloCamLimb
      * @reason Modern Text Engine
      */
-    /*@Inject(
+    @Inject(
             method = "renderWidget",
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/components/EditBox;isEditable:Z",
                     opcode = Opcodes.GETFIELD),
@@ -140,26 +153,22 @@ public abstract class MixinEditBox extends AbstractWidget {
         final boolean cursorVisible =
                 isFocused() && (((Util.getMillis() - focusedTime) / 500) & 1) == 0 && cursorInRange;
 
-        final int baseX = bordered ? getX() + 4 : getX();
-        final int baseY = bordered ? getY() + (height - 8) / 2 : getY();
+        final int baseX = textX;
+        final int baseY = textY;
         float hori = baseX;
-
-        final Matrix4f matrix = gr.pose().last().pose();
-        final MultiBufferSource.BufferSource bufferSource = ((AccessGuiGraphics) gr).getBufferSource();
 
         final boolean separate;
         if (!viewText.isEmpty()) {
             String subText = cursorInRange ? viewText.substring(0, viewCursorPos) : viewText;
             FormattedCharSequence subSequence = formatter.apply(subText, displayPos);
-            if (subSequence != null &&
-                    !(subSequence instanceof VanillaTextWrapper)) {
+            if (!(subSequence instanceof VanillaTextWrapper)) {
                 separate = true;
-                hori = engine.getTextRenderer().drawText(subSequence, hori, baseY, color, true,
-                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                gr.drawString(font, subSequence, baseX, baseY, color, true);
+                hori += engine.getStringSplitter().measureText(subSequence);
             } else {
                 separate = false;
-                hori = engine.getTextRenderer().drawText(viewText, hori, baseY, color, true,
-                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                gr.drawString(font, viewText, baseX, baseY, color, true);
+                hori += engine.getStringSplitter().measureText(viewText);
             }
         } else {
             separate = false;
@@ -193,24 +202,24 @@ public abstract class MixinEditBox extends AbstractWidget {
         if (!viewText.isEmpty() && cursorInRange && viewCursorPos < viewText.length() && separate) {
             String subText = viewText.substring(viewCursorPos);
             FormattedCharSequence subSequence = formatter.apply(subText, cursorPos);
-            if (subSequence != null &&
-                    !(subSequence instanceof VanillaTextWrapper)) {
-                engine.getTextRenderer().drawText(subSequence, hori, baseY, color, true,
-                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-            } else {
-                engine.getTextRenderer().drawText(subText, hori, baseY, color, true,
-                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-            }
+            gr.pose().pushMatrix();
+            gr.pose().translate(hori - baseX, 0);
+            gr.drawString(font, subSequence, baseX, baseY, color, true);
+            gr.pose().popMatrix();
+        }
+
+        if (hint != null && viewText.isEmpty() && !isFocused()) {
+            gr.drawString(font, hint, baseX, baseY, color);
         }
 
         if (!cursorNotAtEnd && suggestion != null) {
-            engine.getTextRenderer().drawText(suggestion, cursorX, baseY, 0xFF808080, true,
-                    matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+            gr.pose().pushMatrix();
+            gr.pose().translate(cursorX - baseX, 0);
+            gr.drawString(font, suggestion, baseX, baseY, 0xFF808080, true);
+            gr.pose().popMatrix();
         }
 
         if (viewCursorPos != clampedViewHighlightPos) {
-            gr.flush();
-
             TextLayout layout = engine.lookupVanillaLayout(viewText,
                     Style.EMPTY, TextLayoutEngine.COMPUTE_ADVANCES);
             float startX = baseX;
@@ -236,40 +245,36 @@ public abstract class MixinEditBox extends AbstractWidget {
                 endX = getX() + width;
             }
 
-            VertexConsumer consumer = bufferSource.getBuffer(RenderType.guiOverlay());
-            consumer.addVertex(matrix, startX, baseY + 10, 0)
-                    .setColor(51, 181, 229, 56);
-            consumer.addVertex(matrix, endX, baseY + 10, 0)
-                    .setColor(51, 181, 229, 56);
-            consumer.addVertex(matrix, endX, baseY - 1, 0)
-                    .setColor(51, 181, 229, 56);
-            consumer.addVertex(matrix, startX, baseY - 1, 0)
-                    .setColor(51, 181, 229, 56);
-            gr.flush();
+            ScreenRectangle scissorArea = MuiModApi.get().peekScissorStack(gr);
+            MuiModApi.get().submitGuiElementRenderState(gr,
+                    new GradientRectangleRenderState(
+                            RenderPipelines.GUI,
+                            TextureSetup.noTexture(),
+                            new Matrix3x2f(gr.pose()),
+                            startX, baseY - 1, endX, baseY + 10,
+                            0x3833B5E5, 0x3833B5E5, 0x3833B5E5, 0x3833B5E5,
+                            scissorArea
+                    ));
         } else if (cursorVisible) {
             if (cursorNotAtEnd) {
-                gr.flush();
-
-                VertexConsumer consumer = bufferSource.getBuffer(RenderType.guiOverlay());
-                consumer.addVertex(matrix, cursorX - 0.5f, baseY + 10, 0)
-                        .setColor(208, 208, 208, 255);
-                consumer.addVertex(matrix, cursorX + 0.5f, baseY + 10, 0)
-                        .setColor(208, 208, 208, 255);
-                consumer.addVertex(matrix, cursorX + 0.5f, baseY - 1, 0)
-                        .setColor(208, 208, 208, 255);
-                consumer.addVertex(matrix, cursorX - 0.5f, baseY - 1, 0)
-                        .setColor(208, 208, 208, 255);
-                gr.flush();
+                ScreenRectangle scissorArea = MuiModApi.get().peekScissorStack(gr);
+                MuiModApi.get().submitGuiElementRenderState(gr,
+                        new GradientRectangleRenderState(
+                                RenderPipelines.GUI,
+                                TextureSetup.noTexture(),
+                                new Matrix3x2f(gr.pose()),
+                                cursorX - 0.5f, baseY - 1, cursorX + 0.5f, baseY + 10,
+                                0xFFD0D0D0, 0xFFD0D0D0, 0xFFD0D0D0, 0xFFD0D0D0,
+                                scissorArea
+                        ));
             } else {
-                engine.getTextRenderer().drawText(CURSOR_APPEND_CHARACTER, cursorX, baseY, color, true,
-                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-
-                gr.flush();
+                gr.pose().pushMatrix();
+                gr.pose().translate(cursorX - baseX, 0);
+                gr.drawString(font, CURSOR_APPEND_CHARACTER, baseX, baseY, color, true);
+                gr.pose().popMatrix();
             }
-        } else {
-            gr.flush();
         }
         // unconditional
         ci.cancel();
-    }*/
+    }
 }

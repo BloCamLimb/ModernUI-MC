@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2023 BloCamLimb. All rights reserved.
+ * Copyright (C) 2025 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,20 +18,22 @@
 
 package icyllis.modernui.mc.text.mixin;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.inventory.AbstractSignEditScreen;
+import icyllis.modernui.mc.text.VanillaTextWrapper;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.FormattedCharSequence;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.Overwrite;
 
-@Deprecated
-@Mixin(AbstractSignEditScreen.class)
-public class MixinSignEditScreen {
+@Mixin(FormattedCharSequence.class)
+public interface MixinFormattedCharSequence {
 
-    @Inject(method = "renderSignText", at = @At("HEAD"))
-    private void onRenderSignText(GuiGraphics gr, CallbackInfo ci) {
-        // prevent sorting
-        //gr.flush();
+    /**
+     * @author BloCamLimb
+     * @reason Modern Text Engine
+     */
+    @Overwrite
+    static FormattedCharSequence forward(String text, Style style) {
+        // Used by EditBox and CommandSuggestions
+        return text.isEmpty() ? FormattedCharSequence.EMPTY : new VanillaTextWrapper(text, style);
     }
 }

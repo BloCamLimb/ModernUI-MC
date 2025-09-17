@@ -12,16 +12,15 @@
     "AccessGuiRendererDraw",
     "MixinBidiReorder",
     "MixinClientLanguage",
-    "MixinCommandSuggestions",
     "MixinContextualBar",
     "MixinEditBox",
     "MixinFontManager",
     "MixinFontRenderer",
+    "MixinFormattedCharSequence",
     "MixinGameRenderer",
     "MixinGuiRenderer",
     "MixinGuiTextRenderState",
     "MixinLanguage",
-    "MixinLevelRenderer",
-    "MixinSignEditScreen"
+    "MixinLevelRenderer"
   ]
 }

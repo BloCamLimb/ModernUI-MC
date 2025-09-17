@@ -1163,6 +1163,20 @@ public class TextLayoutEngine extends FontResourceManager
                 }
             }
             return layout.get();
+        }
+        // check if it's intercepted by FormattedCharSequence.forward()
+        else if (sequence instanceof VanillaTextWrapper wrapper) {
+            String text = wrapper.mText;
+            Style style = wrapper.mStyle;
+            TextLayout layout = mVanillaCache.get(mVanillaLookupKey.update(text, style));
+            if (layout == null ||
+                    ((nowFlags = layout.mComputedFlags) & computeFlags) != computeFlags) {
+                layout = mProcessor.createVanillaLayout(text, style, mResLevel,
+                        nowFlags | computeFlags);
+                mVanillaCache.put(mVanillaLookupKey.copy(), layout);
+                return layout;
+            }
+            return layout.get();
         } else {
             // the most complex case (multi-component)
             TextLayout layout = mFormattedCache.get(mFormattedLayoutKey.update(sequence));
