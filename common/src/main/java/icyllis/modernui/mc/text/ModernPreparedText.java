@@ -205,6 +205,8 @@ public class ModernPreparedText implements Font.PreparedText {
         if (layout.hasEffect()) {
             // initialize texture if not
             EffectRenderType.getTexture();
+            bounds.joinNoCheck(x, baseline + TextRenderEffect.STRIKETHROUGH_OFFSET,
+                    x + layout.getTotalAdvance(), baseline + (TextRenderEffect.UNDERLINE_OFFSET + TextRenderEffect.UNDERLINE_THICKNESS));
         }
 
         ScreenRectangle finalBounds = null;
@@ -278,7 +280,7 @@ public class ModernPreparedText implements Font.PreparedText {
                     new TextEffectRenderState(pose,
                             scissor,
                             x, top, color, dropShadow,
-                            glyphs, positions, flags,
+                            positions, flags,
                             totalAdvance, shadowOffset)
             );
         }

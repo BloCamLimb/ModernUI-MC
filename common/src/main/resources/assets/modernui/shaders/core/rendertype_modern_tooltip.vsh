@@ -24,6 +24,8 @@ out vec2 f_Position;
 
 void main() {
     f_Position = Position.xy;
+    // localMat is 2D affine, z/w is ignored
+    vec4 localPos = u_LocalMat * vec4(Position, 1.0);
 
-    gl_Position = ProjMat * ModelViewMat * u_LocalMat * vec4(Position, 1.0);
+    gl_Position = ProjMat * ModelViewMat * vec4(localPos.xy, Position.z, 1.0);
 }

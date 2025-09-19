@@ -33,7 +33,6 @@ public record TextEffectRenderState(
         Matrix3x2f pose,
         @Nullable ScreenRectangle scissorArea,
         float x, float top, int color, boolean dropShadow,
-        GLBakedGlyph[] glyphs,
         float[] positions, int[] flags,
         float totalAdvance, float shadowOffset
 ) implements GuiElementRenderState {
@@ -56,7 +55,6 @@ public record TextEffectRenderState(
         int r;
         int g;
         int b;
-        var glyphs = this.glyphs;
         var positions = this.positions;
         var flags = this.flags;
         var pose = this.pose;
@@ -65,7 +63,7 @@ public record TextEffectRenderState(
             x += shadowOffset;
             baseline += shadowOffset;
         }
-        for (int i = 0, e = glyphs.length; i < e; i++) {
+        for (int i = 0, e = flags.length; i < e; i++) {
             final int bits = flags[i];
             if ((bits & CharacterStyle.EFFECT_MASK) == 0) {
                 continue;
