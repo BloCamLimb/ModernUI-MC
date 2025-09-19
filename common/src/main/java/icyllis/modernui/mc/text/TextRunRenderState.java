@@ -90,20 +90,13 @@ public record TextRunRenderState(
             if ((bits & CharacterStyle.NO_SHADOW_MASK) != 0 && isShadow) {
                 continue;
             }
-            if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
-                var chars = (GlyphManager.FastCharSet) glyph;
-                int fastIndex = TextLayout.RANDOM.nextInt(chars.glyphs.size());
-                glyph = chars.glyphs.get(fastIndex);
-            }
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 final float scaleFactor;
                 if (!isColorEmoji) {
                     ascent = -glyph.y / TextLayoutEngine.BITMAP_SCALE;
                     scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
                 } else {
-                    if (isShadow) {
-                        continue;
-                    }
+                    assert !isShadow;
                     ascent = TextLayout.STANDARD_BASELINE_OFFSET;
                     scaleFactor = TextLayoutProcessor.sBaseFontSize / GlyphManager.EMOJI_BASE;
                 }

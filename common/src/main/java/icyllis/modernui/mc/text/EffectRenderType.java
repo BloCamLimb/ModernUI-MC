@@ -91,6 +91,14 @@ public abstract class EffectRenderType extends RenderType {
         };
     }*/
 
+    @RenderThread
+    @Nonnull
+    public static GpuTextureView getTexture() {
+        if (WHITE == null)
+            makeWhiteTexture();
+        return WHITE_WRAPPER_VIEW;
+    }
+
     public static void clear() {
         if (WHITE != null) {
             WHITE_WRAPPER_VIEW.close();

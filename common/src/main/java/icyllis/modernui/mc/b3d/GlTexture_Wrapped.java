@@ -37,12 +37,12 @@ public class GlTexture_Wrapped extends GlTexture {
         super(USAGE_COPY_SRC | USAGE_TEXTURE_BINDING |
                         (source.isRenderable() ? USAGE_RENDER_ATTACHMENT : 0),
                 source.getLabel(),
-                TextureFormat.RGBA8,
+                source.getFormat() == GlConst.GL_RGBA8 ? TextureFormat.RGBA8 : TextureFormat.RED8,
                 source.getWidth(), source.getHeight(),
                 /*depthOrLayers*/ 1, source.getMipLevelCount(),
                 source.getHandle());
         assert source.getImageType() == Engine.ImageType.k2D;
-        assert source.getFormat() == GlConst.GL_RGBA8;
+        assert source.getFormat() == GlConst.GL_RGBA8 || source.getFormat() == GlConst.GL_R8;
         assert source.getDepth() == 1;
         assert source.getArraySize() == 1;
         assert source.getSampleCount() == 1;

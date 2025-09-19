@@ -138,7 +138,7 @@ public abstract class GlyphRender {
      * @param a       final alpha
      */
     public final void drawEffect(@Nonnull VertexConsumer builder, float x, float y, int r, int g, int b, int a) {
-        if ((mFlags & CharacterStyle.EFFECT_MASK) != 0) {
+        /*if ((mFlags & CharacterStyle.EFFECT_MASK) != 0) {
             x += mOffsetX;
             if ((mFlags & CharacterStyle.UNDERLINE_MASK) != 0) {
                 TextRenderEffect.drawUnderline(builder, x, x + mAdvance, y, r, g, b, a);
@@ -146,7 +146,7 @@ public abstract class GlyphRender {
             if ((mFlags & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
                 TextRenderEffect.drawStrikethrough(builder, x, x + mAdvance, y, r, g, b, a);
             }
-        }
+        }*/
     }
 
     /**
