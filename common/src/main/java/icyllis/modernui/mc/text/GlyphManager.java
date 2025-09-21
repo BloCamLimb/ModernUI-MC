@@ -166,6 +166,8 @@ public class GlyphManager {
 
     //private ByteBuffer mEmojiBuffer;
 
+    private long mLastPurgeNanos;
+
     private final CopyOnWriteArrayList<Consumer<AtlasInvalidationInfo>> mAtlasInvalidationCallbacks
             = new CopyOnWriteArrayList<>();
 
@@ -446,6 +448,41 @@ public class GlyphManager {
         }
     }
 
+    /**
+     * Clear unused entries and perform atlas resizing.
+     */
+    public void onEndRenderTick() {
+        if (System.nanoTime() - mLastPurgeNanos >= 20_000_000_000L) {
+            mLastPurgeNanos = System.nanoTime();
+            compact();
+        }
+        GLFontAtlas atlas;
+        if ((atlas = mFontAtlas) != null && atlas.mResizeRequested) {
+            if (atlas.resize()) {
+                var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_A8, true);
+                for (var callback : mAtlasInvalidationCallbacks) {
+                    callback.accept(info);
+                }
+            }
+        }
+        if ((atlas = mEmojiAtlas) != null && atlas.mResizeRequested) {
+            if (atlas.resize()) {
+                var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_ARGB, true);
+                for (var callback : mAtlasInvalidationCallbacks) {
+                    callback.accept(info);
+                }
+            }
+        }
+        if ((atlas = mBitmapAtlas) != null && atlas.mResizeRequested) {
+            if (atlas.resize()) {
+                var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_ARGB, true);
+                for (var callback : mAtlasInvalidationCallbacks) {
+                    callback.accept(info);
+                }
+            }
+        }
+    }
+
     public void debug() {
         debug(mFontAtlas, "FontAtlas");
         debug(mEmojiAtlas, "EmojiAtlas");
@@ -476,6 +513,10 @@ public class GlyphManager {
     private GLBakedGlyph cacheGlyph(@Nonnull java.awt.Font font, int glyphCode,
                                     @Nonnull GLFontAtlas atlas, @Nonnull GLBakedGlyph glyph,
                                     long key) {
+        if (atlas.mResizeRequested) {
+            // defer to next frame
+            return null;
+        }
         // there's no need to layout glyph vector, we only draw the specific glyphCode
         // which is already laid-out in LayoutEngine
         GlyphVector vector = font.createGlyphVector(mGraphics.getFontRenderContext(), new int[]{glyphCode});
@@ -521,12 +562,11 @@ public class GlyphManager {
         }
         long src = MemoryUtil.memAddress(mImageBuffer.flip());
 
-        boolean invalidated = atlas.stitch(glyph, src);
-        if (invalidated) {
-            var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_A8, true);
-            for (var callback : mAtlasInvalidationCallbacks) {
-                callback.accept(info);
-            }
+        boolean success = atlas.stitch(glyph, src);
+        if (!success) {
+            // invalidate glyph image and defer to next frame
+            glyph.x = Integer.MIN_VALUE;
+            return null;
         }
         int standardWidth = computeStandardWidth(glyph, font.getSize());
         mFontTable.get(font).mFastCharMap
@@ -543,6 +583,10 @@ public class GlyphManager {
     private GLBakedGlyph cacheEmoji(@Nonnull EmojiFont font, int glyphId,
                                     @Nonnull GLFontAtlas atlas, @Nonnull GLBakedGlyph glyph,
                                     long key) {
+        if (atlas.mResizeRequested) {
+            // defer to next frame
+            return null;
+        }
         if (glyphId == 0) {
             atlas.setNoPixels(key);
             return null;
@@ -558,12 +602,11 @@ public class GlyphManager {
                 glyph.y = -EMOJI_ASCENT;
                 glyph.width = EMOJI_SIZE;
                 glyph.height = EMOJI_SIZE;
-                boolean invalidated = atlas.stitch(glyph, src);
-                if (invalidated) {
-                    var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_ARGB, true);
-                    for (var callback : mAtlasInvalidationCallbacks) {
-                        callback.accept(info);
-                    }
+                boolean success = atlas.stitch(glyph, src);
+                if (!success) {
+                    // invalidate glyph image and defer to next frame
+                    glyph.x = Integer.MIN_VALUE;
+                    return null;
                 }
                 return glyph;
             } else {
@@ -584,6 +627,10 @@ public class GlyphManager {
     private GLBakedGlyph cacheBitmapGlyph(@Nonnull BitmapFont font, int glyphId,
                                           @Nonnull GLFontAtlas atlas, @Nonnull GLBakedGlyph glyph,
                                           long key) {
+        if (atlas.mResizeRequested) {
+            // defer to next frame
+            return null;
+        }
         long src = MemoryUtil.memAddress(mImageBuffer);
         if (!font.getGlyphImage(glyphId, src)) {
             atlas.setNoPixels(key);
@@ -592,14 +639,13 @@ public class GlyphManager {
         // here width and height are in pixels
         glyph.width = (short) font.getSpriteWidth();
         glyph.height = (short) font.getSpriteHeight();
-        boolean invalidated = atlas.stitch(glyph, src);
+        boolean success = atlas.stitch(glyph, src);
         // here width and height are scaled
         font.setGlyphMetrics(glyph);
-        if (invalidated) {
-            var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_ARGB, true);
-            for (var callback : mAtlasInvalidationCallbacks) {
-                callback.accept(info);
-            }
+        if (!success) {
+            // invalidate glyph image and defer to next frame
+            glyph.x = Integer.MIN_VALUE;
+            return null;
         }
         BitmapFont.Glyph glyphInfo = font.getGlyph(glyphId);
         assert glyphInfo != null;

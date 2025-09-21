@@ -131,6 +131,11 @@ public final class ModernUIText {
         }
 
         @SubscribeEvent
+        static void onRenderFrame(@Nonnull RenderFrameEvent.Post event) {
+            GlyphManager.getInstance().onEndRenderTick();
+        }
+
+        @SubscribeEvent
         static void onRegisterClientCommands(@Nonnull RegisterClientCommandsEvent event) {
             MuiTextCommand.register(event.getDispatcher(), event.getBuildContext());
         }

@@ -629,7 +629,7 @@ public abstract class UIManager implements LifecycleOwner {
                         }*/
                     }
                 }
-                case GLFW_KEY_G ->
+                case GLFW_KEY_G -> {
                 /*if (minecraft.screen == null && minecraft.isLocalServer() &&
                         minecraft.getSingleplayerServer() != null && !minecraft.getSingleplayerServer().isPublished()) {
                     start(new TestPauseUI());
@@ -637,7 +637,10 @@ public abstract class UIManager implements LifecycleOwner {
                 /*minecraft.getLanguageManager().getLanguages().forEach(l ->
                         ModernUI.LOGGER.info(MARKER, "Locale {} RTL {}", l.getCode(), ULocale.forLocale(l
                         .getJavaLocale()).isRightToLeft()));*/
-                        GlyphManager.getInstance().debug();
+                        if (ModernUIMod.isTextEngineEnabled()) {
+                            GlyphManager.getInstance().debug();
+                        }
+                }
                 case GLFW_KEY_V -> {
                     if (ModernUIMod.isTextEngineEnabled()) {
                         //TextLayoutEngine.getInstance().dumpEmojiAtlas();
@@ -824,8 +827,6 @@ public abstract class UIManager implements LifecycleOwner {
             pw.printf("LayoutCore: Count=%d, Size=%s (%d bytes)\n",
                     coreN, TextUtils.binaryCompact(coreMem), coreMem);
         }
-
-        GlyphManager.getInstance().dumpInfo(pw);
 
         MuiModApi.dispatchOnDebugDump(pw);
     }
@@ -1109,7 +1110,6 @@ public abstract class UIManager implements LifecycleOwner {
             if (mFrameTimeNanos - mLastPurgeNanos >= 20_000_000_000L) {
                 mLastPurgeNanos = mFrameTimeNanos;
                 context.performDeferredCleanup(120_000);
-                GlyphManager.getInstance().compact();
             }
             if (mLayerTexture != null) {
                 // we can drop the ref after submitting to the GPU
@@ -1141,7 +1141,7 @@ public abstract class UIManager implements LifecycleOwner {
     protected void onClientTick(boolean isEnd) {
         if (isEnd) {
             BlurHandler.INSTANCE.onClientTick();
-            if (DEBUG && mTestChars) {
+            if (mTestChars) {
                 int cp = mTestCodepoint;
                 if (cp > 0x9FFF)
                     cp = 0x4E00;

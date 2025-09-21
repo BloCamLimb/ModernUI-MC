@@ -28,6 +28,7 @@ import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.ImageStore;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessOptions;
+import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.fabricmc.api.*;
@@ -195,6 +196,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             MuiModApi.addOnDebugDumpListener(TextLayoutEngine.getInstance());
 
             ClientTickEvents.END_CLIENT_TICK.register((mc) -> TextLayoutEngine.getInstance().onEndClientTick());
+            END_RENDER_TICK.register(() -> GlyphManager.getInstance().onEndRenderTick());
 
             LOGGER.info(MARKER, "Initialized Modern UI text engine");
         } else {

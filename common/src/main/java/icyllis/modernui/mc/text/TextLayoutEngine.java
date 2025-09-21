@@ -329,7 +329,10 @@ public class TextLayoutEngine extends FontResourceManager
         mGlyphManager.addAtlasInvalidationCallback(invalidationInfo -> {
             if (invalidationInfo.resize()) {
                 // texture atlas is resized to a larger size, but no glyphs are evicted
-                invalidateStrikeCache();
+                //invalidateStrikeCache();
+                // in 1.21.6+, texture resizing is deferred, and some glyphs are rejected
+                // need to lookupGlyph() and cacheGlyph() again
+                reload();
             } else {
                 // called by compact(), need to lookupGlyph() and cacheGlyph() again
                 reload();
@@ -540,6 +543,7 @@ public class TextLayoutEngine extends FontResourceManager
 
     @Override
     public void onDebugDump(@Nonnull PrintWriter pw) {
+        GlyphManager.getInstance().dumpInfo(pw);
         pw.print("TextLayoutEngine: ");
         pw.print("CacheCount=" + getCacheCount());
         long memorySize = getCacheMemorySize();

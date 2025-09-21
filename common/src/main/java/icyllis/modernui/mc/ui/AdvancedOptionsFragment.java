@@ -218,12 +218,12 @@ public class AdvancedOptionsFragment extends Fragment {
                     });
                     category.addView(button);
                 }
-                {
+                /*{
                     var button = createDebugButton(context, "Reload glyph manager");
                     button.setOnClickListener((__) ->
                             Core.executeOnMainThread(() -> GlyphManager.getInstance().reload()));
                     category.addView(button);
-                }
+                }*/
                 {
                     var button = createDebugButton(context, "Reload text layout (MC)");
                     button.setOnClickListener((__) ->

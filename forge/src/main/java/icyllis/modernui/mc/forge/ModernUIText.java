@@ -19,6 +19,7 @@
 package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.MuiTextCommand;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
@@ -130,6 +131,11 @@ public final class ModernUIText {
         @SubscribeEvent
         static void onClientTick(@Nonnull TickEvent.ClientTickEvent.Post event) {
             TextLayoutEngine.getInstance().onEndClientTick();
+        }
+
+        @SubscribeEvent
+        static void onRenderTick(@Nonnull TickEvent.RenderTickEvent.Post event) {
+            GlyphManager.getInstance().onEndRenderTick();
         }
 
         @SubscribeEvent

@@ -90,6 +90,8 @@ public class GLFontAtlas implements AutoCloseable {
     GlTexture_Wrapped mTextureWrapper = null;
     GpuTextureView mTextureWrapperView = null;
 
+    boolean mResizeRequested = false;
+
     private final List<Chunk> mChunks = new ArrayList<>();
 
     // current texture size
@@ -156,7 +158,6 @@ public class GLFontAtlas implements AutoCloseable {
     }
 
     public boolean stitch(@NonNull GLBakedGlyph glyph, long pixels) {
-        boolean invalidated = false;
         if (mWidth == 0) {
             resize(); // first init
         }
@@ -174,20 +175,8 @@ public class GLFontAtlas implements AutoCloseable {
             }
         }
         if (!inserted) {
-            // add new chunks
-            //TODO defer resize to end of frame
-            invalidated = resize();
-            for (Chunk chunk : mChunks) {
-                if (chunk.packer.addRect(rect)) {
-                    inserted = true;
-                    rect.offset(chunk.x, chunk.y);
-                    break;
-                }
-            }
-        }
-        if (!inserted) {
-            // failed...
-            return invalidated;
+            mResizeRequested = true;
+            return false;
         }
 
         // include border
@@ -214,10 +203,11 @@ public class GLFontAtlas implements AutoCloseable {
         glyph.u2 = (float) (rect.mRight - mBorderWidth) / mWidth;
         glyph.v2 = (float) (rect.mBottom - mBorderWidth) / mHeight;
 
-        return invalidated;
+        return true;
     }
 
-    private boolean resize() {
+    boolean resize() {
+        mResizeRequested = false;
         if (mTexture == null) {
             // initialize 4 or 16 chunks
             mWidth = mHeight = mMaskFormat == Engine.MASK_FORMAT_A8
