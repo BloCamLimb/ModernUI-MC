@@ -18,21 +18,16 @@
 
 package icyllis.modernui.mc.text;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import icyllis.arc3d.core.Rect2f;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.util.SparseArray;
-import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.renderer.MultiBufferSource;
-import org.joml.Matrix3x2f;
 import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -343,7 +338,7 @@ public class TextLayout {
             int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
             glyphs = getGlyphs(resLevel);
             density = resLevel;
-        } else if (preferredMode == TextRenderType.MODE_UNIFORM_SCALE) {
+        } /*else if (preferredMode == TextRenderType.MODE_UNIFORM_SCALE) {
             if (uniformScale <= 0.001f) {
                 // drop if flipped or too small
                 return mTotalAdvance;
@@ -351,7 +346,7 @@ public class TextLayout {
             density = mCreatedResLevel * uniformScale;
             glyphs = getGlyphsUniformScale(density);
             preferredMode = TextRenderType.MODE_NORMAL;
-        } else {
+        } */else {
             glyphs = getGlyphs(mCreatedResLevel);
             density = mCreatedResLevel;
         }
@@ -359,10 +354,10 @@ public class TextLayout {
         float shadowOffset = 0;
         if (isShadow) {
             shadowOffset = ModernTextRenderer.sShadowOffset;
-            if (preferredMode == TextRenderType.MODE_NORMAL) {
+            /*if (preferredMode == TextRenderType.MODE_NORMAL) {
                 // align to screen pixel center in 2D
                 shadowOffset = Math.round(shadowOffset * density) * invDensity;
-            }
+            }*/
             x += shadowOffset;
             top += shadowOffset;
         }
@@ -468,11 +463,11 @@ public class TextLayout {
                 }
                 texture = fontTexture;
             }
-            if (preferredMode == TextRenderType.MODE_NORMAL) {
+            /*if (preferredMode == TextRenderType.MODE_NORMAL) {
                 // align to screen pixel center in 2D
                 rx = Math.round(rx * density) * invDensity;
                 ry = Math.round(ry * density) * invDensity;
-            }
+            }*/
             if (isColorEmoji) {
                 r = 0xff;
                 g = 0xff;

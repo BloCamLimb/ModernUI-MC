@@ -182,8 +182,8 @@ public abstract class TextRenderType extends RenderType {
     private static final ByteBufferBuilder sFirstSDFStrokeBuffer = new ByteBufferBuilder(131072);
 
     // SDF requires bilinear sampling
-    @SharedPtr
-    private static GLSampler sLinearFontSampler;
+    //@SharedPtr
+    //private static GLSampler sLinearFontSampler;
 
     static {
         /*NORMAL_STATES = ImmutableList.of(
@@ -322,7 +322,7 @@ public abstract class TextRenderType extends RenderType {
                 true);
     }
 
-    private static void ensureLinearFontSampler() {
+    /*private static void ensureLinearFontSampler() {
         if (sLinearFontSampler == null) {
             ImmediateContext context = Core.requireImmediateContext();
             // default state is bilinear
@@ -330,7 +330,7 @@ public abstract class TextRenderType extends RenderType {
                     SamplerDesc.make(SamplerDesc.FILTER_LINEAR, SamplerDesc.MIPMAP_MODE_LINEAR));
             Objects.requireNonNull(sLinearFontSampler, "Failed to create sampler object");
         }
-    }
+    }*/
 
     @Nonnull
     private static RenderType makeSDFFillType(GpuTextureView texture) {
@@ -486,7 +486,7 @@ public abstract class TextRenderType extends RenderType {
         sFirstSDFFillBuffer.clear();
         sFirstSDFStrokeBuffer.clear();
         if (cleanup) {
-            sLinearFontSampler = RefCnt.move(sLinearFontSampler);
+            //sLinearFontSampler = RefCnt.move(sLinearFontSampler);
             /*sCurrentShaderSDFFill = null;
             sCurrentShaderSDFStroke = null;*/
         }

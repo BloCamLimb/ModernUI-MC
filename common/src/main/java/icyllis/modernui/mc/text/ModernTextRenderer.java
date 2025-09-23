@@ -149,8 +149,7 @@ public final class ModernTextRenderer {
         boolean matrixIsCopied = false;
         // compute exact font size and position
         float uniformScale = 1;
-        //TODO maybe cleanup
-        if (sComputeDeviceFontSize &&
+        /*if (sComputeDeviceFontSize &&
                 ((mode == TextRenderType.MODE_NORMAL && (matrix.properties() & Matrix4f.PROPERTY_TRANSLATION) != 0) ||
                         mode == TextRenderType.MODE_UNIFORM_SCALE)) {
             // here we are in 2D, and have scale/translate only ctm (not bilinear fallback)
@@ -193,7 +192,7 @@ public final class ModernTextRenderer {
                 // 3D projection
                 mode = sAllowSDFTextIn2D ? TextRenderType.MODE_SDF_FILL : TextRenderType.MODE_NORMAL;
             }
-        }
+        }*/
         if (dropShadow && sAllowShadow) {
             layout.drawText(matrix, source, x, y, r >> 2, g >> 2, b >> 2, a, true,
                     mode, polygonOffset, uniformScale, colorBackground, packedLight);
@@ -213,8 +212,8 @@ public final class ModernTextRenderer {
         } else if (TextLayoutEngine.sCurrentInWorldRendering) {
             return TextRenderType.MODE_SDF_FILL;
         } else {
-            if ((ctm.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {
-                if (sComputeDeviceFontSize && ctm.m23() == 0.0f &&
+            //if ((ctm.properties() & Matrix4f.PROPERTY_TRANSLATION) == 0) {
+                /*if (sComputeDeviceFontSize && ctm.m23() == 0.0f &&
                         MathUtil.isApproxZero(ctm.m01()) &&
                         MathUtil.isApproxZero(ctm.m03()) &&
                         MathUtil.isApproxZero(ctm.m10()) &&
@@ -222,11 +221,11 @@ public final class ModernTextRenderer {
                         MathUtil.isApproxEqual(ctm.m33(), 1) &&
                         MathUtil.isApproxEqual(ctm.m00(), ctm.m11())) {
                     return TextRenderType.MODE_UNIFORM_SCALE;
-                }
+                }*/
                 if (sAllowSDFTextIn2D) {
                     return TextRenderType.MODE_SDF_FILL;
                 }
-            }
+            //}
             // pure translation, or fallback
             return TextRenderType.MODE_NORMAL;
         }

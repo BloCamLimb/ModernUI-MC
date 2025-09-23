@@ -77,6 +77,7 @@ public class MixinGuiTextRenderState {
             // extract the translation vector for snapping to pixel grid
             x += ctm.m20 / ctm.m00;
             y += ctm.m21 / ctm.m11;
+            // we modified this.pose
             ctm.m20 = 0;
             ctm.m21 = 0;
             // total scale

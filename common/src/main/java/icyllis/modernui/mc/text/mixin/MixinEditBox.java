@@ -167,7 +167,7 @@ public abstract class MixinEditBox extends AbstractWidget {
                 hori += engine.getStringSplitter().measureText(subSequence);
             } else {
                 separate = false;
-                gr.drawString(font, viewText, baseX, baseY, color, true);
+                gr.drawString(font, new VanillaTextWrapper(viewText), baseX, baseY, color, true);
                 hori += engine.getStringSplitter().measureText(viewText);
             }
         } else {
