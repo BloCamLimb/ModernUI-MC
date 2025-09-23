@@ -1,7 +1,21 @@
 Changelogs
 ===
-### Modern UI 3.12.0.3
-#### NeoForge Extension 1.21.4
+### Modern UI 3.12.0.4 (3.12.0.3, 3.12.0.2, 3.12.0.1)
+Changes from
+* 3.11.1.11 → 3.12.0.4 for Minecraft 1.21.6-1.21.8
+* 3.11.1.11 → 3.12.0.3 for Minecraft 1.21.4
+* 3.11.1.9 → 3.12.0.2 for Minecraft 1.21-1.21.1
+* 3.11.1.6 → 3.12.0.1 for Minecraft 1.20-1.20.1
+#### NeoForge Extension 1.21.8 (1.21.4, 1.21.1)
+* (1.21.8 only) Fully port to 1.21.8 and adapt to the technical changes in vanilla
+* (1.21.8, NeoForge only) On Windows/Linux, you have to manually set `config/fml.toml > earlyWindowControl` to false;
+  otherwise, your game will crash on the first launch — though you can simply restart it to resolve the issue;
+  this will finally be resolved in MC 1.21.9+
+* (1.21.8 only) Enable blur effect by default even when OptiFine is installed
+* (1.21.8 only) Delay applying the configuration until just before the game finishes loading
+* (1.21.8 only) Deprecate method for drawing rounded rectangles in `ExtendedGuiGraphics`, replaced by gradient rectangles
+* (1.21.8 only) `MinecraftSurfaceView.Renderer` no longer clips to the bounds of draw by default
+* (1.21.8 only) Modern rounded tooltip is applied at most once per frame; subsequent tooltips in the same frame are non-rounded
 * (1.21.1 only) Disable blur effect by default when OptiFine is installed
 * (1.21.1 only) Fix coordinates in layer blitting
 * Add complete version of Still Alive, the Portal ending song
@@ -23,11 +37,18 @@ Changelogs
 * Add back view configs and add some new view configs
 * The entire Center UI is reworked, a great number of UI/UX improvements and bug fixes
 * Provide an abstraction of config system
-#### Forge Extension 1.21.4
+#### Forge Extension 1.21.8 (1.21.4, 1.21.1, 1.20.1)
+* (1.21.8 only) Migrate to new EventBus
 * Equivalent to NeoForge version, except where noted
-#### Fabric Extension 1.21.4
+#### Fabric Extension 1.21.8 (1.21.4, 1.21.1, 1.20.1)
 * Functionally equivalent to NeoForge version, except where noted
-#### Modern Text Engine 1.21.4
+#### Modern Text Engine 1.21.8 (1.21.4, 1.21.1, 1.20.1)
+* (1.21.8 only) Port to 1.21.8
+* (1.21.8 only) Ensure that the shadow layer and non-shadow layer of obfuscated text in GUI use the same glyphs.
+* (1.21.8 only) Separate and simplify text rendering logic for world and GUI: in world, always use SDF rendering;
+  in the GUI, determine density and font size from CTM while ensuring pixel-aligned rendering.
+* (1.21.8 only) Delay font atlas resizing to the end of the frame
+* (1.21.8 only) `GlyphManager` is no longer initialized when Modern Text Engine is disabled
 * Add config for bitmap horizontal offset
 * (1.21.4+ only) Add support for no shadow text (i.e. shadow_color=0)
 * Emit no lines for empty strings when computing line breaks to match vanilla behavior
@@ -36,7 +57,7 @@ Changelogs
 * For line wrapping of formatted text, allow emitting no lines to match vanilla behavior,
   fixing the issue where an empty tooltip is sometimes visible.
 * Fix crash with obfuscated style on large bitmap fonts
-#### Core Framework
+#### Core Framework 3.12.0
 * Fix disappearing transitions caused by removing views in batches cannot be seen
 * Tweak edge absorption in NestedScrollView
 * Delay TextBlob initialization of ShapedText until draw time

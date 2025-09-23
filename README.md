@@ -19,13 +19,16 @@ text and gives you more readable text in any scale, in 2D/3D. In details:
 * Anti-aliasing text and FreeType font hinting
 * Use improved SDF text rendering in 2D/3D (also use batch rendering)
 * Compute exact font size in device space for native glyph rendering
-* Use Google Noto Color Emoji and support all the Unicode 15.0 Emoji
+* Use Google Noto Color Emoji and support all the Unicode 16.0 Emoji
 * Configurable bidirectional text heuristic algorithm
 * Configurable text shadow and raw font size
 * Unicode line breaking and CSS line-break & word-break
 * Fast, exact and asynchronous Unicode text layout computation
 * Faster and more memory efficient rectangle packing algorithm for glyphs
-* Use real grayscale texture (1 byte-per-pixel, whereas Minecraft is 4 bpp)
+* Use real alpha mask texture (1 byte-per-pixel, whereas Minecraft is 4 bpp)
+* Many optimizations for text rendering, multiplying the performance of
+  GUI text rendering, Sign/Glowing Sign text rendering, greatly improving framerate,
+  significantly reducing object allocations and lowering GC pressure.
 * Compatible with OptiFine, Sodium (Rubidium), Iris (Oculus) and many mods
 * Compatible with Minecraft's JSON font definition (bitmap fonts, TTF fonts)
 
