@@ -23,7 +23,7 @@ import com.mojang.serialization.DataResult;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
-import icyllis.modernui.graphics.ImageStore;
+import icyllis.modernui.graphics.Image;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessOptions;
 import net.minecraft.ChatFormatting;
@@ -168,13 +168,16 @@ final class Registration {
         static void registerResourceListener(@Nonnull AddClientReloadListenersEvent event) {
             // this event fired after LOAD_REGISTRIES and before COMMON_SETUP on client main thread (render thread)
             // this event fired after ParticleFactoryRegisterEvent
+            Image.setLegacyFactory(ImageStore.getInstance());
             event.addListener(ModernUIMod.location("client"), (ResourceManagerReloadListener) manager -> {
-                ImageStore.getInstance().clear();
                 Handler handler = Core.getUiHandlerAsync();
                 // FML may throw ex, so it can be null
                 if (handler != null) {
                     // Call in lambda, not in creating the lambda
-                    handler.post(() -> UIManager.getInstance().updateLayoutDir(ConfigImpl.CLIENT.mForceRtl.get()));
+                    handler.post(() -> {
+                        ImageStore.getInstance().clear();
+                        UIManager.getInstance().updateLayoutDir(ConfigImpl.CLIENT.mForceRtl.get());
+                    });
                 }
                 //BlurHandler.INSTANCE.loadEffect();
             });

@@ -304,7 +304,7 @@ public class TestMain {
             Thread.currentThread().setName("Main-Thread");
             Core.initialize();
             sWindow = ActivityWindow.createMainWindow("Modern UI Layout Editor", 1600, 900);
-            try (var c1 = ModernUI.getInstance().getResourceStream(ModernUI.ID, "AppLogo16x.png");
+            /*try (var c1 = ModernUI.getInstance().getResourceStream(ModernUI.ID, "AppLogo16x.png");
                  var bitmap1 = BitmapFactory.decodeStream(c1);
                  var c2 = ModernUI.getInstance().getResourceStream(ModernUI.ID, "AppLogo32x.png");
                  var bitmap2 = BitmapFactory.decodeStream(c2);
@@ -313,7 +313,7 @@ public class TestMain {
                 sWindow.setIcon(bitmap1, bitmap2, bitmap3);
             } catch (IOException e) {
                 e.printStackTrace();
-            }
+            }*/
             Thread renderThread = new Thread(TestMain::runRenderThread, "Render-Thread");
             renderThread.start();
 
@@ -634,9 +634,9 @@ public class TestMain {
                     FontCollection.isCombining(cp), FontCollection.isVariationSelector(cp));
         }
         String text = new String(cps, 0, cps.length);
-        GraphemeBreak.forTextRun(text.toCharArray(), Locale.getDefault(), 0, text.length(), (s, e) -> {
+        /*GraphemeBreak.forTextRun(text.toCharArray(), Locale.getDefault(), 0, text.length(), (s, e) -> {
             LOGGER.info(MARKER, "{}, {} to {}", text, s, e);
-        });
+        });*/
         LOGGER.info(MARKER, "ZWSP Combining:{}", Emoji.isEmoji(0x1F918));
         LOGGER.info(MARKER, "HashCodeEquals{}", bufferBuilder.hashCode() == text.hashCode());
 
@@ -685,7 +685,7 @@ public class TestMain {
         return machEps;
     }
 
-    public static void breakGraphemes(String s) {
+    /*public static void breakGraphemes(String s) {
         GraphemeBreak.sUseICU = true;
         int offset = 0;
         int prevOffset = 0;
@@ -701,7 +701,7 @@ public class TestMain {
             }
             prevOffset = offset;
         }
-    }
+    }*/
 
     public static void breakSegments(IntList styles, int start, int limit, boolean isRtl) {
         if (isRtl) {
@@ -788,13 +788,13 @@ public class TestMain {
         LOGGER.info(MARKER, "Sentence break count: {}", count);
     }
 
-    public static void testGraphemeBreak() {
+    /*public static void testGraphemeBreak() {
         GraphemeBreak.sUseICU = true;
         String bengaliHello = "\u09b9\u09cd\u09af\u09be\u09b2\u09cb"; // two graphemes, first four chars and last two
         // chars
         LOGGER.info(MARKER, GraphemeBreak.getTextRunCursor(bengaliHello, Locale.getDefault(),
                 3, bengaliHello.length(), bengaliHello.length(), GraphemeBreak.BEFORE)); // output 4, correct
-    }
+    }*/
 
     /*public static void testMarkdownParsing() {
         Parser parser = Parser.builder().build();
