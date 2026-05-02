@@ -93,7 +93,7 @@ public abstract class MixinWindow {
         }
         var ctx = ModernUI.getInstance();
         if (ctx != null) {
-            ctx.getResources().updateMetrics(metrics);
+            ctx.getResources().updateConfiguration(ctx.getResources().getConfiguration(), metrics);
         }
 
         MuiModApi.dispatchOnWindowResize(getWidth(), getHeight(), newScale, oldScale);

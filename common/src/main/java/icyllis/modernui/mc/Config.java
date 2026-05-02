@@ -340,7 +340,7 @@ public final class Config {
                         DisplayMetrics metrics = new DisplayMetrics();
                         metrics.setTo(res.getDisplayMetrics());
                         metrics.scaledDensity = ModernUIClient.sFontScale * metrics.density;
-                        res.updateMetrics(metrics);
+                        res.updateConfiguration(res.getConfiguration(), metrics);
                     }
                     boolean resetConfigCache = false;
                     if (ViewConfiguration.sScrollBarSize != mScrollbarSize.get()) {

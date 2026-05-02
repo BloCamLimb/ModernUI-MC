@@ -688,7 +688,7 @@ public abstract class UIManager implements LifecycleOwner {
     @SuppressWarnings("resource")
     public void takeScreenshot() {
         @SharedPtr
-        ImageViewProxy surface = mRoot.getLayer();
+        ImageProxy surface = mRoot.getLayer();
         if (surface == null) {
             return;
         }
@@ -891,7 +891,7 @@ public abstract class UIManager implements LifecycleOwner {
         @SharedPtr
         Recording recording = frameTask.getLeft();
         @SharedPtr
-        ImageViewProxy surface = frameTask.getRight();
+        ImageProxy surface = frameTask.getRight();
 
         if (recording != null) {
             boolean added = context.addTask(recording);
@@ -1309,10 +1309,10 @@ public abstract class UIManager implements LifecycleOwner {
 
         @Nullable
         @SharedPtr
-        private ImageViewProxy getLayer() {
+        private ImageProxy getLayer() {
             synchronized (mRenderLock) {
                 if (mSurface != null) {
-                    return RefCnt.create(mSurface.getDevice().getReadView());
+                    return RefCnt.create(mSurface.getBackingTarget());
                 } else {
                     return null;
                 }
@@ -1326,14 +1326,14 @@ public abstract class UIManager implements LifecycleOwner {
         }
 
         @RenderThread
-        private Pair<@SharedPtr Recording, @SharedPtr ImageViewProxy> swapFrameTask() {
+        private Pair<@SharedPtr Recording, @SharedPtr ImageProxy> swapFrameTask() {
             @SharedPtr
             Recording recording;
             @SharedPtr
-            ImageViewProxy layer;
+            ImageProxy layer;
             synchronized (mRenderLock) {
                 if (mSurface != null) {
-                    layer = RefCnt.create(mSurface.getDevice().getReadView());
+                    layer = RefCnt.create(mSurface.getBackingTarget());
                 } else {
                     layer = null;
                 }

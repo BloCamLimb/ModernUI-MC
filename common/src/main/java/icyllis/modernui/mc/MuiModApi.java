@@ -29,6 +29,7 @@ import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.MathUtil;
+import icyllis.modernui.graphics.text.CharSequenceIterator;
 import icyllis.modernui.graphics.text.GraphemeBreak;
 import icyllis.modernui.mc.mixin.MixinChatFormatting;
 import net.minecraft.ChatFormatting;
@@ -353,10 +354,11 @@ public abstract class MuiModApi {
             op = GraphemeBreak.AFTER;
         }
         int offset = Util.offsetByCodepoints(value, cursor, dir);
-        cursor = GraphemeBreak.getTextRunCursor(
-                value, ModernUI.getSelectedLocale(),
-                0, value.length(), cursor, op
-        );
+        //TODO make use of measurement result... keep sync with TextPaint
+        cursor =
+                GraphemeBreak.sUseICU
+                        ? GraphemeBreak.getTextRunCursorICU(new CharSequenceIterator(value, 0, value.length()), ModernUI.getSelectedLocale(), cursor, op)
+                        : GraphemeBreak.getTextRunCursorImpl(null, value, 0, value.length(), cursor, op);
         if (dir > 0) {
             return Math.max(offset, cursor);
         } else {

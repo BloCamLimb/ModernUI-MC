@@ -20,7 +20,10 @@ dependencies {
     compileOnly 'org.ow2.asm:asm-tree:9.8'
 
     if (rootProject.file('../ModernUI').exists()) {
-        implementation("icyllis.arc3d:Arc3D")
+        ["icyllis.arc3d:arc3d-core", "icyllis.arc3d:arc3d-compiler", "icyllis.arc3d:arc3d-engine",
+         "icyllis.arc3d:arc3d-sketch", "icyllis.arc3d:arc3d-granite", "icyllis.arc3d:arc3d-opengl"].each {
+            implementation(it)
+        }
         implementation("icyllis.modernui:ModernUI-Core")
         implementation("icyllis.modernui:ModernUI-Markflow")
     } else {

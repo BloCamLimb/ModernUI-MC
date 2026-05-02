@@ -198,10 +198,10 @@ public class GLFontAtlas implements AutoCloseable {
         }
 
         // exclude border
-        glyph.u1 = (float) (rect.mLeft + mBorderWidth) / mWidth;
-        glyph.v1 = (float) (rect.mTop + mBorderWidth) / mHeight;
-        glyph.u2 = (float) (rect.mRight - mBorderWidth) / mWidth;
-        glyph.v2 = (float) (rect.mBottom - mBorderWidth) / mHeight;
+        glyph.u1 = (float) (rect.left() + mBorderWidth) / mWidth;
+        glyph.v1 = (float) (rect.top() + mBorderWidth) / mHeight;
+        glyph.u2 = (float) (rect.right() - mBorderWidth) / mWidth;
+        glyph.v2 = (float) (rect.bottom() - mBorderWidth) / mHeight;
 
         return true;
     }

@@ -60,9 +60,14 @@ dependencies {
     implementation project(':common')
 
     if (rootProject.file('../ModernUI').exists()) {
-        implementation("icyllis.arc3d:Arc3D")
-        shadow("icyllis.arc3d:Arc3D") {
-            transitive = false
+        implementation("icyllis.arc3d:arc3d-compiler:${arc3d_version}")
+        include("icyllis.arc3d:arc3d-compiler:${arc3d_version}")
+        ["icyllis.arc3d:arc3d-core", "icyllis.arc3d:arc3d-engine",
+         "icyllis.arc3d:arc3d-sketch", "icyllis.arc3d:arc3d-granite", "icyllis.arc3d:arc3d-opengl"].each {
+            implementation(it)
+            shadow(it + ":${arc3d_version}") {
+                transitive = false
+            }
         }
         implementation("icyllis.modernui:ModernUI-Core")
         shadow("icyllis.modernui:ModernUI-Core") {

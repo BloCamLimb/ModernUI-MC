@@ -337,6 +337,21 @@ public class TextLayoutProcessor {
         }
     }*/
 
+    private final ShapedText.RunConsumer mBuildLayout = (piece, start, end, isRtl, paint, offsetX) -> {
+        for (int i = 0; i < piece.getGlyphCount(); i++) {
+            byte id = mFontMap.computeIfAbsent(piece.getFont(i), mNextID);
+            mFontIndices.add(id);
+        }
+        mGlyphs.addElements(mGlyphs.size(), piece.getGlyphs());
+        int posIndex = mPositions.size();
+        mPositions.addElements(posIndex, piece.getPositions());
+        for (int posEnd = mPositions.size();
+             posIndex < posEnd;
+             posIndex += 2) {
+            mPositions.elements()[posIndex] += offsetX;
+        }
+    };
+
     public TextLayoutProcessor(@Nonnull TextLayoutEngine engine) {
         mEngine = engine;
     }
@@ -846,9 +861,7 @@ public class TextLayoutProcessor {
                 text, start, limit, start, limit,
                 isRtl, mFontPaint, 0, // <- text array starts at 0
                 mComputeAdvances ? mAdvances.elements() : null,
-                mTotalAdvance, mGlyphs, mPositions,
-                mFontIndices, f -> mFontMap.computeIfAbsent(f, mNextID),
-                null, null
+                mTotalAdvance, null, mBuildLayout
         );
 
         for (int glyphIndex = glyphStart,
