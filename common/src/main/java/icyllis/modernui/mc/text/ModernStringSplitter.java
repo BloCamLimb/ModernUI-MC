@@ -198,10 +198,6 @@ public final class ModernStringSplitter extends StringSplitter {
         return headByWidth(text, (float) width, style);
     }
 
-    public static int breakText(@Nonnull TextLayout layout, boolean forwards, float width) {
-        return breakText(layout, forwards, width, true);
-    }
-
     /**
      * Measure the text and perform Unicode GCB (grapheme cluster break).
      * Returns the maximum index that the accumulated width not exceeds the width.
@@ -214,8 +210,7 @@ public final class ModernStringSplitter extends StringSplitter {
      * @param width    the max width in GUI scaled pixels
      * @return break index (without formatting codes)
      */
-    public static int breakText(@Nonnull TextLayout layout, boolean forwards, float width,
-                                boolean trimSpace) {
+    public static int breakText(@Nonnull TextLayout layout, boolean forwards, float width) {
         final int limit = layout.getCharCount();
         if (forwards) {
             // TruncateAt.END
@@ -225,7 +220,6 @@ public final class ModernStringSplitter extends StringSplitter {
                 if (width < 0.0f) break;
                 i++;
             }
-            while (i > 0 && (trimSpace && layout.getTextBuf()[i - 1] == ' ')) i--;
             return i;
         } else {
             // TruncateAt.START
@@ -235,8 +229,7 @@ public final class ModernStringSplitter extends StringSplitter {
                 if (width < 0.0f) break;
                 i--;
             }
-            while (i < limit - 1 && ((trimSpace && layout.getTextBuf()[i + 1] == ' ') ||
-                    layout.getAdvances()[i + 1] == 0.0f)) {
+            while (i < limit - 1 && layout.getAdvances()[i + 1] == 0.0f) {
                 i++;
             }
             return i + 1;
@@ -349,7 +342,7 @@ public final class ModernStringSplitter extends StringSplitter {
             return null;
         }
 
-        final int breakIndex = breakText(layout, /*forwards*/true, width, false);
+        final int breakIndex = breakText(layout, /*forwards*/true, width);
 
         return text.visit(new FormattedText.StyledContentConsumer<Style>() {
             private int mStripIndex;
@@ -397,7 +390,7 @@ public final class ModernStringSplitter extends StringSplitter {
             return null;
         }
 
-        final int breakIndex = breakText(layout, /*forwards*/true, width, false);
+        final int breakIndex = breakText(layout, /*forwards*/true, width);
 
         final MutableObject<Style> result = new MutableObject<>();
         text.accept(new FormattedCharSink() {
