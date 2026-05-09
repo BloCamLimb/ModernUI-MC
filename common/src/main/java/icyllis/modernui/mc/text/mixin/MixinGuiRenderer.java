@@ -25,8 +25,12 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.modernui.mc.text.ModernPreparedText;
 import icyllis.modernui.mc.text.TextRenderType;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.GuiRenderer;
+import net.minecraft.client.gui.render.state.GlyphEffectRenderState;
+import net.minecraft.client.gui.render.state.GlyphRenderState;
 import net.minecraft.client.gui.render.state.GuiRenderState;
 import org.joml.Matrix3x2f;
 import org.spongepowered.asm.mixin.Final;
@@ -38,6 +42,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import javax.annotation.Nonnull;
 
 @Mixin(GuiRenderer.class)
 public class MixinGuiRenderer {
@@ -55,8 +61,30 @@ public class MixinGuiRenderer {
         renderState.forEachText(guiTextRenderState -> {
             Matrix3x2f pose = guiTextRenderState.pose;
             ScreenRectangle scissor = guiTextRenderState.scissor;
-            ModernPreparedText preparedText = (ModernPreparedText) guiTextRenderState.ensurePrepared();
-            preparedText.submitRuns(renderState, pose, scissor);
+            Font.PreparedText preparedText = guiTextRenderState.ensurePrepared();
+            if (preparedText instanceof ModernPreparedText) {
+                ((ModernPreparedText) preparedText).submitRuns(renderState, pose, scissor);
+            } else {
+                // some mods subclass GuiTextRenderState to return a custom PreparedText,
+                // fallback to vanilla logic
+                preparedText.visit(new Font.GlyphVisitor() {
+                    @Override
+                    public void acceptGlyph(@Nonnull BakedGlyph.GlyphInstance instance) {
+                        //noinspection resource
+                        if (instance.glyph().textureView() != null) {
+                            renderState.submitGlyphToCurrentLayer(new GlyphRenderState(pose, instance, scissor));
+                        }
+                    }
+
+                    @Override
+                    public void acceptEffect(@Nonnull BakedGlyph glyph, @Nonnull BakedGlyph.Effect effect) {
+                        //noinspection resource
+                        if (glyph.textureView() != null) {
+                            renderState.submitGlyphToCurrentLayer(new GlyphEffectRenderState(pose, glyph, effect, scissor));
+                        }
+                    }
+                });
+            }
         });
     }
 
