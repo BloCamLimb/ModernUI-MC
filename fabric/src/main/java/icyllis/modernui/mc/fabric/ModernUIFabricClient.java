@@ -93,6 +93,21 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
         KeyBindingHelper.registerKeyBinding(UIManagerFabric.OPEN_CENTER_KEY);
 
         Image.setLegacyFactory(ImageStore.getInstance());
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new IdentifiableResourceReloadListener() {
+            @Override
+            public ResourceLocation getFabricId() {
+                return ModernUIMod.location("resources");
+            }
+
+            @Nonnull
+            @Override
+            public CompletableFuture<Void> reload(@Nonnull PreparationBarrier preparationBarrier,
+                                                  @Nonnull ResourceManager resourceManager,
+                                                  @Nonnull Executor preparationExecutor,
+                                                  @Nonnull Executor reloadExecutor) {
+                return ResourcesStore.getInstance().reload(preparationBarrier, resourceManager, preparationExecutor, reloadExecutor);
+            }
+        });
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
             @Override
             public ResourceLocation getFabricId() {

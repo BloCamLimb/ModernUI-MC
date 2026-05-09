@@ -169,6 +169,7 @@ final class Registration {
             // this event fired after LOAD_REGISTRIES and before COMMON_SETUP on client main thread (render thread)
             // this event fired after ParticleFactoryRegisterEvent
             Image.setLegacyFactory(ImageStore.getInstance());
+            event.addListener(ModernUIMod.location("resources"), ResourcesStore.getInstance());
             event.addListener(ModernUIMod.location("client"), (ResourceManagerReloadListener) manager -> {
                 Handler handler = Core.getUiHandlerAsync();
                 // FML may throw ex, so it can be null
