@@ -1266,7 +1266,7 @@ public abstract class UIManager implements LifecycleOwner {
                                 Core.requireUiRecordingContext(),
                                 ImageInfo.make(width, height,
                                         ColorInfo.CT_RGBA_8888, ColorInfo.AT_PREMUL,
-                                        ColorSpace.get(ColorSpace.Named.SRGB)),
+                                        ColorSpaces.SRGB),
                                 false,
                                 Engine.SurfaceOrigin.kLowerLeft,
                                 null

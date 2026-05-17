@@ -36,7 +36,7 @@ import java.nio.FloatBuffer;
  * rendering pipeline in Modern UI rendering system.
  *
  * @author BloCamLimb
- * @deprecated use {@link MinecraftSurfaceView}
+ * @deprecated use {@link MinecraftSurfaceView} and {@link MenuScreen}
  */
 @Deprecated
 public final class ContainerDrawHelper {
