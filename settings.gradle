@@ -28,10 +28,6 @@ pluginManagement {
 
 rootProject.name = 'ModernUI-MC'
 
-if (file('../ModernUI').exists()) {
-    includeBuild '../ModernUI'
-}
-
 include 'common'
 
 include 'forge'
