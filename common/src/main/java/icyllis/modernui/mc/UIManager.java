@@ -578,7 +578,7 @@ public abstract class UIManager implements LifecycleOwner {
 
     protected void onPreKeyInput(int keyCode, int scanCode, int action, int mods) {
         if (TooltipRenderer.sTooltip) {
-            if (mods == 0 && action != GLFW_RELEASE) {
+            if (action != GLFW_RELEASE) {
                 switch (keyCode) {
                     case GLFW_KEY_UP -> mTooltipRenderer.updateArrowMovement(-1);
                     case GLFW_KEY_DOWN -> mTooltipRenderer.updateArrowMovement(1);
