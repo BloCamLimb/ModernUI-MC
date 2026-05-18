@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2026 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -714,8 +714,8 @@ public abstract class UIManager implements LifecycleOwner {
             Bitmap converted = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(), Bitmap.Format.RGBA_8888);
             converted.setPremultiplied(false);
             try (bitmap) {
-                // unpremul and flip
-                PixelUtils.convertPixels(bitmap.getPixmap(), converted.getPixmap(), true);
+                // unpremul
+                converted.setPixels(bitmap, 0, 0, 0, 0, bitmap.getWidth(), bitmap.getHeight());
             }
             try (converted) {
                 converted.saveDialog(Bitmap.SaveFormat.PNG, 0, null);
@@ -968,8 +968,7 @@ public abstract class UIManager implements LifecycleOwner {
                         TextureSetup.singleTexture(mLayerTextureView),
                         new Matrix3x2f().scale(1.0F / mWindow.getGuiScale()),
                         0, 0, mWindow.getWidth(), mWindow.getHeight(),
-                        // since the projection is flipped, we need to flip the texture coordinates
-                        0.0F, 1.0F, 1.0F, 0.0F,
+                        0.0F, 1.0F, 0.0F, 1.0F,
                         ~0,
                         /*scissorArea*/ null
                 ));
@@ -1268,7 +1267,7 @@ public abstract class UIManager implements LifecycleOwner {
                                         ColorInfo.CT_RGBA_8888, ColorInfo.AT_PREMUL,
                                         ColorSpaces.SRGB),
                                 false,
-                                Engine.SurfaceOrigin.kLowerLeft,
+                                Engine.SurfaceOrigin.kUpperLeft,
                                 null
                         ));
                     }
