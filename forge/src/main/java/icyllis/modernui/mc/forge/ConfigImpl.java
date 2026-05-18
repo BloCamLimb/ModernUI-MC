@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.forge;
 
+import icyllis.modernui.R;
 import icyllis.modernui.mc.Config;
 import icyllis.modernui.mc.ConfigItem;
 import icyllis.modernui.mc.ModernUIClient;
@@ -252,6 +253,7 @@ public final class ConfigImpl {
         public final ForgeConfigSpec.DoubleValue mDingVolume;
         public final ForgeConfigSpec.BooleanValue mZoom;
         //private final ForgeConfigSpec.BooleanValue hudBars;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> mTheme;
         public final ForgeConfigSpec.BooleanValue mForceRtl;
         public final ForgeConfigSpec.DoubleValue mFontScale;
         public final ForgeConfigSpec.EnumValue<Config.Client.WindowMode> mWindowMode;
@@ -482,6 +484,13 @@ public final class ConfigImpl {
             builder.comment("View Config")
                     .push("view");
 
+            mTheme = builder.comment("Global theme and overlay.")
+                    .defineList("theme", () -> {
+                        List<String> list = new ArrayList<>();
+                        list.add(R.style.Theme_Material3_Dark.toString());
+                        list.add(R.style.ThemeOverlay_Material3_Dark_Rust.toString());
+                        return list;
+                    }, s -> true);
             mForceRtl = builder.comment("Force layout direction to RTL, otherwise, the current Locale setting.")
                     .define("forceRtl", false);
             mFontScale = builder.comment("The global font scale used with sp units.")

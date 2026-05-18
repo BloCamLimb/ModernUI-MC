@@ -20,7 +20,6 @@ package icyllis.modernui.mc.ui;
 
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
-import icyllis.modernui.TestFragment;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.core.Context;
@@ -28,7 +27,6 @@ import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.fragment.FragmentContainerView;
 import icyllis.modernui.fragment.FragmentTransaction;
 import icyllis.modernui.graphics.Image;
-import icyllis.modernui.graphics.drawable.ColorDrawable;
 import icyllis.modernui.graphics.drawable.ImageDrawable;
 import icyllis.modernui.graphics.drawable.RippleDrawable;
 import icyllis.modernui.graphics.drawable.ShapeDrawable;
@@ -175,11 +173,11 @@ public class CenterFragment2 extends Fragment {
             buttonGroup.addView(createNavButton(1004, "soundCategory.music",
                     itemTextColor, icons, 1, 1,
                     itemIconTint, itemRippleColor, activeIndicatorColor));
-            if (ModernUIMod.isDeveloperMode()) {
+            /*if (ModernUIMod.isDeveloperMode()) {
                 buttonGroup.addView(createNavButton(1005, "Dev",
                         itemTextColor, icons, 0, 6,
                         itemIconTint, itemRippleColor, activeIndicatorColor));
-            }
+            }*/
             if (ModernUIMod.isDeveloperMode()) {
                 buttonGroup.addView(createNavButton(1006, "Markdown",
                         itemTextColor, icons, 0, 6,
@@ -209,10 +207,10 @@ public class CenterFragment2 extends Fragment {
                         ft = fm.beginTransaction()
                                 .replace(id_tab_container, MusicFragment.class, null, "music");
                     }
-                    case 1005 -> {
+                    /*case 1005 -> {
                         ft = fm.beginTransaction()
                                 .replace(id_tab_container, TestFragment.class, null, "dev");
-                    }
+                    }*/
                     case 1006 -> {
                         ft = fm.beginTransaction()
                                 .replace(id_tab_container, MarkdownFragment.class, null, "markdown");

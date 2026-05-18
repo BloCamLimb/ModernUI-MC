@@ -357,6 +357,9 @@ public class PreferencesFragment extends Fragment {
         {
             var list = createCategoryList(content, "modernui.center.category.system");
 
+            list.addView(createStringListOption(context, "modernui.center.system.theme",
+                    Config.CLIENT.mTheme, onChanged));
+
             new BooleanOption(context, "modernui.center.system.forceRtlLayout",
                     Config.CLIENT.mForceRtl, onChanged)
                     .create(list);
@@ -482,6 +485,10 @@ public class PreferencesFragment extends Fragment {
                                         Toast.LENGTH_SHORT)
                                 .show();
                     }));
+
+            new BooleanOption(context, "modernui.center.font.linearMetrics",
+                    Config.CLIENT.mLinearMetrics, mOnClientConfigChanged)
+                    .create(category);
 
             content.addView(category);
         }

@@ -95,6 +95,8 @@ public class ResourcesStore implements PreparableReloadListener {
                             resources.setImpl(
                                     new ResourcesImpl(ab.build(), resources.getDisplayMetrics(), resources.getConfiguration())
                             );
+
+                            Config.CLIENT.applyTheme(true);
                         });
                     }
                 }, reloadExecutor);

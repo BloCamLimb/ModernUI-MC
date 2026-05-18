@@ -183,7 +183,6 @@ public final class ContainerDrawHelper {
         RenderSystem.blendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     }*/
 
-    //TODO
     /*@RenderThread
     private void end(@Nonnull ByteBuffer buffer, @Nonnull VertexFormat.Mode mode, @Nonnull VertexFormat format,
                      @Nonnull VertexFormat.IndexType indexType, int indexCount, boolean sequentialIndex) {

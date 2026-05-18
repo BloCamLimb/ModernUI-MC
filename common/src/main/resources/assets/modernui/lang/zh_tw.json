@@ -154,6 +154,7 @@
   "modernui.center.font.linearSampling": "線性取樣",
   "modernui.center.font.fontRegistrationList": "字型註冊清單",
   "modernui.center.font.fontRegistrationList.tooltip": "By default, font files in the resource packs directory will be registered. This option specifies a set of additional font files (or directories) to register. Registered fonts can be referenced in Modern UI and Minecraft (Modern Text Engine). For TrueType/OpenType Collections, all contained font families will be registered.",
+  "modernui.center.system.theme": "主題",
   "modernui.center.system.forceRtlLayout": "強制右到左佈局",
   "modernui.center.system.globalFontScale": "全域字型縮放",
   "modernui.center.system.globalAnimationScale": "全域動畫縮放",

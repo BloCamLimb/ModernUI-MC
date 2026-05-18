@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc.ui;
 
-import icyllis.arc3d.granite.GraniteUtil;
+import icyllis.arc3d.core.ImageInfo;
 import icyllis.arc3d.opengl.GLCaps;
 import icyllis.modernui.R;
 import icyllis.modernui.annotation.NonNull;
@@ -334,7 +334,7 @@ public class AdvancedOptionsFragment extends Fragment {
             }
             tv.setText("Rendering pipeline: Arc3D Granite (OpenGL)\n" +
                     "Shader compiler: Arc3D Shader Compiler\n" +
-                    "Arc3D version: " + GraniteUtil.class.getPackage().getImplementationVersion());
+                    "Arc3D version: " + ImageInfo.class.getPackage().getImplementationVersion());
             content.addView(tv, params);
         }
 
