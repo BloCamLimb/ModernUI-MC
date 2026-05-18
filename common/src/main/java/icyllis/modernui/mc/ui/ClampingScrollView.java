@@ -24,13 +24,15 @@ import icyllis.modernui.util.AttributeSet;
 import icyllis.modernui.view.MeasureSpec;
 import icyllis.modernui.view.View;
 import icyllis.modernui.widget.ScrollView;
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * Constrain the max width of the direct child, which should use MATCH_PARENT layout_width.
  */
+@ApiStatus.Internal
 public class ClampingScrollView extends ScrollView {
 
-    private int mMaxWidth;
+    private int mChildMaxWidth;
 
     public ClampingScrollView(Context context) {
         super(context);
@@ -48,24 +50,29 @@ public class ClampingScrollView extends ScrollView {
         super(context, attrs, defStyleAttr, defStyleRes);
     }
 
+    @Deprecated
     public void setMaxWidth(int maxWidth) {
-        mMaxWidth = maxWidth;
+        setChildMaxWidth(maxWidth);
     }
 
-    public int getMaxWidth() {
-        return mMaxWidth;
+    public void setChildMaxWidth(int childMaxWidth) {
+        mChildMaxWidth = childMaxWidth;
+    }
+
+    public int getChildMaxWidth() {
+        return mChildMaxWidth;
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
-        if (getChildCount() > 0 && mMaxWidth > 0) {
+        if (getChildCount() > 0 && mChildMaxWidth > 0) {
             // constrain the direct child
             final View child = getChildAt(0);
 
             int childWidth = child.getMeasuredWidth();
-            int clampedWidth = Math.min(childWidth, mMaxWidth);
+            int clampedWidth = Math.min(childWidth, mChildMaxWidth);
 
             if (childWidth != clampedWidth) {
                 var newWidthSpec = MeasureSpec.makeMeasureSpec(clampedWidth, MeasureSpec.EXACTLY);

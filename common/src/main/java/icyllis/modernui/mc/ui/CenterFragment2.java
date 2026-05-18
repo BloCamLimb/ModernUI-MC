@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2025 BloCamLimb. All rights reserved.
+ * Copyright (C) 2023-2026 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -94,8 +94,8 @@ public class CenterFragment2 extends Fragment {
         // NAV BUTTONS
         {
             var buttonGroup = new RadioGroup(getContext());
-            theme.resolveAttribute(R.ns, R.attr.colorSurfaceContainer, value, true);
-            buttonGroup.setBackground(new ColorDrawable(value.data));
+            if (theme.resolveAttribute(R.ns, R.attr.colorSurfaceContainer, value, true))
+                buttonGroup.setBackground(theme.getResources().loadDrawable(value, null, theme));
             buttonGroup.setOrientation(LinearLayout.VERTICAL);
             buttonGroup.setGravity(Gravity.CENTER);
 

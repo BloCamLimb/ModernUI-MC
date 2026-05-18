@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2025 BloCamLimb. All rights reserved.
+ * Copyright (C) 2023-2026 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,6 @@ import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.drawable.BuiltinIconDrawable;
 import icyllis.modernui.graphics.drawable.ColorDrawable;
 import icyllis.modernui.graphics.drawable.RippleDrawable;
-import icyllis.modernui.graphics.drawable.ShapeDrawable;
 import icyllis.modernui.graphics.drawable.StateListDrawable;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.mc.Config;
@@ -122,8 +121,9 @@ public class PreferencesFragment extends Fragment {
             var tabLayout = new TabLayout(context);
             {
                 var value = new TypedValue();
-                context.getTheme().resolveAttribute(R.ns, R.attr.colorSurfaceContainerLow, value, true);
-                tabLayout.setBackground(new ColorDrawable(value.data));
+                var theme = context.getTheme();
+                if (theme.resolveAttribute(R.ns, R.attr.colorSurfaceContainerLow, value, true))
+                    tabLayout.setBackground(theme.getResources().loadDrawable(value, null, theme));
             }
             tabLayout.setElevation(base.dp(3));
             tabLayout.setTabMode(TabLayout.MODE_AUTO);
@@ -183,7 +183,7 @@ public class PreferencesFragment extends Fragment {
             final int maxWidth = container.dp(800) + dp20 + dp20;
             var context = container.getContext();
             var sv = new ClampingScrollView(context);
-            sv.setMaxWidth(maxWidth);
+            sv.setChildMaxWidth(maxWidth);
             sv.setTag(position);
             ViewGroup layout = switch (position) {
                 case 0 -> createPage1(context);
@@ -804,8 +804,8 @@ public class PreferencesFragment extends Fragment {
             title.setId(R.id.title);
             title.setText(I18n.get(name));
             title.setTextSize(16);
-            context.getTheme().resolveAttribute(R.ns, R.attr.colorPrimary, value, true);
-            title.setTextColor(value.data);
+            if (context.getTheme().resolveAttribute(R.ns, R.attr.colorPrimary, value, true))
+                title.setTextColor(context.getResources().loadColorStateList(value, null, context.getTheme()));
 
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.START;
@@ -996,8 +996,8 @@ public class PreferencesFragment extends Fragment {
         {
             tv.setTextAppearance(R.attr.textAppearanceLabelMedium);
             var value = new TypedValue();
-            context.getTheme().resolveAttribute(R.ns, R.attr.colorError, value, true);
-            tv.setTextColor(value.data);
+            if (context.getTheme().resolveAttribute(R.ns, R.attr.colorError, value, true))
+                tv.setTextColor(context.getResources().loadColorStateList(value, null, context.getTheme()));
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER_VERTICAL;
             params.setMargins(dp6, 0, dp6, 0);
