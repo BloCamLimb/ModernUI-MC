@@ -322,7 +322,7 @@ public class AdvancedOptionsFragment extends Fragment {
                 tv.setTypeface(monoFont);
             }
             mUIManagerDump = tv;
-            content.addView(tv, params);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         {
@@ -335,7 +335,7 @@ public class AdvancedOptionsFragment extends Fragment {
             tv.setText("Rendering pipeline: Arc3D Granite (OpenGL)\n" +
                     "Shader compiler: Arc3D Shader Compiler\n" +
                     "Arc3D version: " + ImageInfo.class.getPackage().getImplementationVersion());
-            content.addView(tv, params);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         {
@@ -346,7 +346,7 @@ public class AdvancedOptionsFragment extends Fragment {
                 tv.setTypeface(monoFont);
             }
             mMainGPUResourceDump = tv;
-            content.addView(tv, params);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         {
@@ -357,7 +357,7 @@ public class AdvancedOptionsFragment extends Fragment {
                 tv.setTypeface(monoFont);
             }
             mUIGPUResourceDump = tv;
-            content.addView(tv, params);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         {
@@ -368,7 +368,7 @@ public class AdvancedOptionsFragment extends Fragment {
                 tv.setTypeface(monoFont);
             }
             mPSOStatsDump = tv;
-            content.addView(tv, params);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         if (false) {
@@ -379,7 +379,7 @@ public class AdvancedOptionsFragment extends Fragment {
                 tv.setTypeface(monoFont);
             }
             mGPUStatsDump = tv;
-            content.addView(tv, params);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         {
@@ -393,7 +393,7 @@ public class AdvancedOptionsFragment extends Fragment {
             StringBuilder sb = new StringBuilder("GL Capabilities:\n");
             caps.dump(sb, /*includeFormatTable*/false);
             tv.setText(sb);
-            content.addView(tv, params);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         refreshPage();
