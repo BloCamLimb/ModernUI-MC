@@ -21,7 +21,7 @@ package icyllis.modernui.mc.forge;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.testforge.TestContainerMenu;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
@@ -40,7 +40,7 @@ public final class MuiRegistries {
     /**
      * Container Menus (Development only)
      */
-    public static final ResourceLocation
+    public static final Identifier
             TEST_MENU_KEY = ModernUIMod.location("test");
     public static final RegistryObject<MenuType<TestContainerMenu>> TEST_MENU = RegistryObject.createOptional(
             TEST_MENU_KEY, ForgeRegistries.MENU_TYPES.getRegistryKey(), ModernUI.ID);
@@ -48,7 +48,7 @@ public final class MuiRegistries {
     /**
      * Items (Development only)
      */
-    public static final ResourceLocation
+    public static final Identifier
             PROJECT_BUILDER_ITEM_KEY = ModernUIMod.location("project_builder");
     public static final RegistryObject<Item> PROJECT_BUILDER_ITEM = RegistryObject.createOptional(
             PROJECT_BUILDER_ITEM_KEY, ForgeRegistries.ITEMS.getRegistryKey(), ModernUI.ID);

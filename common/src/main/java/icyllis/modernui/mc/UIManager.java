@@ -353,6 +353,8 @@ public abstract class UIManager implements LifecycleOwner {
         mScreen = screen;
         // ensure it's resized
         resize(minecraft.getWindow().getWidth(), minecraft.getWindow().getHeight());
+        //TODO core framework lacks IME support
+        minecraft.textInputManager().startTextInput();
     }
 
     @UiThread
@@ -1020,6 +1022,7 @@ public abstract class UIManager implements LifecycleOwner {
         mRoot.mRawDrawHandlers.clear();
         mScreen = null;
         glfwSetCursor(minecraft.getWindow().handle(), MemoryUtil.NULL);
+        minecraft.textInputManager().stopTextInput();
     }
 
     public void drawExtTooltip(ItemStack itemStack,

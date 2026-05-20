@@ -89,7 +89,7 @@ public class UITools {
      * The default arrow cursor.
      */
     public static void useDefaultCursor() {
-        GLFW.glfwSetCursor(Minecraft.getInstance().getWindow().getWindow(), MemoryUtil.NULL);
+        //GLFW.glfwSetCursor(Minecraft.getInstance().getWindow().getWindow(), MemoryUtil.NULL);
     }
 
     /**

@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.forge;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -29,27 +28,19 @@ import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.MuiModApi;
-import icyllis.modernui.mc.MuiScreen;
 import icyllis.modernui.mc.ScreenCallback;
-import icyllis.modernui.mc.UIManager;
 import icyllis.modernui.mc.mixin.AccessGameRenderer;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.MenuAccess;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderStateShard;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
+import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Rarity;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -88,30 +79,6 @@ public final class MuiForgeApi extends MuiModApi {
     @MainThread
     public static void openScreen(@Nonnull Fragment fragment) {
         MuiModApi.openScreen(fragment);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nonnull
-    @Override
-    public <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
-                                                         @Nullable ScreenCallback callback,
-                                                         @Nullable Screen previousScreen,
-                                                         @Nullable CharSequence title) {
-        return (T) new SimpleScreen(UIManager.getInstance(),
-                fragment, callback, previousScreen, title);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nonnull
-    @Override
-    public <T extends AbstractContainerMenu, U extends Screen & MenuAccess<T> & MuiScreen>
-    U createMenuScreen(@Nonnull Fragment fragment,
-                       @Nullable ScreenCallback callback,
-                       @Nonnull T menu,
-                       @Nonnull Inventory inventory,
-                       @Nonnull Component title) {
-        return (U) new MenuScreen<>(UIManager.getInstance(),
-                fragment, callback, menu, inventory, title);
     }
 
     /**
@@ -157,21 +124,7 @@ public final class MuiForgeApi extends MuiModApi {
     }
 
     @Override
-    public boolean isGLVersionPromoted() {
-        try {
-            String version = net.minecraftforge.fml.loading.ImmediateWindowHandler.getGLVersion();
-            if (!"3.2".equals(version)) {
-                ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Detected OpenGL {} Core Profile from FML Early Window",
-                        version);
-                return true;
-            }
-        } catch (Throwable ignored) {
-        }
-        return false;
-    }
-
-    @Override
-    public void loadEffect(GameRenderer gr, ResourceLocation effect) {
+    public void loadEffect(GameRenderer gr, Identifier effect) {
         // this method is no longer public in Forge patches...
         ((AccessGameRenderer) gr).invokeSetPostEffect(effect);
     }
@@ -184,7 +137,8 @@ public final class MuiForgeApi extends MuiModApi {
     }*/
 
     @Override
-    public boolean isKeyBindingMatches(KeyMapping keyMapping, InputConstants.Key key) {
+    public boolean isKeyBindingMatches(KeyMapping keyMapping, KeyEvent keyEvent) {
+        InputConstants.Key key = InputConstants.getKey(keyEvent);
         return keyMapping.isActiveAndMatches(key);
     }
 
@@ -208,22 +162,22 @@ public final class MuiForgeApi extends MuiModApi {
     }
 
     @Override
-    public void submitGuiElementRenderState(GuiGraphics graphics, GuiElementRenderState renderState) {
-        graphics.getRenderState().submitGuiElement(renderState);
+    public void submitGuiElementRenderState(GuiGraphicsExtractor graphics, GuiElementRenderState renderState) {
+        graphics.getRenderState().addGuiElement(renderState);
     }
 
     @Override
-    public void submitPictureInPictureRenderState(GuiGraphics graphics, PictureInPictureRenderState renderState) {
-        graphics.getRenderState().submitPicturesInPictureState(renderState);
+    public void submitPictureInPictureRenderState(GuiGraphicsExtractor graphics, PictureInPictureRenderState renderState) {
+        graphics.getRenderState().addPicturesInPictureState(renderState);
     }
 
     @Nullable
     @Override
-    public ScreenRectangle peekScissorStack(GuiGraphics graphics) {
+    public ScreenRectangle peekScissorStack(GuiGraphicsExtractor graphics) {
         return graphics.getScissorStack().peek();
     }
 
-    @Override
+    /*@Override
     public RenderType createRenderType(String name, int bufferSize,
                                        boolean affectsCrumbling, boolean sortOnUpload,
                                        RenderPipeline renderPipeline,
@@ -240,7 +194,7 @@ public final class MuiForgeApi extends MuiModApi {
                 name, bufferSize, affectsCrumbling, sortOnUpload, renderPipeline,
                 builder.createCompositeState(false)
         );
-    }
+    }*/
 
     /* Screen */
     /*public static int getScreenBackgroundColor() {

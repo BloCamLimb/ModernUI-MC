@@ -18,33 +18,22 @@
 
 package icyllis.modernui.mc.fabric;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
-import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.mixin.AccessGameRenderer;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.MenuAccess;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderStateShard;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
+import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Rarity;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public final class MuiFabricApi extends MuiModApi {
 
@@ -52,38 +41,8 @@ public final class MuiFabricApi extends MuiModApi {
         ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Created MuiFabricApi");
     }
 
-    @SuppressWarnings("unchecked")
-    @Nonnull
     @Override
-    public <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
-                                                         @Nullable ScreenCallback callback,
-                                                         @Nullable Screen previousScreen,
-                                                         @Nullable CharSequence title) {
-        return (T) new SimpleScreen(UIManager.getInstance(),
-                fragment, callback, previousScreen, title);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nonnull
-    @Override
-    public <T extends AbstractContainerMenu, U extends Screen & MenuAccess<T> & MuiScreen>
-    U createMenuScreen(@Nonnull Fragment fragment,
-                       @Nullable ScreenCallback callback,
-                       @Nonnull T menu,
-                       @Nonnull Inventory inventory,
-                       @Nonnull Component title) {
-        return (U) new MenuScreen<>(UIManager.getInstance(),
-                fragment, callback, menu, inventory, title);
-    }
-
-    @Override
-    public boolean isGLVersionPromoted() {
-        // we are unknown about this
-        return false;
-    }
-
-    @Override
-    public void loadEffect(GameRenderer gr, ResourceLocation effect) {
+    public void loadEffect(GameRenderer gr, Identifier effect) {
         ((AccessGameRenderer) gr).invokeSetPostEffect(effect);
     }
 
@@ -95,10 +54,8 @@ public final class MuiFabricApi extends MuiModApi {
     }*/
 
     @Override
-    public boolean isKeyBindingMatches(KeyMapping keyMapping, InputConstants.Key key) {
-        return key.getType() == InputConstants.Type.KEYSYM
-                ? keyMapping.matches(key.getValue(), InputConstants.UNKNOWN.getValue())
-                : keyMapping.matches(InputConstants.UNKNOWN.getValue(), key.getValue());
+    public boolean isKeyBindingMatches(KeyMapping keyMapping, KeyEvent keyEvent) {
+        return keyMapping.matches(keyEvent);
     }
 
     @Override
@@ -119,21 +76,21 @@ public final class MuiFabricApi extends MuiModApi {
     }
 
     @Override
-    public void submitGuiElementRenderState(GuiGraphics graphics, GuiElementRenderState renderState) {
-        graphics.guiRenderState.submitGuiElement(renderState);
+    public void submitGuiElementRenderState(GuiGraphicsExtractor graphics, GuiElementRenderState renderState) {
+        graphics.guiRenderState.addGuiElement(renderState);
     }
 
     @Override
-    public void submitPictureInPictureRenderState(GuiGraphics graphics, PictureInPictureRenderState renderState) {
-        graphics.guiRenderState.submitPicturesInPictureState(renderState);
+    public void submitPictureInPictureRenderState(GuiGraphicsExtractor graphics, PictureInPictureRenderState renderState) {
+        graphics.guiRenderState.addPicturesInPictureState(renderState);
     }
 
     @Override
-    public ScreenRectangle peekScissorStack(GuiGraphics graphics) {
+    public ScreenRectangle peekScissorStack(GuiGraphicsExtractor graphics) {
         return graphics.scissorStack.peek();
     }
 
-    @Override
+    /*@Override
     public RenderType createRenderType(String name, int bufferSize,
                                        boolean affectsCrumbling, boolean sortOnUpload,
                                        RenderPipeline renderPipeline,
@@ -150,5 +107,5 @@ public final class MuiFabricApi extends MuiModApi {
                 name, bufferSize, affectsCrumbling, sortOnUpload, renderPipeline,
                 builder.createCompositeState(false)
         );
-    }
+    }*/
 }

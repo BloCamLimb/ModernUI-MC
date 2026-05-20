@@ -21,6 +21,7 @@ package icyllis.modernui.mc.mixin;
 import icyllis.modernui.mc.UIManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
+import net.minecraft.client.input.MouseButtonInfo;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -58,10 +59,10 @@ public class MixinMouseHandler {
         MuiModApi.dispatchOnScroll(xoffset, yoffset);
     }*/
 
-    @Inject(method = "onPress", at = @At("TAIL"))
-    private void onMouseButtonPost(long handle, int button, int action, int mods, CallbackInfo ci) {
-        if (handle == minecraft.getWindow().getWindow()) {
-            UIManager.getInstance().onPostMouseInput(button, action, mods);
+    @Inject(method = "onButton", at = @At("TAIL"))
+    private void onMouseButtonPost(long handle, MouseButtonInfo rawButtonInfo, int action, CallbackInfo ci) {
+        if (handle == minecraft.getWindow().handle()) {
+            UIManager.getInstance().onPostMouseInput(rawButtonInfo.button(), action, rawButtonInfo.modifiers());
         }
     }
 }

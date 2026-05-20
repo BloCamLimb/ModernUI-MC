@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.fabric;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import fuzs.forgeconfigapiport.fabric.api.v5.ConfigRegistry;
@@ -35,27 +36,23 @@ import net.fabricmc.api.*;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.event.EventFactory;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.resource.*;
+import net.fabricmc.fabric.api.resource.v1.ResourceLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
-import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
 import net.neoforged.fml.config.ModConfig;
 
 import javax.annotation.Nonnull;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
 import java.util.stream.IntStream;
 
 import static icyllis.modernui.mc.ModernUIMod.LOGGER;
@@ -63,20 +60,6 @@ import static icyllis.modernui.mc.ModernUIMod.MARKER;
 
 @Environment(EnvType.CLIENT)
 public class ModernUIFabricClient extends ModernUIClient implements ClientModInitializer {
-
-    public static final Event<Runnable> START_RENDER_TICK = EventFactory.createArrayBacked(Runnable.class,
-            callbacks -> () -> {
-                for (Runnable runnable : callbacks) {
-                    runnable.run();
-                }
-            });
-
-    public static final Event<Runnable> END_RENDER_TICK = EventFactory.createArrayBacked(Runnable.class,
-            callbacks -> () -> {
-                for (Runnable runnable : callbacks) {
-                    runnable.run();
-                }
-            });
 
     private String mSelectedLanguageCode;
     private Locale mSelectedJavaLocale;
@@ -87,46 +70,33 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
 
     @Override
     public void onInitializeClient() {
-        START_RENDER_TICK.register(EventHandler.Client::onRenderTick);
-        END_RENDER_TICK.register(EventHandler.Client::onRenderTick);
-
-        KeyBindingHelper.registerKeyBinding(UIManagerFabric.OPEN_CENTER_KEY);
-
-        Image.setLegacyFactory(ImageStore.getInstance());
-        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new IdentifiableResourceReloadListener() {
-            @Override
-            public ResourceLocation getFabricId() {
-                return ModernUIMod.location("resources");
-            }
-
-            @Nonnull
-            @Override
-            public CompletableFuture<Void> reload(@Nonnull PreparationBarrier preparationBarrier,
-                                                  @Nonnull ResourceManager resourceManager,
-                                                  @Nonnull Executor preparationExecutor,
-                                                  @Nonnull Executor reloadExecutor) {
-                return ResourcesStore.getInstance().reload(preparationBarrier, resourceManager, preparationExecutor, reloadExecutor);
+        MuiModApi.addOnRenderFrameListener((frame, stage) -> {
+            if (stage == MuiModApi.RENDER_STAGE_RENDER || stage == MuiModApi.RENDER_STAGE_PRESENT) {
+                EventHandler.Client.onRenderTick();
             }
         });
-        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
-            @Override
-            public ResourceLocation getFabricId() {
-                return ModernUIMod.location("client");
-            }
 
-            @Override
-            public void onResourceManagerReload(@Nonnull ResourceManager resourceManager) {
-                Handler handler = Core.getUiHandlerAsync();
-                // FML may throw ex, so it can be null
-                if (handler != null) {
-                    // Call in lambda, not in creating the lambda
-                    handler.post(() -> {
-                        ImageStore.getInstance().clear();
-                        UIManager.getInstance().updateLayoutDir(ConfigImpl.CLIENT.mForceRtl.get());
-                    });
-                }
-                //BlurHandler.INSTANCE.loadEffect();
+        UIManagerFabric.KEYBIND_CATEGORY = KeyMapping.Category.register(
+                ModernUIMod.location("keybind"));
+        UIManagerFabric.OPEN_CENTER_KEY = new KeyMapping(
+                "key.modernui.openCenter",
+                InputConstants.Type.KEYSYM, InputConstants.KEY_K, UIManagerFabric.KEYBIND_CATEGORY);
+        KeyMappingHelper.registerKeyMapping(UIManagerFabric.OPEN_CENTER_KEY);
+
+        Image.setLegacyFactory(ImageStore.getInstance());
+        var resourceLoader = ResourceLoader.get(PackType.CLIENT_RESOURCES);
+        resourceLoader.registerReloadListener(ModernUIMod.location("resources"), ResourcesStore.getInstance());
+        resourceLoader.registerReloadListener(ModernUIMod.location("client"), (ResourceManagerReloadListener) manager -> {
+            Handler handler = Core.getUiHandlerAsync();
+            // FML may throw ex, so it can be null
+            if (handler != null) {
+                // Call in lambda, not in creating the lambda
+                handler.post(() -> {
+                    ImageStore.getInstance().clear();
+                    UIManager.getInstance().updateLayoutDir(ConfigImpl.CLIENT.mForceRtl.get());
+                });
             }
+            //BlurHandler.INSTANCE.loadEffect();
         });
 
         /*CoreShaderRegistrationCallback.EVENT.register(context -> {
@@ -144,9 +114,6 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
         ModConfigEvents.reloading(ID).register(ConfigImpl::reloadAnyClient);
 
         ClientLifecycleEvents.CLIENT_STARTED.register((mc) -> {
-            UIManagerFabric.initializeRenderer();
-            // ensure it's applied and positioned
-            Config.CLIENT.mLastWindowMode.apply();
 
             if (ConfigImpl.CLIENT.mUseNewGuiScale.get()) {
                 final OptionInstance<Integer> newGuiScale = new OptionInstance<>(
@@ -184,7 +151,7 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
                         Minecraft minecraft = Minecraft.getInstance();
                         if ((int) minecraft.getWindow().getGuiScale() !=
                                 minecraft.getWindow().calculateScale(value, false)) {
-                            minecraft.resizeDisplay();
+                            minecraft.resizeGui();
                         }
                     });
                 });
@@ -214,31 +181,16 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
             MuiModApi.addOnDebugDumpListener(TextLayoutEngine.getInstance());
 
             ClientTickEvents.END_CLIENT_TICK.register((mc) -> TextLayoutEngine.getInstance().onEndClientTick());
-            END_RENDER_TICK.register(() -> GlyphManager.getInstance().onEndRenderTick());
+            MuiModApi.addOnRenderFrameListener((frame, stage) -> {
+                if (stage == MuiModApi.RENDER_STAGE_PRESENT) {
+                    GlyphManager.getInstance().onEndRenderTick();
+                }
+            });
 
             LOGGER.info(MARKER, "Initialized Modern UI text engine");
         } else {
             // see MixinFontManager in another case
-            ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new IdentifiableResourceReloadListener() {
-                @Override
-                public ResourceLocation getFabricId() {
-                    return ModernUIMod.location("font");
-                }
-
-                @Nonnull
-                @Override
-                public CompletableFuture<Void> reload(@Nonnull PreparationBarrier preparationBarrier,
-                                                      @Nonnull ResourceManager resourceManager,
-                                                      @Nonnull Executor preparationExecutor,
-                                                      @Nonnull Executor reloadExecutor) {
-                    return FontResourceManager.getInstance().reload(
-                            preparationBarrier,
-                            resourceManager,
-                            preparationExecutor,
-                            reloadExecutor
-                    );
-                }
-            });
+            resourceLoader.registerReloadListener(ModernUIMod.location("font"), FontResourceManager.getInstance());
         }
         LOGGER.info(MARKER, "Initialized Modern UI client");
     }

@@ -18,20 +18,33 @@
 
 package icyllis.modernui.mc.forge;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
+import icyllis.modernui.core.Handler;
+import icyllis.modernui.graphics.Image;
+import icyllis.modernui.mc.FontResourceManager;
+import icyllis.modernui.mc.ImageStore;
 import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.ResourcesStore;
 import icyllis.modernui.mc.StillAlive;
+import icyllis.modernui.mc.UIManager;
 import icyllis.modernui.mc.testforge.TestContainerMenu;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Items;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.settings.KeyConflictContext;
+import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
@@ -39,6 +52,8 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 
 import javax.annotation.Nonnull;
+
+import static icyllis.modernui.mc.ModernUIMod.*;
 
 /**
  * Handles game server or client events from Forge event bus
@@ -145,9 +160,56 @@ final class EventHandler {
         }*/
 
         @SubscribeEvent
-        static void onRenderTick(@Nonnull TickEvent.RenderTickEvent event) {
+        static void onRenderTick(@Nonnull TickEvent.RenderTickEvent.Pre event) {
             Core.flushMainCalls();
             StillAlive.tick();
+        }
+
+        @SubscribeEvent
+        static void onRenderTick(@Nonnull TickEvent.RenderTickEvent.Post event) {
+            Core.flushMainCalls();
+            StillAlive.tick();
+        }
+
+        @SubscribeEvent
+        static void registerResourceListener(@Nonnull RegisterClientReloadListenersEvent event) {
+            // this event fired after LOAD_REGISTRIES and before COMMON_SETUP on client main thread (render thread)
+            // this event fired after ParticleFactoryRegisterEvent
+            Image.setLegacyFactory(ImageStore.getInstance());
+            event.registerReloadListener(ResourcesStore.getInstance());
+            event.registerReloadListener((ResourceManagerReloadListener) manager -> {
+                Handler handler = Core.getUiHandlerAsync();
+                // FML may throw ex, so it can be null
+                if (handler != null) {
+                    // Call in lambda, not in creating the lambda
+                    handler.post(() -> {
+                        ImageStore.getInstance().clear();
+                        UIManager.getInstance().updateLayoutDir(ConfigImpl.CLIENT.mForceRtl.get());
+                    });
+                }
+                //BlurHandler.INSTANCE.loadEffect();
+            });
+            if (!ModernUIMod.isTextEngineEnabled()) {
+                event.registerReloadListener(FontResourceManager.getInstance());
+            }
+            // else injected by MixinFontManager
+
+            LOGGER.debug(MARKER, "Registered resource reload listener");
+        }
+
+        @SubscribeEvent
+        static void registerKeyMapping(@Nonnull RegisterKeyMappingsEvent event) {
+            UIManagerForge.KEYBIND_CATEGORY = KeyMapping.Category.register(
+                    ModernUIMod.location("keybind"));
+            UIManagerForge.OPEN_CENTER_KEY = new KeyMapping(
+                    "key.modernui.openCenter", KeyConflictContext.UNIVERSAL, KeyModifier.CONTROL,
+                    InputConstants.Type.KEYSYM, InputConstants.KEY_K, UIManagerForge.KEYBIND_CATEGORY, 0);
+            UIManagerForge.ZOOM_KEY = new KeyMapping(
+                    "key.modernui.zoom", KeyConflictContext.IN_GAME, KeyModifier.NONE,
+                    InputConstants.Type.KEYSYM, InputConstants.KEY_C, UIManagerForge.KEYBIND_CATEGORY, 0);
+
+            event.register(UIManagerForge.OPEN_CENTER_KEY);
+            event.register(UIManagerForge.ZOOM_KEY);
         }
 
         /*@SubscribeEvent(receiveCanceled = true)

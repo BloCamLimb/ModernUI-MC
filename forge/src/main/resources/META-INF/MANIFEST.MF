@@ -1,0 +1,2 @@
+Automatic-Module-Name: icyllis.modernui.mc.forge
+MixinConfigs: mixins.modernui-forge.json,mixins.modernui-textmc.json

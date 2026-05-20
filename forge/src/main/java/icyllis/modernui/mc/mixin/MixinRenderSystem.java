@@ -18,13 +18,13 @@
 
 package icyllis.modernui.mc.mixin;
 
-import com.mojang.blaze3d.shaders.ShaderType;
+import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import icyllis.arc3d.engine.ContextOptions;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.mc.ModernUIMod;
-import net.minecraft.resources.ResourceLocation;
+import icyllis.modernui.mc.forge.UIManagerForge;
 import net.minecraft.util.TimeSource;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Configuration;
@@ -36,7 +36,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Objects;
-import java.util.function.BiFunction;
 
 @Mixin(RenderSystem.class)
 public class MixinRenderSystem {
@@ -52,9 +51,7 @@ public class MixinRenderSystem {
     }
 
     @Inject(method = "initRenderer", at = @At("TAIL"), remap = false)
-    private static void onInitRenderer(long window, int debugLevel, boolean debugSync,
-                                       BiFunction<ResourceLocation, ShaderType, String> defaultShaderSource,
-                                       boolean enableDebugLabels, CallbackInfo ci) {
+    private static void onInitRenderer(GpuDevice device, CallbackInfo ci) {
         Core.initialize();
         ContextOptions options = new ContextOptions();
         String value = ModernUIClient.getBootstrapProperty(ModernUIClient.BOOTSTRAP_USE_STAGING_BUFFERS_IN_OPENGL);
@@ -69,6 +66,8 @@ public class MixinRenderSystem {
         if (!Core.initOpenGL(options)) {
             Core.glShowCapsErrorDialog();
         }
+        UIManagerForge.initialize();
+        UIManagerForge.initializeRenderer();
     }
 
     /**

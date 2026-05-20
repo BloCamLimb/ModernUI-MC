@@ -473,8 +473,8 @@ public abstract class MuiModApi {
         return code < 128 ? FORMATTING_TABLE[code] : null;
     }
 
-    @ApiStatus.Internal
-    public abstract boolean isGLVersionPromoted();
+    /*@ApiStatus.Internal
+    public abstract boolean isGLVersionPromoted();*/
 
     @ApiStatus.Internal
     public abstract void loadEffect(GameRenderer gr, Identifier effect);

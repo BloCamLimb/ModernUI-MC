@@ -20,8 +20,8 @@ package icyllis.modernui.mc.forge;
 
 import icyllis.modernui.mc.ModernUIMod;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Util;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStartedEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
@@ -134,7 +134,7 @@ public final class ServerHandler {
             }
             ModernUIMod.LOGGER.info(String.format(str, l));
             final Component component = Component.translatable(key, l).withStyle(ChatFormatting.LIGHT_PURPLE);
-            ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers().forEach(p -> p.displayClientMessage(component, true));
+            ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers().forEach(p -> p.sendSystemMessage(component, true));
         }
     }
 }

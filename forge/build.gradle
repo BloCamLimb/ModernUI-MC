@@ -1,9 +1,7 @@
-import net.fabricmc.loom.task.RemapJarTask
-
 plugins {
-    id 'dev.architectury.loom' version '1.11-SNAPSHOT'
+    id 'org.relativitymc.neo-loom'
     //id 'com.matthewprenger.cursegradle' version '1.4.0'
-    id 'com.gradleup.shadow' version '9.3.0'
+    id 'com.gradleup.shadow'
 }
 
 version = "${minecraft_version}-${mod_version}" as String
@@ -15,23 +13,31 @@ configurations {
 }
 
 loom {
-    silentMojangMappingsLicense()
-    forge {
-        /*dataGen {
+    /*forge {
+        *//*dataGen {
             mod 'modernui'
-        }*/
+        }*//*
         mixinConfigs "mixins.modernui-forge.json", "mixins.modernui-textmc.json"
-    }
-    runs {
+    }*/
+    //runs {
         /*data {
             programArgs "--existing", file("src/main/resources").absolutePath
         }*/
-    }
+    //}
+    accessWidenerPath = project(":common").file("src/main/resources/modernui.classtweaker")
     runConfigs.each { it.setIdeConfigGenerated(true) } // Uncomment this if run configs not generated
-    addTaskBeforeRun(":${name}:classes")
+    mods {
+        main { // to match the default mod generated for Forge
+            sourceSet project.sourceSets.main
+            sourceSet project(':common').sourceSets.main
+        }
+    }
 }
 
 repositories {
+    maven {
+        url 'https://maven.minecraftforge.net/'
+    }
     maven {
         name "Jared's maven"
         url "https://maven.blamejared.com/"
@@ -56,12 +62,7 @@ repositories {
 
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
-    mappings loom.officialMojangMappings()
-    /*mappings loom.layered() {
-        officialMojangMappings()
-        parchment("org.parchmentmc.data:parchment-1.19.3:2023.03.12@zip" as String)
-    }*/
-    forge "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    forgeUserdev "net.minecraftforge:forge:${minecraft_version}-${forge_version}:userdev"
 
     /*modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
     modCompileOnlyApi "mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"*/
@@ -71,23 +72,23 @@ dependencies {
     ["dev.icyllis:arc3d-compiler",
      "dev.icyllis:arc3d-core",
      "dev.icyllis:arc3d-sketch"].each {
-        implementation(forgeRuntimeLibrary(it + ":${arc3d_version}"))
+        implementation(it + ":${arc3d_version}")
         include(it + ":${arc3d_version}")
     }
     ["dev.icyllis:arc3d-engine",
      "dev.icyllis:arc3d-granite",
      "dev.icyllis:arc3d-opengl",
      "dev.icyllis:arc3d-vulkan"].each {
-        implementation(forgeRuntimeLibrary(it + ":${arc3d_version}"))
+        implementation(it + ":${arc3d_version}")
         shadow(it + ":${arc3d_version}") {
             transitive = false
         }
     }
-    implementation(forgeRuntimeLibrary("dev.icyllis:modernui-core:${core_version}"))
+    implementation("dev.icyllis:modernui-core:${core_version}")
     shadow("dev.icyllis:modernui-core:${core_version}") {
         transitive = false
     }
-    implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Markflow:3.12.0")) {
+    implementation("icyllis.modernui:ModernUI-Markflow:3.12.0") {
         exclude group: 'icyllis.modernui'
     }
     shadow("icyllis.modernui:ModernUI-Markflow:3.12.0") {
@@ -155,7 +156,15 @@ test {
 }
 
 shadowJar {
-    archiveClassifier.set("shadow")
+    mustRunAfter(tasks.named('jar'))
+
+    doFirst {
+        def javaJarTask = tasks.named('jar').get()
+        def finalJarFile = javaJarTask.archiveFile.get().asFile
+        from(zipTree(finalJarFile))
+    }
+
+    archiveClassifier.set("universal")
     configurations = [project.configurations.shadow]
 
     /*dependencies {
@@ -180,7 +189,7 @@ shadowJar {
     exclude 'META-INF/maven/**'*/
 }
 
-remapJar {
+/*remapJar {
     dependsOn(shadowJar)
     inputFile.set(shadowJar.archiveFile)
     archiveClassifier.set("universal")
@@ -190,15 +199,15 @@ tasks.register('remapMavenJar', RemapJarTask) {
     dependsOn(jar)
     inputFile.set(jar.archiveFile)
     addNestedDependencies = false
-    /*targetNamespace.set("srg") // to srg names
-    remapAccessWidener.set(true)*/
+    *//*targetNamespace.set("srg") // to srg names
+    remapAccessWidener.set(true)*//*
     archiveClassifier.set("maven")
-}
+}*/
 
 if (project.hasProperty("keystore")) {
-    remapJar.doLast {
+    shadowJar.doLast {
         ant.signjar(
-                jar: remapJar.archiveFile.get(),
+                jar: shadowJar.archiveFile.get(),
                 alias: project.getProperty("keystore_alias"),
                 storepass: project.getProperty("keystore_pass"),
                 keystore: project.getProperty("keystore"),
@@ -226,7 +235,8 @@ jar {
                 "Implementation-Title"    : project.name,
                 "Implementation-Version"  : project.version,
                 "Implementation-Vendor"   : "BloCamLimb",
-                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                "MixinConfigs"            : "mixins.modernui-forge.json,mixins.modernui-textmc.json"
         )
     }
 }
@@ -234,7 +244,7 @@ jar {
 publishing {
     publications {
         mavenForge(MavenPublication) {
-            artifact(remapMavenJar.archiveFile) {
+            artifact(shadowJar.archiveFile) {
                 builtBy build
             }
             artifact(sourcesJar.archiveFile) {

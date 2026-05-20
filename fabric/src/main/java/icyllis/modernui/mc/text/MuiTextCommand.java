@@ -24,25 +24,25 @@ import com.mojang.brigadier.arguments.FloatArgumentType;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.mc.ModernUIMod;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.Util;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.arguments.ComponentArgument;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Util;
 
 public class MuiTextCommand {
 
-    public static final ResourceLocation JB_MONO = ModernUIMod.location("jetbrains-mono-medium");
+    public static final FontDescription JB_MONO = new FontDescription.Resource(ModernUIMod.location("jetbrains-mono-medium"));
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher,
                                 CommandBuildContext context) {
-        dispatcher.register(ClientCommandManager.literal(ModernUI.ID)
-                .then(ClientCommandManager.literal("text")
-                        .then(ClientCommandManager.literal("layout")
-                                .then(ClientCommandManager.argument("message", ComponentArgument.textComponent(context))
+        dispatcher.register(ClientCommands.literal(ModernUI.ID)
+                .then(ClientCommands.literal("text")
+                        .then(ClientCommands.literal("layout")
+                                .then(ClientCommands.argument("message", ComponentArgument.textComponent(context))
                                         .executes(ctx -> {
                                             layout(
                                                     ctx.getSource(),
@@ -52,9 +52,9 @@ public class MuiTextCommand {
                                         })
                                 )
                         )
-                        .then(ClientCommandManager.literal("splitLines")
-                                .then(ClientCommandManager.argument("width", FloatArgumentType.floatArg(0))
-                                        .then(ClientCommandManager.argument("message", ComponentArgument.textComponent(context))
+                        .then(ClientCommands.literal("splitLines")
+                                .then(ClientCommands.argument("width", FloatArgumentType.floatArg(0))
+                                        .then(ClientCommands.argument("message", ComponentArgument.textComponent(context))
                                                 .executes(ctx -> {
                                                     splitLines(
                                                             ctx.getSource(),

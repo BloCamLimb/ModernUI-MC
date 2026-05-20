@@ -20,8 +20,6 @@ package icyllis.modernui.mc.fabric;
 
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
-import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerType;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.FriendlyByteBuf;
@@ -30,6 +28,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import org.jspecify.annotations.NonNull;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -39,7 +38,7 @@ import java.util.Objects;
  * The factory interface is used to create menu screens with a main {@link Fragment}.
  * The factory is invoked when the server requires the client to open an application
  * screen to interact with a container menu. The menu instance is created on the
- * client with {@link ExtendedScreenHandlerType.ExtendedFactory#create(int, Inventory, Object)},
+ * client with {@link net.fabricmc.fabric.api.menu.v1.ExtendedMenuType.ExtendedFactory#create(int, Inventory, Object)},
  * which contains custom network data from server. For example:
  * <pre>{@code
  * @Override
@@ -49,11 +48,11 @@ import java.util.Objects;
  * }</pre>
  *
  * @see ServerPlayer#openMenu(MenuProvider)
- * @see ExtendedScreenHandlerFactory
+ * @see net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider
  */
 @FunctionalInterface
-public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
-        MenuScreens.ScreenConstructor<T, AbstractContainerScreen<T>> {
+public interface MenuScreenFactory<T extends @NonNull AbstractContainerMenu> extends
+        MenuScreens.ScreenConstructor<T, @NonNull AbstractContainerScreen<T>> {
 
     /**
      * Helper method that down-casts the screen factory.
@@ -71,7 +70,7 @@ public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
     default AbstractContainerScreen<T> create(@Nonnull T menu,
                                               @Nonnull Inventory inventory,
                                               @Nonnull Component title) {
-        return new MenuScreen<>(UIManager.getInstance(),
+        return new MenuScreen<>(
                 Objects.requireNonNullElseGet(createFragment(menu), Fragment::new),
                 createCallback(menu),
                 menu,

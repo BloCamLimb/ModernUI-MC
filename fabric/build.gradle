@@ -1,9 +1,7 @@
-import net.fabricmc.loom.task.RemapJarTask
-
 plugins {
-    id 'dev.architectury.loom' version '1.11-SNAPSHOT'
+    id 'org.relativitymc.neo-loom'
     //id 'com.matthewprenger.cursegradle' version '1.4.0'
-    id 'com.gradleup.shadow' version '9.3.0'
+    id 'com.gradleup.shadow'
 }
 
 version = "${minecraft_version}-${mod_version}" as String
@@ -13,10 +11,8 @@ configurations {
 }
 
 loom {
-    silentMojangMappingsLicense()
-    accessWidenerPath = file("src/main/resources/modernui.accesswidener")
+    accessWidenerPath = project(":common").file("src/main/resources/modernui.classtweaker")
     runConfigs.each { it.setIdeConfigGenerated(true) } // Uncomment this if run configs not generated
-    addTaskBeforeRun(":${name}:classes")
 }
 
 repositories {
@@ -49,13 +45,12 @@ repositories {
 
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
-    mappings loom.officialMojangMappings()
 
-    modImplementation "net.fabricmc:fabric-loader:0.17.2"
-    modApi "net.fabricmc.fabric-api:fabric-api:0.133.0+1.21.8"
+    implementation "net.fabricmc:fabric-loader:0.19.2"
+    api "net.fabricmc.fabric-api:fabric-api:0.149.0+26.1.2"
 
-    modImplementation "com.terraformersmc:modmenu:15.0.0"
-    modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:21.8.1"
+    implementation "com.terraformersmc:modmenu:18.0.0-beta.1"
+    api "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:26.1.3"
 
     implementation project(':common')
 
@@ -124,7 +119,15 @@ test {
 }
 
 shadowJar {
-    archiveClassifier.set("shadow")
+    mustRunAfter(tasks.named('jar'))
+
+    doFirst {
+        def javaJarTask = tasks.named('jar').get()
+        def finalJarFile = javaJarTask.archiveFile.get().asFile
+        from(zipTree(finalJarFile))
+    }
+
+    archiveClassifier.set("universal")
     configurations = [project.configurations.shadow]
 
     /*dependencies {
@@ -149,7 +152,7 @@ shadowJar {
     exclude 'META-INF/maven/**'*/
 }
 
-remapJar {
+/*remapJar {
     dependsOn(shadowJar)
     inputFile.set(shadowJar.archiveFile)
     archiveClassifier.set("universal")
@@ -159,15 +162,15 @@ tasks.register('remapMavenJar', RemapJarTask) {
     dependsOn(jar)
     inputFile.set(jar.archiveFile)
     addNestedDependencies = false
-    /*targetNamespace.set("srg") // to srg names
-    remapAccessWidener.set(true)*/
+    *//*targetNamespace.set("srg") // to srg names
+    remapAccessWidener.set(true)*//*
     archiveClassifier.set("maven")
-}
+}*/
 
 if (project.hasProperty("keystore")) {
-    remapJar.doLast {
+    shadowJar.doLast {
         ant.signjar(
-                jar: remapJar.archiveFile.get(),
+                jar: shadowJar.archiveFile.get(),
                 alias: project.getProperty("keystore_alias"),
                 storepass: project.getProperty("keystore_pass"),
                 keystore: project.getProperty("keystore"),
@@ -203,7 +206,7 @@ jar {
 publishing {
     publications {
         mavenFabric(MavenPublication) {
-            artifact(remapMavenJar.archiveFile) {
+            artifact(shadowJar.archiveFile) {
                 builtBy build
             }
             artifact(sourcesJar.archiveFile) {

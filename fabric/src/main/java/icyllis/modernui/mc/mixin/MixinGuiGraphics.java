@@ -22,12 +22,12 @@ import icyllis.modernui.mc.IModernGuiGraphics;
 import icyllis.modernui.mc.TooltipRenderer;
 import icyllis.modernui.mc.UIManager;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.ItemStack;
 import org.objectweb.asm.Opcodes;
@@ -44,7 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-@Mixin(GuiGraphics.class)
+@Mixin(GuiGraphicsExtractor.class)
 public abstract class MixinGuiGraphics implements IModernGuiGraphics {
 
     // equivalent to Forge
@@ -63,7 +63,7 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
     @Shadow
     protected abstract void setTooltipForNextFrameInternal(Font arg, List<ClientTooltipComponent> list, int m, int n,
                                                            ClientTooltipPositioner arg2,
-                                                           @Nullable ResourceLocation arg3, boolean bl);
+                                                           @Nullable Identifier arg3, boolean bl);
 
     @Inject(method = "setTooltipForNextFrame(Lnet/minecraft/client/gui/Font;Lnet/minecraft/world/item/ItemStack;II)V",
             at = @At("HEAD"))
@@ -78,10 +78,10 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
     }
 
     @Inject(method = "setTooltipForNextFrame(Lnet/minecraft/client/gui/Font;Ljava/util/List;Ljava/util/Optional;" +
-            "IILnet/minecraft/resources/ResourceLocation;)V",
+            "IILnet/minecraft/resources/Identifier;)V",
             at = @At("HEAD"), cancellable = true)
     private void onRenderTooltip(Font font, List<Component> components, Optional<TooltipComponent> tooltipComponent,
-                                 int x, int y, @Nullable ResourceLocation tooltipStyle, CallbackInfo ci) {
+                                 int x, int y, @Nullable Identifier tooltipStyle, CallbackInfo ci) {
         if (TooltipRenderer.sTooltip && TooltipRenderer.sLineWrapping_FabricOnly) {
             if (!components.isEmpty()) {
                 var transformedComponents = modernUI_MC$transformComponents(
@@ -138,28 +138,28 @@ public abstract class MixinGuiGraphics implements IModernGuiGraphics {
     }
 
     @Inject(method = "setTooltipForNextFrameInternal",
-            at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/GuiGraphics;" +
+            at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;" +
                     "deferredTooltip:Ljava/lang/Runnable;",
                     opcode = Opcodes.PUTFIELD))
     private void onRenderTooltipInternal(Font arg, List<ClientTooltipComponent> list, int m, int n,
                                          ClientTooltipPositioner arg2,
-                                         @Nullable ResourceLocation arg3, boolean bl, CallbackInfo ci) {
+                                         @Nullable Identifier arg3, boolean bl, CallbackInfo ci) {
         modernUI_MC$deferredTooltipStack = modernUI_MC$tooltipStack;
     }
 
-    @Inject(method = "renderTooltip(Lnet/minecraft/client/gui/Font;Ljava/util/List;" +
+    @Inject(method = "tooltip(Lnet/minecraft/client/gui/Font;Ljava/util/List;" +
             "IILnet/minecraft/client/gui/screens/inventory/tooltip/ClientTooltipPositioner;" +
-            "Lnet/minecraft/resources/ResourceLocation;)V", at = @At("HEAD"), cancellable = true)
+            "Lnet/minecraft/resources/Identifier;)V", at = @At("HEAD"), cancellable = true)
     private void onRenderTooltip(Font font, List<ClientTooltipComponent> components,
                                  int x, int y, ClientTooltipPositioner positioner,
-                                 @Nullable ResourceLocation tooltipStyle,
+                                 @Nullable Identifier tooltipStyle,
                                  CallbackInfo ci) {
         ItemStack capturedTooltipStack = modernUI_MC$deferredTooltipStack;
         modernUI_MC$deferredTooltipStack = ItemStack.EMPTY;
         if (TooltipRenderer.sTooltip) {
             if (!components.isEmpty()) {
                 UIManager.getInstance().drawExtTooltip(capturedTooltipStack,
-                        (GuiGraphics) (Object) this,
+                        (GuiGraphicsExtractor) (Object) this,
                         components, x, y, font,
                         guiWidth(), guiHeight(), positioner, tooltipStyle);
                 ci.cancel();

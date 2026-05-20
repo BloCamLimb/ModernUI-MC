@@ -21,27 +21,27 @@ package icyllis.modernui.mc.forge;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.core.Core;
-import icyllis.modernui.core.Handler;
-import icyllis.modernui.graphics.Image;
-import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.OptiFineIntegration;
+import icyllis.modernui.mc.UIManager;
 import icyllis.modernui.mc.mixin.AccessOptions;
 import icyllis.modernui.mc.testforge.TestContainerMenu;
 import icyllis.modernui.mc.testforge.TestPauseFragment;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.*;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.OptionInstance;
+import net.minecraft.client.Options;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.*;
 import net.minecraftforge.common.extensions.IForgeMenuType;
 import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
@@ -59,7 +59,8 @@ import javax.annotation.Nonnull;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 import static icyllis.modernui.mc.ModernUIMod.*;
@@ -108,7 +109,7 @@ final class Registration {
         } catch (IOException e) {
             e.printStackTrace();
         }*/
-        if (ModList.get().getModContainerById(new String(new byte[]{0x1f ^ 0x74, (0x4 << 0x1) | 0x41,
+        if (ModList.getModContainerById(new String(new byte[]{0x1f ^ 0x74, (0x4 << 0x1) | 0x41,
                 ~-0x78, 0xd2 >> 0x1}, StandardCharsets.UTF_8).toLowerCase(Locale.ROOT)).isPresent()) {
             event.enqueueWork(() -> LOGGER.fatal("OK"));
         }
@@ -169,38 +170,6 @@ final class Registration {
             UIManagerForge.initialize();
         }*/
 
-        @SubscribeEvent
-        static void registerResourceListener(@Nonnull RegisterClientReloadListenersEvent event) {
-            // this event fired after LOAD_REGISTRIES and before COMMON_SETUP on client main thread (render thread)
-            // this event fired after ParticleFactoryRegisterEvent
-            Image.setLegacyFactory(ImageStore.getInstance());
-            event.registerReloadListener(ResourcesStore.getInstance());
-            event.registerReloadListener((ResourceManagerReloadListener) manager -> {
-                Handler handler = Core.getUiHandlerAsync();
-                // FML may throw ex, so it can be null
-                if (handler != null) {
-                    // Call in lambda, not in creating the lambda
-                    handler.post(() -> {
-                        ImageStore.getInstance().clear();
-                        UIManager.getInstance().updateLayoutDir(ConfigImpl.CLIENT.mForceRtl.get());
-                    });
-                }
-                //BlurHandler.INSTANCE.loadEffect();
-            });
-            if (!ModernUIMod.isTextEngineEnabled()) {
-                event.registerReloadListener(FontResourceManager.getInstance());
-            }
-            // else injected by MixinFontManager
-
-            LOGGER.debug(MARKER, "Registered resource reload listener");
-        }
-
-        @SubscribeEvent
-        static void registerKeyMapping(@Nonnull RegisterKeyMappingsEvent event) {
-            event.register(UIManagerForge.OPEN_CENTER_KEY);
-            event.register(UIManagerForge.ZOOM_KEY);
-        }
-
         /*@SubscribeEvent
         static void registerCapabilities(@Nonnull RegisterCapabilitiesEvent event) {
             event.register(ScreenCallback.class);
@@ -212,10 +181,6 @@ final class Registration {
             //UIManager.getInstance().registerMenuScreen(Registration.TEST_MENU, menu -> new TestUI());
 
             event.enqueueWork(() -> {
-                //ModernUI.getSelectedTypeface();
-                UIManagerForge.initializeRenderer();
-                // ensure it's applied and positioned
-                Config.CLIENT.mLastWindowMode.apply();
                 if (ModernUIMod.sDevelopment) {
                     MenuScreens.register(MuiRegistries.TEST_MENU.get(), MenuScreenFactory.create(menu ->
                             new TestPauseFragment()));
@@ -283,7 +248,7 @@ final class Registration {
                         Minecraft minecraft = Minecraft.getInstance();
                         if ((int) minecraft.getWindow().getGuiScale() !=
                                 minecraft.getWindow().calculateScale(value, false)) {
-                            minecraft.resizeDisplay();
+                            minecraft.resizeGui();
                         }
                     });
                 });

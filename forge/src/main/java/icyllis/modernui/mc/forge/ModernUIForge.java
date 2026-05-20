@@ -65,19 +65,19 @@ public final class ModernUIForge extends ModernUIMod {
         }
 
         // TipTheScales doesn't work with OptiFine
-        if (ModList.get().isLoaded("tipthescales") && !ModernUIMod.sOptiFineLoaded) {
+        if (ModList.isLoaded("tipthescales") && !ModernUIMod.sOptiFineLoaded) {
             //sInterceptTipTheScales = true;
             LOGGER.fatal(MARKER, "Detected TipTheScales without OptiFine");
             warnSetup("You should remove TipTheScales, Modern UI already includes its features, " +
                     "and Modern UI is also compatible with OptiFine");
         }
-        if (ModList.get().isLoaded("reblured")) {
+        if (ModList.isLoaded("reblured")) {
             LOGGER.fatal(MARKER, "Detected ReBlurred");
             warnSetup("You should remove ReBlurred, Modern UI already includes its features, " +
                     "and Modern UI has better performance than it");
         }
-        sLegendaryTooltipsLoaded = ModList.get().isLoaded("legendarytooltips");
-        sUntranslatedItemsLoaded = ModList.get().isLoaded("untranslateditems");
+        sLegendaryTooltipsLoaded = ModList.isLoaded("legendarytooltips");
+        sUntranslatedItemsLoaded = ModList.isLoaded("untranslateditems");
 
         context.registerConfig(ModConfig.Type.COMMON, ConfigImpl.COMMON_SPEC,
                 ModernUI.NAME_CPT + "/common.toml");
@@ -113,7 +113,7 @@ public final class ModernUIForge extends ModernUIMod {
     }
 
     public static void warnSetup(String key, Object... args) {
-        ModLoader.get().addWarning(new ModLoadingWarning(null, ModLoadingStage.SIDED_SETUP, key, args));
+        ModLoader.addWarning(new ModLoadingWarning(null, ModLoadingStage.SIDED_SETUP, key, args));
     }
 
     /*@SuppressWarnings("UnusedReturnValue")
@@ -147,7 +147,6 @@ public final class ModernUIForge extends ModernUIMod {
 
         private Client(FMLJavaModLoadingContext context) {
             super();
-            UIManagerForge.initialize();
             context.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
                     ModernUI.NAME_CPT + "/client.toml");
             context.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,

@@ -19,7 +19,7 @@
 package icyllis.modernui.mc.mixin;
 
 import icyllis.modernui.mc.IModernGuiGraphics;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,24 +31,24 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 @Mixin(AbstractContainerScreen.class)
 public class MixinContainerScreen {
 
-    @Inject(method = "renderTooltip",
+    @Inject(method = "extractTooltip",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/GuiGraphics;setTooltipForNextFrame" +
+                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;setTooltipForNextFrame" +
                             "(Lnet/minecraft/client/gui/Font;Ljava/util/List;Ljava/util/Optional;" +
-                            "IILnet/minecraft/resources/ResourceLocation;)V"),
+                            "IILnet/minecraft/resources/Identifier;)V"),
             locals = LocalCapture.CAPTURE_FAILSOFT)
-    private void preRenderTooltip(GuiGraphics gr, int x, int y, CallbackInfo ci, ItemStack stack) {
+    private void preRenderTooltip(GuiGraphicsExtractor gr, int x, int y, CallbackInfo ci, ItemStack stack) {
         ((IModernGuiGraphics) gr).modernUI_MC$setTooltipStack(stack);
     }
 
-    @Inject(method = "renderTooltip",
+    @Inject(method = "extractTooltip",
             at = @At(value = "INVOKE",
                     shift = At.Shift.AFTER,
-                    target = "Lnet/minecraft/client/gui/GuiGraphics;setTooltipForNextFrame" +
+                    target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;setTooltipForNextFrame" +
                             "(Lnet/minecraft/client/gui/Font;Ljava/util/List;Ljava/util/Optional;" +
-                            "IILnet/minecraft/resources/ResourceLocation;)V"),
+                            "IILnet/minecraft/resources/Identifier;)V"),
             locals = LocalCapture.CAPTURE_FAILSOFT)
-    private void postRenderTooltip(GuiGraphics gr, int x, int y, CallbackInfo ci, ItemStack stack) {
+    private void postRenderTooltip(GuiGraphicsExtractor gr, int x, int y, CallbackInfo ci, ItemStack stack) {
         ((IModernGuiGraphics) gr).modernUI_MC$setTooltipStack(ItemStack.EMPTY);
     }
 }

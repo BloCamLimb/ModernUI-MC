@@ -67,6 +67,11 @@ public final class ModernUIText {
         //Minecraft.getInstance().execute(ModernUI::getSelectedTypeface);
         MuiModApi.addOnWindowResizeListener(TextLayoutEngine.getInstance());
         MuiModApi.addOnDebugDumpListener(TextLayoutEngine.getInstance());
+        MuiModApi.addOnRenderFrameListener((frame, stage) -> {
+            if (stage == MuiModApi.RENDER_STAGE_PRESENT) {
+                GlyphManager.getInstance().onEndRenderTick();
+            }
+        });
         BusGroup.DEFAULT.register(MethodHandles.lookup(), EventHandler.class);
         LOGGER.info(MARKER, "Loaded modern text engine");
     }
@@ -131,11 +136,6 @@ public final class ModernUIText {
         @SubscribeEvent
         static void onClientTick(@Nonnull TickEvent.ClientTickEvent.Post event) {
             TextLayoutEngine.getInstance().onEndClientTick();
-        }
-
-        @SubscribeEvent
-        static void onRenderTick(@Nonnull TickEvent.RenderTickEvent.Post event) {
-            GlyphManager.getInstance().onEndRenderTick();
         }
 
         @SubscribeEvent

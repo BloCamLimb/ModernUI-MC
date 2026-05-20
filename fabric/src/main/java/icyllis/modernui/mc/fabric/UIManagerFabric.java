@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.fabric;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import icyllis.modernui.annotation.MainThread;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
@@ -29,6 +28,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.network.chat.CommonComponents;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,16 +41,11 @@ import static org.lwjgl.glfw.GLFW.*;
 @ApiStatus.Internal
 public final class UIManagerFabric extends UIManager {
 
-    @SuppressWarnings("NoTranslation")
-    public static final KeyMapping OPEN_CENTER_KEY = new KeyMapping(
-            "key.modernui.openCenter",
-            InputConstants.Type.KEYSYM, GLFW_KEY_K, "Modern UI");
+    public static KeyMapping.Category KEYBIND_CATEGORY;
+    public static KeyMapping OPEN_CENTER_KEY;
 
     private UIManagerFabric() {
         super();
-
-        ModernUIFabricClient.START_RENDER_TICK.register(() -> super.onRenderTick(false));
-        ModernUIFabricClient.END_RENDER_TICK.register(() -> super.onRenderTick(true));
 
         ClientTickEvents.START_CLIENT_TICK.register((mc) -> super.onClientTick(false));
         ClientTickEvents.END_CLIENT_TICK.register((mc) -> super.onClientTick(true));
@@ -73,7 +69,7 @@ public final class UIManagerFabric extends UIManager {
         if (!minecraft.isSameThread()) {
             throw new IllegalStateException("Not called from main thread");
         }
-        minecraft.setScreen(new SimpleScreen(this, fragment, null, null, null));
+        minecraft.setScreen(new SimpleScreen(fragment, null, null, CommonComponents.EMPTY));
     }
 
     @Override
@@ -96,18 +92,18 @@ public final class UIManagerFabric extends UIManager {
     }
 
     @Override
-    protected void onPreKeyInput(int keyCode, int scanCode, int action, int mods) {
+    protected void onPreKeyInput(int action, KeyEvent event) {
         if (action == GLFW_PRESS) {
             if (minecraft.screen == null ||
                     minecraft.screen.shouldCloseOnEsc() ||
                     minecraft.screen instanceof TitleScreen) {
-                if (Screen.hasControlDown() && OPEN_CENTER_KEY.matches(keyCode, scanCode)) {
+                if (event.hasControlDownWithQuirk() && OPEN_CENTER_KEY.matches(event)) {
                     open(new CenterFragment2());
                     return;
                 }
             }
         }
-        super.onPreKeyInput(keyCode, scanCode, action, mods);
+        super.onPreKeyInput(action, event);
     }
 
     @Override

@@ -22,48 +22,25 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
-import icyllis.modernui.fragment.Fragment;
-import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.MuiModApi;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
 import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
-import net.minecraft.network.chat.CommonComponents;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Rarity;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public final class MuiForgeApi extends MuiModApi {
 
     public MuiForgeApi() {
         ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Created MuiForgeAPI");
-    }
-
-    @Override
-    public boolean isGLVersionPromoted() {
-        try {
-            if (net.neoforged.fml.loading.FMLConfig.getBoolConfigValue(net.neoforged.fml.loading.FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL)) {
-                // Newer FancyModLoader no longer promotes GL version, we must disable early window control.
-                // However, when Arc3D is updated, or we update to Minecraft 1.21.9, this will no longer be necessary.
-                // Ideally we can use GraphicsBootstrapper to avoid the first boot crash, but that requires a service layer.
-                net.neoforged.fml.loading.FMLConfig.updateConfig(net.neoforged.fml.loading.FMLConfig.ConfigValue.EARLY_WINDOW_CONTROL, Boolean.FALSE);
-                ModernUIMod.LOGGER.warn(ModernUIMod.MARKER, "Disable early window control to promote GL version, you need to launch the game again!");
-                return true;
-            }
-        } catch (Throwable ignored) {
-        }
-        return false;
     }
 
     @Override
