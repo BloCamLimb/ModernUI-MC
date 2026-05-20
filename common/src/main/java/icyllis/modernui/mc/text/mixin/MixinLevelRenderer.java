@@ -22,7 +22,6 @@ import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.text.TextRenderType;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.RenderBuffers;
-import net.minecraft.client.renderer.RenderType;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -39,7 +38,7 @@ public class MixinLevelRenderer {
     private RenderBuffers renderBuffers;
 
     // neoforge has lambda$addMainPass$2 but different signature from forge
-    @Inject(method = {"method_62214", "lambda$addMainPass$3", "lambda$addMainPass$2" +
+    /*@Inject(method = {"method_62214", "lambda$addMainPass$3", "lambda$addMainPass$2" +
             "(Lcom/mojang/blaze3d/buffers/GpuBufferSlice;Lnet/minecraft/client/DeltaTracker;" +
             "Lnet/minecraft/client/Camera;Lnet/minecraft/util/profiling/ProfilerFiller;Lorg/joml/Matrix4f;" +
             "Lcom/mojang/blaze3d/resource/ResourceHandle;Lcom/mojang/blaze3d/resource/ResourceHandle;" +
@@ -58,5 +57,5 @@ public class MixinLevelRenderer {
                 renderBuffers.bufferSource().endBatch(firstSDFStrokeType);
             }
         }
-    }
+    }*/
 }

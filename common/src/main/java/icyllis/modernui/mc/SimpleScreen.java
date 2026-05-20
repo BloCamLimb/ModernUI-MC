@@ -19,8 +19,11 @@
 package icyllis.modernui.mc;
 
 import icyllis.modernui.fragment.Fragment;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 
 import javax.annotation.Nonnull;
@@ -59,11 +62,11 @@ public class SimpleScreen extends Screen implements MuiScreen {
     }
 
     @Override
-    public void renderBackground(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
+    public void extractBackground(@Nonnull GuiGraphicsExtractor gr, int mouseX, int mouseY, float deltaTick) {
         ScreenCallback callback = getCallback();
         if (callback == null || callback.hasDefaultBackground()) {
             if (minecraft != null && minecraft.level == null) {
-                super.renderBackground(gr, mouseX, mouseY, deltaTick);
+                super.extractBackground(gr, mouseX, mouseY, deltaTick);
             } else {
                 BlurHandler.INSTANCE.drawScreenBackground(gr, 0, 0, this.width, this.height);
             }
@@ -71,9 +74,9 @@ public class SimpleScreen extends Screen implements MuiScreen {
     }
 
     @Override
-    public void render(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
+    public void extractRenderState(@Nonnull GuiGraphicsExtractor gr, int mouseX, int mouseY, float deltaTick) {
         mHost.render(gr, mouseX, mouseY, deltaTick);
-        super.render(gr, mouseX, mouseY, deltaTick);
+        super.extractRenderState(gr, mouseX, mouseY, deltaTick);
     }
 
     @Override
@@ -131,20 +134,20 @@ public class SimpleScreen extends Screen implements MuiScreen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
-        super.mouseClicked(mouseX, mouseY, mouseButton);
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        super.mouseClicked(event, doubleClick);
         return false;
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int mouseButton) {
-        super.mouseReleased(mouseX, mouseY, mouseButton);
+    public boolean mouseReleased(MouseButtonEvent event) {
+        super.mouseReleased(event);
         return false;
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int mouseButton, double deltaX, double deltaY) {
-        super.mouseDragged(mouseX, mouseY, mouseButton, deltaX, deltaY);
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        super.mouseDragged(event, dx, dy);
         return true;
     }
 
@@ -158,28 +161,28 @@ public class SimpleScreen extends Screen implements MuiScreen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (getFocused() != null && getFocused().keyPressed(keyCode, scanCode, modifiers)) {
+    public boolean keyPressed(KeyEvent event) {
+        if (getFocused() != null && getFocused().keyPressed(event)) {
             return true;
         }
-        mHost.onKeyPress(keyCode, scanCode, modifiers);
+        mHost.onKeyPress(event.key(), event.scancode(), event.modifiers());
         return false;
     }
 
     @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        if (getFocused() != null && getFocused().keyReleased(keyCode, scanCode, modifiers)) {
+    public boolean keyReleased(KeyEvent event) {
+        if (getFocused() != null && getFocused().keyReleased(event)) {
             return true;
         }
-        mHost.onKeyRelease(keyCode, scanCode, modifiers);
+        mHost.onKeyRelease(event.key(), event.scancode(), event.modifiers());
         return false;
     }
 
     @Override
-    public boolean charTyped(char ch, int modifiers) {
-        if (getFocused() != null && getFocused().charTyped(ch, modifiers)) {
+    public boolean charTyped(CharacterEvent event) {
+        if (getFocused() != null && getFocused().charTyped(event)) {
             return true;
         }
-        return mHost.onCharTyped(ch);
+        return mHost.onCharTyped(event.codepoint());
     }
 }

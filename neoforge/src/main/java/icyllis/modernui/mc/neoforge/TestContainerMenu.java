@@ -43,7 +43,7 @@ public class TestContainerMenu extends AbstractContainerMenu {
      */
     public TestContainerMenu() {
         super(null, 0);
-        assert (FMLEnvironment.dist.isClient());
+        assert (FMLEnvironment.getDist().isClient());
     }
 
     public TestContainerMenu(int containerId, @Nonnull Inventory inventory, @Nonnull FriendlyByteBuf data) {

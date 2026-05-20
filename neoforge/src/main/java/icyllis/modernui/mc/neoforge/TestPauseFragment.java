@@ -38,7 +38,7 @@ import icyllis.modernui.util.*;
 import icyllis.modernui.view.*;
 import icyllis.modernui.widget.*;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -372,7 +372,7 @@ public class TestPauseFragment extends Fragment {
                     }
 
                     @Override
-                    public void onDraw(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick,
+                    public void onDraw(@Nonnull GuiGraphicsExtractor gr, int mouseX, int mouseY, float deltaTick,
                                        double guiScale, float alpha) {
                         int guiScaledWidth = (int) (mSurfaceWidth / guiScale);
                         int guiScaledHeight = (int) (mSurfaceHeight / guiScale);
@@ -388,10 +388,10 @@ public class TestPauseFragment extends Fragment {
                                 3
                         );
                         // the text should not be clipped
-                        gr.drawString(Minecraft.getInstance().font,
+                        gr.text(Minecraft.getInstance().font,
                                 "A", itemX, itemY, ~0);
 
-                        gr.renderItem(mItem, itemX, itemY);
+                        gr.item(mItem, itemX, itemY);
                     }
                 });
                 LayoutParams params = new LayoutParams(mSize * 4, mSize * 5, Gravity.CENTER);

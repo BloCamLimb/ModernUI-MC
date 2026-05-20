@@ -22,7 +22,6 @@ import icyllis.modernui.graphics.Canvas;
 import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.world.item.ItemStack;
 import org.joml.Matrix4f;
@@ -55,7 +54,7 @@ public final class ContainerDrawHelper {
 
     //private final Runnable mDrawItem = this::drawItem;
 
-    private final ItemRenderer mRenderer = Minecraft.getInstance().getItemRenderer();
+    //private final ItemRenderer mRenderer = Minecraft.getInstance().getItemRenderer();
     private final TextureManager mTextureManager = Minecraft.getInstance().getTextureManager();
 
     //private volatile GLSurfaceCanvas mCanvas;

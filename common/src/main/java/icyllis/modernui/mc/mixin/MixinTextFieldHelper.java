@@ -31,7 +31,7 @@ public class MixinTextFieldHelper {
             method = "moveByChars(IZ)V",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/Util;offsetByCodepoints(Ljava/lang/String;II)I"
+                    target = "Lnet/minecraft/util/Util;offsetByCodepoints(Ljava/lang/String;II)I"
             )
     )
     private int onMoveByChars(String value, int cursor, int dir) {
@@ -42,7 +42,7 @@ public class MixinTextFieldHelper {
             method = "removeCharsFromCursor",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/Util;offsetByCodepoints(Ljava/lang/String;II)I"
+                    target = "Lnet/minecraft/util/Util;offsetByCodepoints(Ljava/lang/String;II)I"
             )
     )
     private int onRemoveCharsFromCursor(String value, int cursor, int dir) {

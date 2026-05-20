@@ -26,12 +26,12 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(value = GpuTexture.class, remap = false)
 public interface AccessGpuTexture {
 
-    @Accessor
+    /*@Accessor
     FilterMode getMinFilter();
 
     @Accessor
     FilterMode getMagFilter();
 
     @Accessor
-    boolean getUseMipmaps();
+    boolean getUseMipmaps();*/
 }

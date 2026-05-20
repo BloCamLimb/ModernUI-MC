@@ -70,7 +70,7 @@ public final class ConfigImpl {
     }
 
     static {
-        if (FMLEnvironment.dist.isClient()) {
+        if (FMLEnvironment.getDist().isClient()) {
             {
                 ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
                 CLIENT = new Client(builder);

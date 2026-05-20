@@ -99,7 +99,8 @@ public abstract class MixinWindow {
         MuiModApi.dispatchOnWindowResize(getWidth(), getHeight(), newScale, oldScale);
     }
 
-    @Redirect(method = "<init>",
+    //TODO GlBackend
+    /*@Redirect(method = "<init>",
             at = @At(value = "INVOKE",
                     target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V",
                     ordinal = 5),
@@ -153,5 +154,5 @@ public abstract class MixinWindow {
                 GLFW.glfwSetErrorCallback(callback);
             }
         }
-    }
+    }*/
 }

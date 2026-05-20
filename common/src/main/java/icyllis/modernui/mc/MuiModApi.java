@@ -18,8 +18,6 @@
 
 package icyllis.modernui.mc;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.textures.GpuTexture;
@@ -35,22 +33,22 @@ import icyllis.modernui.mc.mixin.MixinChatFormatting;
 import icyllis.modernui.resources.ResourcesLoader;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderStateShard;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
+import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Rarity;
@@ -105,7 +103,7 @@ public abstract class MuiModApi {
     public interface OnWindowResizeListener {
 
         /**
-         * Invoked at the beginning of {@link Minecraft#resizeDisplay()}.
+         * Invoked at the beginning of {@link Minecraft#resizeGui()}.
          * Gui scale algorithm is replaced by Modern UI, see {@link #calcGuiScales(Window)}.
          *
          * @param width       framebuffer width of the window in pixels
@@ -133,7 +131,7 @@ public abstract class MuiModApi {
         /**
          * Called when {@link org.lwjgl.glfw.GLFWKeyCallbackI} invoked.
          */
-        void onPreKeyInput(long window, int keyCode, int scanCode, int action, int mods);
+        void onPreKeyInput(long window, int action, KeyEvent event);
     }
 
     /**
@@ -167,6 +165,33 @@ public abstract class MuiModApi {
                                        @Nonnull ResourceManager resourceManager);
     }
 
+    /**
+     * Start of update, this is called at the beginning of frame on recording thread.
+     */
+    public static final int RENDER_STAGE_UPDATE = 0;
+    /**
+     * Start of extract, this is called at the beginning of render state extraction on recording thread.
+     */
+    public static final int RENDER_STAGE_EXTRACT = 2;
+    /**
+     * Start of GPU async rendering, this is called at the beginning of frame on rendering thread.
+     */
+    public static final int RENDER_STAGE_RENDER = 4;
+    /**
+     * Start of presentation, this is called after submission to GPU but before presentation/vsync on rendering thread.
+     */
+    public static final int RENDER_STAGE_PRESENT = 6;
+
+    @FunctionalInterface
+    public interface OnRenderFrameListener {
+
+        /**
+         * @param frame frame counter, reserved for future use
+         * @param stage see above, like {@link #RENDER_STAGE_UPDATE}
+         */
+        void onRenderFrame(long frame, int stage);
+    }
+
     /*static final CopyOnWriteArrayList<OnScrollListener> sOnScrollListeners =
             new CopyOnWriteArrayList<>();*/
     static final CopyOnWriteArrayList<OnScreenChangeListener> sOnScreenChangeListeners =
@@ -179,6 +204,8 @@ public abstract class MuiModApi {
             new CopyOnWriteArrayList<>();
     static final ConcurrentHashMap<String, OnUpdateLoaderListener> sOnUpdateLoaderListeners =
             new ConcurrentHashMap<>();
+    static final CopyOnWriteArrayList<OnRenderFrameListener> sOnRenderFrameListeners =
+            new CopyOnWriteArrayList<>();
 
     static final MuiModApi INSTANCE = ServiceLoader.load(MuiModApi.class).findFirst()
             .orElseThrow();
@@ -281,24 +308,34 @@ public abstract class MuiModApi {
      * @param previousScreen the last screen or null
      * @param title          the title for the virtual window, may be {@link icyllis.modernui.text.Spanned}
      */
+    @SuppressWarnings("unchecked")
     @Nonnull
-    public abstract <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
+    public <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
                                                                   @Nullable ScreenCallback callback,
                                                                   @Nullable Screen previousScreen,
-                                                                  @Nullable CharSequence title);
+                                                                  @Nullable CharSequence title) {
+        return (T) new SimpleScreen(
+                fragment, callback, previousScreen, title == null || title.isEmpty()
+                ? CommonComponents.EMPTY
+                : Component.literal(title.toString()));
+    }
 
     /**
      * Creates a Modern UI menu screen. In most cases, just use MenuScreenFactory.
      * <p>
      * The return value is an intersection type, use var statement.
      */
+    @SuppressWarnings("unchecked")
     @Nonnull
-    public abstract <T extends AbstractContainerMenu, U extends Screen & MenuAccess<T> & MuiScreen>
+    public <T extends AbstractContainerMenu, U extends Screen & MenuAccess<T> & MuiScreen>
     U createMenuScreen(@Nonnull Fragment fragment,
                        @Nullable ScreenCallback callback,
                        @Nonnull T menu,
                        @Nonnull Inventory inventory,
-                       @Nonnull Component title);
+                       @Nonnull Component title) {
+        return (U) new MenuScreen<>(
+                fragment, callback, menu, inventory, title);
+    }
 
     /**
      * Get the elapsed time since the current screen is set, updated every frame on Render thread.
@@ -440,13 +477,13 @@ public abstract class MuiModApi {
     public abstract boolean isGLVersionPromoted();
 
     @ApiStatus.Internal
-    public abstract void loadEffect(GameRenderer gr, ResourceLocation effect);
+    public abstract void loadEffect(GameRenderer gr, Identifier effect);
 
     /*public abstract ShaderInstance makeShaderInstance(ResourceProvider resourceProvider,
                                                       ResourceLocation resourceLocation,
                                                       VertexFormat vertexFormat) throws IOException;*/
 
-    public abstract boolean isKeyBindingMatches(KeyMapping keyMapping, InputConstants.Key key);
+    public abstract boolean isKeyBindingMatches(KeyMapping keyMapping, KeyEvent keyEvent);
 
     public abstract Style applyRarityTo(Rarity rarity, Style baseStyle);
 
@@ -454,19 +491,19 @@ public abstract class MuiModApi {
 
     public abstract GpuTexture getRealGpuTexture(GpuTexture faker);
 
-    public abstract void submitGuiElementRenderState(GuiGraphics graphics, GuiElementRenderState renderState);
+    public abstract void submitGuiElementRenderState(GuiGraphicsExtractor graphics, GuiElementRenderState renderState);
 
-    public abstract void submitPictureInPictureRenderState(GuiGraphics graphics, PictureInPictureRenderState renderState);
+    public abstract void submitPictureInPictureRenderState(GuiGraphicsExtractor graphics, PictureInPictureRenderState renderState);
 
     @Nullable
-    public abstract ScreenRectangle peekScissorStack(GuiGraphics graphics);
+    public abstract ScreenRectangle peekScissorStack(GuiGraphicsExtractor graphics);
 
     // textureState must subclass RenderStateShard.EmptyTextureStateShard, null = NO_TEXTURE
-    public abstract RenderType createRenderType(String name, int bufferSize,
+    /*public abstract RenderType createRenderType(String name, int bufferSize,
                                                 boolean affectsCrumbling, boolean sortOnUpload,
                                                 RenderPipeline renderPipeline,
                                                 @Nullable RenderStateShard textureState,
-                                                boolean lightmap);
+                                                boolean lightmap);*/
 
     /*
      * Registers a callback to be called when {@link org.lwjgl.glfw.GLFWScrollCallback} is called.
@@ -507,7 +544,7 @@ public abstract class MuiModApi {
     }
 
     /**
-     * Registers a callback to be invoked at the beginning of {@link Minecraft#resizeDisplay()}.
+     * Registers a callback to be invoked at the beginning of {@link Minecraft#resizeGui()}.
      *
      * @param listener the listener to register
      * @see OnWindowResizeListener
@@ -574,6 +611,14 @@ public abstract class MuiModApi {
         }
     }
 
+    public static void addOnRenderFrameListener(@Nonnull OnRenderFrameListener listener) {
+        sOnRenderFrameListeners.addIfAbsent(listener);
+    }
+
+    public static void removeOnRenderFrameListener(@Nonnull OnRenderFrameListener listener) {
+        sOnRenderFrameListeners.remove(listener);
+    }
+
     // INTERNAL HOOK
     /*public static void dispatchOnScroll(double scrollX, double scrollY) {
         for (var l : sOnScrollListeners) {
@@ -603,9 +648,9 @@ public abstract class MuiModApi {
     }
 
     // INTERNAL HOOK
-    public static void dispatchOnPreKeyInput(long window, int keyCode, int scanCode, int action, int mods) {
+    public static void dispatchOnPreKeyInput(long window, int action, KeyEvent event) {
         for (var l : sOnPreKeyInputListeners) {
-            l.onPreKeyInput(window, keyCode, scanCode, action, mods);
+            l.onPreKeyInput(window, action, event);
         }
     }
 
@@ -614,5 +659,12 @@ public abstract class MuiModApi {
     public static List<Map.Entry<String, OnUpdateLoaderListener>> snapOnUpdateLoaderListeners() {
         // unwrapping the view iterator is faster
         return new ObjectArrayList<>(sOnUpdateLoaderListeners.entrySet());
+    }
+
+    // INTERNAL HOOK
+    public static void dispatchOnRenderFrame(long frame, int stage) {
+        for (var l : sOnRenderFrameListeners) {
+            l.onRenderFrame(frame, stage);
+        }
     }
 }

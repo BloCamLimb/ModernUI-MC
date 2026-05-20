@@ -143,7 +143,7 @@ public final class ModernTextRenderer {
 
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
-            ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
+            //((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
         // copy the matrix when needed
         boolean matrixIsCopied = false;
@@ -285,7 +285,7 @@ public final class ModernTextRenderer {
         TextLayout layout = mEngine.lookupFormattedLayout(text);
         if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
-            ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
+            //((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
 
         layout.drawText(matrix, source, x, y, r, g, b, a, false,

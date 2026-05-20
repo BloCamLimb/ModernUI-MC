@@ -26,13 +26,14 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.modernui.mc.text.ModernPreparedText;
 import icyllis.modernui.mc.text.TextRenderType;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.font.TextRenderable;
 import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.GuiRenderer;
-import net.minecraft.client.gui.render.state.GlyphEffectRenderState;
-import net.minecraft.client.gui.render.state.GlyphRenderState;
-import net.minecraft.client.gui.render.state.GuiRenderState;
+import net.minecraft.client.renderer.state.gui.GlyphRenderState;
+import net.minecraft.client.renderer.state.gui.GuiRenderState;
 import org.joml.Matrix3x2f;
+import org.joml.Matrix3x2fc;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -59,7 +60,7 @@ public class MixinGuiRenderer {
     @Overwrite
     private void prepareText() {
         renderState.forEachText(guiTextRenderState -> {
-            Matrix3x2f pose = guiTextRenderState.pose;
+            Matrix3x2fc pose = guiTextRenderState.pose;
             ScreenRectangle scissor = guiTextRenderState.scissor;
             Font.PreparedText preparedText = guiTextRenderState.ensurePrepared();
             if (preparedText instanceof ModernPreparedText) {
@@ -69,19 +70,13 @@ public class MixinGuiRenderer {
                 // fallback to vanilla logic
                 preparedText.visit(new Font.GlyphVisitor() {
                     @Override
-                    public void acceptGlyph(@Nonnull BakedGlyph.GlyphInstance instance) {
-                        //noinspection resource
-                        if (instance.glyph().textureView() != null) {
-                            renderState.submitGlyphToCurrentLayer(new GlyphRenderState(pose, instance, scissor));
-                        }
+                    public void acceptGlyph(TextRenderable.Styled glyph) {
+                        renderState.addGlyphToCurrentLayer(new GlyphRenderState(pose, glyph, scissor));
                     }
 
                     @Override
-                    public void acceptEffect(@Nonnull BakedGlyph glyph, @Nonnull BakedGlyph.Effect effect) {
-                        //noinspection resource
-                        if (glyph.textureView() != null) {
-                            renderState.submitGlyphToCurrentLayer(new GlyphEffectRenderState(pose, glyph, effect, scissor));
-                        }
+                    public void acceptEffect(TextRenderable glyph) {
+                        renderState.addGlyphToCurrentLayer(new GlyphRenderState(pose, glyph, scissor));
                     }
                 });
             }
@@ -90,7 +85,7 @@ public class MixinGuiRenderer {
 
     // setup bilinear sampler for SDF text
 
-    @Unique
+    /*@Unique
     private FilterMode modernUI_MC$oldMinFilter;
     @Unique
     private FilterMode modernUI_MC$oldMagFilter;
@@ -121,5 +116,5 @@ public class MixinGuiRenderer {
             modernUI_MC$oldMinFilter = null;
             modernUI_MC$oldMagFilter = null;
         }
-    }
+    }*/
 }

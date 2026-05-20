@@ -19,14 +19,17 @@
 package icyllis.modernui.mc;
 
 import icyllis.modernui.fragment.Fragment;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
-import org.jetbrains.annotations.ApiStatus;
+import net.minecraft.world.inventory.ContainerInput;
+import org.jspecify.annotations.NonNull;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -39,7 +42,7 @@ import java.util.Objects;
  * @since 3.13
  * @see SimpleScreen
  */
-public class MenuScreen<T extends AbstractContainerMenu>
+public class MenuScreen<T extends @NonNull AbstractContainerMenu>
         extends AbstractContainerScreen<T>
         implements MuiScreen {
 
@@ -64,30 +67,17 @@ public class MenuScreen<T extends AbstractContainerMenu>
     }
 
     @Override
-    public void renderBackground(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
+    public void extractBackground(@Nonnull GuiGraphicsExtractor gr, int mouseX, int mouseY, float deltaTick) {
         ScreenCallback callback = getCallback();
         if (callback == null || callback.hasDefaultBackground()) {
-            super.renderBackground(gr, mouseX, mouseY, deltaTick);
+            super.extractBackground(gr, mouseX, mouseY, deltaTick);
         }
     }
 
     @Override
-    public void render(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
+    public void extractRenderState(@Nonnull GuiGraphicsExtractor gr, int mouseX, int mouseY, float deltaTick) {
         mHost.render(gr, mouseX, mouseY, deltaTick);
-        super.render(gr, mouseX, mouseY, deltaTick);
-        renderExtraContents(gr, mouseX, mouseY, deltaTick);
-        renderTooltip(gr, mouseX, mouseY);
-    }
-
-    /**
-     * Override to render additional contents above other contents and widgets, but below the tooltip.
-     */
-    @ApiStatus.OverrideOnly
-    protected void renderExtraContents(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick) {
-    }
-
-    @Override
-    protected void renderBg(@Nonnull GuiGraphics gr, float deltaTick, int x, int y) {
+        super.extractRenderState(gr, mouseX, mouseY, deltaTick);
     }
 
     @Override
@@ -139,20 +129,20 @@ public class MenuScreen<T extends AbstractContainerMenu>
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int mouseButton) {
-        super.mouseClicked(mouseX, mouseY, mouseButton);
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        super.mouseClicked(event, doubleClick);
         return false;
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int mouseButton) {
-        super.mouseReleased(mouseX, mouseY, mouseButton);
+    public boolean mouseReleased(MouseButtonEvent event) {
+        super.mouseReleased(event);
         return false;
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int mouseButton, double deltaX, double deltaY) {
-        super.mouseDragged(mouseX, mouseY, mouseButton, deltaX, deltaY);
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+        super.mouseDragged(event, dx, dy);
         return true;
     }
 
@@ -166,41 +156,41 @@ public class MenuScreen<T extends AbstractContainerMenu>
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (getFocused() != null && getFocused().keyPressed(keyCode, scanCode, modifiers)) {
+    public boolean keyPressed(KeyEvent event) {
+        if (getFocused() != null && getFocused().keyPressed(event)) {
             return true;
         }
-        if (checkHotbarKeyPressed(keyCode, scanCode)) {
+        if (checkHotbarKeyPressed(event)) {
             return true;
         }
         if (hoveredSlot != null && hoveredSlot.hasItem()) {
-            if (minecraft.options.keyPickItem.matches(keyCode, scanCode)) {
-                slotClicked(hoveredSlot, hoveredSlot.index, 0, ClickType.CLONE);
+            if (minecraft.options.keyPickItem.matches(event)) {
+                slotClicked(hoveredSlot, hoveredSlot.index, 0, ContainerInput.CLONE);
                 return true;
-            } else if (minecraft.options.keyDrop.matches(keyCode, scanCode)) {
-                slotClicked(hoveredSlot, hoveredSlot.index, hasControlDown() ? 1 : 0, ClickType.THROW);
+            } else if (minecraft.options.keyDrop.matches(event)) {
+                slotClicked(hoveredSlot, hoveredSlot.index, event.hasControlDown() ? 1 : 0, ContainerInput.THROW);
                 return true;
             }
         }
 
-        mHost.onKeyPress(keyCode, scanCode, modifiers);
+        mHost.onKeyPress(event.key(), event.scancode(), event.modifiers());
         return false;
     }
 
     @Override
-    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
-        if (getFocused() != null && getFocused().keyReleased(keyCode, scanCode, modifiers)) {
+    public boolean keyReleased(KeyEvent event) {
+        if (getFocused() != null && getFocused().keyReleased(event)) {
             return true;
         }
-        mHost.onKeyRelease(keyCode, scanCode, modifiers);
+        mHost.onKeyRelease(event.key(), event.scancode(), event.modifiers());
         return false;
     }
 
     @Override
-    public boolean charTyped(char ch, int modifiers) {
-        if (getFocused() != null && getFocused().charTyped(ch, modifiers)) {
+    public boolean charTyped(CharacterEvent event) {
+        if (getFocused() != null && getFocused().charTyped(event)) {
             return true;
         }
-        return mHost.onCharTyped(ch);
+        return mHost.onCharTyped(event.codepoint());
     }
 }

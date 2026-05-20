@@ -29,6 +29,7 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.neoforged.neoforge.network.IContainerFactory;
+import org.jspecify.annotations.NonNull;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -56,8 +57,8 @@ import java.util.function.Consumer;
  * @see ServerPlayer#openMenu(MenuProvider, Consumer)
  */
 @FunctionalInterface
-public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
-        MenuScreens.ScreenConstructor<T, AbstractContainerScreen<T>> {
+public interface MenuScreenFactory<T extends @NonNull AbstractContainerMenu> extends
+        MenuScreens.ScreenConstructor<T, @NonNull AbstractContainerScreen<T>> {
 
     /**
      * Helper method that down-casts the screen factory.
@@ -75,7 +76,7 @@ public interface MenuScreenFactory<T extends AbstractContainerMenu> extends
     default AbstractContainerScreen<T> create(@Nonnull T menu,
                                               @Nonnull Inventory inventory,
                                               @Nonnull Component title) {
-        return new MenuScreen<>(UIManager.getInstance(),
+        return new MenuScreen<>(
                 Objects.requireNonNullElseGet(createFragment(menu), Fragment::new),
                 createCallback(menu),
                 menu,

@@ -93,7 +93,7 @@ final class EventHandler {
     static class Client {
 
         static {
-            assert (FMLEnvironment.dist.isClient());
+            assert (FMLEnvironment.getDist().isClient());
         }
 
         private Client() {
@@ -234,7 +234,7 @@ final class EventHandler {
     static class ClientDebug {
 
         static {
-            assert (FMLEnvironment.dist.isClient());
+            assert (FMLEnvironment.getDist().isClient());
         }
 
         private ClientDebug() {

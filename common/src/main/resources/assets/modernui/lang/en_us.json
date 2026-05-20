@@ -175,6 +175,7 @@
   "modernui.defaultFontBehavior.only_exclude": "Only Exclude",
   "gui.modernui.popup.exit": "Are you sure you want to exit to main menu?",
   "gui.modernui.popup.lockDifficulty": "Are you sure you want to lock world difficulty?",
+  "key.category.modernui.keybind": "Modern UI",
   "key.modernui.openCenter": "Open Action Center",
   "key.modernui.zoom": "Zoom",
   "key.modernui.zoom.tooltip": "Press C key (by default) to zoom 4x, this is the same as OptiFine's.",

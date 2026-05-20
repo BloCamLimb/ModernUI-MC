@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc;
 
-import com.mojang.blaze3d.platform.InputConstants;
 import icyllis.modernui.annotation.*;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.view.KeyEvent;
@@ -29,11 +28,10 @@ import javax.annotation.Nonnull;
 /**
  * Callback of a screen. Methods will be invoked from different threads.
  * Make your main {@link Fragment} subclass implement this interface,
- * or provide via
- * {@link net.minecraftforge.common.capabilities.ICapabilityProvider},
  * or to use defaults.
  *
- * @see icyllis.modernui.mc.forge.MenuScreenFactory
+ * @see icyllis.modernui.mc.SimpleScreen
+ * @see icyllis.modernui.mc.MenuScreen
  */
 public interface ScreenCallback {
 
@@ -54,10 +52,9 @@ public interface ScreenCallback {
     default boolean isBackKey(int keyCode, @Nonnull KeyEvent event) {
         if (keyCode == KeyEvent.KEY_ESCAPE)
             return true;
-        InputConstants.Key key = InputConstants.getKey(keyCode, event.getScanCode());
         return MuiModApi.get().isKeyBindingMatches(
                 Minecraft.getInstance().options.keyInventory,
-                key
+                new net.minecraft.client.input.KeyEvent(keyCode, event.getScanCode(), event.getModifiers())
         );
     }
 

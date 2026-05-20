@@ -11,7 +11,6 @@ layout(std140) uniform ModernTooltip {
     vec4 u_PushData3;
     vec4 u_PushData4;
     vec4 u_PushData5;
-    float u_RainbowOffset;
 };
 
 #define u_Size u_PushData0.xy
@@ -20,6 +19,7 @@ layout(std140) uniform ModernTooltip {
 #define u_ShadowAlpha u_PushData1.x
 #define u_ShadowSpread u_PushData1.y
 #define u_BackgroundAlpha u_PushData1.z
+#define u_RainbowOffset u_PushData5.w
 
 in vec2 f_Position;
 

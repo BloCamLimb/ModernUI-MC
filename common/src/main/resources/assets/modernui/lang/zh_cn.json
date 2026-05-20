@@ -175,6 +175,7 @@
   "modernui.defaultFontBehavior.only_exclude": "仅不包含",
   "gui.modernui.popup.exit": "你确定要退出到主菜单吗？",
   "gui.modernui.popup.lockDifficulty": "你确定要锁定世界难度吗？",
+  "key.category.modernui.keybind": "Modern UI",
   "key.modernui.openCenter": "打开操作中心",
   "key.modernui.zoom": "缩放",
   "key.modernui.zoom.tooltip": "默认按C键实现4倍缩放，这与OptiFine的完全一致。",

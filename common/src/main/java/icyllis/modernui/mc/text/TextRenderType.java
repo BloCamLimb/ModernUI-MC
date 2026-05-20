@@ -40,7 +40,7 @@ import icyllis.modernui.mc.text.mixin.AccessGpuTexture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.rendertype.RenderType;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -53,7 +53,7 @@ import static icyllis.modernui.mc.text.TextLayoutEngine.MARKER;
 /**
  * Fast and modern text render type.
  */
-public abstract class TextRenderType extends RenderType {
+public abstract class TextRenderType {
 
     public static final int MODE_NORMAL = 0; // <- must be zero
     public static final int MODE_SDF_FILL = 1;
@@ -67,7 +67,7 @@ public abstract class TextRenderType extends RenderType {
      */
     public static final int MODE_UNIFORM_SCALE = 4; // <- must be power of 2
 
-    public static final RenderPipeline PIPELINE_NORMAL = RenderPipeline.builder()
+    /*public static final RenderPipeline PIPELINE_NORMAL = RenderPipeline.builder()
             .withLocation(ModernUIMod.location("pipeline/modern_text_normal"))
             .withVertexShader(ResourceLocation.withDefaultNamespace("core/rendertype_text_intensity"))
             .withFragmentShader(ModernUIMod.location("core/rendertype_modern_text_normal"))
@@ -117,7 +117,7 @@ public abstract class TextRenderType extends RenderType {
             .withLocation(ModernUIMod.location("pipeline/modern_text_sdf_stroke_smart"))
             .withFragmentShader(ModernUIMod.location("core/rendertype_modern_text_sdf_stroke_400"))
             .withDepthBias(-1.0F, -10.0F)
-            .build();
+            .build();*/
 
     /*public static final ShaderProgram SHADER_NORMAL = new ShaderProgram(
             ModernUIMod.location("core/rendertype_modern_text_normal"),
@@ -266,10 +266,10 @@ public abstract class TextRenderType extends RenderType {
         );*/
     }
 
-    private TextRenderType(String name, int bufferSize, Runnable setupState, Runnable clearState) {
-        super(name, /*DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS,*/
+    /*private TextRenderType(String name, int bufferSize, Runnable setupState, Runnable clearState) {
+        super(name, *//*DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS,*//*
                 bufferSize, false, true, setupState, clearState);
-    }
+    }*/
 
     @Nonnull
     public static RenderType getOrCreate(GpuTextureView texture, int mode) {
@@ -306,20 +306,22 @@ public abstract class TextRenderType extends RenderType {
     }
 
     public static RenderPipeline getPipelineForGui(int mode, boolean isBitmapFont) {
-        return switch (mode) {
+        /*return switch (mode) {
             case MODE_SDF_FILL -> sCurrentPipelineSDFFill;
             default -> isBitmapFont
                     ? RenderPipelines.TEXT
                     : PIPELINE_NORMAL;
-        };
+        };*/
+        return null;
     }
 
     @Nonnull
     private static RenderType makeNormalType(GpuTextureView texture) {
-        return MuiModApi.get().createRenderType("modern_text_normal", 256,
+        /*return MuiModApi.get().createRenderType("modern_text_normal", 256,
                 false, true, PIPELINE_NORMAL,
                 new ExtendedTextureStateShard(texture),
-                true);
+                true);*/
+        return null;
     }
 
     /*private static void ensureLinearFontSampler() {
@@ -348,7 +350,7 @@ public abstract class TextRenderType extends RenderType {
                 GL33C.glBindSampler(0, 0);
             }
         });*/
-        RenderType renderType = MuiModApi.get().createRenderType("modern_text_sdf_fill", 256,
+        /*RenderType renderType = MuiModApi.get().createRenderType("modern_text_sdf_fill", 256,
                 false, true, sCurrentPipelineSDFFill,
                 new ExtendedTextureStateShard(texture, FilterMode.LINEAR, FilterMode.LINEAR, true),
                 true);
@@ -364,7 +366,8 @@ public abstract class TextRenderType extends RenderType {
                 }
             }
         }
-        return renderType;
+        return renderType;*/
+        return null;
     }
 
     @Nonnull
@@ -383,7 +386,7 @@ public abstract class TextRenderType extends RenderType {
                 GL33C.glBindSampler(0, 0);
             }
         });*/
-        RenderType renderType = MuiModApi.get().createRenderType("modern_text_sdf_stroke", 256,
+        /*RenderType renderType = MuiModApi.get().createRenderType("modern_text_sdf_stroke", 256,
                 false, true, sCurrentPipelineSDFStroke,
                 new ExtendedTextureStateShard(texture, FilterMode.LINEAR, FilterMode.LINEAR, true),
                 true);
@@ -399,7 +402,8 @@ public abstract class TextRenderType extends RenderType {
                 }
             }
         }
-        return renderType;
+        return renderType;*/
+        return null;
     }
 
     @Nonnull
@@ -408,10 +412,11 @@ public abstract class TextRenderType extends RenderType {
             VANILLA_STATES.forEach(RenderStateShard::setupRenderState);
             //RenderSystem.setShaderTexture(0, texture);
         }, () -> VANILLA_STATES.forEach(RenderStateShard::clearRenderState));*/
-        return MuiModApi.get().createRenderType("modern_text_vanilla", 256,
+        /*return MuiModApi.get().createRenderType("modern_text_vanilla", 256,
                 false, true, RenderPipelines.TEXT,
                 new ExtendedTextureStateShard(texture),
-                true);
+                true);*/
+        return null;
     }
 
     @Nonnull
@@ -420,10 +425,11 @@ public abstract class TextRenderType extends RenderType {
             SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
             //RenderSystem.setShaderTexture(0, texture);
         }, () -> SEE_THROUGH_STATES.forEach(RenderStateShard::clearRenderState));*/
-        return MuiModApi.get().createRenderType("modern_text_see_through", 256,
+        /*return MuiModApi.get().createRenderType("modern_text_see_through", 256,
                 false, true, RenderPipelines.TEXT_SEE_THROUGH,
                 new ExtendedTextureStateShard(texture),
-                true);
+                true);*/
+        return null;
     }
 
     @Nonnull
@@ -432,10 +438,11 @@ public abstract class TextRenderType extends RenderType {
             POLYGON_OFFSET_STATES.forEach(RenderStateShard::setupRenderState);
             //RenderSystem.setShaderTexture(0, texture);
         }, () -> POLYGON_OFFSET_STATES.forEach(RenderStateShard::clearRenderState));*/
-        return MuiModApi.get().createRenderType("modern_text_polygon_offset", 256,
+        /*return MuiModApi.get().createRenderType("modern_text_polygon_offset", 256,
                 false, true, RenderPipelines.TEXT_POLYGON_OFFSET,
                 new ExtendedTextureStateShard(texture),
-                true);
+                true);*/
+        return null;
     }
 
     /**
@@ -493,7 +500,8 @@ public abstract class TextRenderType extends RenderType {
     }
 
     public static RenderPipeline getPipelineSDFFill() {
-        return sCurrentPipelineSDFFill;
+        //return sCurrentPipelineSDFFill;
+        return null;
     }
 
     /*public static ShaderProgram getShaderNormal() {
@@ -515,7 +523,7 @@ public abstract class TextRenderType extends RenderType {
     }*/
 
     public static synchronized boolean toggleSDFShaders(boolean smart) {
-        if (smart) {
+        /*if (smart) {
             try {
                 // Caps is thread-safe, there's safe publication
                 if (((GLCaps) Core.peekImmediateContext()
@@ -536,11 +544,12 @@ public abstract class TextRenderType extends RenderType {
             sCurrentPipelineSDFFill = PIPELINE_SDF_FILL;
             sCurrentPipelineSDFStroke = PIPELINE_SDF_STROKE;
             return true;
-        }
+        }*/
         return false;
     }
 
-    public static class ExtendedTextureStateShard extends EmptyTextureStateShard {
+    //TODO
+    /*public static class ExtendedTextureStateShard extends EmptyTextureStateShard {
 
         public ExtendedTextureStateShard(final GpuTextureView textureView) {
             super(() -> RenderSystem.setShaderTexture(0, textureView), () -> {
@@ -568,7 +577,7 @@ public abstract class TextRenderType extends RenderType {
                 texture.setTextureFilter(oldMinFilter, oldMagFilter, oldUseMipmaps);
             };
         }
-    }
+    }*/
 
     /*
      * Preload Modern UI text shaders for early text rendering.

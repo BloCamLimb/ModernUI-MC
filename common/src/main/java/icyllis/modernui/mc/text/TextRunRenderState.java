@@ -22,21 +22,21 @@ import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import net.minecraft.client.renderer.LightTexture;
-import org.joml.Matrix3x2f;
+import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
+import net.minecraft.util.LightCoordsUtil;
+import org.joml.Matrix3x2fc;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
- * Similar to {@link net.minecraft.client.gui.render.state.GlyphRenderState}.
+ * Similar to {@link net.minecraft.client.renderer.state.gui.GlyphRenderState}.
  *
  * @param isColorEmoji whether the run is color emoji
  * @param isDirectMask whether the whole text uses normal or uniform scale
  */
 public record TextRunRenderState(
-        Matrix3x2f pose,
+        Matrix3x2fc pose,
         RenderPipeline pipeline,
         TextureSetup textureSetup,
         @Nullable ScreenRectangle scissorArea,
@@ -47,7 +47,7 @@ public record TextRunRenderState(
         boolean isDirectMask, float density, float shadowOffset
 ) implements GuiElementRenderState {
     @Override
-    public void buildVertices(@Nonnull VertexConsumer vertexConsumer, float z) {
+    public void buildVertices(@Nonnull VertexConsumer vertexConsumer) {
         float invDensity = 1.0f / density;
         int a = color >>> 24;
         int r = color >> 16 & 0xff;
@@ -55,12 +55,12 @@ public record TextRunRenderState(
         int b = color & 0xff;
         final float baseline = top + TextLayout.sBaselineOffset;
         if (dropShadow && ModernTextRenderer.sAllowShadow && !isColorEmoji) {
-            buildPass(vertexConsumer, z, invDensity, r >> 2, g >> 2, b >> 2, a, baseline, true);
+            buildPass(vertexConsumer, invDensity, r >> 2, g >> 2, b >> 2, a, baseline, true);
         }
-        buildPass(vertexConsumer, z, invDensity, r, g, b, a, baseline, false);
+        buildPass(vertexConsumer, invDensity, r, g, b, a, baseline, false);
     }
 
-    private void buildPass(@Nonnull VertexConsumer builder, float z, float invDensity,
+    private void buildPass(@Nonnull VertexConsumer builder, float invDensity,
                            final int startR, final int startG, final int startB, final int a,
                            float baseline, boolean isShadow) {
         int r;
@@ -147,22 +147,22 @@ public record TextRunRenderState(
                 upSkew = 0.25f * ascent;
                 downSkew = 0.25f * (ascent - h);
             }
-            builder.addVertexWith2DPose(pose, rx + upSkew, ry, z)
+            builder.addVertexWith2DPose(pose, rx + upSkew, ry)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u1, glyph.v1)
-                    .setLight(LightTexture.FULL_BRIGHT);
-            builder.addVertexWith2DPose(pose, rx + downSkew, ry + h, z)
+                    .setLight(LightCoordsUtil.FULL_BRIGHT);
+            builder.addVertexWith2DPose(pose, rx + downSkew, ry + h)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u1, glyph.v2)
-                    .setLight(LightTexture.FULL_BRIGHT);
-            builder.addVertexWith2DPose(pose, rx + w + downSkew, ry + h, z)
+                    .setLight(LightCoordsUtil.FULL_BRIGHT);
+            builder.addVertexWith2DPose(pose, rx + w + downSkew, ry + h)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u2, glyph.v2)
-                    .setLight(LightTexture.FULL_BRIGHT);
-            builder.addVertexWith2DPose(pose, rx + w + upSkew, ry, z)
+                    .setLight(LightCoordsUtil.FULL_BRIGHT);
+            builder.addVertexWith2DPose(pose, rx + w + upSkew, ry)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u2, glyph.v1)
-                    .setLight(LightTexture.FULL_BRIGHT);
+                    .setLight(LightCoordsUtil.FULL_BRIGHT);
         }
     }
 

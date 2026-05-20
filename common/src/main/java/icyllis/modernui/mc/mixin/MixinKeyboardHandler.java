@@ -20,6 +20,7 @@ package icyllis.modernui.mc.mixin;
 
 import icyllis.modernui.mc.MuiModApi;
 import net.minecraft.client.KeyboardHandler;
+import net.minecraft.client.input.KeyEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -29,8 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class MixinKeyboardHandler {
 
     @Inject(method = "keyPress", at = @At("HEAD"))
-    private void onKeyInputPost(long window, int keyCode, int scanCode, int action, int mods,
-                                CallbackInfo ci) {
-        MuiModApi.dispatchOnPreKeyInput(window, keyCode, scanCode, action, mods);
+    private void onKeyInputPost(long handle, int action, KeyEvent event, CallbackInfo ci) {
+        MuiModApi.dispatchOnPreKeyInput(handle, action, event);
     }
 }

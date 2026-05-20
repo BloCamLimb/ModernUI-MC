@@ -1169,7 +1169,7 @@ public class GlyphManagerForge {
 
         public void drawGlyph(Matrix4f matrix, @Nonnull MultiBufferSource buffer, float x, float y, int r, int g,
                               int b, int a, boolean seeThrough, int packedLight) {
-            VertexConsumer builder = buffer.getBuffer(seeThrough ? seeThroughType : renderType);
+            //VertexConsumer builder = buffer.getBuffer(seeThrough ? seeThroughType : renderType);
             x += baselineX;
             y += baselineY;
             /*builder.vertex(matrix, x, y, 0).color(r, g, b, a).uv(u1, v1).uv2(packedLight).endVertex();

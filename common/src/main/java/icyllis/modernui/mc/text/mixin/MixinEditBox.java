@@ -22,11 +22,11 @@ import icyllis.modernui.mc.GradientRectangleRenderState;
 import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.text.*;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.TextCursorUtils;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.renderer.*;
@@ -34,6 +34,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import net.minecraft.util.Util;
 import org.joml.Matrix3x2f;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.*;
@@ -43,6 +44,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiFunction;
 
 /**
@@ -60,10 +63,6 @@ import java.util.function.BiFunction;
  */
 @Mixin(EditBox.class)
 public abstract class MixinEditBox extends AbstractWidget {
-
-    @Shadow
-    @Final
-    private static String CURSOR_APPEND_CHARACTER;
 
     @Shadow
     private boolean isEditable;
@@ -94,7 +93,8 @@ public abstract class MixinEditBox extends AbstractWidget {
     private String suggestion;
 
     @Shadow
-    private BiFunction<String, Integer, FormattedCharSequence> formatter;
+    @Final
+    private List<EditBox.TextFormatter> formatters;
 
     @Shadow
     private int textX;
@@ -129,16 +129,19 @@ public abstract class MixinEditBox extends AbstractWidget {
     @Shadow
     protected abstract int getMaxLength();
 
+    @Shadow
+    protected abstract FormattedCharSequence applyFormat(String text, int offset);
+
     /**
      * @author BloCamLimb
      * @reason Modern Text Engine
      */
     @Inject(
-            method = "renderWidget",
+            method = "extractWidgetRenderState",
             at = @At(value = "FIELD", target = "Lnet/minecraft/client/gui/components/EditBox;isEditable:Z",
                     opcode = Opcodes.GETFIELD),
             cancellable = true)
-    public void onRenderWidget(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTicks,
+    public void onRenderWidget(@Nonnull GuiGraphicsExtractor gr, int mouseX, int mouseY, float deltaTicks,
                                CallbackInfo ci) {
         final TextLayoutEngine engine = TextLayoutEngine.getInstance();
 
@@ -160,14 +163,14 @@ public abstract class MixinEditBox extends AbstractWidget {
         final boolean separate;
         if (!viewText.isEmpty()) {
             String subText = cursorInRange ? viewText.substring(0, viewCursorPos) : viewText;
-            FormattedCharSequence subSequence = formatter.apply(subText, displayPos);
+            FormattedCharSequence subSequence = applyFormat(subText, displayPos);
             if (!(subSequence instanceof VanillaTextWrapper)) {
                 separate = true;
-                gr.drawString(font, subSequence, baseX, baseY, color, true);
+                gr.text(font, subSequence, baseX, baseY, color, true);
                 hori += engine.getStringSplitter().measureText(subSequence);
             } else {
                 separate = false;
-                gr.drawString(font, new VanillaTextWrapper(viewText), baseX, baseY, color, true);
+                gr.text(font, new VanillaTextWrapper(viewText), baseX, baseY, color, true);
                 hori += engine.getStringSplitter().measureText(viewText);
             }
         } else {
@@ -201,21 +204,21 @@ public abstract class MixinEditBox extends AbstractWidget {
 
         if (!viewText.isEmpty() && cursorInRange && viewCursorPos < viewText.length() && separate) {
             String subText = viewText.substring(viewCursorPos);
-            FormattedCharSequence subSequence = formatter.apply(subText, cursorPos);
+            FormattedCharSequence subSequence = applyFormat(subText, cursorPos);
             gr.pose().pushMatrix();
             gr.pose().translate(hori - baseX, 0);
-            gr.drawString(font, subSequence, baseX, baseY, color, true);
+            gr.text(font, subSequence, baseX, baseY, color, true);
             gr.pose().popMatrix();
         }
 
         if (hint != null && viewText.isEmpty() && !isFocused()) {
-            gr.drawString(font, hint, baseX, baseY, color);
+            gr.text(font, hint, baseX, baseY, color);
         }
 
         if (!cursorNotAtEnd && suggestion != null) {
             gr.pose().pushMatrix();
             gr.pose().translate(cursorX - baseX, 0);
-            gr.drawString(font, suggestion, baseX, baseY, 0xFF808080, true);
+            gr.text(font, suggestion, baseX, baseY, 0xFF808080, true);
             gr.pose().popMatrix();
         }
 
@@ -270,7 +273,7 @@ public abstract class MixinEditBox extends AbstractWidget {
             } else {
                 gr.pose().pushMatrix();
                 gr.pose().translate(cursorX - baseX, 0);
-                gr.drawString(font, CURSOR_APPEND_CHARACTER, baseX, baseY, color, true);
+                TextCursorUtils.extractAppendCursor(gr, font, baseX, baseY, color, true);
                 gr.pose().popMatrix();
             }
         }

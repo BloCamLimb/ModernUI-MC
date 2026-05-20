@@ -40,7 +40,7 @@ import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 @Mixin(LevelRenderer.class)
 public class MixinLevelRendererDBG {
 
-    @Inject(method = "renderLevel", at = @At(value = "CONSTANT", args = "stringValue=blockentities", ordinal = 0))
+    /*@Inject(method = "renderLevel", at = @At(value = "CONSTANT", args = "stringValue=blockentities", ordinal = 0))
     private void afterEntities(DeltaTracker deltaTracker, boolean renderBlockOutline,
                                Camera camera, GameRenderer gameRenderer, LightTexture lightTexture,
                                Matrix4f modelView, Matrix4f projection, CallbackInfo ci) {
@@ -68,5 +68,5 @@ public class MixinLevelRendererDBG {
                 LOGGER.info("CameraEntity position: {}", cameraEntity.position());
             }
         }
-    }
+    }*/
 }

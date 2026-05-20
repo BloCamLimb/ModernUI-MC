@@ -20,7 +20,6 @@ package icyllis.modernui.mc.text;
 
 import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.font.GlyphInfo;
-import com.mojang.blaze3d.font.SheetGlyphInfo;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.arc3d.core.PixelUtils;
@@ -48,7 +47,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.minecraft.client.gui.font.glyphs.EmptyGlyph;
 import net.minecraft.client.gui.font.providers.BitmapProvider;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.Unmodifiable;
 
@@ -93,7 +92,7 @@ public class BitmapFont implements Font, AutoCloseable {
 
     public static float sBitmapOffset = 0.5f;
 
-    private final ResourceLocation mName;
+    private final Identifier mName;
 
     private Bitmap mBitmap;
     private final Int2ObjectOpenHashMap<Glyph> mGlyphs = new Int2ObjectOpenHashMap<>();
@@ -113,7 +112,7 @@ public class BitmapFont implements Font, AutoCloseable {
     private final float mScaleFactor;
     private final int[][] mCodepointGrid;
 
-    private BitmapFont(ResourceLocation name, Bitmap bitmap,
+    private BitmapFont(Identifier name, Bitmap bitmap,
                        int[][] grid, int rows, int cols,
                        int height, int ascent) {
         mName = name;
@@ -263,7 +262,8 @@ public class BitmapFont implements Font, AutoCloseable {
         mTextureWrapper = new GlTexture_Wrapped(mTexture); // transfer ownership
         mTextureWrapperView = MuiModApi.get().getRealGpuDevice().createTextureView(mTextureWrapper);
 
-        mTextureWrapper.setTextureFilter(FilterMode.NEAREST, false);
+        //TODO
+        //mTextureWrapper.setTextureFilter(FilterMode.NEAREST, false);
     }
 
     public void dumpAtlas(int index, String path) {
@@ -556,11 +556,11 @@ public class BitmapFont implements Font, AutoCloseable {
             return advance;
         }
 
-        @Nonnull
+        /*@Nonnull
         @Override
         public net.minecraft.client.gui.font.glyphs.BakedGlyph bake(
                 @Nonnull Function<SheetGlyphInfo, net.minecraft.client.gui.font.glyphs.BakedGlyph> function) {
             return EmptyGlyph.INSTANCE;
-        }
+        }*/
     }
 }

@@ -25,7 +25,6 @@ import icyllis.modernui.resources.AssetManager;
 import icyllis.modernui.resources.ResourcesImpl;
 import icyllis.modernui.resources.ResourcesLoader;
 import net.minecraft.server.packs.resources.PreparableReloadListener;
-import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
@@ -57,9 +56,9 @@ public class ResourcesStore implements PreparableReloadListener {
      */
     @Nonnull
     @Override
-    public CompletableFuture<Void> reload(@Nonnull PreparationBarrier preparationBarrier,
-                                          @Nonnull ResourceManager resourceManager,
+    public CompletableFuture<Void> reload(@Nonnull SharedState currentReload,
                                           @Nonnull Executor preparationExecutor,
+                                          @Nonnull PreparationBarrier preparationBarrier,
                                           @Nonnull Executor reloadExecutor) {
         final Map<String, ResourcesLoader> oldLoaders = mLoadersByMod;
         return CompletableFuture.supplyAsync(() -> {
@@ -68,7 +67,7 @@ public class ResourcesStore implements PreparableReloadListener {
 
                     for (var e : listeners) {
                         var modid = e.getKey();
-                        var newLoader = e.getValue().onUpdateLoader(oldLoaders.get(modid), resourceManager);
+                        var newLoader = e.getValue().onUpdateLoader(oldLoaders.get(modid), currentReload.resourceManager());
                         if (newLoader != null) {
                             result.put(modid, newLoader);
                         }

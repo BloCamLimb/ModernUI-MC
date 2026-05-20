@@ -37,7 +37,7 @@ import static icyllis.modernui.mc.ModernUIMod.*;
 public final class ModernUIText {
 
     static {
-        assert FMLEnvironment.dist.isClient();
+        assert FMLEnvironment.getDist().isClient();
     }
 
     private ModernUIText() {
@@ -61,6 +61,11 @@ public final class ModernUIText {
         //Minecraft.getInstance().execute(ModernUI::getSelectedTypeface);
         MuiModApi.addOnWindowResizeListener(TextLayoutEngine.getInstance());
         MuiModApi.addOnDebugDumpListener(TextLayoutEngine.getInstance());
+        MuiModApi.addOnRenderFrameListener((frame, stage) -> {
+            if (stage == MuiModApi.RENDER_STAGE_PRESENT) {
+                GlyphManager.getInstance().onEndRenderTick();
+            }
+        });
         NeoForge.EVENT_BUS.register(EventHandler.class);
         LOGGER.info(MARKER, "Loaded modern text engine");
     }
@@ -128,11 +133,6 @@ public final class ModernUIText {
         @SubscribeEvent
         static void onClientTick(@Nonnull ClientTickEvent.Post event) {
             TextLayoutEngine.getInstance().onEndClientTick();
-        }
-
-        @SubscribeEvent
-        static void onRenderFrame(@Nonnull RenderFrameEvent.Post event) {
-            GlyphManager.getInstance().onEndRenderTick();
         }
 
         @SubscribeEvent

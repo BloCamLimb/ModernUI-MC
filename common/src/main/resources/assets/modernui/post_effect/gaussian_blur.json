@@ -4,7 +4,7 @@
   },
   "passes": [
     {
-      "vertex_shader": "minecraft:post/sobel",
+      "vertex_shader": "minecraft:core/screenquad",
       "fragment_shader": "modernui:post/gaussian_blur",
       "inputs": [
         {
@@ -24,7 +24,7 @@
       }
     },
     {
-      "vertex_shader": "minecraft:post/sobel",
+      "vertex_shader": "minecraft:core/screenquad",
       "fragment_shader": "modernui:post/gaussian_blur",
       "inputs": [
         {

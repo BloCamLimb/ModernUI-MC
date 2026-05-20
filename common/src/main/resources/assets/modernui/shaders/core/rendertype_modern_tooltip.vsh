@@ -14,7 +14,6 @@ layout(std140) uniform ModernTooltip {
     vec4 u_PushData3;
     vec4 u_PushData4;
     vec4 u_PushData5;
-    float u_RainbowOffset;
 };
 
 in vec3 Position;

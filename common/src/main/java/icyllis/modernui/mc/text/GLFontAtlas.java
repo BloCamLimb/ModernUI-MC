@@ -312,7 +312,8 @@ public class GLFontAtlas implements AutoCloseable {
         );*/
         boolean linear = mLinearSampling && (sLinearSamplingA8Atlas ||
                 mMaskFormat == Engine.MASK_FORMAT_ARGB);   // color emoji requires linear sampling
-        mTextureWrapper.setTextureFilter(linear ? FilterMode.LINEAR : FilterMode.NEAREST, FilterMode.NEAREST, linear);
+        //TODO
+        //mTextureWrapper.setTextureFilter(linear ? FilterMode.LINEAR : FilterMode.NEAREST, FilterMode.NEAREST, linear);
 
         if (mMaskFormat == Engine.MASK_FORMAT_A8) {
             //XXX: un-premultiplied, so 111r rather than rrrr

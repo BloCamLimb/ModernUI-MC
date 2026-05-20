@@ -41,7 +41,7 @@ public final class MuiPlatformForge extends MuiPlatform {
 
     @Override
     public boolean isClient() {
-        return FMLEnvironment.dist.isClient();
+        return FMLEnvironment.getDist().isClient();
     }
 
     @Override

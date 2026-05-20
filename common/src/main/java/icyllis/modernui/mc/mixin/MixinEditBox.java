@@ -23,9 +23,9 @@ import icyllis.modernui.core.UndoManager;
 import icyllis.modernui.core.UndoOwner;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.text.method.WordIterator;
-import net.minecraft.Util;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.util.Util;
 import org.lwjgl.glfw.GLFW;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.*;
@@ -131,7 +131,7 @@ public abstract class MixinEditBox implements IModernEditBox {
                     opcode = Opcodes.PUTFIELD),
             locals = LocalCapture.CAPTURE_FAILSOFT)
     public void onInsertText(String string, CallbackInfo ci,
-                             int i, int j, int k, String string2, int l, String string3) {
+                             int i, int j, int k, String string2, int l) {
         if (modernUI_MC$undoManager.isInUndo()) {
             return;
         }
@@ -165,7 +165,7 @@ public abstract class MixinEditBox implements IModernEditBox {
                     opcode = Opcodes.PUTFIELD),
             locals = LocalCapture.CAPTURE_FAILSOFT)
     public void onDeleteChars(int i, CallbackInfo ci,
-                              int j, int k, String string) {
+                              int j, int k) {
         if (modernUI_MC$undoManager.isInUndo()) {
             return;
         }
@@ -204,13 +204,14 @@ public abstract class MixinEditBox implements IModernEditBox {
     @Inject(method = "keyPressed",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gui/screens/Screen;isSelectAll(I)Z"
+                    target = "Lnet/minecraft/client/input/KeyEvent;isSelectAll()Z"
             ),
             cancellable = true)
-    public void onKeyPressed(int i, int j, int k, CallbackInfoReturnable<Boolean> cir) {
+    public void onKeyPressed(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
+        int i = event.key();
         if (i == GLFW.GLFW_KEY_Z || i == GLFW.GLFW_KEY_Y) {
-            if (Screen.hasControlDown() && !Screen.hasAltDown()) {
-                if (!Screen.hasShiftDown()) {
+            if (event.hasControlDownWithQuirk() && !event.hasAltDown()) {
+                if (!event.hasShiftDown()) {
                     UndoOwner[] owners = {modernUI_MC$undoOwner()};
                     if (i == GLFW.GLFW_KEY_Z) {
                         // CTRL+Z

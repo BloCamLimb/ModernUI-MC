@@ -19,7 +19,7 @@
 package icyllis.modernui.mc;
 
 import com.mojang.blaze3d.platform.Window;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.annotation.Nonnull;
@@ -42,7 +42,7 @@ public class MinecraftDrawHandler {
         mViewWeakRef = viewWeakRef;
     }
 
-    public void render(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float deltaTick,
+    public void render(@Nonnull GuiGraphicsExtractor gr, int mouseX, int mouseY, float deltaTick,
                        Window window) {
         MinecraftSurfaceView view = mViewWeakRef.get();
         if (view == null) {

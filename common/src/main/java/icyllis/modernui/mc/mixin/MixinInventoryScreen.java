@@ -24,10 +24,11 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import org.jspecify.annotations.NonNull;
 import org.spongepowered.asm.mixin.Mixin;
 
 @Mixin(InventoryScreen.class)
-public abstract class MixinInventoryScreen<T extends AbstractContainerMenu>
+public abstract class MixinInventoryScreen<T extends @NonNull AbstractContainerMenu>
         extends AbstractContainerScreen<T> {
 
     // TBD: CreativeModeInventoryScreen should also be considered??

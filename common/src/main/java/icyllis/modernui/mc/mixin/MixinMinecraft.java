@@ -89,6 +89,30 @@ public abstract class MixinMinecraft {
         }
     }
 
+    @Inject(method = "renderFrame", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/DeltaTracker$Timer;advanceRealTime(J)V"))
+    private void onStartRenderFrameUpdate(boolean advanceGameTime, CallbackInfo ci) {
+        MuiModApi.dispatchOnRenderFrame(0, MuiModApi.RENDER_STAGE_UPDATE);
+    }
+
+    @Inject(method = "renderFrame", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/GameRenderer;extract(Lnet/minecraft/client/DeltaTracker;Z)V"))
+    private void onStartRenderFrameExtract(boolean advanceGameTime, CallbackInfo ci) {
+        MuiModApi.dispatchOnRenderFrame(0, MuiModApi.RENDER_STAGE_EXTRACT);
+    }
+
+    @Inject(method = "renderFrame", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V"))
+    private void onStartRenderFrameRender(boolean advanceGameTime, CallbackInfo ci) {
+        MuiModApi.dispatchOnRenderFrame(0, MuiModApi.RENDER_STAGE_RENDER);
+    }
+
+    @Inject(method = "renderFrame", at = @At(value = "INVOKE",
+            target = "Lcom/mojang/blaze3d/systems/RenderSystem;flipFrame(Lcom/mojang/blaze3d/TracyFrameCapture;)V"))
+    private void onStartRenderFramePresent(boolean advanceGameTime, CallbackInfo ci) {
+        MuiModApi.dispatchOnRenderFrame(0, MuiModApi.RENDER_STAGE_PRESENT);
+    }
+
     /*@Inject(method = "getFramerateLimit", at = @At("HEAD"), cancellable = true)
     private void onGetFramerateLimit(CallbackInfoReturnable<Integer> info) {
         if ((BlurHandler.sFramerateInactive != 0 ||
@@ -110,7 +134,7 @@ public abstract class MixinMinecraft {
         }
     }*/
 
-    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lnet/minecraft/Util;shutdownExecutors()V"))
+    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/Util;shutdownExecutors()V"))
     private void onClose(CallbackInfo ci) {
         UIManager.destroy();
     }

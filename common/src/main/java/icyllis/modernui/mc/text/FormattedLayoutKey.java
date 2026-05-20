@@ -24,9 +24,9 @@ import icyllis.modernui.util.Pools;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.FormattedCharSink;
 
@@ -143,7 +143,7 @@ public class FormattedLayoutKey {
     public static class Lookup extends FormattedLayoutKey {
 
         private final ObjectArrayList<CharSequence> mTexts = new ObjectArrayList<>();
-        private final ObjectArrayList<ResourceLocation> mFonts = new ObjectArrayList<>();
+        private final ObjectArrayList<FontDescription> mFonts = new ObjectArrayList<>();
         private final IntArrayList mCodes = new IntArrayList();
 
         private final ContentBuilder mContentBuilder = new ContentBuilder();

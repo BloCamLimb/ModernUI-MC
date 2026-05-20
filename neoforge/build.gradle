@@ -1,9 +1,7 @@
-import net.fabricmc.loom.task.RemapJarTask
-
 plugins {
-    id 'dev.architectury.loom' version '1.11-SNAPSHOT'
+    id 'org.relativitymc.neo-loom'
     //id 'com.matthewprenger.cursegradle' version '1.4.0'
-    id 'com.gradleup.shadow' version '9.3.0'
+    id 'com.gradleup.shadow'
 }
 
 version = "${minecraft_version}-${mod_version}" as String
@@ -13,9 +11,16 @@ configurations {
 }
 
 loom {
-    silentMojangMappingsLicense()
+    runs {
+        serverData {
+            environment("serverData")
+        }
+        clientData {
+            environment("clientData")
+        }
+    }
+    accessWidenerPath = project(":common").file("src/main/resources/modernui.classtweaker")
     runConfigs.each { it.setIdeConfigGenerated(true) } // Uncomment this if run configs not generated
-    addTaskBeforeRun(":${name}:classes")
 }
 
 repositories {
@@ -40,31 +45,30 @@ repositories {
 
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
-    mappings loom.officialMojangMappings()
-    neoForge "net.neoforged:neoforge:${neoforge_version}"
+    forgeUserdev "net.neoforged:neoforge:${neoforge_version}:userdev"
 
     implementation project(':common')
 
     ["dev.icyllis:arc3d-compiler",
      "dev.icyllis:arc3d-core",
      "dev.icyllis:arc3d-sketch"].each {
-        implementation(forgeRuntimeLibrary(it + ":${arc3d_version}"))
+        implementation(it + ":${arc3d_version}")
         include(it + ":${arc3d_version}")
     }
     ["dev.icyllis:arc3d-engine",
      "dev.icyllis:arc3d-granite",
      "dev.icyllis:arc3d-opengl",
      "dev.icyllis:arc3d-vulkan"].each {
-        implementation(forgeRuntimeLibrary(it + ":${arc3d_version}"))
+        implementation(it + ":${arc3d_version}")
         shadow(it + ":${arc3d_version}") {
             transitive = false
         }
     }
-    implementation(forgeRuntimeLibrary("dev.icyllis:modernui-core:${core_version}"))
+    implementation("dev.icyllis:modernui-core:${core_version}")
     shadow("dev.icyllis:modernui-core:${core_version}") {
         transitive = false
     }
-    implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Markflow:3.12.0")) {
+    implementation("icyllis.modernui:ModernUI-Markflow:3.12.0") {
         exclude group: 'icyllis.modernui'
     }
     shadow("icyllis.modernui:ModernUI-Markflow:3.12.0") {
@@ -112,7 +116,15 @@ test {
 }
 
 shadowJar {
-    archiveClassifier.set("shadow")
+    mustRunAfter(tasks.named('jar'))
+
+    doFirst {
+        def javaJarTask = tasks.named('jar').get()
+        def finalJarFile = javaJarTask.archiveFile.get().asFile
+        from(zipTree(finalJarFile))
+    }
+
+    archiveClassifier.set("universal")
     configurations = [project.configurations.shadow]
 
     /*dependencies {
@@ -137,7 +149,7 @@ shadowJar {
     exclude 'META-INF/maven/**'*/
 }
 
-remapJar {
+/*remapJar {
     dependsOn(shadowJar)
     inputFile.set(shadowJar.archiveFile)
     archiveClassifier.set("universal")
@@ -147,15 +159,15 @@ tasks.register('remapMavenJar', RemapJarTask) {
     dependsOn(jar)
     inputFile.set(jar.archiveFile)
     addNestedDependencies = false
-    /*targetNamespace.set("srg") // to srg names
-    remapAccessWidener.set(true)*/
+    *//*targetNamespace.set("srg") // to srg names
+    remapAccessWidener.set(true)*//*
     archiveClassifier.set("maven")
-}
+}*/
 
 if (project.hasProperty("keystore")) {
-    remapJar.doLast {
+    shadowJar.doLast {
         ant.signjar(
-                jar: remapJar.archiveFile.get(),
+                jar: shadowJar.archiveFile.get(),
                 alias: project.getProperty("keystore_alias"),
                 storepass: project.getProperty("keystore_pass"),
                 keystore: project.getProperty("keystore"),
@@ -191,7 +203,7 @@ jar {
 publishing {
     publications {
         mavenNeoForge(MavenPublication) {
-            artifact(remapMavenJar.archiveFile) {
+            artifact(shadowJar.archiveFile) {
                 builtBy build
             }
             artifact(sourcesJar.archiveFile) {

@@ -19,16 +19,14 @@
 package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.font.GlyphInfo;
-import com.mojang.blaze3d.font.SheetGlyphInfo;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.modernui.graphics.text.*;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import net.minecraft.client.gui.font.*;
 import net.minecraft.client.gui.font.glyphs.*;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.Unmodifiable;
 
 import javax.annotation.Nonnull;
@@ -61,18 +59,18 @@ public class StandardFontSet extends FontSet {
 
     private CodepointMap<BakedGlyph> mGlyphs;
 
-    private final IntFunction<BakedGlyph> mCacheGlyph = this::cacheGlyph;
+    //private final IntFunction<BakedGlyph> mCacheGlyph = this::cacheGlyph;
 
     private CodepointMap<GlyphInfo> mGlyphInfos;
 
-    private final IntFunction<GlyphInfo> mCacheGlyphInfo = this::cacheGlyphInfo;
+    //private final IntFunction<GlyphInfo> mCacheGlyphInfo = this::cacheGlyphInfo;
 
     private float mResLevel = 2;
     private final FontPaint mStandardPaint = new FontPaint();
 
     public StandardFontSet(@Nonnull TextureManager texMgr,
-                           @Nonnull ResourceLocation fontName) {
-        super(texMgr, fontName); // <- unused
+                           @Nonnull Identifier fontName) {
+        super(new GlyphStitcher(texMgr, fontName)); // <- unused
 
         mStandardPaint.setFontStyle(FontPaint.NORMAL);
         mStandardPaint.setLocale(Locale.ROOT);
@@ -98,7 +96,7 @@ public class StandardFontSet extends FontSet {
         mResLevel = newResLevel;
     }
 
-    @Nonnull
+    /*@Nonnull
     private GlyphInfo cacheGlyphInfo(int codePoint) {
         for (FontFamily family : mFamilies) {
             if (!family.hasGlyph(codePoint)) {
@@ -236,11 +234,11 @@ public class StandardFontSet extends FontSet {
             mGlyphs = new CodepointMap<>(BakedGlyph[]::new, BakedGlyph[][]::new);
         }
         return mGlyphs.computeIfAbsent(codePoint, mCacheGlyph);
-    }
+    }*/
 
     // no obfuscated support
 
-    public static class StandardGlyphInfo implements GlyphInfo {
+    /*public static class StandardGlyphInfo implements GlyphInfo {
 
         private final float mAdvance;
 
@@ -302,7 +300,7 @@ public class StandardFontSet extends FontSet {
         @Nonnull
         @Override
         public RenderPipeline guiPipeline() {
-            return TextRenderType.getPipelineForGui(TextRenderType.MODE_NORMAL, /*isBitmap*/mBitmapFont != null);
+            return TextRenderType.getPipelineForGui(TextRenderType.MODE_NORMAL, *//*isBitmap*//*mBitmapFont != null);
         }
 
         @Nonnull
@@ -314,15 +312,15 @@ public class StandardFontSet extends FontSet {
                 return TextRenderType.getOrCreate(
                         GlyphManager.getInstance().getCurrentTexture(mBitmapFont),
                         mode,
-                        /*isBitmap*/true
+                        *//*isBitmap*//*true
                 );
             } else {
                 return TextRenderType.getOrCreate(
                         GlyphManager.getInstance().getFontTexture(),
                         mode,
-                        /*isBitmap*/false
+                        *//*isBitmap*//*false
                 );
             }
         }
-    }
+    }*/
 }

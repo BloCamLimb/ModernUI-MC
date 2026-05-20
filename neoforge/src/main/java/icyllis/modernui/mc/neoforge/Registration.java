@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.neoforge;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import icyllis.modernui.ModernUI;
@@ -46,6 +47,8 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.event.*;
+import net.neoforged.neoforge.client.settings.KeyConflictContext;
+import net.neoforged.neoforge.client.settings.KeyModifier;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.registries.RegisterEvent;
@@ -151,7 +154,7 @@ final class Registration {
     static class ModClient {
 
         static {
-            assert (FMLEnvironment.dist.isClient());
+            assert (FMLEnvironment.getDist().isClient());
         }
 
         private ModClient() {
@@ -192,6 +195,16 @@ final class Registration {
 
         @SubscribeEvent
         static void registerKeyMapping(@Nonnull RegisterKeyMappingsEvent event) {
+            UIManagerForge.KEYBIND_CATEGORY =
+                    new KeyMapping.Category(ModernUIMod.location("keybind"));
+            UIManagerForge.OPEN_CENTER_KEY = new KeyMapping(
+                    "key.modernui.openCenter", KeyConflictContext.UNIVERSAL, KeyModifier.CONTROL_OR_COMMAND,
+                    InputConstants.Type.KEYSYM, InputConstants.KEY_K, UIManagerForge.KEYBIND_CATEGORY);
+            UIManagerForge.ZOOM_KEY = new KeyMapping(
+                    "key.modernui.zoom", KeyConflictContext.IN_GAME, KeyModifier.NONE,
+                    InputConstants.Type.KEYSYM, InputConstants.KEY_C, UIManagerForge.KEYBIND_CATEGORY);
+
+            event.registerCategory(UIManagerForge.KEYBIND_CATEGORY);
             event.register(UIManagerForge.OPEN_CENTER_KEY);
             event.register(UIManagerForge.ZOOM_KEY);
         }
@@ -205,13 +218,6 @@ final class Registration {
         static void setupClient(@Nonnull FMLClientSetupEvent event) {
             //SettingsManager.INSTANCE.buildAllSettings();
             //UIManager.getInstance().registerMenuScreen(Registration.TEST_MENU, menu -> new TestUI());
-
-            event.enqueueWork(() -> {
-                //ModernUI.getSelectedTypeface();
-                UIManagerForge.initializeRenderer();
-                // ensure it's applied and positioned
-                Config.CLIENT.mLastWindowMode.apply();
-            });
 
             CrashReportCallables.registerCrashCallable("Fragments", () -> {
                 var fragments = UIManager.getInstance().getFragmentController();
@@ -274,7 +280,7 @@ final class Registration {
                         Minecraft minecraft = Minecraft.getInstance();
                         if ((int) minecraft.getWindow().getGuiScale() !=
                                 minecraft.getWindow().calculateScale(value, false)) {
-                            minecraft.resizeDisplay();
+                            minecraft.resizeGui();
                         }
                     });
                 });

@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.neoforge;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -26,18 +25,18 @@ import com.mojang.blaze3d.textures.GpuTexture;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.mc.*;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.render.state.GuiElementRenderState;
-import net.minecraft.client.gui.render.state.pip.PictureInPictureRenderState;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderStateShard;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
+import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.Rarity;
@@ -49,30 +48,6 @@ public final class MuiForgeApi extends MuiModApi {
 
     public MuiForgeApi() {
         ModernUIMod.LOGGER.info(ModernUIMod.MARKER, "Created MuiForgeAPI");
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nonnull
-    @Override
-    public <T extends Screen & MuiScreen> T createScreen(@Nonnull Fragment fragment,
-                                                         @Nullable ScreenCallback callback,
-                                                         @Nullable Screen previousScreen,
-                                                         @Nullable CharSequence title) {
-        return (T) new SimpleScreen(UIManager.getInstance(),
-                fragment, callback, previousScreen, title);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nonnull
-    @Override
-    public <T extends AbstractContainerMenu, U extends Screen & MenuAccess<T> & MuiScreen>
-    U createMenuScreen(@Nonnull Fragment fragment,
-                       @Nullable ScreenCallback callback,
-                       @Nonnull T menu,
-                       @Nonnull Inventory inventory,
-                       @Nonnull Component title) {
-        return (U) new MenuScreen<>(UIManager.getInstance(),
-                fragment, callback, menu, inventory, title);
     }
 
     @Override
@@ -92,7 +67,7 @@ public final class MuiForgeApi extends MuiModApi {
     }
 
     @Override
-    public void loadEffect(GameRenderer gr, ResourceLocation effect) {
+    public void loadEffect(GameRenderer gr, Identifier effect) {
         gr.setPostEffect(effect);
     }
 
@@ -104,7 +79,8 @@ public final class MuiForgeApi extends MuiModApi {
     }*/
 
     @Override
-    public boolean isKeyBindingMatches(KeyMapping keyMapping, InputConstants.Key key) {
+    public boolean isKeyBindingMatches(KeyMapping keyMapping, KeyEvent keyEvent) {
+        InputConstants.Key key = InputConstants.getKey(keyEvent);
         return keyMapping.isActiveAndMatches(key);
     }
 
@@ -116,47 +92,47 @@ public final class MuiForgeApi extends MuiModApi {
     @Override
     public GpuDevice getRealGpuDevice() {
         GpuDevice gpuDevice = RenderSystem.getDevice();
-        try {
+        /*try {
             // The ValidationGpuDevice prevents you from creating external textures, that's terrible
             if (gpuDevice instanceof net.neoforged.neoforge.client.blaze3d.validation.ValidationGpuDevice validationGpuDevice) {
                 gpuDevice = validationGpuDevice.getRealDevice();
             }
         } catch (Throwable ignored) {
 
-        }
+        }*/
         return gpuDevice;
     }
 
     @Override
     public GpuTexture getRealGpuTexture(GpuTexture faker) {
         GpuTexture gpuTexture = faker;
-        try {
+        /*try {
             if (gpuTexture instanceof net.neoforged.neoforge.client.blaze3d.validation.ValidationGpuTexture validationGpuTexture) {
                 gpuTexture = validationGpuTexture.getRealTexture();
             }
         } catch (Throwable ignored) {
 
-        }
+        }*/
         return gpuTexture;
     }
 
     @Override
-    public void submitGuiElementRenderState(GuiGraphics graphics, GuiElementRenderState renderState) {
+    public void submitGuiElementRenderState(GuiGraphicsExtractor graphics, GuiElementRenderState renderState) {
         graphics.submitGuiElementRenderState(renderState);
     }
 
     @Override
-    public void submitPictureInPictureRenderState(GuiGraphics graphics, PictureInPictureRenderState renderState) {
+    public void submitPictureInPictureRenderState(GuiGraphicsExtractor graphics, PictureInPictureRenderState renderState) {
         graphics.submitPictureInPictureRenderState(renderState);
     }
 
     @Nullable
     @Override
-    public ScreenRectangle peekScissorStack(GuiGraphics graphics) {
+    public ScreenRectangle peekScissorStack(GuiGraphicsExtractor graphics) {
         return graphics.peekScissorStack();
     }
 
-    @Override
+    /*@Override
     public RenderType createRenderType(String name, int bufferSize,
                                        boolean affectsCrumbling, boolean sortOnUpload,
                                        RenderPipeline renderPipeline,
@@ -173,5 +149,5 @@ public final class MuiForgeApi extends MuiModApi {
                 name, bufferSize, affectsCrumbling, sortOnUpload, renderPipeline,
                 builder.createCompositeState(false)
         );
-    }
+    }*/
 }

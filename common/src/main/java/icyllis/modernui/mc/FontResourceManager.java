@@ -107,9 +107,9 @@ public class FontResourceManager implements PreparableReloadListener {
      */
     @Nonnull
     @Override
-    public CompletableFuture<Void> reload(@Nonnull PreparationBarrier preparationBarrier,
-                                          @Nonnull ResourceManager resourceManager,
+    public CompletableFuture<Void> reload(@Nonnull SharedState currentReload,
                                           @Nonnull Executor preparationExecutor,
+                                          @Nonnull PreparationBarrier preparationBarrier,
                                           @Nonnull Executor reloadExecutor) {
         CompletableFuture<LoadResults> preparation;
         {
@@ -117,17 +117,17 @@ public class FontResourceManager implements PreparableReloadListener {
             final var loadFonts = CompletableFuture.runAsync(() -> {
                         // under certain circumstances (or mods), ModernUI bundled resources are not loaded
                         // when the method is first called, this ensures bundled resources will be registered
-                        if (resourceManager.getNamespaces().contains(ModernUI.ID)) {
+                        if (currentReload.resourceManager().getNamespaces().contains(ModernUI.ID)) {
                             ModernUIClient.getInstance().loadTypeface();
                         }
                     },
                     preparationExecutor);
             final var loadEmojis = CompletableFuture.runAsync(() ->
-                            loadEmojis(resourceManager, results),
+                            loadEmojis(currentReload.resourceManager(), results),
                     preparationExecutor);
             final var loadShortcodes = CompletableFuture.runAsync(() -> {
-                        if (resourceManager.getNamespaces().contains(ModernUI.ID)) {
-                            loadShortcodes(resourceManager, results);
+                        if (currentReload.resourceManager().getNamespaces().contains(ModernUI.ID)) {
+                            loadShortcodes(currentReload.resourceManager(), results);
                         }
                     },
                     preparationExecutor);

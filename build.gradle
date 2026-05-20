@@ -1,5 +1,7 @@
 plugins {
     id 'maven-publish'
+    id 'org.relativitymc.neo-loom' version '1.16-SNAPSHOT' apply false
+    id 'com.gradleup.shadow' version '9.3.0' apply false
 }
 
 publishing {
@@ -38,7 +40,7 @@ subprojects {
 
     tasks.withType(JavaCompile).configureEach {
         it.options.encoding = "UTF-8"
-        it.options.release.set(21)
+        it.options.release.set(25)
     }
 
     java {

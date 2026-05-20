@@ -54,7 +54,7 @@ public final class ModernUIForge extends ModernUIMod {
 
     // mod-loading thread
     public ModernUIForge(IEventBus modEventBus, ModContainer modContainer) {
-        if (!FMLEnvironment.production) {
+        if (!FMLEnvironment.isProduction()) {
             ModernUIMod.sDevelopment = true;
             LOGGER.debug(MARKER, "Auto detected in FML development environment");
         } else if (ModernUI.class.getSigners() == null) {
@@ -110,7 +110,7 @@ public final class ModernUIForge extends ModernUIMod {
     public static class Client extends ModernUIClient {
 
         static {
-            assert FMLEnvironment.dist.isClient();
+            assert FMLEnvironment.getDist().isClient();
         }
 
         // mod-loading thread

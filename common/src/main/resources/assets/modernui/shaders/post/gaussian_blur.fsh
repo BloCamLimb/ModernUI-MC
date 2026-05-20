@@ -17,11 +17,11 @@ layout(std140) uniform BlurInfo {
 };
 
 in vec2 texCoord;
-in vec2 oneTexel;
 
 out vec4 fragColor;
 
 void main() {
+    vec2 oneTexel = 1.0 / InSize;
     vec4 blur = vec4(0.0);
 
     int radius = MenuBlurRadius;

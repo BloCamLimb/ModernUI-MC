@@ -20,7 +20,7 @@ package icyllis.modernui.mc.neoforge;
 
 import icyllis.modernui.mc.ModernUIMod;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
@@ -38,7 +38,7 @@ public final class MuiRegistries {
     /**
      * Container Menus (Development only)
      */
-    public static final ResourceLocation
+    public static final Identifier
             TEST_MENU_KEY = ModernUIMod.location("test");
     public static final DeferredHolder<MenuType<?>, MenuType<TestContainerMenu>> TEST_MENU = DeferredHolder.create(
             Registries.MENU, TEST_MENU_KEY);
@@ -46,7 +46,7 @@ public final class MuiRegistries {
     /**
      * Items (Development only)
      */
-    public static final ResourceLocation
+    public static final Identifier
             PROJECT_BUILDER_ITEM_KEY = ModernUIMod.location("project_builder");
     public static final DeferredHolder<Item, Item> PROJECT_BUILDER_ITEM = DeferredHolder.create(
             Registries.ITEM, PROJECT_BUILDER_ITEM_KEY);

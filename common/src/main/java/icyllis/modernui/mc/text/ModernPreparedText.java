@@ -25,9 +25,10 @@ import icyllis.modernui.mc.GradientRectangleRenderState;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.client.gui.render.state.GuiRenderState;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.state.gui.GuiRenderState;
 import org.joml.Matrix3x2f;
+import org.joml.Matrix3x2fc;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -245,11 +246,11 @@ public class ModernPreparedText implements Font.PreparedText {
     }
 
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public void submitRuns(GuiRenderState renderState, Matrix3x2f pose,
+    public void submitRuns(GuiRenderState renderState, Matrix3x2fc pose,
                            @Nullable ScreenRectangle scissor) {
         if ((bgColor & 0xFF000000) != 0) {
             // this is only used by CartographyTableScreen, emit as normal fills
-            renderState.submitGlyphToCurrentLayer(
+            renderState.addGlyphToCurrentLayer(
                     new GradientRectangleRenderState(
                             RenderPipelines.GUI,
                             TextureSetup.noTexture(),
@@ -264,9 +265,9 @@ public class ModernPreparedText implements Font.PreparedText {
         // For-index is 2x faster than enhanced-for
         for (int i = 0; i < runs.size(); i++) {
             var run = runs.get(i);
-            renderState.submitGlyphToCurrentLayer(
+            renderState.addGlyphToCurrentLayer(
                     new TextRunRenderState(pose, run.pipeline,
-                            TextureSetup.singleTextureWithLightmap(run.textureView),
+                            TextureSetup.singleTextureWithLightmap(run.textureView, null),
                             scissor,
                             x, top, color, dropShadow,
                             glyphs, positions, flags,
@@ -276,7 +277,7 @@ public class ModernPreparedText implements Font.PreparedText {
             );
         }
         if (hasEffect) {
-            renderState.submitGlyphToCurrentLayer(
+            renderState.addGlyphToCurrentLayer(
                     new TextEffectRenderState(pose,
                             scissor,
                             x, top, color, dropShadow,

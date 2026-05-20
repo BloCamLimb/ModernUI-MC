@@ -25,7 +25,7 @@ import icyllis.modernui.graphics.text.*;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.Int2FloatOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import javax.annotation.Nonnull;
 import java.util.Locale;
@@ -45,7 +45,7 @@ public class SpaceFont implements Font {
     }
 
     @Nonnull
-    public static SpaceFont create(ResourceLocation fontName, SpaceProvider.Definition definition) {
+    public static SpaceFont create(Identifier fontName, SpaceProvider.Definition definition) {
         return new SpaceFont(
                 fontName.toString() + " / minecraft:space",
                 new Int2FloatOpenHashMap(definition.advances())

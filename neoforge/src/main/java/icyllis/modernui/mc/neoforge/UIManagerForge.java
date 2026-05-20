@@ -30,15 +30,15 @@ import icyllis.modernui.text.TextUtils;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.texture.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.util.ObfuscationReflectionHelper;
 import net.neoforged.neoforge.client.event.*;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
-import net.neoforged.neoforge.client.settings.KeyConflictContext;
-import net.neoforged.neoforge.client.settings.KeyModifier;
 import net.neoforged.neoforge.common.NeoForge;
 import org.jetbrains.annotations.*;
 
@@ -57,14 +57,9 @@ import static org.lwjgl.glfw.GLFW.*;
 @ApiStatus.Internal
 public final class UIManagerForge extends UIManager implements LifecycleOwner {
 
-    @SuppressWarnings("NoTranslation")
-    public static final KeyMapping OPEN_CENTER_KEY = new KeyMapping(
-            "key.modernui.openCenter", KeyConflictContext.UNIVERSAL, KeyModifier.CONTROL,
-            InputConstants.Type.KEYSYM, GLFW_KEY_K, "Modern UI");
-    @SuppressWarnings("NoTranslation")
-    public static final KeyMapping ZOOM_KEY = new KeyMapping(
-            "key.modernui.zoom", KeyConflictContext.IN_GAME, KeyModifier.NONE,
-            InputConstants.Type.KEYSYM, GLFW_KEY_C, "Modern UI");
+    public static KeyMapping.Category KEYBIND_CATEGORY;
+    public static KeyMapping OPEN_CENTER_KEY;
+    public static KeyMapping ZOOM_KEY;
 
     /*public static final Method SEND_TO_CHAT =
             ObfuscationReflectionHelper.findMethod(ChatComponent.class, "m_93790_",
@@ -81,7 +76,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
             ObfuscationReflectionHelper.findField(AbstractTexture.class, "id");*/
 
     // captured tooltip style from MixinGuiGraphics
-    public static ResourceLocation sTooltipStyle;
+    public static Identifier sTooltipStyle;
 
     private UIManagerForge() {
         super();
@@ -107,7 +102,7 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         if (!minecraft.isSameThread()) {
             throw new IllegalStateException("Not called from main thread");
         }
-        minecraft.setScreen(new SimpleScreen(this, fragment, null, null, null));
+        minecraft.setScreen(new SimpleScreen(fragment, null, null, CommonComponents.EMPTY));
     }
 
     @Override
@@ -140,19 +135,19 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     }
 
     @Override
-    protected void onPreKeyInput(int keyCode, int scanCode, int action, int mods) {
+    protected void onPreKeyInput(int action, KeyEvent event) {
         if (action == GLFW_PRESS) {
             if (minecraft.screen == null ||
                     minecraft.screen.shouldCloseOnEsc() ||
                     minecraft.screen instanceof TitleScreen) {
-                InputConstants.Key key = InputConstants.getKey(keyCode, scanCode);
+                InputConstants.Key key = InputConstants.getKey(event);
                 if (OPEN_CENTER_KEY.isActiveAndMatches(key)) {
                     open(new CenterFragment2());
                     return;
                 }
             }
         }
-        super.onPreKeyInput(keyCode, scanCode, action, mods);
+        super.onPreKeyInput(action, event);
     }
 
     @Override
@@ -166,9 +161,9 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
     @Override
     public void dump(@NotNull PrintWriter pw, boolean fragments) {
         super.dump(pw, fragments);
-        Map<ResourceLocation, AbstractTexture> textureMap = null;
+        Map<Identifier, AbstractTexture> textureMap = null;
         try {
-            textureMap = (Map<ResourceLocation, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
+            textureMap = (Map<Identifier, AbstractTexture>) BY_PATH.get(minecraft.getTextureManager());
         } catch (Exception ignored) {
         }
         if (textureMap != null) {
@@ -204,8 +199,8 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
                 }
                 if (texture instanceof TextureAtlas textureAtlas) {
                     try {
-                        Map<ResourceLocation, TextureAtlasSprite> textures =
-                                (Map<ResourceLocation, TextureAtlasSprite>) TEXTURES_BY_NAME.get(textureAtlas);
+                        Map<Identifier, TextureAtlasSprite> textures =
+                                (Map<Identifier, TextureAtlasSprite>) TEXTURES_BY_NAME.get(textureAtlas);
                         for (var sprite : textures.values()) {
                             for (var image : sprite.contents().byMipLevel) {
                                 if (image != null && image.getPointer() != 0) {
@@ -289,16 +284,6 @@ public final class UIManagerForge extends UIManager implements LifecycleOwner {
         if (TooltipRenderer.sTooltip) {
             event.setCanceled(true);
         }
-    }
-
-    @SubscribeEvent
-    void onRenderFramePre(@Nonnull RenderFrameEvent.Pre event) {
-        super.onRenderTick(/*isEnd*/ false);
-    }
-
-    @SubscribeEvent
-    void onRenderFramePost(@Nonnull RenderFrameEvent.Post event) {
-        super.onRenderTick(/*isEnd*/ true);
     }
 
     @SubscribeEvent

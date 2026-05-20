@@ -24,16 +24,16 @@ import com.mojang.brigadier.arguments.FloatArgumentType;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.mc.ModernUIMod;
-import net.minecraft.Util;
 import net.minecraft.commands.*;
 import net.minecraft.commands.arguments.ComponentArgument;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Util;
 
 public class MuiTextCommand {
 
-    public static final ResourceLocation JB_MONO = ModernUIMod.location("jetbrains-mono-medium");
+    public static final FontDescription JB_MONO = new FontDescription.Resource(ModernUIMod.location("jetbrains-mono-medium"));
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher,
                                 CommandBuildContext context) {

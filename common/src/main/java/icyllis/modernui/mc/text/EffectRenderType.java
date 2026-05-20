@@ -32,7 +32,7 @@ import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.b3d.GlTexture_Wrapped;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 
@@ -43,7 +43,7 @@ import java.util.Objects;
 /**
  * @since 2.0.1
  */
-public abstract class EffectRenderType extends RenderType {
+public abstract class EffectRenderType {
 
     private static GLTexture WHITE;
     private static GlTexture_Wrapped WHITE_WRAPPER = null;
@@ -68,10 +68,10 @@ public abstract class EffectRenderType extends RenderType {
         }, () -> TextRenderType.POLYGON_OFFSET_STATES.forEach(RenderStateShard::clearRenderState));
     }*/
 
-    private EffectRenderType(String name, int bufferSize, Runnable setupState, Runnable clearState) {
-        super(name, /*DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS,*/
+    /*private EffectRenderType(String name, int bufferSize, Runnable setupState, Runnable clearState) {
+        super(name, *//*DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS,*//*
                 bufferSize, false, true, setupState, clearState);
-    }
+    }*/
 
     @RenderThread
     @Nonnull
@@ -153,9 +153,9 @@ public abstract class EffectRenderType extends RenderType {
         WHITE_WRAPPER = new GlTexture_Wrapped(WHITE); // transfer ownership
         WHITE_WRAPPER_VIEW = MuiModApi.get().getRealGpuDevice().createTextureView(WHITE_WRAPPER);
 
-        WHITE_WRAPPER.setTextureFilter(FilterMode.NEAREST, false);
+        //WHITE_WRAPPER.setTextureFilter(FilterMode.NEAREST, false);
 
-        TYPE = MuiModApi.get().createRenderType("modern_text_effect", 256,
+        /*TYPE = MuiModApi.get().createRenderType("modern_text_effect", 256,
                 false, true, RenderPipelines.TEXT,
                 new TextRenderType.ExtendedTextureStateShard(WHITE_WRAPPER_VIEW),
                 true);
@@ -166,6 +166,9 @@ public abstract class EffectRenderType extends RenderType {
         POLYGON_OFFSET_TYPE = MuiModApi.get().createRenderType("modern_text_effect_polygon_offset", 256,
                 false, true, RenderPipelines.TEXT_POLYGON_OFFSET,
                 new TextRenderType.ExtendedTextureStateShard(WHITE_WRAPPER_VIEW),
-                true);
+                true);*/
+        TYPE = null;
+        SEE_THROUGH_TYPE = null;
+        POLYGON_OFFSET_TYPE = null;
     }
 }

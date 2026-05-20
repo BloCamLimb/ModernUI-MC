@@ -21,12 +21,12 @@ package icyllis.modernui.mc;
 import com.mojang.blaze3d.resource.GraphicsResourceAllocator;
 import icyllis.modernui.animation.ColorEvaluator;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.*;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Marker;
@@ -45,7 +45,7 @@ public enum BlurHandler {
     INSTANCE;
 
     private static final Marker MARKER = MarkerManager.getMarker("Blur");
-    private static final ResourceLocation GAUSSIAN_BLUR =
+    private static final Identifier GAUSSIAN_BLUR =
             ModernUIMod.location("gaussian_blur");
 
     /**
@@ -199,7 +199,7 @@ public enum BlurHandler {
         if (minecraft.isWindowActive()) {
             targetVolumeMultiplier = 1;
         } else if (sMasterVolumeMinimized < sMasterVolumeInactive &&
-                GLFW.glfwGetWindowAttrib(minecraft.getWindow().getWindow(), GLFW.GLFW_ICONIFIED) != 0) {
+                GLFW.glfwGetWindowAttrib(minecraft.getWindow().handle(), GLFW.GLFW_ICONIFIED) != 0) {
             targetVolumeMultiplier = sMasterVolumeMinimized;
         } else {
             targetVolumeMultiplier = sMasterVolumeInactive;
@@ -218,12 +218,12 @@ public enum BlurHandler {
                 );
             }
             float volume = minecraft.options.getSoundSourceVolume(SoundSource.MASTER);
-            minecraft.getSoundManager().updateSourceVolume(SoundSource.MASTER, volume * mVolumeMultiplier);
+            minecraft.getSoundManager().updateCategoryVolume(SoundSource.MASTER, volume * mVolumeMultiplier);
         }
     }
 
     // INTERNAL HOOK
-    public void drawScreenBackground(@Nonnull GuiGraphics gr, int x1, int y1, int x2, int y2) {
+    public void drawScreenBackground(@Nonnull GuiGraphicsExtractor gr, int x1, int y1, int x2, int y2) {
         if (minecraft.level == null) {
             gr.fill(x1, y1, x2, y2, 0xFF191919);
         } else {

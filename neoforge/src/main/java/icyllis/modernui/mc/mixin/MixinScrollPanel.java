@@ -21,7 +21,8 @@ package icyllis.modernui.mc.mixin;
 import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.ScrollController;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.neoforged.neoforge.client.gui.widget.ScrollPanel;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -76,22 +77,20 @@ public abstract class MixinScrollPanel implements ScrollController.IListener {
         return false;
     }
 
-    @Inject(method = "render", at = @At("HEAD"))
-    private void preRender(GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+    @Inject(method = "extractRenderState", at = @At("HEAD"))
+    private void preRender(GuiGraphicsExtractor gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         modernUI_MC$mScrollController.update(MuiModApi.getElapsedTime());
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/neoforged/neoforge" +
-            "/client/gui/widget/ScrollPanel;drawPanel(Lnet/minecraft/client/gui/GuiGraphics;IIII)V"), remap = false)
-    private void preDrawPanel(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+    @Inject(method = "extractRenderState", at = @At(value = "INVOKE", shift = At.Shift.BEFORE, target = "Lnet/neoforged/neoforge/client/gui/widget/ScrollPanel;drawPanel(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIII)V"), remap = false)
+    private void preDrawPanel(@Nonnull GuiGraphicsExtractor gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         gr.pose().pushMatrix();
         gr.pose().translate(0,
                 ((int) (((int) scrollDistance - scrollDistance) * (float) client.getWindow().getGuiScale())) / (float) client.getWindow().getGuiScale());
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/neoforged/neoforge" +
-            "/client/gui/widget/ScrollPanel;drawPanel(Lnet/minecraft/client/gui/GuiGraphics;IIII)V"), remap = false)
-    private void postDrawPanel(@Nonnull GuiGraphics gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
+    @Inject(method = "extractRenderState", at = @At(value = "INVOKE", shift = At.Shift.AFTER, target = "Lnet/neoforged/neoforge/client/gui/widget/ScrollPanel;drawPanel(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIII)V"), remap = false)
+    private void postDrawPanel(@Nonnull GuiGraphicsExtractor gr, int mouseX, int mouseY, float partialTicks, CallbackInfo ci) {
         gr.pose().popMatrix();
     }
 
@@ -106,7 +105,7 @@ public abstract class MixinScrollPanel implements ScrollController.IListener {
      * @reason Smooth scrolling
      */
     @Overwrite
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+    public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
         if (scrolling) {
             int maxScroll = height - getBarHeight();
             float moved = (float) (deltaY / maxScroll);

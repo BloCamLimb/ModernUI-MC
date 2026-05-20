@@ -18,7 +18,7 @@
 
 package icyllis.modernui.mc;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -28,7 +28,7 @@ import org.joml.Matrix3x2fStack;
 import javax.annotation.Nonnull;
 
 /**
- * Extension of {@link GuiGraphics}.
+ * Extension of {@link GuiGraphicsExtractor}.
  * <p>
  * Each time you want to use this class, you create a new ExtendedGuiGraphics
  * using an existing GuiGraphics instance. There is no difference in operating
@@ -42,7 +42,7 @@ import javax.annotation.Nonnull;
  */
 public class ExtendedGuiGraphics {
 
-    private final GuiGraphics guiGraphics;
+    private final GuiGraphicsExtractor guiGraphics;
 
     private int mColorTL = ~0;
     private int mColorTR = ~0;
@@ -52,7 +52,7 @@ public class ExtendedGuiGraphics {
     private float mDepth = 0;
     private float mWidth = 1;
 
-    public ExtendedGuiGraphics(@Nonnull GuiGraphics guiGraphics) {
+    public ExtendedGuiGraphics(@Nonnull GuiGraphicsExtractor guiGraphics) {
         this.guiGraphics = guiGraphics;
     }
 

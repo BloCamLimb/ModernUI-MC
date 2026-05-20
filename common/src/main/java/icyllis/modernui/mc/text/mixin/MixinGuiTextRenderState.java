@@ -24,9 +24,10 @@ import icyllis.modernui.mc.text.TextLayout;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.text.TextRenderType;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.render.state.GuiTextRenderState;
+import net.minecraft.client.renderer.state.gui.GuiTextRenderState;
 import net.minecraft.util.FormattedCharSequence;
 import org.joml.Matrix3x2f;
+import org.joml.Matrix3x2fc;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -38,16 +39,16 @@ public class MixinGuiTextRenderState {
 
     @Shadow
     @Final
-    public Matrix3x2f pose;
+    public Matrix3x2fc pose;
 
     @Redirect(method = "ensurePrepared",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Font;prepareText" +
-                    "(Lnet/minecraft/util/FormattedCharSequence;FFIZI)Lnet/minecraft/client/gui/Font$PreparedText;"))
+                    "(Lnet/minecraft/util/FormattedCharSequence;FFIZZI)Lnet/minecraft/client/gui/Font$PreparedText;"))
     private Font.PreparedText onPrepareText(Font font, FormattedCharSequence text,
                                             float x, float y, int color, boolean dropShadow,
-                                            int backgroundColor) {
+                                            boolean includeEmpty, int backgroundColor) {
         TextLayout layout = TextLayoutEngine.getInstance().lookupFormattedLayout(text);
-        Matrix3x2f ctm = pose;
+        Matrix3x2f ctm = (Matrix3x2f) pose;
         int mode;
         boolean isPureTranslation;
         if (!MathUtil.isApproxZero(ctm.m01) ||
