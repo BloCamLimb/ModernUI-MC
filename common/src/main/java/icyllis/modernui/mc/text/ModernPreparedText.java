@@ -23,11 +23,11 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.arc3d.core.Rect2f;
 import icyllis.modernui.mc.GradientRectangleRenderState;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.state.gui.GuiRenderState;
-import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fc;
 
 import javax.annotation.Nonnull;
@@ -58,14 +58,14 @@ public class ModernPreparedText implements Font.PreparedText {
     private final ArrayList<TextRun> runs;
     private final boolean hasEffect;
     private final float totalAdvance;
-    private final GLBakedGlyph[] glyphs;
+    private final BakedGlyph[] glyphs;
     private final float[] positions;
     private final int[] flags;
 
     ModernPreparedText(float density, float shadowOffset, boolean dropShadow, int color,
                        int bgColor, float x, float top, ScreenRectangle bounds,
                        ArrayList<TextRun> runs, boolean hasEffect, float totalAdvance,
-                       GLBakedGlyph[] glyphs, float[] positions, int[] flags) {
+                       ModernBakedGlyph[] glyphs, float[] positions, int[] flags) {
         this.density = density;
         this.shadowOffset = shadowOffset;
         this.dropShadow = dropShadow;
@@ -84,7 +84,7 @@ public class ModernPreparedText implements Font.PreparedText {
 
     ModernPreparedText(float x, float top, int color, boolean dropShadow,
                        int preferredMode, int bgColor, float density,
-                       GLBakedGlyph[] glyphs, TextLayout layout) {
+                       BakedGlyph[] glyphs, TextLayout layout) {
 
         final float invDensity = 1.0f / density;
         float shadowOffset = 0;
@@ -120,8 +120,11 @@ public class ModernPreparedText implements Font.PreparedText {
         boolean glyphArrayIsCopied = false;
 
         for (int i = 0, e = glyphs.length; i < e; i++) {
-            var glyph = glyphs[i];
-            if (glyph == null) {
+            var vglyph = glyphs[i];
+            if (vglyph == null) {
+                continue;
+            }
+            if (!(vglyph instanceof ModernBakedGlyph glyph)) {
                 continue;
             }
             final int bits = flags[i];

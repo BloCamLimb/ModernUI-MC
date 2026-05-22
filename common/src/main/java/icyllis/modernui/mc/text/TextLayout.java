@@ -23,7 +23,9 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.util.SparseArray;
+import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.network.chat.Style;
 import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
@@ -49,7 +51,7 @@ public class TextLayout {
      * <p>
      * This singleton cannot be inserted into the cache!
      */
-    public static final TextLayout EMPTY = new TextLayout(new char[0], new int[0], new float[0],
+    public static final TextLayout EMPTY = new TextLayout(new char[0], new int[0], new BakedGlyph[0], new float[0],
             null, new Font[0], new float[0], new int[0], new int[]{0}, 0, false, false, 2, ~0) {
         @Nonnull
         @Override
@@ -98,9 +100,10 @@ public class TextLayout {
      * obfuscated chars are {@link icyllis.modernui.mc.text.GlyphManager.FastCharSet}.
      */
     private final int[] mGlyphs;
-    private transient GLBakedGlyph[] mBakedGlyphs;
-    private transient GLBakedGlyph[] mBakedGlyphsForSDF;
-    private transient SparseArray<GLBakedGlyph[]> mBakedGlyphsArray;
+    private final BakedGlyph[] mBakedGlyphs;
+    private boolean mFullyBaked;
+    private transient BakedGlyph[] mBakedGlyphsForSDF;
+    private transient SparseArray<BakedGlyph[]> mBakedGlyphsArray;
 
     /**
      * Position x1 y1 x2 y2... relative to the same point, for rendering glyphs.
@@ -181,6 +184,8 @@ public class TextLayout {
     private TextLayout(@Nonnull TextLayout layout) {
         mTextBuf = layout.mTextBuf;
         mGlyphs = layout.mGlyphs;
+        mBakedGlyphs = layout.mBakedGlyphs;
+        mFullyBaked = layout.mFullyBaked;
         mPositions = layout.mPositions;
         mFontIndices = layout.mFontIndices;
         mFonts = layout.mFonts;
@@ -195,6 +200,7 @@ public class TextLayout {
     }
 
     TextLayout(@Nonnull char[] textBuf, @Nonnull int[] glyphs,
+               @Nonnull BakedGlyph[] initialBakedGlyphs,
                @Nonnull float[] positions, @Nullable byte[] fontIndices,
                @Nonnull Font[] fonts, @Nullable float[] advances,
                @Nonnull int[] glyphFlags, @Nullable int[] lineBoundaries,
@@ -202,6 +208,8 @@ public class TextLayout {
                int createdResLevel, int computedFlags) {
         mTextBuf = textBuf;
         mGlyphs = glyphs;
+        mBakedGlyphs = initialBakedGlyphs;
+        mFullyBaked = initialBakedGlyphs.length == 0;
         mPositions = positions;
         mFontIndices = fontIndices;
         mFonts = fonts;
@@ -217,6 +225,7 @@ public class TextLayout {
                 mTextBuf.length == mAdvances.length;
         assert mGlyphs.length * 2 == mPositions.length;
         assert mGlyphs.length == mGlyphFlags.length;
+        assert mGlyphs.length == mBakedGlyphs.length;
     }
 
     /**
@@ -251,11 +260,15 @@ public class TextLayout {
     }
 
     @Nonnull
-    private GLBakedGlyph[] prepareGlyphs(int fontSize) {
+    private BakedGlyph[] prepareGlyphs(int fontSize, BakedGlyph[] glyphs) {
         GlyphManager glyphManager = GlyphManager.getInstance();
-        GLBakedGlyph[] glyphs = new GLBakedGlyph[mGlyphs.length];
         for (int i = 0; i < glyphs.length; i++) {
-            if ((mGlyphFlags[i] & CharacterStyle.OBFUSCATED_MASK) != 0) {
+            BakedGlyph initialGlyph = mBakedGlyphs[i];
+            if (initialGlyph != null &&
+                    !(initialGlyph instanceof ModernBakedGlyph)) {
+                // atlas sprite or player skin
+                glyphs[i] = initialGlyph;
+            } else if ((mGlyphFlags[i] & CharacterStyle.OBFUSCATED_MASK) != 0) {
                 glyphs[i] = glyphManager.lookupFastChars(
                         getFont(i),
                         fontSize,
@@ -273,31 +286,32 @@ public class TextLayout {
     }
 
     @Nonnull
-    private GLBakedGlyph[] getGlyphs(int resLevel) {
+    private BakedGlyph[] getGlyphs(int resLevel) {
         if (resLevel == mCreatedResLevel) {
-            if (mBakedGlyphs == null) {
+            if (!mFullyBaked) {
                 int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
-                mBakedGlyphs = prepareGlyphs(fontSize);
+                prepareGlyphs(fontSize, mBakedGlyphs);
+                mFullyBaked = true;
             }
             return mBakedGlyphs;
         } else {
             if (mBakedGlyphsForSDF == null) {
                 int fontSize = TextLayoutProcessor.computeFontSize(resLevel);
-                mBakedGlyphsForSDF = prepareGlyphs(fontSize);
+                mBakedGlyphsForSDF = prepareGlyphs(fontSize, new BakedGlyph[mGlyphs.length]);
             }
             return mBakedGlyphsForSDF;
         }
     }
 
     @Nonnull
-    private GLBakedGlyph[] getGlyphsUniformScale(float density) {
+    private BakedGlyph[] getGlyphsUniformScale(float density) {
         if (mBakedGlyphsArray == null) {
             mBakedGlyphsArray = new SparseArray<>();
         }
         int fontSize = TextLayoutProcessor.computeFontSize(density);
-        GLBakedGlyph[] glyphs = mBakedGlyphsArray.get(fontSize);
+        BakedGlyph[] glyphs = mBakedGlyphsArray.get(fontSize);
         if (glyphs == null) {
-            glyphs = prepareGlyphs(fontSize);
+            glyphs = prepareGlyphs(fontSize, new BakedGlyph[mGlyphs.length]);
             mBakedGlyphsArray.put(fontSize, glyphs);
         }
         return glyphs;
@@ -319,7 +333,7 @@ public class TextLayout {
      * @param polygonOffset polygon offset layering requested?
      * @param uniformScale  additional scale factor if uniform scale
      * @param bgColor       the background color of the text in 0xAARRGGBB format
-     * @param packedLight   see {@link net.minecraft.client.renderer.LightTexture}
+     * @param packedLight   see {@link net.minecraft.util.LightCoordsUtil}
      * @return the total advance, always positive
      */
     public float drawText(@Nonnull final Matrix4f matrix,
@@ -333,7 +347,7 @@ public class TextLayout {
         final int startG = g;
         final int startB = b;
         final float density;
-        final GLBakedGlyph[] glyphs;
+        final BakedGlyph[] glyphs;
         if (preferredMode == TextRenderType.MODE_SDF_FILL) {
             int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
             glyphs = getGlyphs(resLevel);
@@ -391,8 +405,30 @@ public class TextLayout {
         }
 
         for (int i = 0, e = glyphs.length; i < e; i++) {
-            var glyph = glyphs[i];
-            if (glyph == null) {
+            var vglyph = glyphs[i];
+            if (vglyph == null) {
+                continue;
+            }
+            if (!(vglyph instanceof ModernBakedGlyph glyph)) {
+                // used in 3D world rendering, and it's atlas sprite or player skin
+                if (!isShadow) {
+                    // atlas sprite and player skin don't use shadow, color, style
+                    var renderable = vglyph.createGlyph(
+                            x + positions[i << 1],
+                            top + positions[i << 1 | 1],
+                            ~0, 0,
+                            Style.EMPTY,
+                            0, 0
+                    );
+                    if (renderable != null) {
+                        var buffer = source.getBuffer(renderable.renderType(
+                                polygonOffset ? net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET :
+                                        seeThrough ? net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH :
+                                                net.minecraft.client.gui.Font.DisplayMode.NORMAL
+                        ));
+                        renderable.render(matrix, buffer, packedLight, false);
+                    }
+                }
                 continue;
             }
             final int bits = flags[i];
@@ -570,7 +606,7 @@ public class TextLayout {
      * @param g           the default outline green value (0...255)
      * @param b           the default outline blue value (0...255)
      * @param a           the alpha value (0...255)
-     * @param packedLight see {@link net.minecraft.client.renderer.LightTexture}
+     * @param packedLight see {@link net.minecraft.util.LightCoordsUtil}
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
     public void drawTextOutline(@Nonnull Matrix4f matrix,
@@ -580,7 +616,7 @@ public class TextLayout {
                                 int packedLight) {
         final float resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
 
-        final GLBakedGlyph[] glyphs = getGlyphs((int) resLevel);
+        final BakedGlyph[] glyphs = getGlyphs((int) resLevel);
         final var positions = mPositions;
         final var flags = mGlyphFlags;
         //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
@@ -595,8 +631,11 @@ public class TextLayout {
         // outset glyph bounds
         final float sBloat = 1.0f / resLevel;
         for (int i = 0, e = glyphs.length; i < e; i++) {
-            var glyph = glyphs[i];
-            if (glyph == null) {
+            var vglyph = glyphs[i];
+            if (vglyph == null) {
+                continue;
+            }
+            if (!(vglyph instanceof ModernBakedGlyph glyph)) {
                 continue;
             }
             final int bits = flags[i];
@@ -662,7 +701,7 @@ public class TextLayout {
                                                      int preferredMode, final float uniformScale,
                                                      final int bgColor) {
         final float density;
-        final GLBakedGlyph[] glyphs;
+        final BakedGlyph[] glyphs;
         if (preferredMode == TextRenderType.MODE_SDF_FILL) {
             int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
             glyphs = getGlyphs(resLevel);

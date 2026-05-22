@@ -202,10 +202,10 @@ public abstract class GlyphRender {
          * The immutable glyph to render
          */
         @Nullable
-        private final GLBakedGlyph mGlyph;
+        private final ModernBakedGlyph mGlyph;
 
         public StandardGlyphRender(int stripIndex, float offsetX, float advance, int decoration,
-                                   @Nullable GLBakedGlyph glyph) {
+                                   @Nullable ModernBakedGlyph glyph) {
             super(stripIndex, offsetX, advance, decoration);
             mGlyph = glyph;
         }
@@ -311,10 +311,10 @@ public abstract class GlyphRender {
          * A reference of cached array in GlyphManager, 0-9 textured glyphs (in that order)
          */
         @Nonnull
-        private final Map.Entry<GLBakedGlyph[], float[]> mDigits;
+        private final Map.Entry<ModernBakedGlyph[], float[]> mDigits;
 
         public DigitGlyphRender(int stripIndex, float offsetX, float advance, int decoration,
-                                @Nonnull Map.Entry<GLBakedGlyph[], float[]> digits) {
+                                @Nonnull Map.Entry<ModernBakedGlyph[], float[]> digits) {
             super(stripIndex, offsetX, advance, decoration);
             mDigits = digits;
         }
@@ -429,10 +429,10 @@ public abstract class GlyphRender {
          * Array of glyphs with same advance
          */
         @Nonnull
-        private final Map.Entry<GLBakedGlyph[], float[]> mGlyphs;
+        private final Map.Entry<ModernBakedGlyph[], float[]> mGlyphs;
 
         public RandomGlyphRender(int stripIndex, float offsetX, float advance, int decoration,
-                                 @Nonnull Map.Entry<GLBakedGlyph[], float[]> glyphs) {
+                                 @Nonnull Map.Entry<ModernBakedGlyph[], float[]> glyphs) {
             super(stripIndex, advance, offsetX, decoration);
             mGlyphs = glyphs;
         }

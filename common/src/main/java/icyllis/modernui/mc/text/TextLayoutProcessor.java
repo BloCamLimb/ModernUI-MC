@@ -32,6 +32,9 @@ import icyllis.modernui.text.TextDirectionHeuristics;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.minecraft.client.gui.GlyphSource;
+import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
@@ -117,6 +120,11 @@ public class TextLayoutProcessor {
      * The order is visually left-to-right (i.e. in visual order).
      */
     private final IntArrayList mGlyphs = new IntArrayList();
+    /**
+     * All initial glyphs, elements are non-null only if it's an atlas sprite or player skin.
+     * Same indexing with {@link #mGlyphs}.
+     */
+    private final ObjectArrayList<BakedGlyph> mInitialBackedGlyphs = new ObjectArrayList<>();
     /**
      * The glyph's font of {@link #mGlyphs}, same order.
      */
@@ -215,6 +223,7 @@ public class TextLayoutProcessor {
     private boolean mHasEffect;
     //private boolean mHasFastDigit;
     private boolean mHasColorEmoji;
+    private boolean mHasCompatGlyph;
 
     private boolean mComputeAdvances = true;
     private boolean mComputeLineBoundaries = true;
@@ -343,6 +352,7 @@ public class TextLayoutProcessor {
             mFontIndices.add(id);
         }
         mGlyphs.addElements(mGlyphs.size(), piece.getGlyphs());
+        mInitialBackedGlyphs.size(mInitialBackedGlyphs.size() + piece.getGlyphs().length);
         int posIndex = mPositions.size();
         mPositions.addElements(posIndex, piece.getPositions());
         for (int posEnd = mPositions.size();
@@ -395,6 +405,9 @@ public class TextLayoutProcessor {
                     mBuilder.length() != mAdvances.size()) {
                 throw new AssertionError();
             }
+            if (mGlyphs.size() != mInitialBackedGlyphs.size()) {
+                throw new AssertionError();
+            }
             if (mGlyphs.size() != mGlyphFlags.size()) {
                 throw new AssertionError();
             }
@@ -412,6 +425,7 @@ public class TextLayoutProcessor {
         mStyles.clear();
         mFontNames.clear();
         mGlyphs.clear();
+        mInitialBackedGlyphs.clear();
         mFontIndices.clear();
         mFontVec.clear();
         mFontMap.clear();
@@ -424,6 +438,7 @@ public class TextLayoutProcessor {
         mHasEffect = false;
         //mHasFastDigit = false;
         mHasColorEmoji = false;
+        mHasCompatGlyph = false;
     }
 
     @Nonnull
@@ -613,6 +628,7 @@ public class TextLayoutProcessor {
             }
             mTotalAdvance /= resLevel;
             return new TextLayout(textBuf, mGlyphs.toIntArray(),
+                    mInitialBackedGlyphs.toArray(new BakedGlyph[0]),
                     positions, fontIndices,
                     mFontVec.toArray(new Font[0]),
                     advances, mGlyphFlags.toIntArray(),
@@ -828,6 +844,10 @@ public class TextLayoutProcessor {
      */
     private void handleStyleRun(@Nonnull char[] text, int start, int limit, boolean isRtl,
                                 int styleFlags, FontDescription fontName) {
+        if (!(fontName instanceof FontDescription.Resource fontResource)) {
+            handleReplacementRun(text, start, limit, styleFlags, fontName);
+            return;
+        }
         /*if (fastDigit) {
          *//*
          * Convert all digits in the string to a '0' before layout to ensure that any glyphs replaced on the fly
@@ -851,7 +871,7 @@ public class TextLayoutProcessor {
             fontStyle |= FontPaint.ITALIC;
         }
 
-        mFontPaint.setFont(mEngine.getFontCollection(((FontDescription.Resource) fontName).id()));
+        mFontPaint.setFont(mEngine.getFontCollection(fontResource.id()));
         mFontPaint.setFontStyle(fontStyle);
 
         //if ((styleFlags & CharacterStyle.OBFUSCATED_MASK) == 0) {
@@ -954,6 +974,58 @@ public class TextLayoutProcessor {
                 prevPos = currPos;
             }
         }
+    }
+
+    /**
+     * Special case of {@link #handleStyleRun(char[], int, int, boolean, int, FontDescription)}
+     * which only performs bitmap replacement without any text shaping or any special effects.
+     */
+    private void handleReplacementRun(@Nonnull char[] text, int start, int limit,
+                                      int styleFlags, FontDescription fontName) {
+        float offset = mTotalAdvance;
+        byte fontIdx = mFontMap.computeIfAbsent(SpaceFont.PLACEHOLDER, mNextID);
+        GlyphSource glyphSource = mEngine.getGlyphSource(fontName);
+
+        char _c1, _c2;
+        // Process code point in visual order
+        for (int index = start; index < limit; index++) {
+            int ch, i = index;
+            _c1 = text[index];
+            if (Character.isHighSurrogate(_c1) && index + 1 < limit) {
+                _c2 = text[index + 1];
+                if (Character.isLowSurrogate(_c2)) {
+                    ch = Character.toCodePoint(_c1, _c2);
+                    ++index;
+                } else {
+                    ch = _c1;
+                }
+            } else {
+                ch = _c1;
+            }
+
+            var glyph = glyphSource.getGlyph(ch);
+            float advance = glyph.info().getAdvance();
+
+            if (mComputeAdvances) {
+                mAdvances.set(i, advance);
+            }
+
+            mGlyphs.add(0);
+            mInitialBackedGlyphs.add(glyph);
+            mPositions.add(offset);
+            mPositions.add(0);
+            mFontIndices.add(fontIdx);
+            mHasEffect |= (styleFlags & CharacterStyle.EFFECT_MASK) != 0;
+            mHasCompatGlyph = true;
+            mGlyphFlags.add(styleFlags | CharacterStyle.ANY_BITMAP_REPLACEMENT);
+            if (mComputeLineBoundaries) {
+                // no information indicating whether there is a line boundary
+                mLineBoundaries.add(index + 1);
+            }
+
+            offset += advance;
+        }
+        mTotalAdvance = offset;
     }
 
     /*

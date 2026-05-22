@@ -35,6 +35,9 @@ import java.util.Locale;
  */
 public class SpaceFont implements Font {
 
+    public static final SpaceFont PLACEHOLDER = new SpaceFont(
+            "modernui:placeholder / minecraft:space", new Int2FloatOpenHashMap());
+
     private final String mFontName;
     private final Int2FloatOpenHashMap mAdvances;
 

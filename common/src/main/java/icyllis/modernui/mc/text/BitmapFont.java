@@ -20,7 +20,6 @@ package icyllis.modernui.mc.text;
 
 import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.font.GlyphInfo;
-import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.arc3d.core.PixelUtils;
 import icyllis.arc3d.core.RawPtr;
@@ -45,7 +44,6 @@ import icyllis.modernui.mc.b3d.GlTexture_Wrapped;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import net.minecraft.client.gui.font.glyphs.EmptyGlyph;
 import net.minecraft.client.gui.font.providers.BitmapProvider;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -57,7 +55,6 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.function.Function;
 
 import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 
@@ -102,7 +99,7 @@ public class BitmapFont implements Font, AutoCloseable {
     private GLTexture mTexture; // lazy init, managed by wrapper
     private GlTexture_Wrapped mTextureWrapper = null;
     private GpuTextureView mTextureWrapperView = null;
-    private Int2ObjectOpenHashMap<GLBakedGlyph> mBakedGlyphs;
+    private Int2ObjectOpenHashMap<ModernBakedGlyph> mBakedGlyphs;
 
     private final int mAscent;  // positive
     private final int mDescent; // positive
@@ -157,7 +154,7 @@ public class BitmapFont implements Font, AutoCloseable {
                             Integer.toHexString(ch), mName);
                 }
                 if (useDedicatedTexture) {
-                    GLBakedGlyph bakedGlyph = new GLBakedGlyph();
+                    ModernBakedGlyph bakedGlyph = new ModernBakedGlyph();
                     setGlyphMetrics(bakedGlyph);
                     // always create 256x256 texture
                     bakedGlyph.u1 = (float) (c * mSpriteWidth) / getTextureWidth();
@@ -335,7 +332,7 @@ public class BitmapFont implements Font, AutoCloseable {
     }
 
     @SuppressWarnings("ConstantValue")
-    public void setGlyphMetrics(@Nonnull GLBakedGlyph glyph) {
+    public void setGlyphMetrics(@Nonnull ModernBakedGlyph glyph) {
         // bearing x, bearing y
         glyph.x = 0;
         // there shouldn't be any overflow, because vanilla uses float,
@@ -373,9 +370,9 @@ public class BitmapFont implements Font, AutoCloseable {
      */
     // Render thread only
     @Nullable
-    public GLBakedGlyph getBakedGlyph(int ch) {
+    public ModernBakedGlyph getBakedGlyph(int ch) {
         assert mBitmap != null && mBakedGlyphs != null;
-        GLBakedGlyph glyph = mBakedGlyphs.get(ch);
+        ModernBakedGlyph glyph = mBakedGlyphs.get(ch);
         if (glyph != null && mTexture == null) {
             createTexture();
         }

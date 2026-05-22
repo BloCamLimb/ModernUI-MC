@@ -20,6 +20,7 @@ package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
@@ -41,7 +42,7 @@ public record TextRunRenderState(
         TextureSetup textureSetup,
         @Nullable ScreenRectangle scissorArea,
         float x, float top, int color, boolean dropShadow,
-        GLBakedGlyph[] glyphs,
+        BakedGlyph[] glyphs,
         float[] positions, int[] flags,
         int glyphStart, int glyphEnd, boolean isColorEmoji,
         boolean isDirectMask, float density, float shadowOffset
@@ -76,8 +77,11 @@ public record TextRunRenderState(
             baseline += shadowOffset;
         }
         for (int i = glyphStart; i < glyphEnd; i++) {
-            var glyph = glyphs[i];
-            if (glyph == null) {
+            var vglyph = glyphs[i];
+            if (vglyph == null) {
+                continue;
+            }
+            if (!(vglyph instanceof ModernBakedGlyph glyph)) {
                 continue;
             }
             final int bits = flags[i];

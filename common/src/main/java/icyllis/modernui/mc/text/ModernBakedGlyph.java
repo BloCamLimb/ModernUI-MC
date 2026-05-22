@@ -18,6 +18,14 @@
 
 package icyllis.modernui.mc.text;
 
+import com.mojang.blaze3d.font.GlyphInfo;
+import net.minecraft.client.gui.font.TextRenderable;
+import net.minecraft.client.gui.font.glyphs.BakedGlyph;
+import net.minecraft.network.chat.Style;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 /**
  * This class holds information for a glyph about its pre-rendered image in a
  * GL texture. The glyph must be laid-out so that it has something to render
@@ -27,7 +35,7 @@ package icyllis.modernui.mc.text;
  * @see GLFontAtlas
  * @since 2.0
  */
-public class GLBakedGlyph {
+public class ModernBakedGlyph implements BakedGlyph {
 
     /**
      * The horizontal offset to baseline in pixels, i.e. bearing X.
@@ -71,13 +79,26 @@ public class GLBakedGlyph {
      */
     public float v2;
 
-    public GLBakedGlyph() {
+    public ModernBakedGlyph() {
         x = Integer.MIN_VALUE;
+    }
+
+    @Nonnull
+    @Override
+    public GlyphInfo info() {
+        throw new UnsupportedOperationException("Modern Text Engine");
+    }
+
+    @Nullable
+    @Override
+    public TextRenderable.Styled createGlyph(float x, float y, int color, int shadowColor, @Nonnull Style style,
+                                             float boldOffset, float shadowOffset) {
+        throw new UnsupportedOperationException("Modern Text Engine");
     }
 
     @Override
     public String toString() {
-        return "GLBakedGlyph{x=" + x +
+        return "ModernBakedGlyph{x=" + x +
                 ",y=" + y +
                 ",w=" + width +
                 ",h=" + height +

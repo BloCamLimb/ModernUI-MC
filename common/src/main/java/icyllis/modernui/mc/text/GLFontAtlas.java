@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.text;
 
-import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.arc3d.core.ColorInfo;
 import icyllis.arc3d.core.MathUtil;
@@ -56,7 +55,7 @@ import static org.lwjgl.opengl.GL33C.*;
 /**
  * Maintains a font texture atlas, which is specified with a font strike (style and
  * size). Glyphs are dynamically generated with mipmaps, each glyph is represented as
- * a {@link GLBakedGlyph}.
+ * a {@link ModernBakedGlyph}.
  * <p>
  * The initial texture size is 1024*1024, and each resize double the height and width
  * alternately. For example, 1024*1024 -> 1024*2048 -> 2048*2048.
@@ -66,7 +65,7 @@ import static org.lwjgl.opengl.GL33C.*;
  * For {@link Engine#MASK_FORMAT_ARGB}, we have non-premultiplied alpha.
  *
  * @see GlyphManager
- * @see GLBakedGlyph
+ * @see ModernBakedGlyph
  * @see icyllis.arc3d.granite.DrawAtlas
  */
 //TODO handle too many glyphs?
@@ -82,7 +81,7 @@ public class GLFontAtlas implements AutoCloseable {
     //public static final int MIPMAP_LEVEL = 4;
 
     // OpenHashMap uses less memory than RBTree/AVLTree, but higher than ArrayMap
-    private final Long2ObjectOpenHashMap<GLBakedGlyph> mGlyphs = new Long2ObjectOpenHashMap<>();
+    private final Long2ObjectOpenHashMap<ModernBakedGlyph> mGlyphs = new Long2ObjectOpenHashMap<>();
 
     // texture can change by resizing
     @RawPtr
@@ -148,16 +147,16 @@ public class GLFontAtlas implements AutoCloseable {
      * @return the baked glyph or null if no pixels
      */
     @Nullable
-    public GLBakedGlyph getGlyph(long key) {
+    public ModernBakedGlyph getGlyph(long key) {
         // static factory
-        return mGlyphs.computeIfAbsent(key, __ -> new GLBakedGlyph());
+        return mGlyphs.computeIfAbsent(key, __ -> new ModernBakedGlyph());
     }
 
     public void setNoPixels(long key) {
         mGlyphs.put(key, null);
     }
 
-    public boolean stitch(@NonNull GLBakedGlyph glyph, long pixels) {
+    public boolean stitch(@NonNull ModernBakedGlyph glyph, long pixels) {
         if (mWidth == 0) {
             resize(); // first init
         }
@@ -271,7 +270,7 @@ public class GLFontAtlas implements AutoCloseable {
 
             if (vertical) {
                 //mTexture.clear(0, 0, mHeight >> 1, mWidth, mHeight >> 1);
-                for (GLBakedGlyph glyph : mGlyphs.values()) {
+                for (ModernBakedGlyph glyph : mGlyphs.values()) {
                     if (glyph == null) {
                         continue;
                     }
@@ -280,7 +279,7 @@ public class GLFontAtlas implements AutoCloseable {
                 }
             } else {
                 //mTexture.clear(0, mWidth >> 1, 0, mWidth >> 1, mHeight);
-                for (GLBakedGlyph glyph : mGlyphs.values()) {
+                for (ModernBakedGlyph glyph : mGlyphs.values()) {
                     if (glyph == null) {
                         continue;
                     }

@@ -35,6 +35,7 @@ import icyllis.modernui.text.*;
 import icyllis.modernui.util.Pools;
 import icyllis.modernui.view.View;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GlyphSource;
 import net.minecraft.client.gui.font.FontManager;
 import net.minecraft.client.gui.font.FontSet;
 import net.minecraft.client.gui.font.providers.*;
@@ -558,6 +559,7 @@ public class TextLayoutEngine extends FontResourceManager
     @Nonnull
     public TextLayoutEngine injectFontManager(@Nonnull FontManager manager) {
         mVanillaFontManager = manager;
+        mGlyphManager.injectFontManager(manager);
         return this;
     }
 
@@ -1232,6 +1234,20 @@ public class TextLayoutEngine extends FontResourceManager
                 : ModernUI.getSelectedTypeface();
     }
 
+    /**
+     * Given a special font name, returns a glyph source.
+     * <p>
+     * Cache will not be invalidated until resource reloading.
+     *
+     * @param fontName a special font name
+     * @return a glyph source
+     */
+    @Nonnull
+    public GlyphSource getGlyphSource(@Nonnull FontDescription fontName) {
+        assert !(fontName instanceof FontDescription.Resource); // getFontCollection
+        return ((AccessFontManager) mVanillaFontManager).getAnyGlyphs().glyphs(fontName);
+    }
+
     public void dumpBitmapFonts() {
         String basePath = Bitmap.saveDialogGet(
                 Bitmap.SaveFormat.PNG, null, "BitmapFont");
@@ -1270,7 +1286,7 @@ public class TextLayoutEngine extends FontResourceManager
      */
     @Deprecated
     @Nullable
-    private GLBakedGlyph lookupEmoji(@Nonnull char[] buf, int start, int end) {
+    private ModernBakedGlyph lookupEmoji(@Nonnull char[] buf, int start, int end) {
         return null;
     }
 

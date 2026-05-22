@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.text.mixin;
 
+import net.minecraft.client.gui.font.AtlasGlyphProvider;
 import net.minecraft.client.gui.font.FontManager;
 import net.minecraft.client.gui.font.FontSet;
 import net.minecraft.resources.Identifier;
@@ -31,4 +32,13 @@ public interface AccessFontManager {
 
     @Accessor("fontSets")
     Map<Identifier, FontSet> getFontSets();
+
+    @Accessor("atlasProviders")
+    Map<Identifier, AtlasGlyphProvider> getAtlasProviders();
+
+    @Accessor("anyGlyphs")
+    FontManager.CachedFontProvider getAnyGlyphs();
+
+    @Accessor("nonFishyGlyphs")
+    FontManager.CachedFontProvider getNonFishyGlyphs();
 }

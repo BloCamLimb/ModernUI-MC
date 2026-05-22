@@ -175,6 +175,36 @@ public class CharacterStyle {
     }
 
     /**
+     * Almost an inverse of {@link #flatten(Style)}, used for compatibility reasons.
+     */
+    @Nonnull
+    public static Style unflatten(int flags) {
+        Style style = Style.EMPTY;
+        if ((flags & IMPLICIT_COLOR_MASK) == 0) {
+            style = style.withColor(flags & COLOR_MASK);
+        }
+        if ((flags & BOLD_MASK) != 0) {
+            style = style.withBold(true);
+        }
+        if ((flags & ITALIC_MASK) != 0) {
+            style = style.withItalic(true);
+        }
+        if ((flags & UNDERLINE_MASK) != 0) {
+            style = style.withUnderlined(true);
+        }
+        if ((flags & STRIKETHROUGH_MASK) != 0) {
+            style = style.withStrikethrough(true);
+        }
+        if ((flags & OBFUSCATED_MASK) != 0) {
+            style = style.withObfuscated(true);
+        }
+        if ((flags & NO_SHADOW_MASK) != 0) {
+            style = style.withShadowColor(0);
+        }
+        return style;
+    }
+
+    /**
      * Returns if two styles can produce a visual change. That is, appearance flags
      * or font collection are different.
      *

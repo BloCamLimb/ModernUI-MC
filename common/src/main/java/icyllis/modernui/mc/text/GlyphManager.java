@@ -32,9 +32,12 @@ import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.graphics.text.FontCollection;
 import icyllis.modernui.graphics.text.OutlineFont;
 import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.text.mixin.AccessFontManager;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.font.FontManager;
+import net.minecraft.client.gui.font.glyphs.EffectGlyph;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.lwjgl.BufferUtils;
@@ -193,6 +196,8 @@ public class GlyphManager {
     public record AtlasInvalidationInfo(int maskFormat, boolean resize) {
     }
 
+    private FontManager mVanillaFontManager;
+
     private GlyphManager() {
         // init
         reload();
@@ -208,6 +213,10 @@ public class GlyphManager {
             }
         }
         return sInstance;
+    }
+
+    public void injectFontManager(@Nonnull FontManager manager) {
+        mVanillaFontManager = manager;
     }
 
     @RenderThread
@@ -308,7 +317,7 @@ public class GlyphManager {
      */
     @Nullable
     @RenderThread
-    public GLBakedGlyph lookupGlyph(@Nonnull Font font, int fontSize, int glyphId) {
+    public ModernBakedGlyph lookupGlyph(@Nonnull Font font, int fontSize, int glyphId) {
         if (font instanceof OutlineFont) {
             java.awt.Font awtFont = ((OutlineFont) font).chooseFont(fontSize);
             long key = computeGlyphKey(awtFont, glyphId);
@@ -318,7 +327,7 @@ public class GlyphManager {
                 mFontAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_A8, GLYPH_BORDER, true);
                 mDevice = (GLDevice) context.getDevice();
             }
-            GLBakedGlyph glyph = mFontAtlas.getGlyph(key);
+            ModernBakedGlyph glyph = mFontAtlas.getGlyph(key);
             if (glyph != null && glyph.x == Integer.MIN_VALUE) {
                 return cacheGlyph(
                         awtFont,
@@ -337,7 +346,7 @@ public class GlyphManager {
                 mEmojiAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_ARGB, 0, true);
                 mDevice = (GLDevice) context.getDevice();
             }
-            GLBakedGlyph glyph = mEmojiAtlas.getGlyph(key);
+            ModernBakedGlyph glyph = mEmojiAtlas.getGlyph(key);
             if (glyph != null && glyph.x == Integer.MIN_VALUE) {
                 return cacheEmoji(
                         emojiFont,
@@ -359,7 +368,7 @@ public class GlyphManager {
                     mBitmapAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_ARGB, 0, false);
                     mDevice = (GLDevice) context.getDevice();
                 }
-                GLBakedGlyph glyph = mBitmapAtlas.getGlyph(key);
+                ModernBakedGlyph glyph = mBitmapAtlas.getGlyph(key);
                 if (glyph != null && glyph.x == Integer.MIN_VALUE) {
                     return cacheBitmapGlyph(
                             bitmapFont,
@@ -523,9 +532,9 @@ public class GlyphManager {
 
     @Nullable
     @RenderThread
-    private GLBakedGlyph cacheGlyph(@Nonnull java.awt.Font font, int glyphCode,
-                                    @Nonnull GLFontAtlas atlas, @Nonnull GLBakedGlyph glyph,
-                                    long key) {
+    private ModernBakedGlyph cacheGlyph(@Nonnull java.awt.Font font, int glyphCode,
+                                        @Nonnull GLFontAtlas atlas, @Nonnull ModernBakedGlyph glyph,
+                                        long key) {
         if (atlas.mResizeRequested) {
             // defer to next frame
             return null;
@@ -593,9 +602,9 @@ public class GlyphManager {
 
     @Nullable
     @RenderThread
-    private GLBakedGlyph cacheEmoji(@Nonnull EmojiFont font, int glyphId,
-                                    @Nonnull GLFontAtlas atlas, @Nonnull GLBakedGlyph glyph,
-                                    long key) {
+    private ModernBakedGlyph cacheEmoji(@Nonnull EmojiFont font, int glyphId,
+                                        @Nonnull GLFontAtlas atlas, @Nonnull ModernBakedGlyph glyph,
+                                        long key) {
         if (atlas.mResizeRequested) {
             // defer to next frame
             return null;
@@ -638,9 +647,9 @@ public class GlyphManager {
 
     @Nullable
     @RenderThread
-    private GLBakedGlyph cacheBitmapGlyph(@Nonnull BitmapFont font, int glyphId,
-                                          @Nonnull GLFontAtlas atlas, @Nonnull GLBakedGlyph glyph,
-                                          long key) {
+    private ModernBakedGlyph cacheBitmapGlyph(@Nonnull BitmapFont font, int glyphId,
+                                              @Nonnull GLFontAtlas atlas, @Nonnull ModernBakedGlyph glyph,
+                                              long key) {
         if (atlas.mResizeRequested) {
             // defer to next frame
             return null;
@@ -717,7 +726,7 @@ public class GlyphManager {
             // Emojis are not supported for obfuscated rendering
             return null;
         }
-        GLBakedGlyph glyph = lookupGlyph(font, fontSize, glyphId);
+        ModernBakedGlyph glyph = lookupGlyph(font, fontSize, glyphId);
         if (glyph == null) {
             // The original glyph is empty
             return null;
@@ -779,6 +788,11 @@ public class GlyphManager {
                 lookupGlyph(font, TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE, ch);
             }
         });
+    }
+
+    @Nonnull
+    public EffectGlyph getEffectGlyph() {
+        return ((AccessFontManager) mVanillaFontManager).getAnyGlyphs().effect();
     }
 
     /*@Nullable
@@ -912,10 +926,10 @@ public class GlyphManager {
      * <p>
      * This is used to render obfuscated chars.
      */
-    public static class FastCharSet extends GLBakedGlyph {
+    public static class FastCharSet extends ModernBakedGlyph {
 
         // The size of this list would dynamically change, we set the initial capacity to 1
-        public final ArrayList<GLBakedGlyph> glyphs = new ArrayList<>(1);
+        public final ArrayList<ModernBakedGlyph> glyphs = new ArrayList<>(1);
 
         public FastCharSet() {
             super();
@@ -923,7 +937,7 @@ public class GlyphManager {
     }
 
     // We store glyphs with similar widths into the same FastCharSet
-    static int computeStandardWidth(@Nonnull GLBakedGlyph glyph, int fontSize) {
+    static int computeStandardWidth(@Nonnull ModernBakedGlyph glyph, int fontSize) {
         int multiple = (fontSize + (TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE / 2)) /
                 TextLayoutProcessor.DEFAULT_BASE_FONT_SIZE;
         return Math.round((float) glyph.width / multiple) * multiple;
@@ -947,7 +961,7 @@ public class GlyphManager {
 
     /**
      * Called when the atlas resized or fully reset, which means
-     * texture ID changed or previous {@link GLBakedGlyph}s become invalid.
+     * texture ID changed or previous {@link ModernBakedGlyph}s become invalid.
      */
     public void addAtlasInvalidationCallback(Consumer<AtlasInvalidationInfo> callback) {
         mAtlasInvalidationCallbacks.add(Objects.requireNonNull(callback));
