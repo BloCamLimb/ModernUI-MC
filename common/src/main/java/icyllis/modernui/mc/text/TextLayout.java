@@ -18,7 +18,6 @@
 
 package icyllis.modernui.mc.text;
 
-import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.text.Font;
@@ -26,6 +25,7 @@ import icyllis.modernui.util.SparseArray;
 import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Style;
+import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
 
 import javax.annotation.Nonnull;
@@ -52,32 +52,7 @@ public class TextLayout {
      * This singleton cannot be inserted into the cache!
      */
     public static final TextLayout EMPTY = new TextLayout(new char[0], new int[0], new BakedGlyph[0], new float[0],
-            null, new Font[0], new float[0], new int[0], new int[]{0}, 0, false, false, 2, ~0) {
-        @Nonnull
-        @Override
-        TextLayout get() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        boolean tick(int lifespan) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public float drawText(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
-                              float x, float top, int r, int g, int b, int a, boolean isShadow,
-                              int preferredMode, boolean polygonOffset, float uniformScale,
-                              int bgColor, int packedLight) {
-            return 0;
-        }
-
-        @Override
-        public void drawTextOutline(@Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source, float x, float top,
-                                    int r, int g, int b, int a, int packedLight) {
-            // noop
-        }
-    };
+            null, new Font[0], new float[0], new int[0], new int[]{0}, 0, false, false, 2, ~0);
 
     /**
      * Default vertical adjustment to string position.
@@ -245,6 +220,7 @@ public class TextLayout {
      */
     @Nonnull
     TextLayout get() {
+        assert this != EMPTY;
         mTimer = 0;
         return this;
     }
@@ -255,6 +231,7 @@ public class TextLayout {
      * @return true to recycle
      */
     boolean tick(int lifespan) {
+        assert this != EMPTY;
         // Evict if not used in 'lifespan' seconds
         return ++mTimer > lifespan;
     }
@@ -382,12 +359,10 @@ public class TextLayout {
 
         final float baseline = top + sBaselineOffset;
 
-        GpuTextureView prevTexture = null;
+        Identifier prevTexture = null;
         int prevMode = -1;
         net.minecraft.client.gui.Font.DisplayMode prevVanillaDisplayMode = null;
         VertexConsumer builder = null;
-
-        GpuTextureView fontTexture = null;
 
         final boolean seeThrough = preferredMode == TextRenderType.MODE_SEE_THROUGH;
         if ((bgColor & 0xFF000000) != 0) {
@@ -437,7 +412,7 @@ public class TextLayout {
             final float w;
             final float h;
             final int mode;
-            final GpuTextureView texture;
+            final Identifier texture;
             boolean fakeItalic = false;
             int ascent = 0;
             net.minecraft.client.gui.Font.DisplayMode vanillaDisplayMode = null;
@@ -454,7 +429,7 @@ public class TextLayout {
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 final float scaleFactor;
                 if (getFont(i) instanceof BitmapFont bitmapFont) {
-                    texture = GlyphManager.getInstance().getCurrentTexture(bitmapFont);
+                    texture = bitmapFont.getCurrentTextureName();
                     ascent = bitmapFont.getAscent();
                     scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
                     isBitmapFont = true;
@@ -462,7 +437,7 @@ public class TextLayout {
                     if (isShadow) {
                         continue;
                     }
-                    texture = GlyphManager.getInstance().getEmojiTexture();
+                    texture = GlyphManager.EMOJI_SHEET;
                     ascent = TextLayout.STANDARD_BASELINE_OFFSET;
                     scaleFactor = TextLayoutProcessor.sBaseFontSize / GlyphManager.EMOJI_BASE;
                     isColorEmoji = true;
@@ -494,10 +469,7 @@ public class TextLayout {
 
                 w = glyph.width * invDensity;
                 h = glyph.height * invDensity;
-                if (fontTexture == null) {
-                    fontTexture = GlyphManager.getInstance().getFontTexture();
-                }
-                texture = fontTexture;
+                texture = GlyphManager.FONT_SHEET;
             }
             /*if (preferredMode == TextRenderType.MODE_NORMAL) {
                 // align to screen pixel center in 2D
@@ -623,10 +595,7 @@ public class TextLayout {
 
         final float baseline = top + sBaselineOffset;
 
-        GpuTextureView prevTexture = null;
         VertexConsumer builder = null;
-
-        GpuTextureView fontTexture = null;
 
         // outset glyph bounds
         final float sBloat = 1.0f / resLevel;
@@ -643,7 +612,6 @@ public class TextLayout {
             final float ry;
             final float w;
             final float h;
-            final GpuTextureView texture;
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 continue;
             } else {
@@ -657,19 +625,13 @@ public class TextLayout {
 
                 w = glyph.width / resLevel;
                 h = glyph.height / resLevel;
-                if (fontTexture == null) {
-                    fontTexture = GlyphManager.getInstance().getFontTexture();
-                }
-                texture = fontTexture;
             }
             /*if (alignPixels) {
                 rx = Math.round(rx * scale) / scale;
                 ry = Math.round(ry * scale) / scale;
             }*/
-            if (builder == null || prevTexture != texture) {
-                // bitmap texture and grayscale texture are different
-                prevTexture = texture;
-                builder = source.getBuffer(TextRenderType.getOrCreate(prevTexture,
+            if (builder == null) {
+                builder = source.getBuffer(TextRenderType.getOrCreate(GlyphManager.FONT_SHEET,
                         TextRenderType.MODE_SDF_STROKE));
             }
             float uBloat = (glyph.u2 - glyph.u1) / glyph.width;

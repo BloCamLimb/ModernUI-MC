@@ -18,13 +18,8 @@
 
 package icyllis.modernui.mc.text;
 
-import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.arc3d.engine.Engine;
-import icyllis.arc3d.engine.ImmediateContext;
-import icyllis.arc3d.opengl.GLDevice;
-import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.annotation.RenderThread;
-import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.BitmapFactory;
 import icyllis.modernui.graphics.text.EmojiFont;
@@ -38,6 +33,8 @@ import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.font.FontManager;
 import net.minecraft.client.gui.font.glyphs.EffectGlyph;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.lwjgl.BufferUtils;
@@ -71,13 +68,17 @@ import static icyllis.modernui.mc.ModernUIMod.LOGGER;
  * Manages all glyphs, font atlases, measures glyph metrics and draw them of
  * different sizes and styles, and upload them to generated OpenGL textures.
  *
- * @see GLFontAtlas
+ * @see ModernFontAtlas
  * @see FontCollection
  * @see icyllis.arc3d.granite.GlyphAtlasManager
  */
 public class GlyphManager {
 
     public static final Marker MARKER = MarkerManager.getMarker("Glyph");
+
+    public static final Identifier FONT_SHEET = ModernUIMod.location("textures/atlas/font.png");
+    public static final Identifier EMOJI_SHEET = ModernUIMod.location("textures/atlas/emoji.png");
+    public static final Identifier BITMAP_SHEET = ModernUIMod.location("textures/atlas/bitmap.png");
 
     /**
      * The width in pixels of a transparent border between individual glyphs in the atlas.
@@ -89,7 +90,7 @@ public class GlyphManager {
 
     /**
      * We only allow glyphs with a maximum of 256x256 pixels to be uploaded to the atlas.
-     * This value must be less than {@link GLFontAtlas#CHUNK_SIZE}.
+     * This value must be less than {@link ModernFontAtlas#CHUNK_SIZE}.
      */
     public static final int IMAGE_SIZE = 256;
 
@@ -119,10 +120,10 @@ public class GlyphManager {
      */
     private static volatile GlyphManager sInstance;
 
-    private GLFontAtlas mFontAtlas;
-    private GLFontAtlas mEmojiAtlas;
-    private GLFontAtlas mBitmapAtlas;
-    private GLDevice mDevice;
+    private ModernFontAtlas mFontAtlas;
+    private ModernFontAtlas mEmojiAtlas;
+    private ModernFontAtlas mBitmapAtlas;
+    //private GLDevice mDevice;
 
     /**
      * Font (with size and style) to int key.
@@ -223,12 +224,15 @@ public class GlyphManager {
     public void closeAtlases() {
         if (mFontAtlas != null) {
             mFontAtlas.close();
+            Minecraft.getInstance().getTextureManager().release(FONT_SHEET);
         }
         if (mEmojiAtlas != null) {
             mEmojiAtlas.close();
+            Minecraft.getInstance().getTextureManager().release(EMOJI_SHEET);
         }
         if (mBitmapAtlas != null) {
             mBitmapAtlas.close();
+            Minecraft.getInstance().getTextureManager().release(BITMAP_SHEET);
         }
         mFontAtlas = null;
         mEmojiAtlas = null;
@@ -323,9 +327,10 @@ public class GlyphManager {
             long key = computeGlyphKey(awtFont, glyphId);
             if (mFontAtlas == null) {
                 // we use mipmapping and SDF, so 2px width border around it
-                ImmediateContext context = Core.requireImmediateContext();
-                mFontAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_A8, GLYPH_BORDER, true);
-                mDevice = (GLDevice) context.getDevice();
+                mFontAtlas = new ModernFontAtlas(Engine.MASK_FORMAT_A8, GLYPH_BORDER, true);
+                Minecraft.getInstance().getTextureManager().register(
+                        FONT_SHEET, mFontAtlas
+                );
             }
             ModernBakedGlyph glyph = mFontAtlas.getGlyph(key);
             if (glyph != null && glyph.x == Integer.MIN_VALUE) {
@@ -342,9 +347,10 @@ public class GlyphManager {
             long key = computeEmojiKey(emojiFont, glyphId);
             if (mEmojiAtlas == null) {
                 // we assume emoji images have a border, and no additional border
-                ImmediateContext context = Core.requireImmediateContext();
-                mEmojiAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_ARGB, 0, true);
-                mDevice = (GLDevice) context.getDevice();
+                mEmojiAtlas = new ModernFontAtlas(Engine.MASK_FORMAT_ARGB, 0, true);
+                Minecraft.getInstance().getTextureManager().register(
+                        EMOJI_SHEET, mEmojiAtlas
+                );
             }
             ModernBakedGlyph glyph = mEmojiAtlas.getGlyph(key);
             if (glyph != null && glyph.x == Integer.MIN_VALUE) {
@@ -364,9 +370,10 @@ public class GlyphManager {
             if (bitmapFont.fitsInAtlas()) {
                 long key = computeBitmapGlyphKey(bitmapFont, glyphId);
                 if (mBitmapAtlas == null) {
-                    ImmediateContext context = Core.requireImmediateContext();
-                    mBitmapAtlas = new GLFontAtlas(context, Engine.MASK_FORMAT_ARGB, 0, false);
-                    mDevice = (GLDevice) context.getDevice();
+                    mBitmapAtlas = new ModernFontAtlas(Engine.MASK_FORMAT_ARGB, 0, false);
+                    Minecraft.getInstance().getTextureManager().register(
+                            BITMAP_SHEET, mBitmapAtlas
+                    );
                 }
                 ModernBakedGlyph glyph = mBitmapAtlas.getGlyph(key);
                 if (glyph != null && glyph.x == Integer.MIN_VALUE) {
@@ -388,44 +395,33 @@ public class GlyphManager {
     }
 
     @RenderThread
-    public GpuTextureView getCurrentTexture(int maskFormat) {
+    public AbstractTexture getCurrentTexture(int maskFormat) {
         if (maskFormat == Engine.MASK_FORMAT_A8) {
-            GLTexture texture;
-            if (mFontAtlas != null && (texture = mFontAtlas.mTexture) != null) {
-                mDevice.generateMipmaps(texture);
-                return mFontAtlas.mTextureWrapperView;
-            }
+            return mFontAtlas;
         } else if (maskFormat == Engine.MASK_FORMAT_ARGB) {
-            GLTexture texture;
-            if (mEmojiAtlas != null && (texture = mEmojiAtlas.mTexture) != null) {
-                mDevice.generateMipmaps(texture);
-                return mEmojiAtlas.mTextureWrapperView;
-            }
+            return mEmojiAtlas;
         }
         return null;
     }
 
-    public GpuTextureView getFontTexture() {
+    public AbstractTexture getFontTexture() {
         return getCurrentTexture(Engine.MASK_FORMAT_A8);
     }
 
-    public GpuTextureView getEmojiTexture() {
+    public AbstractTexture getEmojiTexture() {
         return getCurrentTexture(Engine.MASK_FORMAT_ARGB);
     }
 
     @RenderThread
-    public GpuTextureView getCurrentTexture(BitmapFont font) {
+    public AbstractTexture getCurrentTexture(BitmapFont font) {
         if (font.nothingToDraw()) {
             return null;
         }
         if (font.fitsInAtlas()) {
-            if (mBitmapAtlas != null && mBitmapAtlas.mTexture != null) {
-                return mBitmapAtlas.mTextureWrapperView;
-            }
+            return mBitmapAtlas;
         } else {
             return font.getCurrentTexture();
         }
-        return null;
     }
 
     /**
@@ -478,7 +474,7 @@ public class GlyphManager {
             mLastPurgeNanos = System.nanoTime();
             compact();
         }
-        GLFontAtlas atlas;
+        ModernFontAtlas atlas;
         if ((atlas = mFontAtlas) != null && atlas.mResizeRequested) {
             if (atlas.resize()) {
                 var info = new AtlasInvalidationInfo(Engine.MASK_FORMAT_A8, true);
@@ -511,7 +507,7 @@ public class GlyphManager {
         debug(mBitmapAtlas, "BitmapAtlas");
     }
 
-    private static void debug(GLFontAtlas atlas, String name) {
+    private static void debug(ModernFontAtlas atlas, String name) {
         if (atlas != null) {
             String path = Bitmap.saveDialogGet(Bitmap.SaveFormat.PNG, null, name);
             atlas.debug(name, path);
@@ -533,7 +529,7 @@ public class GlyphManager {
     @Nullable
     @RenderThread
     private ModernBakedGlyph cacheGlyph(@Nonnull java.awt.Font font, int glyphCode,
-                                        @Nonnull GLFontAtlas atlas, @Nonnull ModernBakedGlyph glyph,
+                                        @Nonnull ModernFontAtlas atlas, @Nonnull ModernBakedGlyph glyph,
                                         long key) {
         if (atlas.mResizeRequested) {
             // defer to next frame
@@ -582,7 +578,7 @@ public class GlyphManager {
                         .put((byte) (mImageData[i] >>> 24));
             }
         }
-        long src = MemoryUtil.memAddress(mImageBuffer.flip());
+        ByteBuffer src = (mImageBuffer.flip());
 
         boolean success = atlas.stitch(glyph, src);
         if (!success) {
@@ -603,7 +599,7 @@ public class GlyphManager {
     @Nullable
     @RenderThread
     private ModernBakedGlyph cacheEmoji(@Nonnull EmojiFont font, int glyphId,
-                                        @Nonnull GLFontAtlas atlas, @Nonnull ModernBakedGlyph glyph,
+                                        @Nonnull ModernFontAtlas atlas, @Nonnull ModernBakedGlyph glyph,
                                         long key) {
         if (atlas.mResizeRequested) {
             // defer to next frame
@@ -625,7 +621,7 @@ public class GlyphManager {
                 glyph.y = -EMOJI_ASCENT;
                 glyph.width = EMOJI_SIZE;
                 glyph.height = EMOJI_SIZE;
-                boolean success = atlas.stitch(glyph, src);
+                boolean success = atlas.stitch(glyph, MemoryUtil.memByteBuffer(src, (int) bitmap.getSize()));
                 if (!success) {
                     // invalidate glyph image and defer to next frame
                     glyph.x = Integer.MIN_VALUE;
@@ -648,7 +644,7 @@ public class GlyphManager {
     @Nullable
     @RenderThread
     private ModernBakedGlyph cacheBitmapGlyph(@Nonnull BitmapFont font, int glyphId,
-                                              @Nonnull GLFontAtlas atlas, @Nonnull ModernBakedGlyph glyph,
+                                              @Nonnull ModernFontAtlas atlas, @Nonnull ModernBakedGlyph glyph,
                                               long key) {
         if (atlas.mResizeRequested) {
             // defer to next frame
@@ -662,7 +658,7 @@ public class GlyphManager {
         // here width and height are in pixels
         glyph.width = (short) font.getSpriteWidth();
         glyph.height = (short) font.getSpriteHeight();
-        boolean success = atlas.stitch(glyph, src);
+        boolean success = atlas.stitch(glyph, mImageBuffer);
         // here width and height are scaled
         font.setGlyphMetrics(glyph);
         if (!success) {

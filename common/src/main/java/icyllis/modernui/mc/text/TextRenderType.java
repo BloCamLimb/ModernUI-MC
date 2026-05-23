@@ -41,6 +41,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.resources.Identifier;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -168,12 +169,12 @@ public abstract class TextRenderType {
     /**
      * Texture id to render type map
      */
-    private static final HashMap<GpuTextureView, RenderType> sNormalTypes = new HashMap<>();
-    private static final HashMap<GpuTextureView, RenderType> sSDFFillTypes = new HashMap<>();
-    private static final HashMap<GpuTextureView, RenderType> sSDFStrokeTypes = new HashMap<>();
-    private static final HashMap<GpuTextureView, RenderType> sVanillaTypes = new HashMap<>();
-    private static final HashMap<GpuTextureView, RenderType> sSeeThroughTypes = new HashMap<>();
-    private static final HashMap<GpuTextureView, RenderType> sPolygonOffsetTypes = new HashMap<>();
+    private static final HashMap<Identifier, RenderType> sNormalTypes = new HashMap<>();
+    private static final HashMap<Identifier, RenderType> sSDFFillTypes = new HashMap<>();
+    private static final HashMap<Identifier, RenderType> sSDFStrokeTypes = new HashMap<>();
+    private static final HashMap<Identifier, RenderType> sVanillaTypes = new HashMap<>();
+    private static final HashMap<Identifier, RenderType> sSeeThroughTypes = new HashMap<>();
+    private static final HashMap<Identifier, RenderType> sPolygonOffsetTypes = new HashMap<>();
 
     private static RenderType sFirstSDFFillType;
     private static final ByteBufferBuilder sFirstSDFFillBuffer = new ByteBufferBuilder(131072);
@@ -272,7 +273,7 @@ public abstract class TextRenderType {
     }*/
 
     @Nonnull
-    public static RenderType getOrCreate(GpuTextureView texture, int mode) {
+    public static RenderType getOrCreate(Identifier texture, int mode) {
         return switch (mode) {
             case MODE_SDF_FILL -> {
                 if (!TextLayoutEngine.sCurrentInWorldRendering || TextLayoutEngine.sUseTextShadersInWorld) {
@@ -295,7 +296,7 @@ public abstract class TextRenderType {
 
     // compatibility
     @Nonnull
-    public static RenderType getOrCreate(GpuTextureView texture, Font.DisplayMode mode, boolean isBitmapFont) {
+    public static RenderType getOrCreate(Identifier texture, Font.DisplayMode mode, boolean isBitmapFont) {
         return switch (mode) {
             case SEE_THROUGH -> sSeeThroughTypes.computeIfAbsent(texture, TextRenderType::makeSeeThroughType);
             case POLYGON_OFFSET -> sPolygonOffsetTypes.computeIfAbsent(texture, TextRenderType::makePolygonOffsetType);
@@ -316,7 +317,7 @@ public abstract class TextRenderType {
     }
 
     @Nonnull
-    private static RenderType makeNormalType(GpuTextureView texture) {
+    private static RenderType makeNormalType(Identifier texture) {
         /*return MuiModApi.get().createRenderType("modern_text_normal", 256,
                 false, true, PIPELINE_NORMAL,
                 new ExtendedTextureStateShard(texture),
@@ -335,7 +336,7 @@ public abstract class TextRenderType {
     }*/
 
     @Nonnull
-    private static RenderType makeSDFFillType(GpuTextureView texture) {
+    private static RenderType makeSDFFillType(Identifier texture) {
         /*ensureLinearFontSampler();
         TextRenderType renderType = new TextRenderType("modern_text_sdf_fill", 256, () -> {
             //RenderSystem.setShader(getShaderSDFFill());
@@ -371,7 +372,7 @@ public abstract class TextRenderType {
     }
 
     @Nonnull
-    private static RenderType makeSDFStrokeType(GpuTextureView texture) {
+    private static RenderType makeSDFStrokeType(Identifier texture) {
         /*ensureLinearFontSampler();
         TextRenderType renderType = new TextRenderType("modern_text_sdf_stroke", 256, () -> {
             //RenderSystem.setShader(getShaderSDFStroke());
@@ -407,7 +408,7 @@ public abstract class TextRenderType {
     }
 
     @Nonnull
-    private static RenderType makeVanillaType(GpuTextureView texture) {
+    private static RenderType makeVanillaType(Identifier texture) {
         /*return new TextRenderType("modern_text_vanilla", 256, () -> {
             VANILLA_STATES.forEach(RenderStateShard::setupRenderState);
             //RenderSystem.setShaderTexture(0, texture);
@@ -420,7 +421,7 @@ public abstract class TextRenderType {
     }
 
     @Nonnull
-    private static RenderType makeSeeThroughType(GpuTextureView texture) {
+    private static RenderType makeSeeThroughType(Identifier texture) {
         /*return new TextRenderType("modern_text_see_through", 256, () -> {
             SEE_THROUGH_STATES.forEach(RenderStateShard::setupRenderState);
             //RenderSystem.setShaderTexture(0, texture);
@@ -433,7 +434,7 @@ public abstract class TextRenderType {
     }
 
     @Nonnull
-    private static RenderType makePolygonOffsetType(GpuTextureView texture) {
+    private static RenderType makePolygonOffsetType(Identifier texture) {
         /*return new TextRenderType("modern_text_polygon_offset", 256, () -> {
             POLYGON_OFFSET_STATES.forEach(RenderStateShard::setupRenderState);
             //RenderSystem.setShaderTexture(0, texture);

@@ -20,18 +20,10 @@ package icyllis.modernui.mc.text;
 
 import com.google.gson.JsonParseException;
 import com.mojang.blaze3d.font.GlyphInfo;
-import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.blaze3d.platform.NativeImage;
 import icyllis.arc3d.core.PixelUtils;
 import icyllis.arc3d.core.RawPtr;
-import icyllis.arc3d.engine.Engine;
-import icyllis.arc3d.engine.ISurface;
-import icyllis.arc3d.engine.ImageDesc;
-import icyllis.arc3d.engine.ImmediateContext;
-import icyllis.arc3d.opengl.GLCaps;
-import icyllis.arc3d.opengl.GLDevice;
-import icyllis.arc3d.opengl.GLTexture;
 import icyllis.arc3d.sketch.Typeface;
-import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.BitmapFactory;
 import icyllis.modernui.graphics.MathUtil;
@@ -39,12 +31,12 @@ import icyllis.modernui.graphics.Rect;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.graphics.text.FontMetricsInt;
 import icyllis.modernui.graphics.text.FontPaint;
-import icyllis.modernui.mc.MuiModApi;
-import icyllis.modernui.mc.b3d.GlTexture_Wrapped;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.font.providers.BitmapProvider;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.jetbrains.annotations.Unmodifiable;
@@ -90,15 +82,14 @@ public class BitmapFont implements Font, AutoCloseable {
     public static float sBitmapOffset = 0.5f;
 
     private final Identifier mName;
+    private final Identifier mTextureName;
 
     private Bitmap mBitmap;
     private final Int2ObjectOpenHashMap<Glyph> mGlyphs = new Int2ObjectOpenHashMap<>();
 
     // used if mSpriteWidth or mSpriteHeight > MAX_ATLAS_DIMENSION
     @RawPtr
-    private GLTexture mTexture; // lazy init, managed by wrapper
-    private GlTexture_Wrapped mTextureWrapper = null;
-    private GpuTextureView mTextureWrapperView = null;
+    private DynamicTexture mTexture; // lazy init
     private Int2ObjectOpenHashMap<ModernBakedGlyph> mBakedGlyphs;
 
     private final int mAscent;  // positive
@@ -113,6 +104,9 @@ public class BitmapFont implements Font, AutoCloseable {
                        int[][] grid, int rows, int cols,
                        int height, int ascent) {
         mName = name;
+        // add suffix to avoid conflict with GlyphStitcher's naming,
+        // if we use dedicated texture
+        mTextureName = mName.withSuffix("/mui_dedicated");
         mBitmap = bitmap;
         mAscent = ascent;
         mDescent = height - ascent;
@@ -220,7 +214,26 @@ public class BitmapFont implements Font, AutoCloseable {
     // create texture from bitmap on render thread
     private void createTexture() {
         assert mBitmap != null;
-        ImmediateContext context = Core.requireImmediateContext();
+        int textureWidth = getTextureWidth();
+        int textureHeight = getTextureHeight();
+        NativeImage nativeImage = new NativeImage(NativeImage.Format.RGBA,
+                textureWidth, textureHeight, true);
+        try (Bitmap wrap = Bitmap.wrap(
+                nativeImage.getPointer(),
+                textureWidth * 4,
+                null,
+                textureWidth,
+                textureHeight,
+                Bitmap.Format.RGBA_8888,
+                false,
+                null
+        )) {
+            wrap.setPixels(mBitmap, 0, 0, 0, 0,
+                    mBitmap.getWidth(), mBitmap.getHeight());
+        }
+        mTexture = new DynamicTexture(mName::toString, nativeImage); // transfer ownership
+        Minecraft.getInstance().getTextureManager().register(mTextureName, mTexture);
+        /*ImmediateContext context = Core.requireImmediateContext();
         ImageDesc desc = context.getCaps().getDefaultColorImageDesc(
                 Engine.ImageType.k2D,
                 mBitmap.getColorType(),
@@ -246,7 +259,7 @@ public class BitmapFont implements Font, AutoCloseable {
                 mBitmap.getColorType(), mBitmap.getColorType(),
                 mBitmap.getRowBytes(), mBitmap.getAddress()
         );
-        assert res;
+        assert res;*/
 
         /*int boundTexture = GL33C.glGetInteger(GL33C.GL_TEXTURE_BINDING_2D);
         GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, mTexture.getHandle());
@@ -256,10 +269,9 @@ public class BitmapFont implements Font, AutoCloseable {
 
         GL33C.glBindTexture(GL33C.GL_TEXTURE_2D, boundTexture);*/
 
-        mTextureWrapper = new GlTexture_Wrapped(mTexture); // transfer ownership
-        mTextureWrapperView = MuiModApi.get().getRealGpuDevice().createTextureView(mTextureWrapper);
+        /*mTextureWrapper = new GlTexture_Wrapped(mTexture); // transfer ownership
+        mTextureWrapperView = MuiModApi.get().getRealGpuDevice().createTextureView(mTextureWrapper);*/
 
-        //TODO
         //mTextureWrapper.setTextureFilter(FilterMode.NEAREST, false);
     }
 
@@ -268,13 +280,13 @@ public class BitmapFont implements Font, AutoCloseable {
                         "nothingToDraw: {}, fitsInAtlas: {}, dedicatedTexture: {}",
                 index, mName, getAscent(), getDescent(), mGlyphs.size(),
                 nothingToDraw(), fitsInAtlas(), mTexture);
-        if (path != null && mTexture != null && Core.isOnRenderThread()) {
-            GLFontAtlas.dumpAtlas(
+        /*if (path != null && mTexture != null && Core.isOnRenderThread()) {
+            ModernFontAtlas.dumpAtlas(
                     (GLCaps) Core.requireImmediateContext().getCaps(),
                     mTexture,
                     Bitmap.Format.RGBA_8888,
                     path);
-        }
+        }*/
     }
 
     @Override
@@ -382,9 +394,12 @@ public class BitmapFont implements Font, AutoCloseable {
     /**
      * Called by {@link GlyphManager} to fetch the dedicated texture info.
      */
-    // Render thread only
-    public GpuTextureView getCurrentTexture() {
-        return mTexture != null ? mTextureWrapperView : null;
+    public DynamicTexture getCurrentTexture() {
+        return mTexture;
+    }
+
+    public Identifier getCurrentTextureName() {
+        return fitsInAtlas() ? GlyphManager.BITMAP_SHEET : mTextureName;
     }
 
     // positive
@@ -520,11 +535,8 @@ public class BitmapFont implements Font, AutoCloseable {
             mBitmap = null;
         }
         if (mTexture != null) {
-            mTextureWrapperView.close();
-            mTextureWrapper.close();
-            mTexture = null;
-            mTextureWrapper = null;
-            mTextureWrapperView = null;
+            mTexture.close();
+            Minecraft.getInstance().getTextureManager().release(mTextureName);
         }
     }
 

@@ -18,43 +18,43 @@
 
 package icyllis.modernui.mc.text;
 
-import com.mojang.blaze3d.textures.GpuTextureView;
-import icyllis.arc3d.core.ColorInfo;
+import com.mojang.blaze3d.opengl.GlTexture;
+import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.platform.TextureUtil;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.AddressMode;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.TextureFormat;
 import icyllis.arc3d.core.MathUtil;
-import icyllis.arc3d.core.RawPtr;
 import icyllis.arc3d.core.Rect2i;
 import icyllis.arc3d.core.RectanglePacker;
 import icyllis.arc3d.engine.Engine;
-import icyllis.arc3d.engine.ISurface;
-import icyllis.arc3d.engine.ImmediateContext;
-import icyllis.arc3d.opengl.GLCaps;
-import icyllis.arc3d.opengl.GLDevice;
-import icyllis.arc3d.opengl.GLTexture;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
-import icyllis.modernui.graphics.Bitmap;
-import icyllis.modernui.mc.MuiModApi;
-import icyllis.modernui.mc.b3d.GlTexture_Wrapped;
 import icyllis.modernui.text.TextUtils;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import org.lwjgl.opengl.GL45C;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.Dumpable;
+import net.minecraft.resources.Identifier;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
+import java.util.function.IntUnaryOperator;
 
 import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 import static org.lwjgl.opengl.GL33C.*;
 
 /**
  * Maintains a font texture atlas, which is specified with a font strike (style and
- * size). Glyphs are dynamically generated with mipmaps, each glyph is represented as
+ * size). Glyphs are dynamically generated, each glyph is represented as
  * a {@link ModernBakedGlyph}.
  * <p>
  * The initial texture size is 1024*1024, and each resize double the height and width
@@ -70,7 +70,7 @@ import static org.lwjgl.opengl.GL33C.*;
  */
 //TODO handle too many glyphs?
 @RenderThread
-public class GLFontAtlas implements AutoCloseable {
+public class ModernFontAtlas extends AbstractTexture implements Dumpable {
 
     // max texture size is 1024 at least
     // we compact texture at 1/4 max area
@@ -82,12 +82,6 @@ public class GLFontAtlas implements AutoCloseable {
 
     // OpenHashMap uses less memory than RBTree/AVLTree, but higher than ArrayMap
     private final Long2ObjectOpenHashMap<ModernBakedGlyph> mGlyphs = new Long2ObjectOpenHashMap<>();
-
-    // texture can change by resizing
-    @RawPtr
-    GLTexture mTexture = null; // managed by wrapper
-    GlTexture_Wrapped mTextureWrapper = null;
-    GpuTextureView mTextureWrapperView = null;
 
     boolean mResizeRequested = false;
 
@@ -102,7 +96,7 @@ public class GLFontAtlas implements AutoCloseable {
     private record Chunk(int x, int y, RectanglePacker packer) {
     }
 
-    private final ImmediateContext mContext;
+    //private final ImmediateContext mContext;
     private final int mMaskFormat;
     private final int mBorderWidth;
     private final int mMaxTextureSize;
@@ -112,30 +106,51 @@ public class GLFontAtlas implements AutoCloseable {
     // unless either of them is disabled or Shaders (in 3D) are used
     public static volatile boolean sLinearSamplingA8Atlas = false;
 
-    /**
+    /*
      * Linear sampling with mipmaps;
      */
-    private final boolean mLinearSampling;
+    //private final boolean mLinearSampling;
 
     // overflow and wrap
     private int mLastCompactChunkIndex;
 
     @RenderThread
-    public GLFontAtlas(ImmediateContext context, int maskFormat, int borderWidth,
-                       boolean linearSampling) {
-        mContext = context;
+    public ModernFontAtlas(int maskFormat, int borderWidth,
+                           boolean linearSampling) {
         mMaskFormat = maskFormat;
         mBorderWidth = borderWidth;
         // 64MB at most
         mMaxTextureSize = Math.min(
-                mContext.getMaxTextureSize(),
+                RenderSystem.getDevice().getMaxTextureSize(),
                 maskFormat == Engine.MASK_FORMAT_A8
                         ? 8192
                         : 4096
         );
-        mLinearSampling = linearSampling;
         assert mMaxTextureSize >= 1024;
         assert mBorderWidth >= 0 && mBorderWidth <= 2;
+
+        // this is a fallback sampling method, generally used for direct mask, NEAREST is performant
+        // when used for SDF, a sampler object will override this setting
+        /*glTexParameteri(
+                GL_TEXTURE_2D,
+                GL_TEXTURE_MAG_FILTER,
+                GL_NEAREST
+        );
+        glTexParameteri(
+                GL_TEXTURE_2D,
+                GL_TEXTURE_MIN_FILTER,
+                mLinearSampling && (sLinearSamplingA8Atlas ||
+                        mMaskFormat == Engine.MASK_FORMAT_ARGB)   // color emoji requires linear sampling
+                        ? GL_LINEAR_MIPMAP_LINEAR
+                        : GL_NEAREST
+        );*/
+        boolean linear = linearSampling && (sLinearSamplingA8Atlas ||
+                mMaskFormat == Engine.MASK_FORMAT_ARGB);   // color emoji requires linear sampling
+        sampler = RenderSystem.getSamplerCache().getSampler(
+                AddressMode.REPEAT, AddressMode.REPEAT,
+                linear ? FilterMode.LINEAR : FilterMode.NEAREST, FilterMode.NEAREST, false
+        );
+        // sampler is from global cache, no need to close
     }
 
     /**
@@ -156,7 +171,7 @@ public class GLFontAtlas implements AutoCloseable {
         mGlyphs.put(key, null);
     }
 
-    public boolean stitch(@NonNull ModernBakedGlyph glyph, long pixels) {
+    public boolean stitch(@NonNull ModernBakedGlyph glyph, ByteBuffer pixels) {
         if (mWidth == 0) {
             resize(); // first init
         }
@@ -179,10 +194,14 @@ public class GLFontAtlas implements AutoCloseable {
         }
 
         // include border
-        int colorType = mMaskFormat == Engine.MASK_FORMAT_ARGB
-                ? ColorInfo.CT_RGBA_8888
-                : ColorInfo.CT_ALPHA_8;
-        int rowBytes = rect.width() * ColorInfo.bytesPerPixel(colorType);
+        NativeImage.Format format = mMaskFormat == Engine.MASK_FORMAT_ARGB
+                ? NativeImage.Format.RGBA
+                : NativeImage.Format.LUMINANCE;
+        RenderSystem.getDevice().createCommandEncoder()
+                .writeToTexture(getTexture(), pixels, format,
+                        0, 0, rect.x(), rect.y(),
+                        rect.width(), rect.height());
+        /*int rowBytes = rect.width() * ColorInfo.bytesPerPixel(colorType);
         boolean res = ((GLDevice) mContext.getDevice()).writePixels(
                 mTexture,
                 rect.x(), rect.y(),
@@ -194,7 +213,7 @@ public class GLFontAtlas implements AutoCloseable {
         );
         if (!res) {
             LOGGER.warn(GlyphManager.MARKER, "Failed to write glyph pixels");
-        }
+        }*/
 
         // exclude border
         glyph.u1 = (float) (rect.left() + mBorderWidth) / mWidth;
@@ -207,14 +226,12 @@ public class GLFontAtlas implements AutoCloseable {
 
     boolean resize() {
         mResizeRequested = false;
-        if (mTexture == null) {
+        if (texture == null) {
             // initialize 4 or 16 chunks
             mWidth = mHeight = mMaskFormat == Engine.MASK_FORMAT_A8
                     ? CHUNK_SIZE * 4
                     : CHUNK_SIZE * 2;
-            mTexture = createTexture();
-            mTextureWrapper = new GlTexture_Wrapped(mTexture); // transfer ownership
-            mTextureWrapperView = MuiModApi.get().getRealGpuDevice().createTextureView(mTextureWrapper);
+            texture = createTexture();
             for (int x = 0; x < mWidth; x += CHUNK_SIZE) {
                 for (int y = 0; y < mHeight; y += CHUNK_SIZE) {
                     mChunks.add(new Chunk(x, y, RectanglePacker.make(CHUNK_SIZE, CHUNK_SIZE)));
@@ -226,7 +243,7 @@ public class GLFontAtlas implements AutoCloseable {
 
             if (oldWidth == mMaxTextureSize && oldHeight == mMaxTextureSize) {
                 LOGGER.warn(GlyphManager.MARKER, "Font atlas reached max texture size, " +
-                        "mask format: {}, max size: {}, current texture: {}", mMaskFormat, mMaxTextureSize, mTexture);
+                        "mask format: {}, max size: {}, current texture: {}", mMaskFormat, mMaxTextureSize, texture);
                 return false;
             }
 
@@ -250,8 +267,15 @@ public class GLFontAtlas implements AutoCloseable {
             }
 
             // copy to new texture
-            GLTexture newTexture = createTexture();
-            boolean res = ((GLDevice) mContext.getDevice()).copyImage(
+            GpuTexture newTexture = createTexture();
+            RenderSystem.getDevice().createCommandEncoder()
+                    .copyTextureToTexture(texture,
+                            newTexture,
+                            0,
+                            0, 0,
+                            0, 0,
+                            oldWidth, oldHeight);
+            /*boolean res = ((GLDevice) mContext.getDevice()).copyImage(
                     mTexture,
                     0, 0,
                     newTexture,
@@ -260,13 +284,10 @@ public class GLFontAtlas implements AutoCloseable {
             );
             if (!res) {
                 LOGGER.warn(GlyphManager.MARKER, "Failed to copy to new texture");
-            }
+            }*/
 
-            mTextureWrapperView.close();
-            mTextureWrapper.close();
-            mTexture = newTexture;
-            mTextureWrapper = new GlTexture_Wrapped(mTexture); // transfer ownership
-            mTextureWrapperView = MuiModApi.get().getRealGpuDevice().createTextureView(mTextureWrapper);
+            close();
+            texture = newTexture;
 
             if (vertical) {
                 //mTexture.clear(0, 0, mHeight >> 1, mWidth, mHeight >> 1);
@@ -291,44 +312,29 @@ public class GLFontAtlas implements AutoCloseable {
             // we later generate mipmap
         }
 
-        int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
-        glBindTexture(GL_TEXTURE_2D, mTexture.getHandle());
-
-        // this is a fallback sampling method, generally used for direct mask, NEAREST is performant
-        // when used for SDF, a sampler object will override this setting
-        /*glTexParameteri(
-                GL_TEXTURE_2D,
-                GL_TEXTURE_MAG_FILTER,
-                GL_NEAREST
-        );
-        glTexParameteri(
-                GL_TEXTURE_2D,
-                GL_TEXTURE_MIN_FILTER,
-                mLinearSampling && (sLinearSamplingA8Atlas ||
-                        mMaskFormat == Engine.MASK_FORMAT_ARGB)   // color emoji requires linear sampling
-                        ? GL_LINEAR_MIPMAP_LINEAR
-                        : GL_NEAREST
-        );*/
-        boolean linear = mLinearSampling && (sLinearSamplingA8Atlas ||
-                mMaskFormat == Engine.MASK_FORMAT_ARGB);   // color emoji requires linear sampling
-        //TODO
-        //mTextureWrapper.setTextureFilter(linear ? FilterMode.LINEAR : FilterMode.NEAREST, FilterMode.NEAREST, linear);
+        assert texture != null && textureView == null;
+        textureView = RenderSystem.getDevice().createTextureView(texture);
 
         if (mMaskFormat == Engine.MASK_FORMAT_A8) {
+            // Minecraft's OpenGL backend has no real texture view,
+            // but if on Vulkan, we have to modify the VkImageView
+            int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
+            glBindTexture(GL_TEXTURE_2D, ((GlTexture) texture).glId());
+
             //XXX: un-premultiplied, so 111r rather than rrrr
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
-        }
 
-        glBindTexture(GL_TEXTURE_2D, boundTexture);
+            glBindTexture(GL_TEXTURE_2D, boundTexture);
+        }
 
         return true;
     }
 
-    private GLTexture createTexture() {
-        var desc = mContext.getCaps().getDefaultColorImageDesc(
+    private GpuTexture createTexture() {
+        /*var desc = mContext.getCaps().getDefaultColorImageDesc(
                 Engine.ImageType.k2D,
                 Engine.maskFormatToColorType(mMaskFormat),
                 mWidth, mHeight,
@@ -340,13 +346,20 @@ public class GLFontAtlas implements AutoCloseable {
                 .getResourceProvider()
                 .findOrCreateImage(
                         desc,
-                        /*budgeted*/ true,
+                        *//*budgeted*//* true,
                         "FontAtlas" + mMaskFormat
-                ), "Failed to create font atlas");
-    }
-
-    public GLTexture getTexture() {
-        return mTexture;
+                ), "Failed to create font atlas");*/
+        return RenderSystem.getDevice().createTexture(
+                "ModernUI_MC_FontAtlas" + mMaskFormat,
+                GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_COPY_SRC | GpuTexture.USAGE_TEXTURE_BINDING,
+                switch (mMaskFormat) {
+                    case Engine.MASK_FORMAT_A8 -> TextureFormat.RED8;
+                    case Engine.MASK_FORMAT_ARGB -> TextureFormat.RGBA8;
+                    default -> throw new AssertionError(mMaskFormat);
+                },
+                mWidth, mHeight,
+                1, 1
+        );
     }
 
     public int getMaskFormat() {
@@ -404,6 +417,15 @@ public class GLFontAtlas implements AutoCloseable {
         return cleared;
     }
 
+    @Override
+    public void dumpContents(@Nonnull Identifier selfId, @Nonnull Path dir) throws IOException {
+        GpuTexture texture = this.texture;
+        if (texture == null)
+            return;
+        String outputId = selfId.toDebugFileName();
+        TextureUtil.writeAsPNG(dir, outputId, texture, 0, IntUnaryOperator.identity());
+    }
+
     public void debug(String name, @Nullable String path) {
         if (path == null) {
             LOGGER.info(GlyphManager.MARKER, name);
@@ -413,17 +435,17 @@ public class GLFontAtlas implements AutoCloseable {
             }
         } else if (Core.isOnRenderThread()) {
             LOGGER.info(GlyphManager.MARKER, "{}, Glyphs: {}", name, mGlyphs.size());
-            if (mTexture == null)
+            /*if (mTexture == null)
                 return;
             dumpAtlas((GLCaps) mContext.getCaps(), mTexture,
                     mMaskFormat == Engine.MASK_FORMAT_ARGB
                             ? Bitmap.Format.RGBA_8888
                             : Bitmap.Format.GRAY_8,
-                    path);
+                    path);*/
         }
     }
 
-    @RenderThread
+    /*@RenderThread
     public static void dumpAtlas(GLCaps caps, GLTexture texture, Bitmap.Format format, String path) {
         // debug only
         if (caps.hasDSASupport()) {
@@ -453,18 +475,7 @@ public class GLFontAtlas implements AutoCloseable {
                 }
             });
         }
-    }
-
-    @Override
-    public void close() {
-        if (mTexture != null) {
-            mTextureWrapperView.close();
-            mTextureWrapper.close();
-            mTexture = null;
-            mTextureWrapper = null;
-            mTextureWrapperView = null;
-        }
-    }
+    }*/
 
     public int getWidth() {
         return mWidth;
@@ -479,7 +490,11 @@ public class GLFontAtlas implements AutoCloseable {
     }
 
     public long getMemorySize() {
-        return mTexture != null ? mTexture.getMemorySize() : 0;
+        if (texture == null)
+            return 0;
+        // there's no mipmaps anymore, just base level
+        int bpp = Engine.maskFormatBytesPerPixel(mMaskFormat);
+        return (long) mWidth * mHeight * bpp;
     }
 
     public void dumpInfo(PrintWriter pw, String name) {

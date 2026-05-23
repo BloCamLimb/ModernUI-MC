@@ -30,7 +30,7 @@ import icyllis.modernui.graphics.Paint;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.graphics.text.LineBreakConfig;
 import icyllis.modernui.mc.text.BitmapFont;
-import icyllis.modernui.mc.text.GLFontAtlas;
+import icyllis.modernui.mc.text.ModernFontAtlas;
 import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.ModernTextRenderer;
 import icyllis.modernui.mc.text.TextLayout;
@@ -665,8 +665,8 @@ public final class Config {
                 TextLayoutEngine.sMinPixelDensityForSDF = mMinPixelDensityForSDF.get();
                 reload = true;
             }
-            if (GLFontAtlas.sLinearSamplingA8Atlas != mLinearSamplingA8Atlas.get()) {
-                GLFontAtlas.sLinearSamplingA8Atlas = mLinearSamplingA8Atlas.get();
+            if (ModernFontAtlas.sLinearSamplingA8Atlas != mLinearSamplingA8Atlas.get()) {
+                ModernFontAtlas.sLinearSamplingA8Atlas = mLinearSamplingA8Atlas.get();
                 reloadStrike = true;
             }
             /*if (GLFontAtlas.sLinearSampling != mLinearSampling.get()) {

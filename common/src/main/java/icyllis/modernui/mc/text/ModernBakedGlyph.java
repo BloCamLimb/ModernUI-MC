@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
  * in a context.
  *
  * @see GlyphManager
- * @see GLFontAtlas
+ * @see ModernFontAtlas
  * @since 2.0
  */
 public class ModernBakedGlyph implements BakedGlyph {

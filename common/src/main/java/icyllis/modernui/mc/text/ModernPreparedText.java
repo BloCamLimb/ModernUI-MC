@@ -19,6 +19,9 @@
 package icyllis.modernui.mc.text;
 
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.arc3d.core.Rect2f;
 import icyllis.modernui.mc.GradientRectangleRenderState;
@@ -30,6 +33,7 @@ import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.state.gui.GlyphRenderState;
 import net.minecraft.client.renderer.state.gui.GuiRenderState;
+import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.network.chat.Style;
 import org.joml.Matrix3x2fc;
 
@@ -107,11 +111,11 @@ public class ModernPreparedText implements Font.PreparedText {
 
         final float baseline = top + TextLayout.sBaselineOffset;
 
-        GpuTextureView prevTexture = null;
+        AbstractTexture prevTexture = null;
         int prevMode = -1;
         RenderPipeline pipeline = null;
 
-        GpuTextureView fontTexture = null;
+        AbstractTexture fontTexture = null;
 
         Rect2f bounds = Rect2f.makeInfiniteInverted();
 
@@ -155,7 +159,7 @@ public class ModernPreparedText implements Font.PreparedText {
             final float w;
             final float h;
             final int mode;
-            final GpuTextureView texture;
+            final AbstractTexture texture;
             boolean fakeItalic = false;
             int ascent = 0;
             boolean isBitmapFont = false;
@@ -211,7 +215,12 @@ public class ModernPreparedText implements Font.PreparedText {
                 if (!textRuns.isEmpty()) {
                     textRuns.getLast().glyphEnd = i;
                 }
-                textRuns.add(new TextRun(pipeline, texture, i, isColorEmoji,
+                textRuns.add(new TextRun(pipeline, texture.getTextureView(),
+                        // setup bilinear sampler for SDF text
+                        mode == TextRenderType.MODE_SDF_FILL
+                                ? RenderSystem.getSamplerCache().getRepeat(FilterMode.LINEAR)
+                                : texture.getSampler(),
+                        i, isColorEmoji,
                         preferredMode == TextRenderType.MODE_NORMAL));
             }
             float upSkew = 0;
@@ -298,7 +307,7 @@ public class ModernPreparedText implements Font.PreparedText {
             var run = runs.get(i);
             renderState.addGlyphToCurrentLayer(
                     new TextRunRenderState(pose, run.pipeline,
-                            TextureSetup.singleTextureWithLightmap(run.textureView, null),
+                            TextureSetup.singleTextureWithLightmap(run.textureView, run.sampler),
                             scissor,
                             x, top, color, dropShadow,
                             glyphs, positions, flags,
@@ -325,15 +334,17 @@ public class ModernPreparedText implements Font.PreparedText {
 
         public final RenderPipeline pipeline;
         public final GpuTextureView textureView;
+        public final GpuSampler sampler;
         public final int glyphStart;
         public int glyphEnd;
         public final boolean isColorEmoji;
         public final boolean isDirectMask;
 
-        public TextRun(RenderPipeline pipeline, GpuTextureView textureView, int glyphStart,
-                       boolean isColorEmoji, boolean isDirectMask) {
+        public TextRun(RenderPipeline pipeline, GpuTextureView textureView, GpuSampler sampler,
+                       int glyphStart, boolean isColorEmoji, boolean isDirectMask) {
             this.pipeline = pipeline;
             this.textureView = textureView;
+            this.sampler = sampler;
             this.glyphStart = glyphStart;
             this.isColorEmoji = isColorEmoji;
             this.isDirectMask = isDirectMask;
