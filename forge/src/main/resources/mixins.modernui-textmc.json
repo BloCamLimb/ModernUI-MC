@@ -10,6 +10,7 @@
     "AccessFontManager",
     "AccessGpuTexture",
     "AccessGuiRendererDraw",
+    "MixinActiveTextCollector",
     "MixinBidiReorder",
     "MixinClientLanguage",
     "MixinContextualBar",

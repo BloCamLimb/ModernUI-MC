@@ -38,7 +38,7 @@ import java.util.function.IntFunction;
 /**
  * This class is used only for <b>compatibility</b>.
  * <p>
- * Some mods have it own {@link net.minecraft.client.gui.Font.StringRenderOutput},
+ * Some mods may manually call {@link net.minecraft.client.gui.Font#prepareText},
  * we have to provide per-code-point glyph info. Minecraft vanilla maps code points
  * to glyphs without text shaping (no international support). It also ignores
  * resolution level (GUI scale), we assume it's current and round it up. Vanilla

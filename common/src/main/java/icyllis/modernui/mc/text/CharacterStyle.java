@@ -222,6 +222,18 @@ public class CharacterStyle {
     }
 
     /**
+     * Returns if two styles can produce a font metric change. That is, font style
+     * or font collection are different.
+     *
+     * @see #flatten(Style)
+     */
+    public static boolean equalsForTextMeasurement(@Nonnull Style a, @Nonnull Style b) {
+        return a == b || (a.isBold() == b.isBold() &&
+                a.isItalic() == b.isItalic() &&
+                Objects.equals(a.getFont(), b.getFont()));
+    }
+
+    /**
      * The color in 0xRRGGBB format; {@link #IMPLICIT_COLOR_MASK} to use param color.
      * If it has {@link #IMPLICIT_COLOR_MASK}, then lower 24 bits are ignored (and it should be 0x000000).
      *

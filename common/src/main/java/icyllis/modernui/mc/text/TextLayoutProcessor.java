@@ -124,7 +124,7 @@ public class TextLayoutProcessor {
      * All initial glyphs, elements are non-null only if it's an atlas sprite or player skin.
      * Same indexing with {@link #mGlyphs}.
      */
-    private final ObjectArrayList<BakedGlyph> mInitialBackedGlyphs = new ObjectArrayList<>();
+    private final ObjectArrayList<BakedGlyph> mInitialBakedGlyphs = new ObjectArrayList<>();
     /**
      * The glyph's font of {@link #mGlyphs}, same order.
      */
@@ -352,7 +352,7 @@ public class TextLayoutProcessor {
             mFontIndices.add(id);
         }
         mGlyphs.addElements(mGlyphs.size(), piece.getGlyphs());
-        mInitialBackedGlyphs.size(mInitialBackedGlyphs.size() + piece.getGlyphs().length);
+        mInitialBakedGlyphs.size(mGlyphs.size());
         int posIndex = mPositions.size();
         mPositions.addElements(posIndex, piece.getPositions());
         for (int posEnd = mPositions.size();
@@ -405,7 +405,7 @@ public class TextLayoutProcessor {
                     mBuilder.length() != mAdvances.size()) {
                 throw new AssertionError();
             }
-            if (mGlyphs.size() != mInitialBackedGlyphs.size()) {
+            if (mGlyphs.size() != mInitialBakedGlyphs.size()) {
                 throw new AssertionError();
             }
             if (mGlyphs.size() != mGlyphFlags.size()) {
@@ -425,7 +425,7 @@ public class TextLayoutProcessor {
         mStyles.clear();
         mFontNames.clear();
         mGlyphs.clear();
-        mInitialBackedGlyphs.clear();
+        mInitialBakedGlyphs.clear();
         mFontIndices.clear();
         mFontVec.clear();
         mFontMap.clear();
@@ -628,7 +628,7 @@ public class TextLayoutProcessor {
             }
             mTotalAdvance /= resLevel;
             return new TextLayout(textBuf, mGlyphs.toIntArray(),
-                    mInitialBackedGlyphs.toArray(new BakedGlyph[0]),
+                    mInitialBakedGlyphs.toArray(new BakedGlyph[0]),
                     positions, fontIndices,
                     mFontVec.toArray(new Font[0]),
                     advances, mGlyphFlags.toIntArray(),
@@ -1011,7 +1011,7 @@ public class TextLayoutProcessor {
             }
 
             mGlyphs.add(0);
-            mInitialBackedGlyphs.add(glyph);
+            mInitialBakedGlyphs.add(glyph);
             mPositions.add(offset);
             mPositions.add(0);
             mFontIndices.add(fontIdx);

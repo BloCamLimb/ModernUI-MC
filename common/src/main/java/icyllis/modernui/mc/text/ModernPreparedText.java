@@ -23,11 +23,14 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.arc3d.core.Rect2f;
 import icyllis.modernui.mc.GradientRectangleRenderState;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.font.TextRenderable;
 import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.renderer.RenderPipelines;
+import net.minecraft.client.renderer.state.gui.GlyphRenderState;
 import net.minecraft.client.renderer.state.gui.GuiRenderState;
+import net.minecraft.network.chat.Style;
 import org.joml.Matrix3x2fc;
 
 import javax.annotation.Nonnull;
@@ -44,7 +47,7 @@ public class ModernPreparedText implements Font.PreparedText {
             1, 0, false, 0, 0,
             0, 0, null,
             new ArrayList<>(), false, 0,
-            null, null, null
+            null, null, null, new ArrayList<>()
     );
 
     private final float density;
@@ -61,11 +64,13 @@ public class ModernPreparedText implements Font.PreparedText {
     private final BakedGlyph[] glyphs;
     private final float[] positions;
     private final int[] flags;
+    private final ArrayList<TextRenderable> customRenderables;
 
     ModernPreparedText(float density, float shadowOffset, boolean dropShadow, int color,
                        int bgColor, float x, float top, ScreenRectangle bounds,
                        ArrayList<TextRun> runs, boolean hasEffect, float totalAdvance,
-                       ModernBakedGlyph[] glyphs, float[] positions, int[] flags) {
+                       BakedGlyph[] glyphs, float[] positions, int[] flags,
+                       ArrayList<TextRenderable> customRenderables) {
         this.density = density;
         this.shadowOffset = shadowOffset;
         this.dropShadow = dropShadow;
@@ -80,6 +85,7 @@ public class ModernPreparedText implements Font.PreparedText {
         this.glyphs = glyphs;
         this.positions = positions;
         this.flags = flags;
+        this.customRenderables = customRenderables;
     }
 
     ModernPreparedText(float x, float top, int color, boolean dropShadow,
@@ -117,6 +123,7 @@ public class ModernPreparedText implements Font.PreparedText {
         }
 
         ArrayList<TextRun> textRuns = new ArrayList<>();
+        ArrayList<TextRenderable> customRenderables = new ArrayList<>();
         boolean glyphArrayIsCopied = false;
 
         for (int i = 0, e = glyphs.length; i < e; i++) {
@@ -125,6 +132,21 @@ public class ModernPreparedText implements Font.PreparedText {
                 continue;
             }
             if (!(vglyph instanceof ModernBakedGlyph glyph)) {
+                // atlas sprite and player skin don't use shadow, color, style
+                var renderable = vglyph.createGlyph(
+                        x + positions[i << 1],
+                        top + positions[i << 1 | 1],
+                        ~0, 0,
+                        Style.EMPTY,
+                        0, 0
+                );
+                if (renderable != null) {
+                    bounds.joinNoCheck(
+                            renderable.left(), renderable.top(), renderable.right(), renderable.bottom()
+                    );
+                    customRenderables.add(renderable);
+                }
+
                 continue;
             }
             final int bits = flags[i];
@@ -235,6 +257,7 @@ public class ModernPreparedText implements Font.PreparedText {
         this.glyphs = glyphs;
         this.positions = positions;
         this.flags = flags;
+        this.customRenderables = customRenderables;
     }
 
     @Override
@@ -263,6 +286,11 @@ public class ModernPreparedText implements Font.PreparedText {
                             bgColor, bgColor, bgColor, bgColor,
                             scissor, null
                     )
+            );
+        }
+        for (int i = 0; i < customRenderables.size(); i++) {
+            renderState.addGlyphToCurrentLayer(
+                    new GlyphRenderState(pose, customRenderables.get(i), scissor)
             );
         }
         // For-index is 2x faster than enhanced-for
