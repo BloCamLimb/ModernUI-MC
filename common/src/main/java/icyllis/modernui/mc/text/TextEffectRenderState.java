@@ -100,13 +100,16 @@ public record TextEffectRenderState(
     @Nonnull
     @Override
     public RenderPipeline pipeline() {
-        return RenderPipelines.TEXT;
+        return RenderPipelines.GUI_TEXT;
     }
 
     @Nonnull
     @Override
     public TextureSetup textureSetup() {
-        return TextureSetup.singleTextureWithLightmap(EffectRenderType.getTexture(),
+        var placeholder = GlyphManager.getInstance().getEffectGlyph().createEffect(
+                x, top, x + totalAdvance, top + 9, 0, ~0, 0, 0
+        );
+        return TextureSetup.singleTextureWithLightmap(placeholder.textureView(),
                 RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
     }
 

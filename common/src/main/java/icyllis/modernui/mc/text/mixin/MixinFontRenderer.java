@@ -53,8 +53,8 @@ public abstract class MixinFontRenderer {
     public void drawInBatch(@Nonnull String text, float x, float y, int color, boolean dropShadow,
                            @Nonnull Matrix4fc matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
                            int colorBackground, int packedLight) {
-        /*modernUI_MC$textRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
-                displayMode, colorBackground, packedLight);*/
+        modernUI_MC$textRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
+                displayMode, colorBackground, packedLight);
     }
 
     /**
@@ -65,8 +65,8 @@ public abstract class MixinFontRenderer {
     public void drawInBatch(@Nonnull Component text, float x, float y, int color, boolean dropShadow,
                            @Nonnull Matrix4fc matrix, @Nonnull MultiBufferSource source, Font.DisplayMode displayMode,
                            int colorBackground, int packedLight) {
-        /*modernUI_MC$textRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
-                displayMode, colorBackground, packedLight);*/
+        modernUI_MC$textRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
+                displayMode, colorBackground, packedLight);
     }
 
     /**
@@ -84,8 +84,8 @@ public abstract class MixinFontRenderer {
                     FormattedText.STOP_ITERATION : Optional.empty(), Style.EMPTY).isPresent())
                 return callDrawInternal(text, x, y, color, dropShadow, matrix, source, seeThrough, colorBackground,
                         packedLight);*/
-        /*modernUI_MC$textRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
-                displayMode, colorBackground, packedLight);*/
+        modernUI_MC$textRenderer.drawText(text, x, y, color, dropShadow, matrix, source,
+                displayMode, colorBackground, packedLight);
     }
 
     /*@Invoker
@@ -113,6 +113,6 @@ public abstract class MixinFontRenderer {
     @Overwrite
     public void drawInBatch8xOutline(@Nonnull FormattedCharSequence text, float x, float y, int color, int outlineColor,
                                      @Nonnull Matrix4fc matrix, @Nonnull MultiBufferSource source, int packedLight) {
-        //modernUI_MC$textRenderer.drawText8xOutline(text, x, y, color, outlineColor, matrix, source, packedLight);
+        modernUI_MC$textRenderer.drawText8xOutline(text, x, y, color, outlineColor, matrix, source, packedLight);
     }
 }

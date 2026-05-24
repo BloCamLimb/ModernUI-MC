@@ -238,8 +238,6 @@ public class ModernPreparedText implements Font.PreparedText {
         }
 
         if (layout.hasEffect()) {
-            // initialize texture if not
-            EffectRenderType.getTexture();
             bounds.joinNoCheck(x, baseline + TextRenderEffect.STRIKETHROUGH_OFFSET,
                     x + layout.getTotalAdvance(), baseline + (TextRenderEffect.UNDERLINE_OFFSET + TextRenderEffect.UNDERLINE_THICKNESS));
         }

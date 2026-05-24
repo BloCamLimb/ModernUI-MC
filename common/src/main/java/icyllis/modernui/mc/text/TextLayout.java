@@ -27,6 +27,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -313,7 +314,7 @@ public class TextLayout {
      * @param packedLight   see {@link net.minecraft.util.LightCoordsUtil}
      * @return the total advance, always positive
      */
-    public float drawText(@Nonnull final Matrix4f matrix,
+    public float drawText(@Nonnull final Matrix4fc matrix,
                           @Nonnull final MultiBufferSource source,
                           float x, float top,
                           int r, int g, int b, final int a,
@@ -365,18 +366,17 @@ public class TextLayout {
         VertexConsumer builder = null;
 
         final boolean seeThrough = preferredMode == TextRenderType.MODE_SEE_THROUGH;
+        net.minecraft.client.gui.Font.DisplayMode compatDisplayMode =
+                polygonOffset ? net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET :
+                        seeThrough ? net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH :
+                                net.minecraft.client.gui.Font.DisplayMode.NORMAL;
         if ((bgColor & 0xFF000000) != 0) {
-            builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough, polygonOffset));
-            float effectDepth = -TextRenderEffect.EFFECT_DEPTH;
-            builder.addVertex(matrix, x - 1, top + 9, effectDepth)
-                    .setColor(bgColor).setUv(0, 1).setLight(packedLight);
-            builder.addVertex(matrix, x + mTotalAdvance + 1, top + 9, effectDepth)
-                    .setColor(bgColor).setUv(1, 1).setLight(packedLight);
-            builder.addVertex(matrix, x + mTotalAdvance + 1, top - 1, effectDepth)
-                    .setColor(bgColor).setUv(1, 0).setLight(packedLight);
-            builder.addVertex(matrix, x - 1, top - 1, effectDepth)
-                    .setColor(bgColor).setUv(0, 0).setLight(packedLight);
-            builder = null;
+            var renderable = GlyphManager.getInstance().getEffectGlyph().createEffect(
+                    x - 1, top - 1, x + mTotalAdvance + 1, top + 9,
+                    -TextRenderEffect.EFFECT_DEPTH, bgColor, 0, 0
+            );
+            var buffer = source.getBuffer(renderable.renderType(compatDisplayMode));
+            renderable.render(matrix, buffer, packedLight, false);
         }
 
         for (int i = 0, e = glyphs.length; i < e; i++) {
@@ -396,11 +396,7 @@ public class TextLayout {
                             0, 0
                     );
                     if (renderable != null) {
-                        var buffer = source.getBuffer(renderable.renderType(
-                                polygonOffset ? net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET :
-                                        seeThrough ? net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH :
-                                                net.minecraft.client.gui.Font.DisplayMode.NORMAL
-                        ));
+                        var buffer = source.getBuffer(renderable.renderType(compatDisplayMode));
                         renderable.render(matrix, buffer, packedLight, false);
                     }
                 }
@@ -529,7 +525,11 @@ public class TextLayout {
         }
 
         if (mHasEffect) {
-            builder = source.getBuffer(EffectRenderType.getRenderType(seeThrough, polygonOffset));
+            var placeholder = GlyphManager.getInstance().getEffectGlyph().createEffect(
+                    x, top, x + mTotalAdvance, top + 9,
+                    TextRenderEffect.EFFECT_DEPTH, ~0, 0, 0
+            );
+            builder = source.getBuffer(placeholder.renderType(compatDisplayMode));
             for (int i = 0, e = glyphs.length; i < e; i++) {
                 final int bits = flags[i];
                 if ((bits & CharacterStyle.EFFECT_MASK) == 0) {
@@ -581,7 +581,7 @@ public class TextLayout {
      * @param packedLight see {@link net.minecraft.util.LightCoordsUtil}
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
-    public void drawTextOutline(@Nonnull Matrix4f matrix,
+    public void drawTextOutline(@Nonnull Matrix4fc matrix,
                                 @Nonnull MultiBufferSource source,
                                 final float x, final float top,
                                 int r, int g, int b, int a,

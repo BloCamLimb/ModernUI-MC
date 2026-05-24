@@ -30,6 +30,7 @@ import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.util.FormattedCharSequence;
 import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.joml.Vector3f;
 
 import javax.annotation.Nonnull;
@@ -89,7 +90,7 @@ public final class ModernTextRenderer {
     }
 
     public float drawText(@Nonnull String text, float x, float y, int color, boolean dropShadow,
-                          @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
+                          @Nonnull Matrix4fc matrix, @Nonnull MultiBufferSource source,
                           Font.DisplayMode displayMode, int colorBackground, int packedLight) {
         if (text.isEmpty()) {
             return x;
@@ -101,7 +102,7 @@ public final class ModernTextRenderer {
     }
 
     public float drawText(@Nonnull FormattedText text, float x, float y, int color, boolean dropShadow,
-                          @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
+                          @Nonnull Matrix4fc matrix, @Nonnull MultiBufferSource source,
                           Font.DisplayMode displayMode, int colorBackground, int packedLight) {
         if (text == CommonComponents.EMPTY || text == FormattedText.EMPTY) {
             return x;
@@ -113,7 +114,7 @@ public final class ModernTextRenderer {
     }
 
     public float drawText(@Nonnull FormattedCharSequence text, float x, float y, int color, boolean dropShadow,
-                          @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
+                          @Nonnull Matrix4fc matrix, @Nonnull MultiBufferSource source,
                           Font.DisplayMode displayMode, int colorBackground, int packedLight) {
         if (text == FormattedCharSequence.EMPTY) {
             return x;
@@ -125,7 +126,7 @@ public final class ModernTextRenderer {
     }
 
     public float drawText(@Nonnull TextLayout layout, float x, float y, int color, boolean dropShadow,
-                          @Nonnull Matrix4f matrix, @Nonnull MultiBufferSource source,
+                          @Nonnull Matrix4fc matrix, @Nonnull MultiBufferSource source,
                           Font.DisplayMode displayMode, int colorBackground, int packedLight) {
         // ensure alpha, color can be ARGB, or can be RGB
         // we check if alpha <= 1, then make alpha = 255 (fully opaque)
@@ -146,7 +147,7 @@ public final class ModernTextRenderer {
             //((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
         }
         // copy the matrix when needed
-        boolean matrixIsCopied = false;
+        //boolean matrixIsCopied = false;
         // compute exact font size and position
         float uniformScale = 1;
         /*if (sComputeDeviceFontSize &&
@@ -196,17 +197,16 @@ public final class ModernTextRenderer {
         if (dropShadow && sAllowShadow) {
             layout.drawText(matrix, source, x, y, r >> 2, g >> 2, b >> 2, a, true,
                     mode, polygonOffset, uniformScale, colorBackground, packedLight);
-            if (!matrixIsCopied) {
-                matrix = new Matrix4f(matrix);
-            }
-            matrix.translate(SHADOW_OFFSET);
+            var newMatrix = new Matrix4f(matrix);
+            newMatrix.translate(SHADOW_OFFSET);
+            matrix = newMatrix;
         }
 
         return layout.drawText(matrix, source, x, y, r, g, b, a, false,
                 mode, polygonOffset, uniformScale, colorBackground, packedLight);
     }
 
-    public int chooseMode(Matrix4f ctm, Font.DisplayMode displayMode) {
+    public int chooseMode(Matrix4fc ctm, Font.DisplayMode displayMode) {
         if (displayMode == Font.DisplayMode.SEE_THROUGH) {
             return TextRenderType.MODE_SEE_THROUGH;
         } else if (TextLayoutEngine.sCurrentInWorldRendering) {
@@ -267,7 +267,7 @@ public final class ModernTextRenderer {
     }*/
 
     public void drawText8xOutline(@Nonnull FormattedCharSequence text, float x, float y,
-                                  int color, int outlineColor, @Nonnull Matrix4f matrix,
+                                  int color, int outlineColor, @Nonnull Matrix4fc matrix,
                                   @Nonnull MultiBufferSource source, int packedLight) {
         if (text == FormattedCharSequence.EMPTY) {
             return;
@@ -296,15 +296,15 @@ public final class ModernTextRenderer {
                 (TextLayoutEngine.sCurrentInWorldRendering && !TextLayoutEngine.sUseTextShadersInWorld)) {
             return;
         }
-        matrix = new Matrix4f(matrix);
 
         a = outlineColor >>> 24;
         r = outlineColor >> 16 & 0xff;
         g = outlineColor >> 8 & 0xff;
         b = outlineColor & 0xff;
 
-        matrix.translate(OUTLINE_OFFSET);
-        layout.drawTextOutline(matrix, source, x, y, r, g, b, a, packedLight);
+        var newMatrix = new Matrix4f(matrix);
+        newMatrix.translate(OUTLINE_OFFSET);
+        layout.drawTextOutline(newMatrix, source, x, y, r, g, b, a, packedLight);
     }
 
     /*public static void change(boolean global, boolean shadow) {

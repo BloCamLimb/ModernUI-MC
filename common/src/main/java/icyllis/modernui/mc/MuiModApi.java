@@ -41,6 +41,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.MenuAccess;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.rendertype.RenderSetup;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
 import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
 import net.minecraft.network.chat.CommonComponents;
@@ -498,12 +500,7 @@ public abstract class MuiModApi {
     @Nullable
     public abstract ScreenRectangle peekScissorStack(GuiGraphicsExtractor graphics);
 
-    // textureState must subclass RenderStateShard.EmptyTextureStateShard, null = NO_TEXTURE
-    /*public abstract RenderType createRenderType(String name, int bufferSize,
-                                                boolean affectsCrumbling, boolean sortOnUpload,
-                                                RenderPipeline renderPipeline,
-                                                @Nullable RenderStateShard textureState,
-                                                boolean lightmap);*/
+    public abstract RenderType createRenderType(String name, RenderSetup allState);
 
     /*
      * Registers a callback to be called when {@link org.lwjgl.glfw.GLFWScrollCallback} is called.
