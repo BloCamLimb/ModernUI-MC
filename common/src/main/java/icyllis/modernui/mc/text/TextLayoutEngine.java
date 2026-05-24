@@ -36,6 +36,7 @@ import icyllis.modernui.util.Pools;
 import icyllis.modernui.view.View;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GlyphSource;
+import net.minecraft.client.gui.font.AtlasGlyphProvider;
 import net.minecraft.client.gui.font.FontManager;
 import net.minecraft.client.gui.font.FontSet;
 import net.minecraft.client.gui.font.providers.*;
@@ -489,7 +490,10 @@ public class TextLayoutEngine extends FontResourceManager
         }
 
         if (mVanillaFontManager != null) {
-            var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
+            var access = ((AccessFontManager) mVanillaFontManager);
+            access.getAnyGlyphs().invalidate();
+            access.getNonFishyGlyphs().invalidate();
+            var fontSets = access.getFontSets();
             if (fontSets.get(Minecraft.DEFAULT_FONT) instanceof StandardFontSet standardFontSet) {
                 standardFontSet.reload(mFontCollections.get(Minecraft.DEFAULT_FONT), mResLevel);
             }
@@ -671,7 +675,10 @@ public class TextLayoutEngine extends FontResourceManager
         mRawDefaultFontCollection = mFontCollections.get(Minecraft.DEFAULT_FONT);
         // vanilla compatibility
         if (mVanillaFontManager != null) {
-            var fontSets = ((AccessFontManager) mVanillaFontManager).getFontSets();
+            var access = ((AccessFontManager) mVanillaFontManager);
+            access.getAnyGlyphs().invalidate();
+            access.getNonFishyGlyphs().invalidate();
+            var fontSets = access.getFontSets();
             fontSets.values().forEach(FontSet::close);
             fontSets.clear();
             var textureManager = Minecraft.getInstance().getTextureManager();
@@ -680,6 +687,11 @@ public class TextLayoutEngine extends FontResourceManager
                 fontSet.reload(fontCollection, mResLevel);
                 fontSets.put(fontName, fontSet);
             });
+            var atlasProviders = access.getAtlasProviders();
+            atlasProviders.clear();
+            var atlasManager = Minecraft.getInstance().getAtlasManager();
+            atlasManager.forEach((atlasId, atlasTexture) ->
+                    atlasProviders.put(atlasId, new AtlasGlyphProvider(atlasTexture)));
         } else {
             LOGGER.warn(MARKER, "Where is font manager?");
         }
@@ -695,7 +707,6 @@ public class TextLayoutEngine extends FontResourceManager
         closeFonts();
         // do final cleanup
         TextRenderType.clear(/*cleanup*/ true);
-        EffectRenderType.clear();
     }
 
     private void closeFonts() {
