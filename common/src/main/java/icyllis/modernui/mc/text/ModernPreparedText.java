@@ -280,7 +280,9 @@ public class ModernPreparedText implements Font.PreparedText {
     @Deprecated
     @Override
     public void visit(@Nonnull Font.GlyphVisitor glyphVisitor) {
-        glyphVisitor.acceptEmptyArea(new EmptyArea(bounds.left(), bounds.top(), bounds.width(), 7, bounds.height(), Style.EMPTY));
+        if (bounds != null) {
+            glyphVisitor.acceptEmptyArea(new EmptyArea(bounds.left(), bounds.top(), bounds.width(), 7, bounds.height(), Style.EMPTY));
+        }
     }
 
     @Nullable

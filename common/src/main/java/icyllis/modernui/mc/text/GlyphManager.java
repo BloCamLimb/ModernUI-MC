@@ -18,6 +18,8 @@
 
 package icyllis.modernui.mc.text;
 
+import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.platform.Transparency;
 import icyllis.arc3d.engine.Engine;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.graphics.Bitmap;
@@ -34,6 +36,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.font.FontManager;
 import net.minecraft.client.gui.font.glyphs.EffectGlyph;
 import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.MipmapGenerator;
+import net.minecraft.client.renderer.texture.MipmapStrategy;
 import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
@@ -580,7 +584,7 @@ public class GlyphManager {
         }
         ByteBuffer src = (mImageBuffer.flip());
 
-        boolean success = atlas.stitch(glyph, src);
+        boolean success = atlas.stitch(glyph, src, null);
         if (!success) {
             // invalidate glyph image and defer to next frame
             glyph.x = Integer.MIN_VALUE;
@@ -617,11 +621,22 @@ public class GlyphManager {
              Bitmap bitmap = BitmapFactory.decodeStream(inputStream, opts)) {
             if (bitmap.getWidth() == EMOJI_SIZE && bitmap.getHeight() == EMOJI_SIZE) {
                 long src = bitmap.getAddress();
+                @SuppressWarnings("resource") NativeImage[] mips = MipmapGenerator.generateMipLevels(
+                        ModernUIMod.location(path),
+                        new NativeImage[]{new NativeImage(NativeImage.Format.RGBA, EMOJI_SIZE, EMOJI_SIZE,
+                                false, src)},
+                        1,
+                        MipmapStrategy.MEAN,
+                        0,
+                        Transparency.TRANSPARENT_AND_TRANSLUCENT
+                );
                 glyph.x = 0;
                 glyph.y = -EMOJI_ASCENT;
                 glyph.width = EMOJI_SIZE;
                 glyph.height = EMOJI_SIZE;
-                boolean success = atlas.stitch(glyph, MemoryUtil.memByteBuffer(src, (int) bitmap.getSize()));
+                boolean success = atlas.stitch(glyph, MemoryUtil.memByteBuffer(src, (int) bitmap.getSize()),
+                        MemoryUtil.memByteBuffer(mips[1].getPointer(), (int) bitmap.getSize() / 4));
+                mips[1].close();
                 if (!success) {
                     // invalidate glyph image and defer to next frame
                     glyph.x = Integer.MIN_VALUE;
@@ -658,7 +673,7 @@ public class GlyphManager {
         // here width and height are in pixels
         glyph.width = (short) font.getSpriteWidth();
         glyph.height = (short) font.getSpriteHeight();
-        boolean success = atlas.stitch(glyph, mImageBuffer);
+        boolean success = atlas.stitch(glyph, mImageBuffer, null);
         // here width and height are scaled
         font.setGlyphMetrics(glyph);
         if (!success) {

@@ -47,6 +47,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import static icyllis.modernui.mc.ModernUIMod.LOGGER;
@@ -110,6 +111,7 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
      * Linear sampling with mipmaps;
      */
     //private final boolean mLinearSampling;
+    private final boolean mUseMipmaps;
 
     // overflow and wrap
     private int mLastCompactChunkIndex;
@@ -146,9 +148,11 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
         );*/
         boolean linear = linearSampling && (sLinearSamplingA8Atlas ||
                 mMaskFormat == Engine.MASK_FORMAT_ARGB);   // color emoji requires linear sampling
+        // color emoji uses one extra mipmap level
+        mUseMipmaps = linearSampling && mMaskFormat == Engine.MASK_FORMAT_ARGB;
         sampler = RenderSystem.getSamplerCache().getSampler(
                 AddressMode.REPEAT, AddressMode.REPEAT,
-                linear ? FilterMode.LINEAR : FilterMode.NEAREST, FilterMode.NEAREST, false
+                linear ? FilterMode.LINEAR : FilterMode.NEAREST, FilterMode.NEAREST, mUseMipmaps
         );
         // sampler is from global cache, no need to close
     }
@@ -171,7 +175,8 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
         mGlyphs.put(key, null);
     }
 
-    public boolean stitch(@NonNull ModernBakedGlyph glyph, ByteBuffer pixels) {
+    public boolean stitch(@NonNull ModernBakedGlyph glyph,
+                          @NonNull ByteBuffer pixels, @Nullable ByteBuffer mipPixels) {
         if (mWidth == 0) {
             resize(); // first init
         }
@@ -201,6 +206,13 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
                 .writeToTexture(getTexture(), pixels, format,
                         0, 0, rect.x(), rect.y(),
                         rect.width(), rect.height());
+        if (mUseMipmaps) {
+            assert mipPixels != null;
+            RenderSystem.getDevice().createCommandEncoder()
+                    .writeToTexture(getTexture(), mipPixels, format,
+                            1, 0, rect.x() / 2, rect.y() / 2,
+                            rect.width() / 2, rect.height() / 2);
+        }
         /*int rowBytes = rect.width() * ColorInfo.bytesPerPixel(colorType);
         boolean res = ((GLDevice) mContext.getDevice()).writePixels(
                 mTexture,
@@ -318,16 +330,18 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
         if (mMaskFormat == Engine.MASK_FORMAT_A8) {
             // Minecraft's OpenGL backend has no real texture view,
             // but if on Vulkan, we have to modify the VkImageView
-            int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
-            glBindTexture(GL_TEXTURE_2D, ((GlTexture) texture).glId());
+            if (RenderSystem.getDevice().getBackendName().equals("OpenGL")) {
+                int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
+                glBindTexture(GL_TEXTURE_2D, ((GlTexture) texture).glId());
 
-            //XXX: un-premultiplied, so 111r rather than rrrr
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
+                //XXX: un-premultiplied, so 111r rather than rrrr
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
 
-            glBindTexture(GL_TEXTURE_2D, boundTexture);
+                glBindTexture(GL_TEXTURE_2D, boundTexture);
+            }
         }
 
         return true;
@@ -358,7 +372,7 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
                     default -> throw new AssertionError(mMaskFormat);
                 },
                 mWidth, mHeight,
-                1, 1
+                1, mUseMipmaps ? 2 : 1
         );
     }
 
