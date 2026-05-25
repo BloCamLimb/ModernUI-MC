@@ -30,6 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Handle deferred rendering and transparency sorting (painter's algorithm).
  */
+@Deprecated
 @Mixin(LevelRenderer.class)
 public class MixinLevelRenderer {
 

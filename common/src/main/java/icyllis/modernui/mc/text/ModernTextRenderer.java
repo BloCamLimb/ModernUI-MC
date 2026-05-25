@@ -142,10 +142,10 @@ public final class ModernTextRenderer {
         int mode = chooseMode(matrix, displayMode);
         boolean polygonOffset = displayMode == Font.DisplayMode.POLYGON_OFFSET;
 
-        if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
+        /*if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
-            //((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
-        }
+            ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
+        }*/
         // copy the matrix when needed
         //boolean matrixIsCopied = false;
         // compute exact font size and position
@@ -283,10 +283,10 @@ public final class ModernTextRenderer {
         int b = color & 0xff;
 
         TextLayout layout = mEngine.lookupFormattedLayout(text);
-        if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
+        /*if (layout.hasColorEmoji() && source instanceof MultiBufferSource.BufferSource) {
             // performance impact
-            //((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
-        }
+            ((MultiBufferSource.BufferSource) source).endBatch(Sheets.signSheet());
+        }*/
 
         layout.drawText(matrix, source, x, y, r, g, b, a, false,
                 TextRenderType.MODE_SDF_FILL, false, 1, 0, packedLight);

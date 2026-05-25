@@ -675,10 +675,10 @@ public final class Config {
             }*/
 
             if (reloadStrike) {
-                Minecraft.getInstance().submit(
+                Minecraft.getInstance().schedule(
                         () -> FontResourceManager.getInstance().reloadAll());
             } else if (reload && ModernUIMod.isTextEngineEnabled()) {
-                Minecraft.getInstance().submit(
+                Minecraft.getInstance().schedule(
                         () -> {
                             try {
                                 TextLayoutEngine.getInstance().reload();

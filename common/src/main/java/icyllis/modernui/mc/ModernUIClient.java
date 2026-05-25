@@ -370,7 +370,7 @@ public abstract class ModernUIClient extends ModernUI {
     }
 
     public void reloadFontStrike() {
-        Minecraft.getInstance().submit(
+        Minecraft.getInstance().schedule(
                 () -> FontResourceManager.getInstance().reloadAll());
     }
 

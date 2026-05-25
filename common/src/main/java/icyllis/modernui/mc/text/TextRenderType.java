@@ -26,10 +26,13 @@ import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import icyllis.modernui.mc.ModernUIMod;
 import icyllis.modernui.mc.MuiModApi;
+import icyllis.modernui.mc.text.mixin.AccessBufferSource;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
@@ -39,6 +42,9 @@ import net.minecraft.resources.Identifier;
 import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Optional;
+
+import static icyllis.modernui.mc.ModernUIMod.LOGGER;
+import static icyllis.modernui.mc.text.TextLayoutEngine.MARKER;
 
 /**
  * Fast and modern text render type.
@@ -180,13 +186,11 @@ public abstract class TextRenderType {
     private static final HashMap<Identifier, RenderType> sSeeThroughTypes = new HashMap<>();
     private static final HashMap<Identifier, RenderType> sPolygonOffsetTypes = new HashMap<>();
 
-    // Minecraft 26.1 does text batching, this is no longer needed, see FeatureRenderDispatcher
-
-    /*private static RenderType sFirstSDFFillType;
+    private static RenderType sFirstSDFFillType;
     private static final ByteBufferBuilder sFirstSDFFillBuffer = new ByteBufferBuilder(131072);
 
     private static RenderType sFirstSDFStrokeType;
-    private static final ByteBufferBuilder sFirstSDFStrokeBuffer = new ByteBufferBuilder(131072);*/
+    private static final ByteBufferBuilder sFirstSDFStrokeBuffer = new ByteBufferBuilder(131072);
 
     // SDF requires bilinear sampling
     //@SharedPtr
@@ -363,7 +367,7 @@ public abstract class TextRenderType {
                         .useLightmap()
                         .sortOnUpload()
                         .createRenderSetup());
-        /*if (sFirstSDFFillType == null) {
+        if (sFirstSDFFillType == null) {
             assert (sSDFFillTypes.isEmpty());
             sFirstSDFFillType = renderType;
             if (TextLayoutEngine.sUseTextShadersInWorld) {
@@ -374,7 +378,7 @@ public abstract class TextRenderType {
                     LOGGER.warn(MARKER, "Failed to add SDF fill to fixed buffers", e);
                 }
             }
-        }*/
+        }
         return renderType;
     }
 
@@ -400,7 +404,7 @@ public abstract class TextRenderType {
                         .useLightmap()
                         .sortOnUpload()
                         .createRenderSetup());
-        /*if (sFirstSDFStrokeType == null) {
+        if (sFirstSDFStrokeType == null) {
             assert (sSDFStrokeTypes.isEmpty());
             sFirstSDFStrokeType = renderType;
             if (TextLayoutEngine.sUseTextShadersInWorld) {
@@ -411,7 +415,7 @@ public abstract class TextRenderType {
                     LOGGER.warn(MARKER, "Failed to add SDF stroke to fixed buffers", e);
                 }
             }
-        }*/
+        }
         return renderType;
     }
 
@@ -478,7 +482,7 @@ public abstract class TextRenderType {
     }*/
 
     public static synchronized void clear(boolean cleanup) {
-        /*if (sFirstSDFFillType != null) {
+        if (sFirstSDFFillType != null) {
             assert (!sSDFFillTypes.isEmpty());
             var access = (AccessBufferSource) Minecraft.getInstance().renderBuffers().bufferSource();
             try {
@@ -495,15 +499,15 @@ public abstract class TextRenderType {
             } catch (Exception ignored) {
             }
             sFirstSDFStrokeType = null;
-        }*/
+        }
         sNormalTypes.clear();
         sSDFFillTypes.clear();
         sSDFStrokeTypes.clear();
         sVanillaTypes.clear();
         sSeeThroughTypes.clear();
         sPolygonOffsetTypes.clear();
-        //sFirstSDFFillBuffer.clear();
-        //sFirstSDFStrokeBuffer.clear();
+        sFirstSDFFillBuffer.clear();
+        sFirstSDFStrokeBuffer.clear();
         if (cleanup) {
             //sLinearFontSampler = RefCnt.move(sLinearFontSampler);
             /*sCurrentShaderSDFFill = null;

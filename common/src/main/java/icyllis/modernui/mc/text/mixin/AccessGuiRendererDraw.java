@@ -23,6 +23,7 @@ import net.minecraft.client.gui.render.TextureSetup;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
+@Deprecated
 @Mixin(targets = "net.minecraft.client.gui.render.GuiRenderer$Draw")
 public interface AccessGuiRendererDraw {
 

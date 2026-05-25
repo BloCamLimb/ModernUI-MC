@@ -8,8 +8,6 @@
   "client": [
     "AccessBufferSource",
     "AccessFontManager",
-    "AccessGpuTexture",
-    "AccessGuiRendererDraw",
     "MixinActiveTextCollector",
     "MixinBidiReorder",
     "MixinClientLanguage",
@@ -21,7 +19,6 @@
     "MixinGameRenderer",
     "MixinGuiRenderer",
     "MixinGuiTextRenderState",
-    "MixinLanguage",
-    "MixinLevelRenderer"
+    "MixinLanguage"
   ]
 }

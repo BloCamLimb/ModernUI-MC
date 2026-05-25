@@ -23,6 +23,7 @@ import com.mojang.blaze3d.textures.GpuTexture;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
+@Deprecated
 @Mixin(value = GpuTexture.class, remap = false)
 public interface AccessGpuTexture {
 

@@ -228,6 +228,8 @@ public class TextLayoutProcessor {
     private boolean mComputeAdvances = true;
     private boolean mComputeLineBoundaries = true;
 
+    private int mResLevel;
+
     /**
      * Always LTR.
      *
@@ -583,6 +585,7 @@ public class TextLayoutProcessor {
             mFontPaint.setFontSize(fontSize);
             mFontPaint.setAntiAlias(GlyphManager.sAntiAliasing);
             mFontPaint.setLinearMetrics(GlyphManager.sFractionalMetrics);
+            mResLevel = resLevel;
 
             // pre allocate memory
             if (mComputeAdvances) {
@@ -1004,7 +1007,7 @@ public class TextLayoutProcessor {
             }
 
             var glyph = glyphSource.getGlyph(ch);
-            float advance = glyph.info().getAdvance();
+            float advance = glyph.info().getAdvance() * mResLevel;
 
             if (mComputeAdvances) {
                 mAdvances.set(i, advance);

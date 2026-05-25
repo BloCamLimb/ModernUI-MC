@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.text.mixin;
 
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import icyllis.modernui.mc.GradientRectangleRenderState;
 import icyllis.modernui.mc.MuiModApi;
 import icyllis.modernui.mc.text.*;
@@ -26,6 +27,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.IMEPreeditOverlay;
 import net.minecraft.client.gui.components.TextCursorUtils;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.TextureSetup;
@@ -109,6 +111,10 @@ public abstract class MixinEditBox extends AbstractWidget {
     @Shadow
     @Nullable
     private Component hint;
+
+    @Shadow
+    @Nullable
+    private IMEPreeditOverlay preeditOverlay;
 
     public MixinEditBox(int x, int y, int w, int h, Component msg) {
         super(x, y, w, h, msg);
@@ -276,6 +282,13 @@ public abstract class MixinEditBox extends AbstractWidget {
                 TextCursorUtils.extractAppendCursor(gr, font, baseX, baseY, color, true);
                 gr.pose().popMatrix();
             }
+        }
+        if (isHovered()) {
+            gr.requestCursor(isEditable ? CursorTypes.IBEAM : CursorTypes.NOT_ALLOWED);
+        }
+        if (preeditOverlay != null) {
+            preeditOverlay.updateInputPosition((int) cursorX, textY);
+            gr.setPreeditOverlay(preeditOverlay);
         }
         // unconditional
         ci.cancel();
