@@ -26,6 +26,7 @@ import com.mojang.blaze3d.textures.GpuTextureView;
 import icyllis.arc3d.core.Rect2f;
 import icyllis.modernui.mc.GradientRectangleRenderState;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.font.EmptyArea;
 import net.minecraft.client.gui.font.TextRenderable;
 import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
@@ -35,6 +36,7 @@ import net.minecraft.client.renderer.state.gui.GlyphRenderState;
 import net.minecraft.client.renderer.state.gui.GuiRenderState;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.network.chat.Style;
+import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fc;
 
 import javax.annotation.Nonnull;
@@ -49,7 +51,7 @@ public class ModernPreparedText implements Font.PreparedText {
 
     public static final ModernPreparedText EMPTY = new ModernPreparedText(
             1, 0, false, 0, 0,
-            0, 0, null,
+            0, 0, 0, 0, null,
             new ArrayList<>(), false, 0,
             null, null, null, new ArrayList<>()
     );
@@ -59,8 +61,10 @@ public class ModernPreparedText implements Font.PreparedText {
     private final boolean dropShadow;
     private final int color;
     private final int bgColor;
-    private final float x;
+    public final float x;
     private final float top;
+    private final float xAdj;
+    private final float yAdj;
     private final ScreenRectangle bounds;
     private final ArrayList<TextRun> runs;
     private final boolean hasEffect;
@@ -71,7 +75,7 @@ public class ModernPreparedText implements Font.PreparedText {
     private final ArrayList<TextRenderable> customRenderables;
 
     ModernPreparedText(float density, float shadowOffset, boolean dropShadow, int color,
-                       int bgColor, float x, float top, ScreenRectangle bounds,
+                       int bgColor, float x, float top, float xAdj, float yAdj, ScreenRectangle bounds,
                        ArrayList<TextRun> runs, boolean hasEffect, float totalAdvance,
                        BakedGlyph[] glyphs, float[] positions, int[] flags,
                        ArrayList<TextRenderable> customRenderables) {
@@ -82,6 +86,8 @@ public class ModernPreparedText implements Font.PreparedText {
         this.bgColor = bgColor;
         this.x = x;
         this.top = top;
+        this.xAdj = xAdj;
+        this.yAdj = yAdj;
         this.bounds = bounds;
         this.runs = runs;
         this.hasEffect = hasEffect;
@@ -93,8 +99,8 @@ public class ModernPreparedText implements Font.PreparedText {
     }
 
     ModernPreparedText(float x, float top, int color, boolean dropShadow,
-                       int preferredMode, int bgColor, float density,
-                       BakedGlyph[] glyphs, TextLayout layout) {
+                       int preferredMode, int bgColor, float xAdj, float yAdj,
+                       float density, BakedGlyph[] glyphs, TextLayout layout) {
 
         final float invDensity = 1.0f / density;
         float shadowOffset = 0;
@@ -138,15 +144,15 @@ public class ModernPreparedText implements Font.PreparedText {
             if (!(vglyph instanceof ModernBakedGlyph glyph)) {
                 // atlas sprite and player skin don't use shadow, color, style
                 var renderable = vglyph.createGlyph(
-                        x + positions[i << 1],
-                        top + positions[i << 1 | 1],
+                        x + positions[i << 1] + xAdj,
+                        top + positions[i << 1 | 1] + yAdj,
                         ~0, 0,
                         Style.EMPTY,
                         0, 0
                 );
                 if (renderable != null) {
                     bounds.joinNoCheck(
-                            renderable.left(), renderable.top(), renderable.right(), renderable.bottom()
+                            renderable.left() - xAdj, renderable.top() - yAdj, renderable.right() - xAdj, renderable.bottom() - yAdj
                     );
                     customRenderables.add(renderable);
                 }
@@ -245,8 +251,9 @@ public class ModernPreparedText implements Font.PreparedText {
         ScreenRectangle finalBounds = null;
         if (!bounds.isEmpty()) {
             int L = (int) Math.floor(bounds.left()), T = (int) Math.floor(bounds.top()),
-                    R = (int) Math.ceil(bounds.right()), B = (int) Math.ceil(bounds.bottom());
-            finalBounds = new ScreenRectangle(L, T, R - L + (dropShadow ? 1 : 0), B - T);
+                    R = (int) Math.ceil(bounds.right() + (dropShadow ? shadowOffset : 0)),
+                    B = (int) Math.ceil(bounds.bottom() + (dropShadow ? shadowOffset : 0));
+            finalBounds = new ScreenRectangle(L, T, R - L, B - T);
         }
 
 
@@ -257,6 +264,8 @@ public class ModernPreparedText implements Font.PreparedText {
         this.bgColor = bgColor;
         this.x = x;
         this.top = top;
+        this.xAdj = xAdj;
+        this.yAdj = yAdj;
         this.bounds = finalBounds;
         this.runs = textRuns;
         this.hasEffect = layout.hasEffect();
@@ -267,9 +276,11 @@ public class ModernPreparedText implements Font.PreparedText {
         this.customRenderables = customRenderables;
     }
 
+    // this is not used directly by ModernUI-MC, but for debugging and compatibility reasons
+    @Deprecated
     @Override
     public void visit(@Nonnull Font.GlyphVisitor glyphVisitor) {
-        throw new UnsupportedOperationException("Modern Text Engine");
+        glyphVisitor.acceptEmptyArea(new EmptyArea(bounds.left(), bounds.top(), bounds.width(), 7, bounds.height(), Style.EMPTY));
     }
 
     @Nullable
@@ -281,6 +292,16 @@ public class ModernPreparedText implements Font.PreparedText {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     public void submitRuns(GuiRenderState renderState, Matrix3x2fc pose,
                            @Nullable ScreenRectangle scissor) {
+        float x = this.x;
+        float top = this.top;
+        if (xAdj != 0 || yAdj != 0) {
+            var newPose = new Matrix3x2f(pose);
+            newPose.m20 = 0;
+            newPose.m21 = 0;
+            x += xAdj;
+            top += yAdj;
+            pose = newPose;
+        }
         if ((bgColor & 0xFF000000) != 0) {
             // this is only used by CartographyTableScreen, emit as normal fills
             renderState.addGlyphToCurrentLayer(

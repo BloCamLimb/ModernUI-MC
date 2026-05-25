@@ -26,7 +26,6 @@ import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
-import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 
 import javax.annotation.Nonnull;
@@ -661,7 +660,7 @@ public class TextLayout {
     public ModernPreparedText prepareTextWithDensity(float x, float top,
                                                      final int color, final boolean dropShadow,
                                                      int preferredMode, final float uniformScale,
-                                                     final int bgColor) {
+                                                     final int bgColor, float xAdj, float yAdj) {
         final float density;
         final BakedGlyph[] glyphs;
         if (preferredMode == TextRenderType.MODE_SDF_FILL) {
@@ -681,7 +680,7 @@ public class TextLayout {
             density = mCreatedResLevel;
         }
 
-        return new ModernPreparedText(x, top, color, dropShadow, preferredMode, bgColor, density, glyphs,
+        return new ModernPreparedText(x, top, color, dropShadow, preferredMode, bgColor, xAdj, yAdj, density, glyphs,
                 this);
     }
 
