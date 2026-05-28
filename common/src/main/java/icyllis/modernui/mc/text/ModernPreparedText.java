@@ -212,8 +212,9 @@ public class ModernPreparedText implements Font.PreparedText {
         ScreenRectangle finalBounds = null;
         if (!bounds.isEmpty()) {
             int L = (int) Math.floor(bounds.left()), T = (int) Math.floor(bounds.top()),
-                    R = (int) Math.ceil(bounds.right()), B = (int) Math.ceil(bounds.bottom());
-            finalBounds = new ScreenRectangle(L, T, R - L + (dropShadow ? 1 : 0), B - T);
+                    R = (int) Math.ceil(bounds.right() + (dropShadow ? shadowOffset : 0)),
+                    B = (int) Math.ceil(bounds.bottom() + (dropShadow ? shadowOffset : 0));
+            finalBounds = new ScreenRectangle(L, T, R - L, B - T);
         }
 
 

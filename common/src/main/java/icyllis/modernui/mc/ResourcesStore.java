@@ -78,11 +78,14 @@ public class ResourcesStore implements PreparableReloadListener {
                 }, preparationExecutor)
                 .thenCompose(preparationBarrier::wait)
                 .thenAcceptAsync(r -> {
+                    Handler handler = Core.getUiHandlerAsync();
                     if (r.equals(oldLoaders)) {
+                        if (handler != null) {
+                            handler.post(() -> Config.CLIENT.applyTheme(false));
+                        }
                         return;
                     }
                     mLoadersByMod = r;
-                    Handler handler = Core.getUiHandlerAsync();
                     if (handler != null) {
                         handler.post(() -> {
 
