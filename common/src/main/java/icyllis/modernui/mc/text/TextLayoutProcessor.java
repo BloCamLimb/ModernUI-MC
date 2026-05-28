@@ -29,6 +29,7 @@ import icyllis.modernui.mc.text.mixin.MixinClientLanguage;
 import icyllis.modernui.mc.text.mixin.MixinLanguage;
 import icyllis.modernui.text.TextDirectionHeuristic;
 import icyllis.modernui.text.TextDirectionHeuristics;
+import icyllis.modernui.text.TextUtils;
 import it.unimi.dsi.fastutil.bytes.ByteArrayList;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
@@ -654,7 +655,7 @@ public class TextLayoutProcessor {
         if ((dir == TextDirectionHeuristics.LTR
                 || dir == TextDirectionHeuristics.FIRSTSTRONG_LTR
                 || dir == TextDirectionHeuristics.ANYRTL_LTR)
-                && !Bidi.requiresBidi(text, 0, text.length)) {
+                && !TextUtils.couldAffectRtl(text, 0, text.length)) {
             /* If text is entirely left-to-right, then insert a node for the entire string */
             if (DEBUG) {
                 ModernUIMod.LOGGER.info(TextLayoutEngine.MARKER, "All LTR");
