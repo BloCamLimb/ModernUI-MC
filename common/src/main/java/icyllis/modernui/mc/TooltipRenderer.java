@@ -754,8 +754,6 @@ public final class TooltipRenderer implements ScrollController.IListener {
             chooseBorderColor(2, shader.safeGetUniform("u_PushData5"));
         }
 
-        var buffer = gr.bufferSource().getBuffer(GuiRenderType.tooltip());
-
         // we expect local coordinates, concat pose with model view
         RenderSystem.getModelViewStack().pushMatrix();
         RenderSystem.getModelViewStack().mul(pose);
@@ -765,6 +763,8 @@ public final class TooltipRenderer implements ScrollController.IListener {
         float extent = sBorderWidth / 2f + 0.5f + shadowRadius * 1.2f;
         float extentX = sizeX + extent;
         float extentY = sizeY + extent;
+
+        var buffer = gr.bufferSource().getBuffer(GuiRenderType.tooltip());
         buffer.addVertex(extentX, extentY, 0);
         buffer.addVertex(extentX, -extentY, 0);
         buffer.addVertex(-extentX, -extentY, 0);
