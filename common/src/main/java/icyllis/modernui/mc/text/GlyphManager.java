@@ -22,15 +22,18 @@ import icyllis.arc3d.engine.Engine;
 import icyllis.arc3d.engine.ImmediateContext;
 import icyllis.arc3d.opengl.GLDevice;
 import icyllis.arc3d.opengl.GLTexture;
-import icyllis.modernui.ModernUI;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.Bitmap;
 import icyllis.modernui.graphics.BitmapFactory;
+import icyllis.modernui.graphics.text.EmojiFont;
 import icyllis.modernui.graphics.text.Font;
-import icyllis.modernui.graphics.text.*;
+import icyllis.modernui.graphics.text.FontCollection;
+import icyllis.modernui.graphics.text.OutlineFont;
+import icyllis.modernui.mc.ModernUIMod;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.lwjgl.BufferUtils;
@@ -38,15 +41,25 @@ import org.lwjgl.system.MemoryUtil;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.awt.*;
+import java.awt.AlphaComposite;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.font.GlyphVector;
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntConsumer;
+import java.util.function.ToIntFunction;
 
 import static icyllis.modernui.mc.ModernUIMod.LOGGER;
 
@@ -550,7 +563,8 @@ public class GlyphManager {
         String path = "emoji/" + font.getFileName(glyphId);
         var opts = new BitmapFactory.Options();
         opts.inPreferredFormat = Bitmap.Format.RGBA_8888;
-        try (InputStream inputStream = ModernUI.getInstance().getResourceStream(ModernUI.ID, path);
+        try (InputStream inputStream = Minecraft.getInstance().getResourceManager()
+                .open(ModernUIMod.location(path));
              Bitmap bitmap = BitmapFactory.decodeStream(inputStream, opts)) {
             if (bitmap.getWidth() == EMOJI_SIZE && bitmap.getHeight() == EMOJI_SIZE) {
                 long src = bitmap.getAddress();

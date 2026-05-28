@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2025 BloCamLimb. All rights reserved.
+ * Copyright (C) 2023-2026 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,7 +34,6 @@ import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.drawable.BuiltinIconDrawable;
 import icyllis.modernui.graphics.drawable.ColorDrawable;
 import icyllis.modernui.graphics.drawable.RippleDrawable;
-import icyllis.modernui.graphics.drawable.ShapeDrawable;
 import icyllis.modernui.graphics.drawable.StateListDrawable;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.mc.Config;
@@ -122,8 +121,9 @@ public class PreferencesFragment extends Fragment {
             var tabLayout = new TabLayout(context);
             {
                 var value = new TypedValue();
-                context.getTheme().resolveAttribute(R.ns, R.attr.colorSurfaceContainerLow, value, true);
-                tabLayout.setBackground(new ColorDrawable(value.data));
+                var theme = context.getTheme();
+                if (theme.resolveAttribute(R.ns, R.attr.colorSurfaceContainerLow, value, true))
+                    tabLayout.setBackground(theme.getResources().loadDrawable(value, null, theme));
             }
             tabLayout.setElevation(base.dp(3));
             tabLayout.setTabMode(TabLayout.MODE_AUTO);
@@ -183,7 +183,7 @@ public class PreferencesFragment extends Fragment {
             final int maxWidth = container.dp(800) + dp20 + dp20;
             var context = container.getContext();
             var sv = new ClampingScrollView(context);
-            sv.setMaxWidth(maxWidth);
+            sv.setChildMaxWidth(maxWidth);
             sv.setTag(position);
             ViewGroup layout = switch (position) {
                 case 0 -> createPage1(context);
@@ -357,6 +357,9 @@ public class PreferencesFragment extends Fragment {
         {
             var list = createCategoryList(content, "modernui.center.category.system");
 
+            list.addView(createStringListOption(context, "modernui.center.system.theme",
+                    Config.CLIENT.mTheme, onChanged));
+
             new BooleanOption(context, "modernui.center.system.forceRtlLayout",
                     Config.CLIENT.mForceRtl, onChanged)
                     .create(list);
@@ -427,12 +430,16 @@ public class PreferencesFragment extends Fragment {
                 firstLine.addView(value, params);
             }
 
+            var accordion = new PreferredFontAccordion(
+                    category,
+                    mOnClientConfigChanged,
+                    onFontChanged
+            );
             firstLine.setOnClickListener(
-                    new PreferredFontAccordion(
-                            category,
-                            mOnClientConfigChanged,
-                            onFontChanged
-                    )
+                    accordion
+            );
+            firstLine.setOnCreateContextMenuListener(
+                    accordion
             );
             TypedValue value = new TypedValue();
             context.getTheme().resolveAttribute(R.ns, R.attr.colorControlHighlight, value, true);
@@ -478,6 +485,10 @@ public class PreferencesFragment extends Fragment {
                                         Toast.LENGTH_SHORT)
                                 .show();
                     }));
+
+            new BooleanOption(context, "modernui.center.font.linearMetrics",
+                    Config.CLIENT.mLinearMetrics, mOnClientConfigChanged)
+                    .create(category);
 
             content.addView(category);
         }
@@ -800,8 +811,8 @@ public class PreferencesFragment extends Fragment {
             title.setId(R.id.title);
             title.setText(I18n.get(name));
             title.setTextSize(16);
-            context.getTheme().resolveAttribute(R.ns, R.attr.colorPrimary, value, true);
-            title.setTextColor(value.data);
+            if (context.getTheme().resolveAttribute(R.ns, R.attr.colorPrimary, value, true))
+                title.setTextColor(context.getResources().loadColorStateList(value, null, context.getTheme()));
 
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.START;
@@ -956,10 +967,9 @@ public class PreferencesFragment extends Fragment {
         @Override
         public void onCreateContextMenu(ContextMenu menu, View v,
                                         ContextMenu.ContextMenuInfo menuInfo) {
-            if (button.isChecked() != defaultValue) {
-                addResetToDefaultMenuItem(menu)
-                        .setOnMenuItemClickListener(this);
-            }
+            addResetToDefaultMenuItem(menu)
+                    .setEnabled(button.isChecked() != defaultValue)
+                    .setOnMenuItemClickListener(this);
         }
 
         @Override
@@ -993,8 +1003,8 @@ public class PreferencesFragment extends Fragment {
         {
             tv.setTextAppearance(R.attr.textAppearanceLabelMedium);
             var value = new TypedValue();
-            context.getTheme().resolveAttribute(R.ns, R.attr.colorError, value, true);
-            tv.setTextColor(value.data);
+            if (context.getTheme().resolveAttribute(R.ns, R.attr.colorError, value, true))
+                tv.setTextColor(context.getResources().loadColorStateList(value, null, context.getTheme()));
             var params = new LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
             params.gravity = Gravity.CENTER_VERTICAL;
             params.setMargins(dp6, 0, dp6, 0);
@@ -1310,10 +1320,9 @@ public class PreferencesFragment extends Fragment {
                     canReset = true;
                 }
             }
-            if (canReset) {
-                addResetToDefaultMenuItem(menu)
-                        .setOnMenuItemClickListener(this);
-            }
+            addResetToDefaultMenuItem(menu)
+                    .setEnabled(canReset)
+                    .setOnMenuItemClickListener(this);
         }
 
         @Override
@@ -1570,10 +1579,9 @@ public class PreferencesFragment extends Fragment {
                     canReset = true;
                 }
             }
-            if (canReset) {
-                addResetToDefaultMenuItem(menu)
-                        .setOnMenuItemClickListener(this);
-            }
+            addResetToDefaultMenuItem(menu)
+                    .setEnabled(canReset)
+                    .setOnMenuItemClickListener(this);
         }
 
         @Override
@@ -1736,10 +1744,9 @@ public class PreferencesFragment extends Fragment {
         @Override
         public void onCreateContextMenu(ContextMenu menu, View v,
                                         ContextMenu.ContextMenuInfo menuInfo) {
-            if (!defaultValue.equals(spinner.getSelectedItem())) {
-                addResetToDefaultMenuItem(menu)
-                        .setOnMenuItemClickListener(this);
-            }
+            addResetToDefaultMenuItem(menu)
+                    .setEnabled(!defaultValue.equals(spinner.getSelectedItem()))
+                    .setOnMenuItemClickListener(this);
         }
 
         @Override
@@ -1752,68 +1759,133 @@ public class PreferencesFragment extends Fragment {
         }
     }
 
+    public static class StringListOption implements
+            View.OnFocusChangeListener,
+            View.OnCreateContextMenuListener,
+            MenuItem.OnMenuItemClickListener {
+
+        protected final LinearLayout layout;
+        protected final EditText input;
+
+        protected final ConfigItem<List<? extends String>> config;
+
+        @Nullable
+        protected Runnable onChanged;
+
+        public StringListOption(Context context, String name,
+                                ConfigItem<List<? extends String>> config) {
+            var option = new LinearLayout(context);
+            option.setOrientation(LinearLayout.HORIZONTAL);
+            option.setHorizontalGravity(Gravity.START);
+
+            final int dp3 = option.dp(3);
+            {
+                var title = new TextView(context);
+                title.setText(I18n.get(name));
+                title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+                title.setTextSize(14);
+                title.setMinWidth(option.dp(60));
+
+                String tooltip = name + ".tooltip";
+                if (I18n.exists(tooltip)) {
+                    title.setTooltipText(I18n.get(tooltip));
+                }
+
+                var params = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 2);
+                params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
+                option.addView(title, params);
+            }
+            {
+                input = new EditText(context, null, R.attr.editTextOutlinedStyle);
+                input.setId(R.id.input);
+                input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
+
+                var params = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 5);
+                params.gravity = Gravity.CENTER_VERTICAL;
+                option.addView(input, params);
+            }
+
+            var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+            params.gravity = Gravity.CENTER;
+            params.setMargins(option.dp(6), dp3, option.dp(6), dp3);
+            option.setLayoutParams(params);
+
+            layout = option;
+            this.config = config;
+        }
+
+        public StringListOption setOnChanged(Runnable onChanged) {
+            this.onChanged = onChanged;
+            return this;
+        }
+
+        @NonNull
+        public LinearLayout create(@Nullable ViewGroup parent) {
+            var curValue = config.get();
+            input.setText(String.join("\n", curValue));
+            input.setOnFocusChangeListener(this);
+            layout.setOnCreateContextMenuListener(this);
+            if (parent != null) {
+                parent.addView(layout);
+            }
+            return layout;
+        }
+
+        @Override
+        public void onFocusChange(View view, boolean hasFocus) {
+            assert view == input;
+            if (!hasFocus) {
+                EditText v = (EditText) view;
+                ArrayList<String> result = new ArrayList<>();
+                for (String s : v.getText().toString().split("\n")) {
+                    if (!s.isBlank()) {
+                        String strip = s.strip();
+                        if (!strip.isEmpty() && !result.contains(strip)) {
+                            result.add(strip);
+                        }
+                    }
+                }
+                replaceText(v, String.join("\n", result));
+                if (!Objects.equals(config.get(), result)) {
+                    config.set(result);
+                    if (onChanged != null) {
+                        onChanged.run();
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void onCreateContextMenu(ContextMenu menu, View v,
+                                        ContextMenu.ContextMenuInfo menuInfo) {
+            boolean canReset = !Objects.equals(config.get(), config.getDefault());
+            addResetToDefaultMenuItem(menu)
+                    .setEnabled(canReset)
+                    .setOnMenuItemClickListener(this);
+        }
+
+        @Override
+        public boolean onMenuItemClick(@NonNull MenuItem item) {
+            if (item.getItemId() == ID_RESET_TO_DEFAULT) {
+                var defaultValue = config.getDefault();
+                replaceText(input, String.join("\n", defaultValue));
+                config.set(defaultValue);
+                if (onChanged != null) {
+                    onChanged.run();
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+
     public static LinearLayout createStringListOption(Context context,
                                                       String name,
                                                       ConfigItem<List<? extends String>> config,
-                                                      Runnable saveFn) {
-        var option = new LinearLayout(context);
-        option.setOrientation(LinearLayout.HORIZONTAL);
-        option.setHorizontalGravity(Gravity.START);
-
-        final int dp3 = option.dp(3);
-        {
-            var title = new TextView(context);
-            title.setText(I18n.get(name));
-            title.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-            title.setTextSize(14);
-            title.setMinWidth(option.dp(60));
-
-            String tooltip = name + ".tooltip";
-            if (I18n.exists(tooltip)) {
-                title.setTooltipText(I18n.get(tooltip));
-            }
-
-            var params = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 2);
-            params.gravity = Gravity.START | Gravity.CENTER_VERTICAL;
-            option.addView(title, params);
-        }
-        {
-            var input = new EditText(context, null, R.attr.editTextOutlinedStyle);
-            input.setId(R.id.input);
-            input.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_END);
-
-            input.setText(String.join("\n", config.get()));
-            input.setOnFocusChangeListener((view, hasFocus) -> {
-                if (!hasFocus) {
-                    EditText v = (EditText) view;
-                    ArrayList<String> result = new ArrayList<>();
-                    for (String s : v.getText().toString().split("\n")) {
-                        if (!s.isBlank()) {
-                            String strip = s.strip();
-                            if (!strip.isEmpty() && !result.contains(strip)) {
-                                result.add(strip);
-                            }
-                        }
-                    }
-                    replaceText(v, String.join("\n", result));
-                    if (!Objects.equals(config.get(), result)) {
-                        config.set(result);
-                        saveFn.run();
-                    }
-                }
-            });
-
-            var params = new LinearLayout.LayoutParams(0, WRAP_CONTENT, 5);
-            params.gravity = Gravity.CENTER_VERTICAL;
-            option.addView(input, params);
-        }
-
-        var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
-        params.gravity = Gravity.CENTER;
-        params.setMargins(option.dp(6), dp3, option.dp(6), dp3);
-        option.setLayoutParams(params);
-
-        return option;
+                                                      Runnable onChanged) {
+        return new StringListOption(context, name, config)
+                .setOnChanged(onChanged)
+                .create(null);
     }
 
     private static void replaceText(@NonNull EditText editText, @NonNull CharSequence newText) {

@@ -155,6 +155,7 @@
   "modernui.center.font.linearSampling": "Linear Sampling",
   "modernui.center.font.fontRegistrationList": "Font Registration List",
   "modernui.center.font.fontRegistrationList.tooltip": "By default, font files in the resource packs directory will be registered. This option specifies a set of additional font files (or directories) to register. Registered fonts can be referenced in Modern UI and Minecraft (Modern Text Engine). For TrueType/OpenType Collections, all contained font families will be registered.",
+  "modernui.center.system.theme": "Theme",
   "modernui.center.system.forceRtlLayout": "Force RTL Layout",
   "modernui.center.system.globalFontScale": "Global Font Scale",
   "modernui.center.system.globalAnimationScale": "Global Animation Scale",

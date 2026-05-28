@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2024 BloCamLimb. All rights reserved.
+ * Copyright (C) 2019-2026 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -570,7 +570,7 @@ public abstract class UIManager implements LifecycleOwner {
 
     protected void onPreKeyInput(int keyCode, int scanCode, int action, int mods) {
         if (TooltipRenderer.sTooltip) {
-            if (mods == 0 && action != GLFW_RELEASE) {
+            if (action != GLFW_RELEASE) {
                 switch (keyCode) {
                     case GLFW_KEY_UP -> mTooltipRenderer.updateArrowMovement(-1);
                     case GLFW_KEY_DOWN -> mTooltipRenderer.updateArrowMovement(1);
@@ -677,7 +677,7 @@ public abstract class UIManager implements LifecycleOwner {
     @SuppressWarnings("resource")
     public void takeScreenshot() {
         @SharedPtr
-        ImageViewProxy surface = mRoot.getLayer();
+        ImageProxy surface = mRoot.getLayer();
         if (surface == null) {
             return;
         }
@@ -883,7 +883,7 @@ public abstract class UIManager implements LifecycleOwner {
         @SharedPtr
         Recording recording = frameTask.getLeft();
         @SharedPtr
-        ImageViewProxy surface = frameTask.getRight();
+        ImageProxy surface = frameTask.getRight();
 
         if (recording != null) {
             oldVertexArray = GL33C.glGetInteger(GL33C.GL_VERTEX_ARRAY_BINDING);
@@ -968,7 +968,7 @@ public abstract class UIManager implements LifecycleOwner {
                 blitShader.clear();
                 if (sampler != null) {
                     GL33C.glBindSampler(0, 0);
-                    sampler.unref();
+                    //sampler.unref();
                 }
             }
         }
@@ -1264,7 +1264,7 @@ public abstract class UIManager implements LifecycleOwner {
                                 Core.requireUiRecordingContext(),
                                 ImageInfo.make(width, height,
                                         ColorInfo.CT_RGBA_8888, ColorInfo.AT_PREMUL,
-                                        ColorSpace.get(ColorSpace.Named.SRGB)),
+                                        ColorSpaces.SRGB),
                                 false,
                                 Engine.SurfaceOrigin.kLowerLeft,
                                 null
@@ -1307,10 +1307,10 @@ public abstract class UIManager implements LifecycleOwner {
 
         @Nullable
         @SharedPtr
-        private ImageViewProxy getLayer() {
+        private ImageProxy getLayer() {
             synchronized (mRenderLock) {
                 if (mSurface != null) {
-                    return RefCnt.create(mSurface.getDevice().getReadView());
+                    return RefCnt.create(mSurface.getBackingTarget());
                 } else {
                     return null;
                 }
@@ -1324,14 +1324,14 @@ public abstract class UIManager implements LifecycleOwner {
         }
 
         @RenderThread
-        private Pair<@SharedPtr Recording, @SharedPtr ImageViewProxy> swapFrameTask() {
+        private Pair<@SharedPtr Recording, @SharedPtr ImageProxy> swapFrameTask() {
             @SharedPtr
             Recording recording;
             @SharedPtr
-            ImageViewProxy layer;
+            ImageProxy layer;
             synchronized (mRenderLock) {
                 if (mSurface != null) {
-                    layer = RefCnt.create(mSurface.getDevice().getReadView());
+                    layer = RefCnt.create(mSurface.getBackingTarget());
                 } else {
                     layer = null;
                 }

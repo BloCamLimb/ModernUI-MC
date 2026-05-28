@@ -26,7 +26,7 @@ import fuzs.forgeconfigapiport.fabric.api.neoforge.v4.NeoForgeModConfigEvents;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
-import icyllis.modernui.graphics.ImageStore;
+import icyllis.modernui.graphics.Image;
 import icyllis.modernui.mc.*;
 import icyllis.modernui.mc.mixin.AccessOptions;
 import icyllis.modernui.mc.text.MuiTextCommand;
@@ -96,6 +96,24 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
 
         KeyBindingHelper.registerKeyBinding(UIManagerFabric.OPEN_CENTER_KEY);
 
+        Image.setLegacyFactory(ImageStore.getInstance());
+        ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new IdentifiableResourceReloadListener() {
+            @Override
+            public ResourceLocation getFabricId() {
+                return ModernUIMod.location("resources");
+            }
+
+            @Nonnull
+            @Override
+            public CompletableFuture<Void> reload(@Nonnull PreparationBarrier preparationBarrier,
+                                                  @Nonnull ResourceManager resourceManager,
+                                                  @Nonnull ProfilerFiller preparationProfiler,
+                                                  @Nonnull ProfilerFiller reloadProfiler,
+                                                  @Nonnull Executor preparationExecutor,
+                                                  @Nonnull Executor reloadExecutor) {
+                return ResourcesStore.getInstance().reload(preparationBarrier, resourceManager, preparationProfiler, reloadProfiler, preparationExecutor, reloadExecutor);
+            }
+        });
         ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener(new SimpleSynchronousResourceReloadListener() {
             @Override
             public ResourceLocation getFabricId() {
@@ -104,12 +122,14 @@ public class ModernUIFabricClient extends ModernUIClient implements ClientModIni
 
             @Override
             public void onResourceManagerReload(@Nonnull ResourceManager resourceManager) {
-                ImageStore.getInstance().clear();
                 Handler handler = Core.getUiHandlerAsync();
                 // FML may throw ex, so it can be null
                 if (handler != null) {
                     // Call in lambda, not in creating the lambda
-                    handler.post(() -> UIManager.getInstance().updateLayoutDir(ConfigImpl.CLIENT.mForceRtl.get()));
+                    handler.post(() -> {
+                        ImageStore.getInstance().clear();
+                        UIManager.getInstance().updateLayoutDir(ConfigImpl.CLIENT.mForceRtl.get());
+                    });
                 }
                 BlurHandler.INSTANCE.loadEffect();
             }

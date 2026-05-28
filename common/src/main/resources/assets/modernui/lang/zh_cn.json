@@ -155,6 +155,7 @@
   "modernui.center.font.linearSampling": "线性采样",
   "modernui.center.font.fontRegistrationList": "字体注册列表",
   "modernui.center.font.fontRegistrationList.tooltip": "默认情况下，只有资源包目录下的字体文件会被注册。该选项指定了一组额外的需要注册的字体文件（或目录）。注册后的字体可以在 Modern UI 或 Minecraft（现代文本引擎）中引用。对于 TrueType/OpenType 合集，所有包含的字体家族都会被注册。",
+  "modernui.center.system.theme": "主题",
   "modernui.center.system.forceRtlLayout": "强制RTL布局",
   "modernui.center.system.globalFontScale": "全局字体比例",
   "modernui.center.system.globalAnimationScale": "全局动画比例",

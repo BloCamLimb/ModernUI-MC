@@ -20,26 +20,32 @@ package icyllis.modernui.mc;
 
 import icyllis.arc3d.engine.DriverBugWorkarounds;
 import icyllis.modernui.ModernUI;
-import icyllis.modernui.R;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.*;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.file.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-import static icyllis.modernui.mc.ModernUIMod.LOGGER;
-import static icyllis.modernui.mc.ModernUIMod.MARKER;
+import static icyllis.modernui.mc.ModernUIMod.*;
 
 public abstract class ModernUIClient extends ModernUI {
 
@@ -92,8 +98,6 @@ public abstract class ModernUIClient extends ModernUI {
     protected ModernUIClient() {
         super();
         sInstance = this;
-        setTheme(R.style.Theme_Material3_Dark);
-        getTheme().applyStyle(R.style.ThemeOverlay_Material3_Dark_Rust, true);
     }
 
     @Nonnull
@@ -407,18 +411,6 @@ public abstract class ModernUIClient extends ModernUI {
 
     protected void setFirstFontFamily(FontFamily firstFontFamily) {
         mFirstFontFamily = firstFontFamily;
-    }
-
-    @Nonnull
-    @Override
-    public InputStream getResourceStream(@Nonnull String namespace, @Nonnull String path) throws IOException {
-        return Minecraft.getInstance().getResourceManager().open(ResourceLocation.fromNamespaceAndPath(namespace, path));
-    }
-
-    @Nonnull
-    @Override
-    public ReadableByteChannel getResourceChannel(@Nonnull String namespace, @Nonnull String path) throws IOException {
-        return Channels.newChannel(getResourceStream(namespace, path));
     }
 
     @Override

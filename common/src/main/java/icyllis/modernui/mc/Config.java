@@ -22,9 +22,11 @@ import com.mojang.blaze3d.platform.Monitor;
 import com.mojang.blaze3d.platform.VideoMode;
 import com.mojang.blaze3d.platform.Window;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.R;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.core.Handler;
 import icyllis.modernui.graphics.Color;
+import icyllis.modernui.graphics.Paint;
 import icyllis.modernui.graphics.text.LayoutCache;
 import icyllis.modernui.graphics.text.LineBreakConfig;
 import icyllis.modernui.mc.text.BitmapFont;
@@ -35,6 +37,7 @@ import icyllis.modernui.mc.text.TextLayout;
 import icyllis.modernui.mc.text.TextLayoutEngine;
 import icyllis.modernui.mc.text.TextLayoutProcessor;
 import icyllis.modernui.mc.text.TextRenderType;
+import icyllis.modernui.resources.ResourceId;
 import icyllis.modernui.resources.Resources;
 import icyllis.modernui.util.DisplayMetrics;
 import icyllis.modernui.view.View;
@@ -113,6 +116,7 @@ public final class Config {
         public final ConfigItem<String> mDingSound;
         public final ConfigItem<Double> mDingVolume;
         public final ConfigItem<Boolean> mZoom;
+        public final ConfigItem<List<? extends String>> mTheme;
         public final ConfigItem<Boolean> mForceRtl;
         public final ConfigItem<Double> mFontScale;
         public final ConfigItem<WindowMode> mWindowMode;
@@ -144,6 +148,7 @@ public final class Config {
         public final ConfigItem<Boolean> mEmojiShortcodes;
 
         public WindowMode mLastWindowMode = WindowMode.NORMAL;
+        public volatile List<? extends String> mLastTheme;
 
         private Client(Map<String, ConfigItem<?>> map) {
             mBlurEffect = get(map, "mBlurEffect");
@@ -172,6 +177,7 @@ public final class Config {
             mDingSound = get(map, "mDingSound");
             mDingVolume = get(map, "mDingVolume");
             mZoom = get(map, "mZoom");
+            mTheme = get(map, "mTheme");
             mForceRtl = get(map, "mForceRtl");
             mFontScale = get(map, "mFontScale");
             mWindowMode = get(map, "mWindowMode");
@@ -306,6 +312,7 @@ public final class Config {
             Handler handler = Core.getUiHandlerAsync();
             if (handler != null) {
                 handler.post(() -> {
+                    applyTheme(false);
                     UIManager.getInstance().updateLayoutDir(mForceRtl.get());
                     ModernUIClient.sFontScale = (mFontScale.get().floatValue());
                     var ctx = ModernUI.getInstance();
@@ -314,7 +321,7 @@ public final class Config {
                         DisplayMetrics metrics = new DisplayMetrics();
                         metrics.setTo(res.getDisplayMetrics());
                         metrics.scaledDensity = ModernUIClient.sFontScale * metrics.density;
-                        res.updateMetrics(metrics);
+                        res.updateConfiguration(res.getConfiguration(), metrics);
                     }
                     boolean resetConfigCache = false;
                     if (ViewConfiguration.sScrollBarSize != mScrollbarSize.get()) {
@@ -363,9 +370,11 @@ public final class Config {
                     if (resetConfigCache) {
                         ViewConfiguration.resetCache();
                     }
-                    //TODO need some Paint constants to be public
-                    /*if (mLinearMetrics.get()) {
-                    }*/
+                    if (mLinearMetrics.get()) {
+                        Paint.sDefaultFlags = Paint.sDefaultFlags | Paint.LINEAR_TEXT_FLAG;
+                    } else {
+                        Paint.sDefaultFlags = Paint.sDefaultFlags & ~Paint.LINEAR_TEXT_FLAG;
+                    }
                 });
             }
 
@@ -374,6 +383,31 @@ public final class Config {
             ModernUIClient.sFirstFontFamily = mFirstFontFamily.get();
             ModernUIClient.sFallbackFontFamilyList = mFallbackFontFamilyList.get();
             ModernUIClient.sFontRegistrationList = mFontRegistrationList.get();
+        }
+
+        public void applyTheme(boolean force) {
+            var ctx = ModernUI.getInstance();
+            if (ctx != null) {
+                List<? extends String> newTheme = mTheme.get();
+                if (newTheme != null && !newTheme.isEmpty() &&
+                        (force || !Objects.equals(newTheme, mLastTheme))) {
+                    mLastTheme = List.copyOf(newTheme);
+                    ctx.setTheme(
+                            ResourceId.parse(newTheme.get(0))
+                    );
+                    if (ctx.getTheme().getTheme().length == 0) {
+                        LOGGER.warn(MARKER, "Cannot found theme {}, restoring to default", newTheme.get(0));
+                        ctx.setTheme(R.style.Theme_Material3_Dark);
+                    }
+                    for (int i = 1; i < newTheme.size(); i++) {
+                        boolean ok = ctx.getTheme()
+                                .applyStyle(ResourceId.parse(newTheme.get(i)), true);
+                        if (!ok) {
+                            LOGGER.warn(MARKER, "Cannot found theme/overlay {}", newTheme.get(i));
+                        }
+                    }
+                }
+            }
         }
 
         public enum WindowMode {

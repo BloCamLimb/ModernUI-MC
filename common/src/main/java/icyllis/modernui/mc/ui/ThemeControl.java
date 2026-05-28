@@ -77,8 +77,9 @@ public class ThemeControl {
         ShapeDrawable drawable = new ShapeDrawable();
         drawable.setShape(vertical ? ShapeDrawable.VLINE : ShapeDrawable.HLINE);
         TypedValue value = new TypedValue();
-        view.getContext().getTheme().resolveAttribute(R.ns, R.attr.colorOutlineVariant, value, true);
-        drawable.setColor(value.data);
+        var theme = view.getContext().getTheme();
+        if (theme.resolveAttribute(R.ns, R.attr.colorOutlineVariant, value, true))
+            drawable.setColor(theme.getResources().loadColorStateList(value, null, theme));
         drawable.setSize(view.dp(1), view.dp(1));
         return drawable;
     }
@@ -115,12 +116,13 @@ public class ThemeControl {
         final int dp12 = layout.dp(12);
         ShapeDrawable bg = new ShapeDrawable();
         bg.setCornerRadius(dp12);
-        context.getTheme().resolveAttribute(R.ns, R.attr.colorSurface, value, true);
-        bg.setColor(value.data);
+        var theme = context.getTheme();
+        if (theme.resolveAttribute(R.ns, R.attr.colorSurface, value, true))
+            bg.setColor(theme.getResources().loadColorStateList(value, null, theme));
         int[] strokeColors = new int[2];
-        context.getTheme().resolveAttribute(R.ns, R.attr.colorOutlineVariant, value, true);
+        theme.resolveAttribute(R.ns, R.attr.colorOutlineVariant, value, true);
         strokeColors[0] = value.data;
-        context.getTheme().resolveAttribute(R.ns, R.attr.colorOutline, value, true);
+        theme.resolveAttribute(R.ns, R.attr.colorOutline, value, true);
         strokeColors[1] = ColorStateList.modulateColor(value.data, 0.12f);
         bg.setStroke(layout.dp(1), new ColorStateList(
                 new int[][]{
@@ -138,8 +140,9 @@ public class ThemeControl {
         final int dp12 = layout.dp(12);
         ShapeDrawable bg = new ShapeDrawable();
         bg.setCornerRadius(dp12);
-        context.getTheme().resolveAttribute(R.ns, R.attr.colorSurfaceContainerHighest, value, true);
-        bg.setColor(value.data);
+        var theme = context.getTheme();
+        if (theme.resolveAttribute(R.ns, R.attr.colorSurfaceContainerHighest, value, true))
+            bg.setColor(theme.getResources().loadColorStateList(value, null, theme));
         layout.setBackground(bg);
         layout.setPadding(dp12, dp12, dp12, dp12);
     }
@@ -149,8 +152,9 @@ public class ThemeControl {
         final int dp12 = layout.dp(12);
         ShapeDrawable bg = new ShapeDrawable();
         bg.setCornerRadius(dp12);
-        context.getTheme().resolveAttribute(R.ns, R.attr.colorSurfaceContainerLow, value, true);
-        bg.setColor(value.data);
+        var theme = context.getTheme();
+        if (theme.resolveAttribute(R.ns, R.attr.colorSurfaceContainerLow, value, true))
+            bg.setColor(theme.getResources().loadColorStateList(value, null, theme));
         layout.setBackground(bg);
         layout.setElevation(layout.dp(1));
         layout.setPadding(dp12, dp12, dp12, dp12);

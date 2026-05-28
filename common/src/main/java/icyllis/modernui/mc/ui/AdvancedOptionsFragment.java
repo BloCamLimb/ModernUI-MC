@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2025 BloCamLimb. All rights reserved.
+ * Copyright (C) 2023-2026 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,21 +18,40 @@
 
 package icyllis.modernui.mc.ui;
 
+import icyllis.arc3d.core.ImageInfo;
 import icyllis.arc3d.opengl.GLCaps;
 import icyllis.modernui.R;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
-import icyllis.modernui.core.*;
+import icyllis.modernui.core.Clipboard;
+import icyllis.modernui.core.Context;
+import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.text.LayoutCache;
-import icyllis.modernui.mc.*;
+import icyllis.modernui.mc.Config;
+import icyllis.modernui.mc.ModernUIClient;
+import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.MuiPlatform;
+import icyllis.modernui.mc.UIManager;
 import icyllis.modernui.mc.text.GlyphManager;
 import icyllis.modernui.mc.text.TextLayoutEngine;
-import icyllis.modernui.text.*;
+import icyllis.modernui.resources.TypedValue;
+import icyllis.modernui.text.InputFilter;
+import icyllis.modernui.text.TextUtils;
+import icyllis.modernui.text.Typeface;
 import icyllis.modernui.text.method.DigitsInputFilter;
 import icyllis.modernui.util.DataSet;
-import icyllis.modernui.view.*;
-import icyllis.modernui.widget.*;
+import icyllis.modernui.view.Gravity;
+import icyllis.modernui.view.LayoutInflater;
+import icyllis.modernui.view.View;
+import icyllis.modernui.view.ViewGroup;
+import icyllis.modernui.widget.Button;
+import icyllis.modernui.widget.EditText;
+import icyllis.modernui.widget.LinearLayout;
+import icyllis.modernui.widget.ScrollView;
+import icyllis.modernui.widget.Switch;
+import icyllis.modernui.widget.TextView;
+import icyllis.modernui.widget.Toast;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
 import org.apache.commons.io.output.StringBuilderWriter;
@@ -87,7 +106,7 @@ public class AdvancedOptionsFragment extends Fragment {
         var sv = new ClampingScrollView(context);
         final int dp20 = sv.dp(20);
         final int maxWidth = sv.dp(800) + dp20 + dp20;
-        sv.setMaxWidth(maxWidth);
+        sv.setChildMaxWidth(maxWidth);
         {
             ViewGroup layout = createPage(context);
             layout.setPadding(dp20, 0, dp20, 0);
@@ -143,9 +162,9 @@ public class AdvancedOptionsFragment extends Fragment {
 
                 new PreferencesFragment.BooleanOption(context, "Remove telemetry session",
                         Config.CLIENT.mRemoveTelemetry, () -> {
-                            Config.CLIENT.reload();
-                            MuiPlatform.get().saveConfig(Config.TYPE_CLIENT);
-                        })
+                    Config.CLIENT.reload();
+                    MuiPlatform.get().saveConfig(Config.TYPE_CLIENT);
+                })
                         .create(category);
 
                 /*category.addView(createBooleanOption(context, "Secure Profile Public Key",
@@ -291,88 +310,82 @@ public class AdvancedOptionsFragment extends Fragment {
         if (monoFont == Typeface.SANS_SERIF) {
             monoFont = null;
         }
+        TypedValue value = new TypedValue();
+        var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+        params.setMargins(0, dp6, 0, dp6);
 
         {
             var tv = new TextView(context);
+            ThemeControl.makeOutlinedCard(context, tv, value);
             tv.setTextSize(12);
-            tv.setPadding(dp6, dp6, dp6, dp6);
             if (monoFont != null) {
                 tv.setTypeface(monoFont);
             }
             mUIManagerDump = tv;
-            content.addView(tv);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         {
             var tv = new TextView(context);
+            ThemeControl.makeOutlinedCard(context, tv, value);
             tv.setTextSize(12);
-            tv.setPadding(dp6, dp6, dp6, dp6);
             if (monoFont != null) {
                 tv.setTypeface(monoFont);
             }
-            tv.setText("Rendering pipeline: Arc3D Granite (OpenGL)");
-            content.addView(tv);
+            tv.setText("Rendering pipeline: Arc3D Granite (OpenGL)\n" +
+                    "Shader compiler: Arc3D Shader Compiler\n" +
+                    "Arc3D version: " + ImageInfo.class.getPackage().getImplementationVersion());
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         {
             var tv = new TextView(context);
+            ThemeControl.makeOutlinedCard(context, tv, value);
             tv.setTextSize(12);
-            tv.setPadding(dp6, dp6, dp6, dp6);
-            if (monoFont != null) {
-                tv.setTypeface(monoFont);
-            }
-            tv.setText("Rectangle packing algorithm: Skyline (silhouette)");
-            content.addView(tv);
-        }
-
-        {
-            var tv = new TextView(context);
-            tv.setTextSize(12);
-            tv.setPadding(dp6, dp6, dp6, dp6);
             if (monoFont != null) {
                 tv.setTypeface(monoFont);
             }
             mMainGPUResourceDump = tv;
-            content.addView(tv);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         {
             var tv = new TextView(context);
+            ThemeControl.makeOutlinedCard(context, tv, value);
             tv.setTextSize(12);
-            tv.setPadding(dp6, dp6, dp6, dp6);
             if (monoFont != null) {
                 tv.setTypeface(monoFont);
             }
             mUIGPUResourceDump = tv;
-            content.addView(tv);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         {
             var tv = new TextView(context);
+            ThemeControl.makeOutlinedCard(context, tv, value);
             tv.setTextSize(12);
-            tv.setPadding(dp6, dp6, dp6, dp6);
             if (monoFont != null) {
                 tv.setTypeface(monoFont);
             }
             mPSOStatsDump = tv;
-            content.addView(tv);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
-        {
+        if (false) {
             var tv = new TextView(context);
+            ThemeControl.makeOutlinedCard(context, tv, value);
             tv.setTextSize(12);
-            tv.setPadding(dp6, dp6, dp6, dp6);
             if (monoFont != null) {
                 tv.setTypeface(monoFont);
             }
             mGPUStatsDump = tv;
-            content.addView(tv);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         {
             var tv = new TextView(context);
+            ThemeControl.makeOutlinedCard(context, tv, value);
             tv.setTextSize(12);
-            tv.setPadding(dp6, dp6, dp6, dp6);
             if (monoFont != null) {
                 tv.setTypeface(monoFont);
             }
@@ -380,7 +393,7 @@ public class AdvancedOptionsFragment extends Fragment {
             StringBuilder sb = new StringBuilder("GL Capabilities:\n");
             caps.dump(sb, /*includeFormatTable*/false);
             tv.setText(sb);
-            content.addView(tv);
+            content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
         refreshPage();
@@ -418,32 +431,6 @@ public class AdvancedOptionsFragment extends Fragment {
             });
         }
         if (mUIGPUResourceDump != null) {
-            /*Core.executeOnRenderThread(() -> {
-                var rc = Core.requireDirectContext().getResourceCache();
-                var s = "GPU Resource Cache:\n" +
-                        String.format("Resource bytes: %s (%s bytes)",
-                                TextUtils.binaryCompact(rc.getResourceBytes()),
-                                rc.getResourceBytes()) +
-                        "\n" +
-                        String.format("Budgeted resource bytes: %s (%s bytes)",
-                                TextUtils.binaryCompact(rc.getBudgetedResourceBytes()),
-                                rc.getBudgetedResourceBytes()) +
-                        "\n" +
-                        String.format("Resource count: %s",
-                                rc.getResourceCount()) +
-                        "\n" +
-                        String.format("Budgeted resource count: %s",
-                                rc.getBudgetedResourceCount()) +
-                        "\n" +
-                        String.format("Free resource bytes: %s (%s bytes)",
-                                TextUtils.binaryCompact(rc.getFreeResourceBytes()),
-                                rc.getFreeResourceBytes()) +
-                        "\n" +
-                        String.format("Max resource bytes: %s (%s bytes)",
-                                TextUtils.binaryCompact(rc.getMaxResourceBytes()),
-                                rc.getMaxResourceBytes());
-                mGPUResourceDump.post(() -> mGPUResourceDump.setText(s));
-            });*/
             var content = Core.requireUiRecordingContext();
             var s = "GPU Resource Cache (UI Recording Context):\n" +
                     String.format("Current budgeted resource bytes: %s (%s bytes)",
@@ -459,15 +446,15 @@ public class AdvancedOptionsFragment extends Fragment {
                             content.getMaxBudgetedBytes());
             mUIGPUResourceDump.setText(s);
         }
-        /*if (mPSOStatsDump != null) {
+        if (mPSOStatsDump != null) {
             mPSOStatsDump.setText(
                     Core.requireUiRecordingContext()
-                            .getPipelineStateCache()
+                            .getDeviceBoundCache()
                             .getStats()
                             .toString()
             );
         }
-        if (mGPUStatsDump != null) {
+        /*if (mGPUStatsDump != null) {
             Core.executeOnRenderThread(() -> {
                 var s = Core.requireDirectContext().getDevice().getStats().toString();
                 mGPUStatsDump.post(() -> mGPUStatsDump.setText(s));

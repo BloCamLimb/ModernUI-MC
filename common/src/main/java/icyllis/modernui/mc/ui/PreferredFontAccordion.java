@@ -26,7 +26,9 @@ import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.mc.Config;
 import icyllis.modernui.mc.ModernUIClient;
+import icyllis.modernui.view.ContextMenu;
 import icyllis.modernui.view.Gravity;
+import icyllis.modernui.view.MenuItem;
 import icyllis.modernui.view.View;
 import icyllis.modernui.view.ViewGroup;
 import icyllis.modernui.widget.AdapterView;
@@ -41,13 +43,15 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static icyllis.modernui.view.ViewGroup.LayoutParams.*;
 
 public class PreferredFontAccordion implements View.OnClickListener,
-        View.OnFocusChangeListener, AdapterView.OnItemSelectedListener {
+        View.OnFocusChangeListener, AdapterView.OnItemSelectedListener,
+        View.OnCreateContextMenuListener, MenuItem.OnMenuItemClickListener {
 
     final ViewGroup mParent;
     final Runnable mOnChanged;
@@ -214,6 +218,33 @@ public class PreferredFontAccordion implements View.OnClickListener,
         if (changed) {
             mInput.setText(newValue);
         }
+    }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        boolean canReset = !Objects.equals(Config.CLIENT.mFirstFontFamily.get(),
+                Config.CLIENT.mFirstFontFamily.getDefault());
+        PreferencesFragment.addResetToDefaultMenuItem(menu)
+                .setEnabled(canReset)
+                .setOnMenuItemClickListener(this);
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem item) {
+        if (item.getItemId() == PreferencesFragment.ID_RESET_TO_DEFAULT) {
+
+            String newValue = Config.CLIENT.mFirstFontFamily.getDefault();
+            boolean changed = applyNewValue(mInput.getContext(), newValue, () -> {
+                mOnFontChanged.run();
+                updateSpinnerSelection();
+            });
+            if (changed) {
+                mInput.setText(newValue);
+            }
+
+            return true;
+        }
+        return false;
     }
 
     private void updateSpinnerSelection() {

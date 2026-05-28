@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2025 BloCamLimb. All rights reserved.
+ * Copyright (C) 2023-2026 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -104,7 +104,7 @@ public class DashboardFragment extends Fragment {
             // two panel layout
             var content = new WrappingLinearLayout(context);
             content.setWrapWidth(content.dp(864));
-            content.setMaxWidth(content.dp(746));
+            content.setChildMaxWidth(content.dp(746));
             int dp4 = content.dp(4);
 
             {
@@ -186,7 +186,7 @@ public class DashboardFragment extends Fragment {
                         tv.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_START);
                         tv.setMovementMethod(LinkMovementMethod.getInstance());
                         markflow.setMarkdown(tv, I18n.get("gui.modernui.whatsNewIn_s",
-                                "Modern UI 3.12.0") + """
+                                "Modern UI 3.13.0") + """
                                 
                                 ----
                                 * Brand-New Themes & Styles
@@ -230,7 +230,7 @@ public class DashboardFragment extends Fragment {
         {
             var tv = new TextView(getContext());
             tv.setTextSize(12);
-            tv.setText("Copyright © 2019-2025 BloCamLimb. All rights reserved.");
+            tv.setText("Copyright © 2019-2026 BloCamLimb. All rights reserved.");
             var params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT);
             params.gravity = Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM;
@@ -445,7 +445,7 @@ public class DashboardFragment extends Fragment {
     static class WrappingLinearLayout extends LinearLayout {
 
         private int mWrapWidth;
-        private int mMaxWidth;
+        private int mChildMaxWidth;
 
         public WrappingLinearLayout(Context context) {
             super(context);
@@ -459,12 +459,12 @@ public class DashboardFragment extends Fragment {
             return mWrapWidth;
         }
 
-        public void setMaxWidth(int maxWidth) {
-            mMaxWidth = maxWidth;
+        public void setChildMaxWidth(int childMaxWidth) {
+            mChildMaxWidth = childMaxWidth;
         }
 
-        public int getMaxWidth() {
-            return mMaxWidth;
+        public int getChildMaxWidth() {
+            return mChildMaxWidth;
         }
 
         @Override
@@ -473,9 +473,9 @@ public class DashboardFragment extends Fragment {
             var orientation = width >= mWrapWidth
                     ? HORIZONTAL : VERTICAL;
             setOrientation(orientation);
-            if (mMaxWidth > 0) {
+            if (mChildMaxWidth > 0) {
                 int limit = orientation == HORIZONTAL
-                        ? getChildCount() * mMaxWidth : mMaxWidth;
+                        ? getChildCount() * mChildMaxWidth : mChildMaxWidth;
                 if (width > limit) {
                     widthMeasureSpec = MeasureSpec.makeMeasureSpec(limit, MeasureSpec.EXACTLY);
                 }

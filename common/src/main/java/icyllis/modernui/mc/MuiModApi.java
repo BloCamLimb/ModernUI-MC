@@ -27,8 +27,11 @@ import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.fragment.Fragment;
 import icyllis.modernui.graphics.MathUtil;
+import icyllis.modernui.graphics.text.CharSequenceIterator;
 import icyllis.modernui.graphics.text.GraphemeBreak;
 import icyllis.modernui.mc.mixin.MixinChatFormatting;
+import icyllis.modernui.resources.ResourcesLoader;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 import net.minecraft.client.KeyMapping;
@@ -40,6 +43,7 @@ import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -49,7 +53,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.ServiceLoader;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
 
@@ -122,6 +130,37 @@ public abstract class MuiModApi {
         void onPreKeyInput(long window, int keyCode, int scanCode, int action, int mods);
     }
 
+    /**
+     * @see #setOnUpdateLoaderListener(String, OnUpdateLoaderListener)
+     */
+    @FunctionalInterface
+    public interface OnUpdateLoaderListener {
+
+        /**
+         * Called during resource reloading to register or update a {@link ResourcesLoader}
+         * within the ModernUI {@link icyllis.modernui.resources.Resources} system.
+         *
+         * <p>This method is invoked from a background worker thread. To optimize performance,
+         * developers should inspect the {@code oldLoader} to determine if the required
+         * resource providers are already present. If they are absent, the new providers
+         * and loader should be instantiated on the current thread. Otherwise, simply
+         * returns the {@code oldLoader}.</p>
+         *
+         * <p>Use {@link icyllis.modernui.resources.ResourcesBuilder} to build providers
+         * if needed.</p>
+         *
+         * @param oldLoader       the currently registered loader that is about to be replaced,
+         *                        or {@code null} if no loader was previously registered.
+         * @param resourceManager the active resource manager providing access to the Minecraft
+         *                        resources system.
+         * @return the new {@link ResourcesLoader} instance to be registered, or {@code null}
+         * to de-register the {@code oldLoader} without providing a replacement.
+         */
+        @Nullable
+        ResourcesLoader onUpdateLoader(@Nullable ResourcesLoader oldLoader,
+                                       @Nonnull ResourceManager resourceManager);
+    }
+
     /*static final CopyOnWriteArrayList<OnScrollListener> sOnScrollListeners =
             new CopyOnWriteArrayList<>();*/
     static final CopyOnWriteArrayList<OnScreenChangeListener> sOnScreenChangeListeners =
@@ -132,6 +171,8 @@ public abstract class MuiModApi {
             new CopyOnWriteArrayList<>();
     static final CopyOnWriteArrayList<OnPreKeyInputListener> sOnPreKeyInputListeners =
             new CopyOnWriteArrayList<>();
+    static final ConcurrentHashMap<String, OnUpdateLoaderListener> sOnUpdateLoaderListeners =
+            new ConcurrentHashMap<>();
 
     static final MuiModApi INSTANCE = ServiceLoader.load(MuiModApi.class).findFirst()
             .orElseThrow();
@@ -347,10 +388,11 @@ public abstract class MuiModApi {
             op = GraphemeBreak.AFTER;
         }
         int offset = Util.offsetByCodepoints(value, cursor, dir);
-        cursor = GraphemeBreak.getTextRunCursor(
-                value, ModernUI.getSelectedLocale(),
-                0, value.length(), cursor, op
-        );
+        //TODO make use of measurement result... keep sync with TextPaint
+        cursor =
+                GraphemeBreak.sUseICU
+                        ? GraphemeBreak.getTextRunCursorICU(new CharSequenceIterator(value, 0, value.length()), ModernUI.getSelectedLocale(), cursor, op)
+                        : GraphemeBreak.getTextRunCursorImpl(null, value, 0, value.length(), cursor, op);
         if (dir > 0) {
             return Math.max(offset, cursor);
         } else {
@@ -483,6 +525,28 @@ public abstract class MuiModApi {
         sOnPreKeyInputListeners.remove(listener);
     }
 
+    /**
+     * Registers a callback to be called when Modern UI collects additional resources loaders.
+     * <p>
+     * This method should be called during registering {@link net.minecraft.server.packs.resources.PreparableReloadListener}.
+     * That is, RegisterClientReloadListenersEvent (Forge), AddClientReloadListenersEvent (NeoForge),
+     * onInitializeClient (Fabric).
+     * <p>
+     * Each mod has its own callback. However, each mod can create resources for multiple namespaces.
+     *
+     * @param modid    the modid for the callback
+     * @param listener the callback to set, null to clear the existing callback
+     */
+    public static void setOnUpdateLoaderListener(@Nonnull String modid,
+                                                 @Nullable OnUpdateLoaderListener listener) {
+        Objects.requireNonNull(modid);
+        if (listener == null) {
+            sOnUpdateLoaderListeners.remove(modid);
+        } else {
+            sOnUpdateLoaderListeners.put(modid, listener);
+        }
+    }
+
     // INTERNAL HOOK
     /*public static void dispatchOnScroll(double scrollX, double scrollY) {
         for (var l : sOnScrollListeners) {
@@ -516,5 +580,12 @@ public abstract class MuiModApi {
         for (var l : sOnPreKeyInputListeners) {
             l.onPreKeyInput(window, keyCode, scanCode, action, mods);
         }
+    }
+
+    // INTERNAL HOOK
+    @Nonnull
+    public static List<Map.Entry<String, OnUpdateLoaderListener>> snapOnUpdateLoaderListeners() {
+        // unwrapping the view iterator is faster
+        return new ObjectArrayList<>(sOnUpdateLoaderListeners.entrySet());
     }
 }

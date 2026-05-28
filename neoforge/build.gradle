@@ -33,7 +33,7 @@ repositories {
     maven {
         url 'https://maven.izzel.io/releases/'
     }
-    mavenCentral()
+    mavenLocal()
     flatDir {
         dir "${rootProject.projectDir}/libs"
     }
@@ -46,28 +46,30 @@ dependencies {
 
     implementation project(':common')
 
-    if (rootProject.file('../ModernUI').exists()) {
-        implementation(forgeRuntimeLibrary("icyllis.arc3d:Arc3D"))
-        shadow("icyllis.arc3d:Arc3D") {
+    ["dev.icyllis:arc3d-compiler",
+     "dev.icyllis:arc3d-core",
+     "dev.icyllis:arc3d-sketch"].each {
+        implementation(forgeRuntimeLibrary(it + ":${arc3d_version}"))
+        include(it + ":${arc3d_version}")
+    }
+    ["dev.icyllis:arc3d-engine",
+     "dev.icyllis:arc3d-granite",
+     "dev.icyllis:arc3d-opengl",
+     "dev.icyllis:arc3d-vulkan"].each {
+        implementation(forgeRuntimeLibrary(it + ":${arc3d_version}"))
+        shadow(it + ":${arc3d_version}") {
             transitive = false
         }
-        implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Core"))
-        shadow("icyllis.modernui:ModernUI-Core") {
-            transitive = false
-        }
-        implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Markflow"))
-        shadow("icyllis.modernui:ModernUI-Markflow") {
-            transitive = false
-        }
-    } else {
-        implementation(forgeDependencies("icyllis.modernui:ModernUI-Core:${core_version}"))
-        shadow("icyllis.modernui:ModernUI-Core:${core_version}") {
-            transitive = false
-        }
-        implementation(forgeDependencies("icyllis.modernui:ModernUI-Markflow:${core_version}"))
-        shadow("icyllis.modernui:ModernUI-Markflow:${core_version}") {
-            transitive = false
-        }
+    }
+    implementation(forgeRuntimeLibrary("dev.icyllis:modernui-core:${core_version}"))
+    shadow("dev.icyllis:modernui-core:${core_version}") {
+        transitive = false
+    }
+    implementation(forgeRuntimeLibrary("icyllis.modernui:ModernUI-Markflow:3.12.0")) {
+        exclude group: 'icyllis.modernui'
+    }
+    shadow("icyllis.modernui:ModernUI-Markflow:3.12.0") {
+        transitive = false
     }
 
     //implementation(forgeDependencies("com.vladsch.flexmark:flexmark:${flexmark_version}"))

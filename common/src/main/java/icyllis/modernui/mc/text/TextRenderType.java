@@ -374,7 +374,7 @@ public class TextRenderType extends RenderType {
         sFirstSDFFillBuffer.clear();
         sFirstSDFStrokeBuffer.clear();
         if (cleanup) {
-            sLinearFontSampler = RefCnt.move(sLinearFontSampler);
+            //sLinearFontSampler = RefCnt.move(sLinearFontSampler);
             if (sShaderNormal != null) {
                 sShaderNormal.close();
             }
