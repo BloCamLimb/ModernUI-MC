@@ -30,9 +30,16 @@ public class VanillaTextWrapper implements FormattedCharSequence {
 
     @Nonnull
     public final String mText;
+    @Nonnull
+    public final Style mStyle;
 
     public VanillaTextWrapper(@Nonnull String text) {
+        this(text, Style.EMPTY);
+    }
+
+    public VanillaTextWrapper(@Nonnull String text, @Nonnull Style style) {
         mText = text;
+        mStyle = style;
     }
 
     /**
@@ -46,6 +53,6 @@ public class VanillaTextWrapper implements FormattedCharSequence {
     @Override
     public boolean accept(@Nonnull FormattedCharSink sink) {
         // do not reorder, transfer code points in logical order
-        return StringDecomposer.iterate(mText, Style.EMPTY, sink);
+        return StringDecomposer.iterate(mText, mStyle, sink);
     }
 }

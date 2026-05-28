@@ -96,18 +96,26 @@ public abstract class MixinEditBox extends AbstractWidget {
     @Shadow
     private BiFunction<String, Integer, FormattedCharSequence> formatter;
 
+    @Shadow
+    @Final
+    private Font font;
+
+    @Shadow
+    @Nullable
+    private Component hint;
+
     public MixinEditBox(int x, int y, int w, int h, Component msg) {
         super(x, y, w, h, msg);
     }
 
-    @Inject(method = "<init>(Lnet/minecraft/client/gui/Font;IIIILnet/minecraft/client/gui/components/EditBox;" +
+    /*@Inject(method = "<init>(Lnet/minecraft/client/gui/Font;IIIILnet/minecraft/client/gui/components/EditBox;" +
             "Lnet/minecraft/network/chat/Component;)V",
             at = @At("RETURN"))
     public void EditBox(Font font, int x, int y, int w, int h, @Nullable EditBox src, Component msg,
                         CallbackInfo ci) {
         // fast path
         formatter = (s, i) -> new VanillaTextWrapper(s);
-    }
+    }*/
 
     @Shadow
     public abstract int getInnerWidth();
@@ -144,21 +152,19 @@ public abstract class MixinEditBox extends AbstractWidget {
         float hori = baseX;
 
         final Matrix4f matrix = gr.pose().last().pose();
-        final MultiBufferSource.BufferSource bufferSource = gr.bufferSource();
 
         final boolean separate;
         if (!viewText.isEmpty()) {
             String subText = cursorInRange ? viewText.substring(0, viewCursorPos) : viewText;
             FormattedCharSequence subSequence = formatter.apply(subText, displayPos);
-            if (subSequence != null &&
-                    !(subSequence instanceof VanillaTextWrapper)) {
+            if (!(subSequence instanceof VanillaTextWrapper)) {
                 separate = true;
-                hori = engine.getTextRenderer().drawText(subSequence, hori, baseY, color, true,
-                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                gr.drawString(font, subSequence, baseX, baseY, color, true);
+                hori += engine.getStringSplitter().measureText(subSequence);
             } else {
                 separate = false;
-                hori = engine.getTextRenderer().drawText(viewText, hori, baseY, color, true,
-                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                gr.drawString(font, new VanillaTextWrapper(viewText), baseX, baseY, color, true);
+                hori += engine.getStringSplitter().measureText(viewText);
             }
         } else {
             separate = false;
@@ -192,19 +198,21 @@ public abstract class MixinEditBox extends AbstractWidget {
         if (!viewText.isEmpty() && cursorInRange && viewCursorPos < viewText.length() && separate) {
             String subText = viewText.substring(viewCursorPos);
             FormattedCharSequence subSequence = formatter.apply(subText, cursorPos);
-            if (subSequence != null &&
-                    !(subSequence instanceof VanillaTextWrapper)) {
-                engine.getTextRenderer().drawText(subSequence, hori, baseY, color, true,
-                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-            } else {
-                engine.getTextRenderer().drawText(subText, hori, baseY, color, true,
-                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
-            }
+            gr.pose().pushPose();
+            gr.pose().translate(hori - baseX, 0, 0);
+            gr.drawString(font, subSequence, baseX, baseY, color, true);
+            gr.pose().popPose();
+        }
+
+        if (hint != null && viewText.isEmpty() && !isFocused()) {
+            gr.drawString(font, hint, baseX, baseY, color);
         }
 
         if (!cursorNotAtEnd && suggestion != null) {
-            engine.getTextRenderer().drawText(suggestion, cursorX, baseY, 0xFF808080, true,
-                    matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+            gr.pose().pushPose();
+            gr.pose().translate(cursorX - baseX, 0, 0);
+            gr.drawString(font, suggestion, baseX, baseY, 0xFF808080, true);
+            gr.pose().popPose();
         }
 
         if (viewCursorPos != clampedViewHighlightPos) {
@@ -260,8 +268,10 @@ public abstract class MixinEditBox extends AbstractWidget {
                         .setColor(208, 208, 208, 255);
                 gr.flush();
             } else {
-                engine.getTextRenderer().drawText(CURSOR_APPEND_CHARACTER, cursorX, baseY, color, true,
-                        matrix, bufferSource, Font.DisplayMode.NORMAL, 0, LightTexture.FULL_BRIGHT);
+                gr.pose().pushPose();
+                gr.pose().translate(cursorX - baseX, 0, 0);
+                gr.drawString(font, CURSOR_APPEND_CHARACTER, baseX, baseY, color, true);
+                gr.pose().popPose();
 
                 gr.flush();
             }

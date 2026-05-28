@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2019-2022 BloCamLimb. All rights reserved.
+ * Copyright (C) 2026 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,21 +19,21 @@
 package icyllis.modernui.mc.text.mixin;
 
 import icyllis.modernui.mc.text.VanillaTextWrapper;
-import net.minecraft.client.gui.components.CommandSuggestions;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.FormattedCharSequence;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.Overwrite;
 
-@Deprecated
-@Mixin(CommandSuggestions.class)
-public abstract class MixinCommandSuggestions {
+@Mixin(FormattedCharSequence.class)
+public interface MixinFormattedCharSequence {
 
-    /*@Redirect(method = "formatChat", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/FormattedCharSequence;" +
-            "forward(Ljava/lang/String;Lnet/minecraft/network/chat/Style;)Lnet/minecraft/util/FormattedCharSequence;"))
-    private FormattedCharSequence onFormatChat(String viewText, Style style) {
-        // fast path
-        return new VanillaTextWrapper(viewText);
-    }*/
+    /**
+     * @author BloCamLimb
+     * @reason Modern Text Engine
+     */
+    @Overwrite
+    static FormattedCharSequence forward(String text, Style style) {
+        // Used by EditBox and CommandSuggestions
+        return text.isEmpty() ? FormattedCharSequence.EMPTY : new VanillaTextWrapper(text, style);
+    }
 }
