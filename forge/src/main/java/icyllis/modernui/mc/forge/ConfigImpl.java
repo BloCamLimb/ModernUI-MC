@@ -265,6 +265,7 @@ public final class ConfigImpl {
         //public final ForgeConfigSpec.IntValue mFramerateMinimized;
         public final ForgeConfigSpec.DoubleValue mMasterVolumeInactive;
         public final ForgeConfigSpec.DoubleValue mMasterVolumeMinimized;
+        public final ForgeConfigSpec.BooleanValue mGlobalVolumeControl;
 
         public final ForgeConfigSpec.IntValue mScrollbarSize;
         public final ForgeConfigSpec.IntValue mTouchSlop;
@@ -355,6 +356,10 @@ public final class ConfigImpl {
                             "Master volume multiplier on window minimized, 1 = same as master volume inactive.",
                             "This value will be no greater than master volume inactive.")
                     .defineInRange("masterVolumeMinimized", 0.25, 0, 1);
+            mGlobalVolumeControl = builder.comment(
+                            "When enabled, master volume multiplier applies directly to the global listener gain.",
+                            "When disabled, it affects only the game sounds.")
+                    .define("globalVolumeControl", false);
 
             builder.pop();
 

@@ -292,6 +292,10 @@ public class PreferencesFragment extends Fragment {
                     Config.CLIENT.mMasterVolumeMinimized, 100, onChanged)
                     .create(list, 4);
 
+            new BooleanOption(context, "modernui.center.screen.globalVolumeControl",
+                    Config.CLIENT.mGlobalVolumeControl, onChanged)
+                    .create(list);
+
             new BooleanOption(context, "modernui.center.screen.inventoryPause",
                     Config.CLIENT.mInventoryPause, onChanged)
                     .create(list);

@@ -66,6 +66,8 @@
   "modernui.center.screen.framerateMinimized": "Framerate Limit (Window Minimized)",
   "modernui.center.screen.masterVolumeInactive": "Master Volume Multiplier (Window Inactive)",
   "modernui.center.screen.masterVolumeMinimized": "Master Volume Multiplier (Window Minimized)",
+  "modernui.center.screen.globalVolumeControl": "Global Volume Control",
+  "modernui.center.screen.globalVolumeControl.tooltip": "When enabled, Master Volume Multiplier applies directly to the global listener gain. When disabled, it affects only the game's active audio channels.",
   "modernui.center.view.scrollbarSize": "Scrollbar Size",
   "modernui.center.view.touchSlop": "Touch Slop",
   "modernui.center.view.hoverSlop": "Hover Slop",

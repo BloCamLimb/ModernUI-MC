@@ -65,6 +65,8 @@
   "modernui.center.screen.framerateMinimized": "最大 FPS（視窗最小化時）",
   "modernui.center.screen.masterVolumeInactive": "主音量倍數（視窗未聚焦時）",
   "modernui.center.screen.masterVolumeMinimized": "主音量倍數（視窗最小化時）",
+  "modernui.center.screen.globalVolumeControl": "全域音量控制",
+  "modernui.center.screen.globalVolumeControl.tooltip": "啟用時，主音量倍數直接作用於全域監聽器增益。停用時，僅對遊戲中的音訊通道生效。",
   "modernui.center.view.scrollbarSize": "捲軸尺寸",
   "modernui.center.view.touchSlop": "觸控容差",
   "modernui.center.view.hoverSlop": "懸停容差",

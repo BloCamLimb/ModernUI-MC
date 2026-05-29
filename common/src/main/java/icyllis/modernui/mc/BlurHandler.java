@@ -33,6 +33,7 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 import org.joml.Matrix3x2f;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.openal.AL10;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -63,6 +64,7 @@ public enum BlurHandler {
     //public static volatile int sFramerateMinimized;
     public static volatile float sMasterVolumeInactive = 1;
     public static volatile float sMasterVolumeMinimized = 1;
+    public static volatile boolean sGlobalVolumeControl = false;
 
     private final Minecraft minecraft = Minecraft.getInstance();
 
@@ -217,8 +219,11 @@ public enum BlurHandler {
                         targetVolumeMultiplier
                 );
             }
-            float volume = minecraft.options.getSoundSourceVolume(SoundSource.MASTER);
-            minecraft.getSoundManager().updateCategoryVolume(SoundSource.MASTER, volume * mVolumeMultiplier);
+            if (sGlobalVolumeControl) {
+                AL10.alListenerf(AL10.AL_GAIN, mVolumeMultiplier);
+            } else {
+                minecraft.getSoundManager().updateCategoryVolume(SoundSource.MASTER, mVolumeMultiplier);
+            }
         }
     }
 

@@ -125,6 +125,7 @@ public final class Config {
         public final ConfigItem<Integer> mFramerateInactive;
         public final ConfigItem<Double> mMasterVolumeInactive;
         public final ConfigItem<Double> mMasterVolumeMinimized;
+        public final ConfigItem<Boolean> mGlobalVolumeControl;
         public final ConfigItem<Integer> mScrollbarSize;
         public final ConfigItem<Integer> mTouchSlop;
         public final ConfigItem<Integer> mHoverSlop;
@@ -195,6 +196,7 @@ public final class Config {
             mFramerateInactive = get(map, "mFramerateInactive");
             mMasterVolumeInactive = get(map, "mMasterVolumeInactive");
             mMasterVolumeMinimized = get(map, "mMasterVolumeMinimized");
+            mGlobalVolumeControl = get(map, "mGlobalVolumeControl");
             mScrollbarSize = get(map, "mScrollbarSize");
             mTouchSlop = get(map, "mTouchSlop");
             mHoverSlop = get(map, "mHoverSlop");
@@ -258,6 +260,7 @@ public final class Config {
                     mMasterVolumeMinimized.get().floatValue(),
                     BlurHandler.sMasterVolumeInactive
             );
+            BlurHandler.sGlobalVolumeControl = mGlobalVolumeControl.get();
 
             List<? extends String> inColors = mBackgroundColor.get();
             int[] resultColors = new int[4];
