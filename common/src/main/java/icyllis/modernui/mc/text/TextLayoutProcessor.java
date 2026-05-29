@@ -898,6 +898,8 @@ public class TextLayoutProcessor {
             if (font instanceof BitmapFont) {
                 glyphFlags |= CharacterStyle.ANY_BITMAP_REPLACEMENT;
             } else if (font instanceof EmojiFont) {
+                // Emojis are not supported for obfuscated rendering
+                glyphFlags &= ~CharacterStyle.OBFUSCATED_MASK;
                 glyphFlags |= CharacterStyle.ANY_BITMAP_REPLACEMENT;
                 mHasColorEmoji = true;
             }
