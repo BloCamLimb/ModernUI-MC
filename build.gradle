@@ -29,6 +29,17 @@ subprojects {
         maven {
             url "https://central.sonatype.com/repository/maven-snapshots"
         }
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = "Modrinth"
+                    url = "https://api.modrinth.com/maven"
+                }
+            }
+            filter {
+                includeGroup "maven.modrinth"
+            }
+        }
     }
 
     dependencies {

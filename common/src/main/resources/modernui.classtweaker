@@ -3,3 +3,4 @@ accessible class net/minecraft/client/OptionInstance$IntRangeBase
 accessible class net/minecraft/client/OptionInstance$SliderableOrCyclableValueSet
 accessible class net/minecraft/client/gui/GuiGraphicsExtractor$ScissorStack
 accessible class net/minecraft/client/gui/font/FontManager$CachedFontProvider
+accessible field com/mojang/blaze3d/systems/GpuDevice backend Lcom/mojang/blaze3d/systems/GpuDeviceBackend;

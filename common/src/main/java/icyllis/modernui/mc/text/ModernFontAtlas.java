@@ -30,10 +30,13 @@ import icyllis.arc3d.core.MathUtil;
 import icyllis.arc3d.core.Rect2i;
 import icyllis.arc3d.core.RectanglePacker;
 import icyllis.arc3d.engine.Engine;
+import icyllis.arc3d.engine.Swizzle;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
+import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.VulkanModIntegration;
 import icyllis.modernui.text.TextUtils;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.client.renderer.texture.AbstractTexture;
@@ -41,13 +44,13 @@ import net.minecraft.client.renderer.texture.Dumpable;
 import net.minecraft.resources.Identifier;
 
 import javax.annotation.Nonnull;
+import javax.annotation.WillNotClose;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 
 import static icyllis.modernui.mc.ModernUIMod.LOGGER;
@@ -176,7 +179,7 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
     }
 
     public boolean stitch(@NonNull ModernBakedGlyph glyph,
-                          @NonNull ByteBuffer pixels, @Nullable ByteBuffer mipPixels) {
+                          @NonNull ByteBuffer pixels, @WillNotClose @Nullable NativeImage mipPixels) {
         if (mWidth == 0) {
             resize(); // first init
         }
@@ -202,16 +205,16 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
         NativeImage.Format format = mMaskFormat == Engine.MASK_FORMAT_ARGB
                 ? NativeImage.Format.RGBA
                 : NativeImage.Format.LUMINANCE;
-        RenderSystem.getDevice().createCommandEncoder()
-                .writeToTexture(getTexture(), pixels, format,
-                        0, 0, rect.x(), rect.y(),
-                        rect.width(), rect.height());
+        var commandEncoder = RenderSystem.getDevice().createCommandEncoder();
+        commandEncoder.writeToTexture(getTexture(), pixels, format,
+                0, 0, rect.x(), rect.y(),
+                rect.width(), rect.height());
         if (mUseMipmaps) {
             assert mipPixels != null;
-            RenderSystem.getDevice().createCommandEncoder()
-                    .writeToTexture(getTexture(), mipPixels, format,
-                            1, 0, rect.x() / 2, rect.y() / 2,
-                            rect.width() / 2, rect.height() / 2);
+            commandEncoder.writeToTexture(getTexture(), mipPixels,
+                    1, 0, rect.x() / 2, rect.y() / 2,
+                    rect.width() / 2, rect.height() / 2,
+                    0, 0);
         }
         /*int rowBytes = rect.width() * ColorInfo.bytesPerPixel(colorType);
         boolean res = ((GLDevice) mContext.getDevice()).writePixels(
@@ -330,17 +333,24 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
         if (mMaskFormat == Engine.MASK_FORMAT_A8) {
             // Minecraft's OpenGL backend has no real texture view,
             // but if on Vulkan, we have to modify the VkImageView
-            if (RenderSystem.getDevice().getBackendName().equals("OpenGL")) {
-                int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
-                glBindTexture(GL_TEXTURE_2D, ((GlTexture) texture).glId());
+            switch (RenderSystem.getDevice().getBackendName()) {
+                case "OpenGL" -> {
+                    int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
+                    glBindTexture(GL_TEXTURE_2D, ((GlTexture) texture).glId());
 
-                //XXX: un-premultiplied, so 111r rather than rrrr
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
+                    //XXX: un-premultiplied, so 111r rather than rrrr
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_ONE);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_G, GL_ONE);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_ONE);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, GL_RED);
 
-                glBindTexture(GL_TEXTURE_2D, boundTexture);
+                    glBindTexture(GL_TEXTURE_2D, boundTexture);
+                }
+                case "Vulkan" -> {
+                    if (ModernUIMod.isVulkanModLoaded()) {
+                        VulkanModIntegration.replaceMainImageViewWithSwizzle(textureView, Swizzle.make("111r"));
+                    }
+                }
             }
         }
 

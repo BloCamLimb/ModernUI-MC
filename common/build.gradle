@@ -20,14 +20,12 @@ dependencies {
     compileOnly 'org.spongepowered:mixin:0.8.7'
     compileOnly 'org.ow2.asm:asm-tree:9.8'
 
-    ["dev.icyllis:arc3d-engine",
-     "dev.icyllis:arc3d-granite",
-     "dev.icyllis:arc3d-opengl",
-     "dev.icyllis:arc3d-vulkan"].each {
-        implementation(it + ":${arc3d_version}")
-    }
     implementation("dev.icyllis:modernui-core:${core_version}")
     implementation("icyllis.modernui:ModernUI-Markflow:3.12.0") {
         transitive = false
     }
+
+    // VulkanMod_26.1.2-0.6.6.jar
+    api("maven.modrinth:JYQhtZtO:PNODQNIn")
+    compileOnly("org.lwjgl:lwjgl-vulkan:3.4.1")
 }

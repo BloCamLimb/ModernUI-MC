@@ -1,3 +1,5 @@
+import net.fabricmc.loom.build.nesting.NestableJarGenerationTask
+
 plugins {
     id 'org.relativitymc.neo-loom'
     //id 'com.matthewprenger.cursegradle' version '1.4.0'
@@ -54,13 +56,13 @@ dependencies {
 
     implementation project(':common')
 
-    ["dev.icyllis:arc3d-compiler",
-     "dev.icyllis:arc3d-core",
-     "dev.icyllis:arc3d-sketch"].each {
+    ["dev.icyllis:arc3d-compiler"].each {
         implementation(it + ":${arc3d_version}")
         include(it + ":${arc3d_version}")
     }
-    ["dev.icyllis:arc3d-engine",
+    ["dev.icyllis:arc3d-core",
+     "dev.icyllis:arc3d-sketch",
+     "dev.icyllis:arc3d-engine",
      "dev.icyllis:arc3d-granite",
      "dev.icyllis:arc3d-opengl",
      "dev.icyllis:arc3d-vulkan"].each {
@@ -79,6 +81,9 @@ dependencies {
     shadow("icyllis.modernui:ModernUI-Markflow:3.12.0") {
         transitive = false
     }
+
+    compileOnly("org.lwjgl:lwjgl-vulkan:3.4.1")
+    testCompileOnly("org.lwjgl:lwjgl-vulkan:3.4.1")
 
     //implementation("com.vladsch.flexmark:flexmark:${flexmark_version}")
 
@@ -118,15 +123,16 @@ test {
     failOnNoDiscoveredTests = false
 }
 
+loom.nestJars(
+        tasks.named("shadowJar", Jar),
+        objects.fileCollection().from(
+                tasks.named("processIncludeJars", NestableJarGenerationTask).map {
+                    objects.fileTree().from(it.outputDirectory)
+                }
+        )
+)
+
 shadowJar {
-    mustRunAfter(tasks.named('jar'))
-
-    doFirst {
-        def javaJarTask = tasks.named('jar').get()
-        def finalJarFile = javaJarTask.archiveFile.get().asFile
-        from(zipTree(finalJarFile))
-    }
-
     archiveClassifier.set("universal")
     configurations = [project.configurations.shadow]
 

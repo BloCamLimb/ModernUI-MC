@@ -634,8 +634,8 @@ public class GlyphManager {
                 glyph.y = -EMOJI_ASCENT;
                 glyph.width = EMOJI_SIZE;
                 glyph.height = EMOJI_SIZE;
-                boolean success = atlas.stitch(glyph, MemoryUtil.memByteBuffer(src, (int) bitmap.getSize()),
-                        MemoryUtil.memByteBuffer(mips[1].getPointer(), (int) bitmap.getSize() / 4));
+                boolean success = atlas.stitch(glyph,
+                        MemoryUtil.memByteBuffer(src, (int) bitmap.getSize()), mips[1]);
                 mips[1].close();
                 if (!success) {
                     // invalidate glyph image and defer to next frame

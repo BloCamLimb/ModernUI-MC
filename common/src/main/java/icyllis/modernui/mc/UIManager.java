@@ -24,12 +24,15 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.*;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.arc3d.core.*;
 import icyllis.arc3d.engine.*;
 import icyllis.arc3d.granite.*;
 import icyllis.arc3d.opengl.*;
+import icyllis.arc3d.vulkan.VulkanImage;
 import icyllis.modernui.ModernUI;
 import icyllis.modernui.R;
 import icyllis.modernui.annotation.*;
@@ -158,6 +161,12 @@ public abstract class UIManager implements LifecycleOwner {
     private GlTexture_Wrapped mLayerTexture;
     private GlTextureView mLayerTextureView;
 
+    private GpuTexture mLayerTexture_Vulkan;
+    private GpuTextureView mLayerTextureView_Vulkan;
+
+    @RawPtr
+    private VulkanImage mLastSubmittedVulkanLayer;
+
     public final TooltipRenderer mTooltipRenderer = new TooltipRenderer();
 
 
@@ -212,11 +221,12 @@ public abstract class UIManager implements LifecycleOwner {
     @RenderThread
     public static void initializeRenderer() {
         Core.checkRenderThread();
-        if (ModernUIMod.sDevelopment || DEBUG) {
+        Objects.requireNonNull(sInstance);
+        var immediateContext = Core.requireImmediateContext();
+        if (immediateContext.getBackend() == Engine.BackendApi.kOpenGL
+                && (ModernUIMod.sDevelopment || DEBUG)) {
             Core.glSetupDebugCallback();
         }
-        Objects.requireNonNull(sInstance);
-        Core.requireImmediateContext();
         LOGGER.info(MARKER, "UI renderer initialized");
     }
 
@@ -696,8 +706,10 @@ public abstract class UIManager implements LifecycleOwner {
         if (surface == null) {
             return;
         }
-        @RawPtr
-        GLTexture layer = (GLTexture) surface.getImage();
+        if (!(surface.getImage() instanceof @RawPtr GLTexture layer)) {
+            surface.unref();
+            return;
+        }
         final int width = layer.getWidth();
         final int height = layer.getHeight();
         final Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Format.RGBA_8888);
@@ -905,7 +917,9 @@ public abstract class UIManager implements LifecycleOwner {
             }
         }
 
-        ((GLDevice) context.getDevice()).flushRenderCalls();
+        if (context.getDevice() instanceof GLDevice glDevice) {
+            glDevice.flushRenderCalls();
+        } // other backends don't need manual maintenance
 
         if (recording != null) {
             context.submit();
@@ -915,30 +929,32 @@ public abstract class UIManager implements LifecycleOwner {
 
 
 
-        // force changing Blaze3D state
-        for (int i = 0; i <= 3; i++) {
-            GL33C.glBindSampler(i, 0);
+        if (context.getDevice() instanceof GLDevice) {
+            // force changing Blaze3D state
+            for (int i = 0; i <= 3; i++) {
+                GL33C.glBindSampler(i, 0);
+            }
+            GL33C.glDisable(GL33C.GL_STENCIL_TEST);
+            GlStateManager._disableScissorTest();
+            GL33C.glDisable(GL33C.GL_SCISSOR_TEST);
+            GlStateManager._blendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
+            GL33C.glBlendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
+            GlStateManager._enableBlend();
+            GL33C.glEnable(GL33C.GL_BLEND);
+            GL33C.glBlendEquation(GL33C.GL_FUNC_ADD);
+            GlStateManager._disableDepthTest();
+            GL33C.glDisable(GL33C.GL_DEPTH_TEST);
+            GlStateManager._depthFunc(GL33C.GL_LEQUAL);
+            GL33C.glDepthFunc(GL33C.GL_LEQUAL);
+            GlStateManager._depthMask(true);
+            GL33C.glDepthMask(true);
+            for (int i = 3; i >= 0; i--) {
+                GlStateManager._activeTexture(GL33C.GL_TEXTURE0 + i);
+                GlStateManager._bindTexture(0);
+            }
+            GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
+            GlStateManager._disableCull();
         }
-        GL33C.glDisable(GL33C.GL_STENCIL_TEST);
-        GlStateManager._disableScissorTest();
-        GL33C.glDisable(GL33C.GL_SCISSOR_TEST);
-        GlStateManager._blendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
-        GL33C.glBlendFuncSeparate(GL33C.GL_SRC_ALPHA, GL33C.GL_ONE_MINUS_SRC_ALPHA, GL33C.GL_ONE, GL33C.GL_ZERO);
-        GlStateManager._enableBlend();
-        GL33C.glEnable(GL33C.GL_BLEND);
-        GL33C.glBlendEquation(GL33C.GL_FUNC_ADD);
-        GlStateManager._disableDepthTest();
-        GL33C.glDisable(GL33C.GL_DEPTH_TEST);
-        GlStateManager._depthFunc(GL33C.GL_LEQUAL);
-        GL33C.glDepthFunc(GL33C.GL_LEQUAL);
-        GlStateManager._depthMask(true);
-        GL33C.glDepthMask(true);
-        for (int i = 3; i >= 0; i--) {
-            GlStateManager._activeTexture(GL33C.GL_TEXTURE0 + i);
-            GlStateManager._bindTexture(0);
-        }
-        GL33C.glActiveTexture(GL33C.GL_TEXTURE0);
-        GlStateManager._disableCull();
 
 
 
@@ -955,7 +971,7 @@ public abstract class UIManager implements LifecycleOwner {
                     }
                     layer.ref();
                     mLayerTexture = new GlTexture_Wrapped(layer); // move
-                    mLayerTextureView = (GlTextureView) MuiModApi.get().getRealGpuDevice()
+                    mLayerTextureView = (GlTextureView) RenderSystem.getDevice()
                             .createTextureView(mLayerTexture);
                 } else {
                     // ensure there's ref before submitting to the GPU
@@ -973,6 +989,35 @@ public abstract class UIManager implements LifecycleOwner {
                         ~0,
                         /*scissorArea*/ null
                 ));
+            } else if (surface.getImage() instanceof @RawPtr VulkanImage layer) {
+                if (ModernUIMod.isVulkanModLoaded()) {
+                    if (mLayerTexture_Vulkan == null || !VulkanModIntegration.sameImage(mLayerTexture_Vulkan, layer)) {
+                        if (mLayerTexture_Vulkan != null) {
+                            // there's nothing to close, because the resource is managed by us
+                            mLayerTexture_Vulkan = null;
+                            mLayerTextureView_Vulkan.close();
+                        }
+                        mLayerTexture_Vulkan = VulkanModIntegration.wrapTextureImageFromArc3D(layer);
+                        mLayerTextureView_Vulkan = RenderSystem.getDevice()
+                                .createTextureView(mLayerTexture_Vulkan);
+                    }
+                    layer.refCommandBuffer();
+                    VulkanModIntegration.syncImageLayoutFromArc3D(mLayerTexture_Vulkan, layer);
+                    gr.nextStratum();
+                    MuiModApi.get().submitGuiElementRenderState(gr, new BlitRenderState(
+                            // render target is always premultiplied
+                            RenderPipelines.GUI_TEXTURED_PREMULTIPLIED_ALPHA,
+                            // using the nearest sampler is performant
+                            TextureSetup.singleTexture(mLayerTextureView_Vulkan, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST)),
+                            new Matrix3x2f().scale(1.0F / minecraft.getWindow().getGuiScale()),
+                            0, 0, minecraft.getWindow().getWidth(), minecraft.getWindow().getHeight(),
+                            0.0F, 1.0F, 0.0F, 1.0F,
+                            ~0,
+                            /*scissorArea*/ null
+                    ));
+                    VulkanModIntegration.addFrameOp(layer::unrefCommandBuffer);
+                }
+                mLastSubmittedVulkanLayer = layer;
             }
         }
         RefCnt.move(surface);
@@ -1114,6 +1159,12 @@ public abstract class UIManager implements LifecycleOwner {
                 // we can drop the ref after submitting to the GPU
                 mLayerTexture.close();
             }
+            if (mLayerTexture_Vulkan != null && mLastSubmittedVulkanLayer != null) {
+                if (ModernUIMod.isVulkanModLoaded()) {
+                    VulkanModIntegration.syncImageLayoutFromVulkan(mLayerTexture_Vulkan, mLastSubmittedVulkanLayer);
+                }
+                mLastSubmittedVulkanLayer = null;
+            }
             if (!minecraft.isRunning() && mRunning) {
                 mRunning = false;
                 mRoot.mHandler.post(this::finish);
@@ -1121,6 +1172,11 @@ public abstract class UIManager implements LifecycleOwner {
                     mLayerTextureView.close();
                     mLayerTextureView = null;
                     mLayerTexture = null;
+                }
+                if (mLayerTexture_Vulkan != null) {
+                    mLayerTexture_Vulkan = null;
+                    mLayerTextureView_Vulkan.close();
+                    mLayerTextureView_Vulkan = null;
                 }
                 // later destroy() will be called
             }

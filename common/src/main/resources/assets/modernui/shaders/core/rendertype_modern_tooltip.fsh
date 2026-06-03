@@ -1,7 +1,7 @@
+#version 150
 // This file is part of Modern UI.
 // Copyright (C) 2024 BloCamLimb.
 // Licensed under LGPL-3.0-or-later.
-#version 150
 
 layout(std140) uniform ModernTooltip {
     mat4 u_LocalMat;
