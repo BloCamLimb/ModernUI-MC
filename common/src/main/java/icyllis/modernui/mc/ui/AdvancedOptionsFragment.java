@@ -18,8 +18,7 @@
 
 package icyllis.modernui.mc.ui;
 
-import icyllis.arc3d.core.ImageInfo;
-import icyllis.arc3d.opengl.GLCaps;
+import icyllis.arc3d.engine.Engine;
 import icyllis.modernui.R;
 import icyllis.modernui.annotation.NonNull;
 import icyllis.modernui.annotation.Nullable;
@@ -332,9 +331,18 @@ public class AdvancedOptionsFragment extends Fragment {
             if (monoFont != null) {
                 tv.setTypeface(monoFont);
             }
-            tv.setText("Rendering pipeline: Arc3D Granite (OpenGL)\n" +
-                    "Shader compiler: Arc3D Shader Compiler\n" +
-                    "Arc3D version: " + ImageInfo.class.getPackage().getImplementationVersion());
+            var pkg = icyllis.arc3d.compiler.ShaderCompiler.class.getPackage();
+            tv.setText(String.format("""
+                            Rendering pipeline: Arc3D Granite (%s)
+                            Shader compiler: Arc3D Shader Compiler
+                            Arc3D version: %s""",
+                    switch (Core.requireUiRecordingContext().getBackend()) {
+                        case Engine.BackendApi.kOpenGL -> "OpenGL";
+                        case Engine.BackendApi.kVulkan -> "Vulkan";
+                        default -> "Unknown";
+                    },
+                    pkg.getImplementationVersion()
+            ));
             content.addView(tv, new LinearLayout.LayoutParams(params));
         }
 
@@ -389,8 +397,8 @@ public class AdvancedOptionsFragment extends Fragment {
             if (monoFont != null) {
                 tv.setTypeface(monoFont);
             }
-            var caps = (GLCaps) Core.requireUiRecordingContext().getCaps();
-            StringBuilder sb = new StringBuilder("GL Capabilities:\n");
+            var caps = Core.requireUiRecordingContext().getCaps();
+            StringBuilder sb = new StringBuilder(caps.getClass().getSimpleName() + ":\n");
             caps.dump(sb, /*includeFormatTable*/false);
             tv.setText(sb);
             content.addView(tv, new LinearLayout.LayoutParams(params));
