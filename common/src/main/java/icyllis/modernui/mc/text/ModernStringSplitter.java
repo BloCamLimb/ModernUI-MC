@@ -675,7 +675,15 @@ public final class ModernStringSplitter extends StringSplitter {
                     if (++mStripIndex >= mBreakPointOffset) {
                         String substring = aText.substring(lastSubPos, i + 1);
                         if (!substring.isEmpty()) {
-                            mCollector.append(FormattedText.of(substring, lastStyle));
+                            // strip end spaces
+                            int visibleEnd = substring.length();
+                            while (visibleEnd > 0 &&
+                                    LineBreaker.isLineEndSpace(substring.charAt(visibleEnd - 1))) {
+                                visibleEnd--;
+                            }
+                            if (visibleEnd > 0) {
+                                mCollector.append(FormattedText.of(substring.substring(0, visibleEnd), lastStyle));
+                            }
                         }
                         consumer.accept(mCollector.getResultOrEmpty(), mNonNewPara);
                         lastSubPos = i + 1;
