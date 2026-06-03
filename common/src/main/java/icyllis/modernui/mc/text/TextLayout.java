@@ -26,6 +26,7 @@ import net.minecraft.client.gui.font.glyphs.BakedGlyph;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.ARGB;
 import org.joml.Matrix4fc;
 
 import javax.annotation.Nonnull;
@@ -383,14 +384,21 @@ public class TextLayout {
             if (vglyph == null) {
                 continue;
             }
+            final int bits = flags[i];
             if (!(vglyph instanceof ModernBakedGlyph glyph)) {
                 // used in 3D world rendering, and it's atlas sprite or player skin
                 if (!isShadow) {
-                    // atlas sprite and player skin don't use shadow, color, style
+                    int glyphColor;
+                    if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) == 0) {
+                        glyphColor = ARGB.color(a, bits);
+                    } else {
+                        glyphColor = ARGB.color(a, startR, startG, startB);
+                    }
+                    // atlas sprite and player skin don't use style
                     var renderable = vglyph.createGlyph(
                             x + positions[i << 1],
                             top + positions[i << 1 | 1],
-                            ~0, 0,
+                            glyphColor, 0,
                             Style.EMPTY,
                             0, 0
                     );
@@ -401,7 +409,6 @@ public class TextLayout {
                 }
                 continue;
             }
-            final int bits = flags[i];
             float rx;
             float ry;
             final float w;

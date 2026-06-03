@@ -36,6 +36,7 @@ import net.minecraft.client.renderer.state.gui.GlyphRenderState;
 import net.minecraft.client.renderer.state.gui.GuiRenderState;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.network.chat.Style;
+import net.minecraft.util.ARGB;
 import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fc;
 
@@ -141,14 +142,23 @@ public class ModernPreparedText implements Font.PreparedText {
             if (vglyph == null) {
                 continue;
             }
+            final int bits = flags[i];
             if (!(vglyph instanceof ModernBakedGlyph glyph)) {
-                // atlas sprite and player skin don't use shadow, color, style
+                // atlas sprite and player skin don't use style
+                int glyphColor = color;
+                if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) == 0) {
+                    glyphColor = (color & 0xff000000) | (bits & 0xffffff);
+                }
+                int shadowColor = 0;
+                if (dropShadow && (bits & CharacterStyle.NO_SHADOW_MASK) == 0) {
+                    shadowColor = ARGB.scaleRGB(glyphColor, 0.25f);
+                }
                 var renderable = vglyph.createGlyph(
                         x + positions[i << 1] + xAdj,
                         top + positions[i << 1 | 1] + yAdj,
-                        ~0, 0,
+                        glyphColor, shadowColor,
                         Style.EMPTY,
-                        0, 0
+                        0, 1
                 );
                 if (renderable != null) {
                     bounds.joinNoCheck(
@@ -159,7 +169,6 @@ public class ModernPreparedText implements Font.PreparedText {
 
                 continue;
             }
-            final int bits = flags[i];
             float rx;
             float ry;
             final float w;
