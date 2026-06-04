@@ -14,6 +14,13 @@ configurations {
 
 loom {
     silentMojangMappingsLicense()
+    runs {
+        data {
+            data()
+            programArgs "--all", "--mod", "modernui"
+            programArgs "--output", file("src/generated").absolutePath
+        }
+    }
     runConfigs.each { it.setIdeConfigGenerated(true) } // Uncomment this if run configs not generated
     addTaskBeforeRun(":${name}:classes")
 }

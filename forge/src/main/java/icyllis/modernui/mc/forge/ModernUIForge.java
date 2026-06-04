@@ -27,6 +27,7 @@ import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.ConfigScreenHandler;
+import net.minecraftforge.data.loading.DatagenModLoader;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.*;
@@ -146,7 +147,9 @@ public final class ModernUIForge extends ModernUIMod {
 
         private Client() {
             super();
-            UIManagerForge.initialize();
+            if (!DatagenModLoader.isRunningDataGen()) {
+                UIManagerForge.initialize();
+            }
             ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
                     ModernUI.NAME_CPT + "/client.toml");
             ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,

@@ -33,6 +33,7 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.neoforge.data.loading.DatagenModLoader;
 
 import javax.annotation.Nonnull;
 import java.util.Locale;
@@ -118,7 +119,9 @@ public final class ModernUIForge extends ModernUIMod {
         // mod-loading thread
         public Client(IEventBus modEventBus, ModContainer modContainer) {
             super();
-            UIManagerForge.initialize();
+            if (!DatagenModLoader.isRunningDataGen()) {
+                UIManagerForge.initialize();
+            }
             modContainer.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
                     ModernUI.NAME_CPT + "/client.toml");
             modContainer.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,
