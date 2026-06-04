@@ -40,6 +40,7 @@ public class MusicPlayer {
     private Track mCurrentTrack;
     private FFT mFFT;
     private float mGain = 1.0f;
+    private float mRememberedGain = 1.0f;
 
     private String mName;
 
@@ -158,6 +159,7 @@ public class MusicPlayer {
     public void setGain(float gain) {
         if (mGain != gain) {
             mGain = gain;
+            mRememberedGain = gain;
             if (mCurrentTrack != null) {
                 mCurrentTrack.setGain(gain);
             }
@@ -166,6 +168,17 @@ public class MusicPlayer {
 
     public float getGain() {
         return mGain;
+    }
+
+    public void setMute(boolean mute) {
+        if (mute) {
+            mGain = 0f;
+            if (mCurrentTrack != null) {
+                mCurrentTrack.setGain(0f);
+            }
+        } else {
+            setGain(mRememberedGain != 0f ? mRememberedGain : 0.1f);
+        }
     }
 
     public void setAnalyzerCallback(Consumer<FFT> setup, Consumer<FFT> callback) {
