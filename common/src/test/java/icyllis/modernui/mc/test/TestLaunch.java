@@ -1,6 +1,6 @@
 /*
  * Modern UI.
- * Copyright (C) 2025 BloCamLimb. All rights reserved.
+ * Copyright (C) 2026 BloCamLimb. All rights reserved.
  *
  * Modern UI is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,20 +16,19 @@
  * License along with Modern UI. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package icyllis.modernui.mc.text.mixin;
+package icyllis.modernui.mc.test;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import net.minecraft.client.gui.render.TextureSetup;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.gen.Accessor;
+import icyllis.modernui.ModernUI;
+import icyllis.modernui.audio.AudioManager;
+import icyllis.modernui.mc.ui.MusicFragment;
 
-@Deprecated
-@Mixin(targets = "net.minecraft.client.gui.render.GuiRenderer$Draw")
-public interface AccessGuiRendererDraw {
+public class TestLaunch {
 
-    @Accessor("pipeline")
-    RenderPipeline pipeline();
-
-    @Accessor("textureSetup")
-    TextureSetup textureSetup();
+    public static void main(String[] args) {
+        AudioManager.getInstance().initialize();
+        try (var app = new ModernUI()) {
+            app.run(new MusicFragment());
+        }
+        AudioManager.getInstance().close();
+    }
 }

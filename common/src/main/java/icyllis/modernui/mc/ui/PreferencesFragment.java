@@ -760,9 +760,9 @@ public class PreferencesFragment extends Fragment {
                 Config.TEXT.mAllowSDFTextIn2D, onChanged)
                 .create(category);
 
-        new BooleanOption(context, "modernui.center.text.smartSDFShaders",
+        /*new BooleanOption(context, "modernui.center.text.smartSDFShaders",
                 Config.TEXT.mSmartSDFShaders, onChanged)
-                .create(category);
+                .create(category);*/
 
         new BooleanOption(context, "modernui.center.text.computeDeviceFontSize",
                 Config.TEXT.mComputeDeviceFontSize, onChanged)

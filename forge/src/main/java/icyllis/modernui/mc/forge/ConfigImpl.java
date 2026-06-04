@@ -690,7 +690,7 @@ public final class ConfigImpl {
         public final ForgeConfigSpec.BooleanValue mAllowAsyncLayout;
         public final ForgeConfigSpec.EnumValue<Config.Text.LineBreakStyle> mLineBreakStyle;
         public final ForgeConfigSpec.EnumValue<Config.Text.LineBreakWordStyle> mLineBreakWordStyle;
-        public final ForgeConfigSpec.BooleanValue mSmartSDFShaders;
+        //public final ForgeConfigSpec.BooleanValue mSmartSDFShaders;
         public final ForgeConfigSpec.BooleanValue mComputeDeviceFontSize;
         public final ForgeConfigSpec.BooleanValue mAllowSDFTextIn2D;
         public final ForgeConfigSpec.BooleanValue mTweakExperienceText;
@@ -822,13 +822,13 @@ public final class ConfigImpl {
                     .defineEnum("lineBreakStyle", Config.Text.LineBreakStyle.AUTO);
             mLineBreakWordStyle = builder
                     .defineEnum("lineBreakWordStyle", Config.Text.LineBreakWordStyle.AUTO);
-            mSmartSDFShaders = builder.comment(
+            /*mSmartSDFShaders = builder.comment(
                             "When enabled, Modern UI will compute texel density in device-space to determine whether " +
                                     "to use SDF text or bilinear sampling.",
                             "This feature requires GLSL 400 or has no effect.",
                             "This generally decreases performance but provides better rendering quality.",
                             "This option only applies to TrueType fonts. May not be compatible with OptiFine.")
-                    .define("smartSDFShaders", true);
+                    .define("smartSDFShaders", true);*/
             mComputeDeviceFontSize = builder.comment(
                             "When rendering in 2D, this option allows Modern UI to exactly compute font size in " +
                                     "device-space from the current coordinate transform matrix.",

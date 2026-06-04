@@ -189,11 +189,11 @@ public class DashboardFragment extends Fragment {
                                 "Modern UI 3.13.0") + """
                                 
                                 ----
-                                * Brand-New Themes & Styles
-                                * New Visual Effects & Animations
-                                * New Graphics & Typography API
-                                * New UI Components & Features
-                                * Massive Optimizations""");
+                                * Complete Vulkan Rendering Backend
+                                * Brand-New Resources System
+                                * Graphics & Rendering API Overhaul
+                                * Major Text & Typography Improvements
+                                * New UI Components & Optimizations""");
                         var params = new LinearLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
                         params.bottomMargin = content.dp(20);
                         inner.addView(tv, params);

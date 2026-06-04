@@ -549,7 +549,7 @@ public final class Config {
         public final ConfigItem<Boolean> mAllowAsyncLayout;
         public final ConfigItem<LineBreakStyle> mLineBreakStyle;
         public final ConfigItem<LineBreakWordStyle> mLineBreakWordStyle;
-        public final ConfigItem<Boolean> mSmartSDFShaders;
+        //public final ConfigItem<Boolean> mSmartSDFShaders;
         public final ConfigItem<Boolean> mComputeDeviceFontSize;
         public final ConfigItem<Boolean> mAllowSDFTextIn2D;
         public final ConfigItem<Boolean> mTweakExperienceText;
@@ -578,7 +578,7 @@ public final class Config {
             mAllowAsyncLayout = get(map, "mAllowAsyncLayout");
             mLineBreakStyle = get(map, "mLineBreakStyle");
             mLineBreakWordStyle = get(map, "mLineBreakWordStyle");
-            mSmartSDFShaders = get(map, "mSmartSDFShaders");
+            //mSmartSDFShaders = get(map, "mSmartSDFShaders");
             mComputeDeviceFontSize = get(map, "mComputeDeviceFontSize");
             mAllowSDFTextIn2D = get(map, "mAllowSDFTextIn2D");
             mTweakExperienceText = get(map, "mTweakExperienceText");
@@ -649,8 +649,8 @@ public final class Config {
                 reload = true;
             }
 
-            final boolean smartShaders = mSmartSDFShaders.get();
-            reload |= TextRenderType.toggleSDFShaders(smartShaders);
+            //final boolean smartShaders = mSmartSDFShaders.get();
+            //reload |= TextRenderType.toggleSDFShaders(smartShaders);
 
             ModernTextRenderer.sComputeDeviceFontSize = mComputeDeviceFontSize.get();
             ModernTextRenderer.sAllowSDFTextIn2D = mAllowSDFTextIn2D.get();

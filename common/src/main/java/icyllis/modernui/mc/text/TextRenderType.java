@@ -537,8 +537,8 @@ public abstract class TextRenderType {
         return sCurrentShaderSDFStroke;
     }*/
 
-    public static synchronized boolean toggleSDFShaders(boolean smart) {
-        /*if (smart) {
+    /*public static synchronized boolean toggleSDFShaders(boolean smart) {
+        if (smart) {
             try {
                 // Caps is thread-safe, there's safe publication
                 if (((GLCaps) Core.peekImmediateContext()
@@ -559,9 +559,9 @@ public abstract class TextRenderType {
             sCurrentPipelineSDFFill = PIPELINE_SDF_FILL;
             sCurrentPipelineSDFStroke = PIPELINE_SDF_STROKE;
             return true;
-        }*/
+        }
         return false;
-    }
+    }*/
 
     /*public static class ExtendedTextureStateShard extends EmptyTextureStateShard {
 
