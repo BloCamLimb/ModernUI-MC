@@ -55,6 +55,7 @@ import icyllis.modernui.view.menu.ContextMenuBuilder;
 import icyllis.modernui.view.menu.MenuHelper;
 import icyllis.modernui.widget.EditText;
 import net.minecraft.*;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.gui.Font;
@@ -528,9 +529,12 @@ public abstract class UIManager implements LifecycleOwner {
             float y = (float) (mouseHandler.ypos() *
                     window.getHeight() / window.getScreenHeight());
             int mods = 0;
-            //TODO macOS
             if (minecraft.hasControlDown()) {
-                mods |= KeyEvent.META_CTRL_ON;
+                mods |= KeyEvent.META_CONTROL_ON;
+            }
+            if (InputConstants.isKeyDown(window, InputConstants.KEY_LSUPER) ||
+                    InputConstants.isKeyDown(window, InputConstants.KEY_RSUPER)) {
+                mods |= KeyEvent.META_SUPER_ON;
             }
             if (minecraft.hasShiftDown()) {
                 mods |= KeyEvent.META_SHIFT_ON;
