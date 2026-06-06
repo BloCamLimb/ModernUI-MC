@@ -1,6 +1,9 @@
 # Modern UI for Minecraft
 [![CurseForge](http://cf.way2muchnoise.eu/full_352491_downloads.svg)](https://www.curseforge.com/minecraft/mc-mods/modern-ui)
 [![CurseForge](http://cf.way2muchnoise.eu/versions/For%20Minecraft_352491_all.svg)](https://www.curseforge.com/minecraft/mc-mods/modern-ui)
+
+[![Modrinth Downloads](https://img.shields.io/modrinth/dt/3sjzyvGR?label=Modrinth%20downloads)](https://modrinth.com/project/3sjzyvGR)
+[![Modrinth Game Versions](https://img.shields.io/modrinth/game-versions/3sjzyvGR?label=For%20Minecraft)](https://modrinth.com/project/3sjzyvGR)
 ### Description
 **Modern UI for Minecraft**, a.k.a ModernUI-MC, is a Minecraft Mod that is based on
 [ModernUI Framework](https://github.com/BloCamLimb/ModernUI) (a cross-platform framework to
@@ -64,12 +67,28 @@ part of it based on ModernUI, and part of it on the Vanilla GUI system (which wi
 though these enhancements can be disabled).
 
 Releases for Minecraft Mod are available on [CurseForge](https://www.curseforge.com/minecraft/mc-mods/modern-ui) and
-[Modrinth](https://modrinth.com/mod/modern-ui).  
+[Modrinth](https://modrinth.com/project/3sjzyvGR).  
 For historical reasons, issues should go to Core Repo's [Issue Tracker](https://github.com/BloCamLimb/ModernUI/issues). 
 If you have any questions, feel free to join our [Discord](https://discord.gg/kmyGKt2) server.
+### Compatibility Matrix
+| Minecraft version | Status     | Latest Modern UI version | Mod loaders             | Rendering backend       |
+|-------------------|------------|--------------------------|-------------------------|-------------------------|
+| 26.1~26.1.2       | ✅ Mainline | 🟢 3.13.0.4              | NeoForge, Forge, Fabric | OpenGL 3.3+, Vulkan 1.1 |
+| 1.21.6~1.21.8     | ⚠️ Legacy  | 🟢 3.13.0.3              | NeoForge, Forge, Fabric | OpenGL 3.3+             |
+| 1.21.4            | ⚫ EOL      | 🔵 3.12.0.3              | NeoForge, Forge, Fabric | OpenGL 3.3+             |
+| 1.21.3            | ⚫ EOL      | 🟡 3.11.1.10             | NeoForge, Forge, Fabric | OpenGL 3.3+             |
+| 1.21~1.21.1       | ⚠️ Legacy  | 🟢 3.13.0.1              | NeoForge, Forge, Fabric | OpenGL 3.3+             |
+| 1.20.6            | ⚫ EOL      | 🟡 3.11.1.8              | NeoForge, Forge, Fabric | OpenGL 3.3+             |
+| 1.20.4            | ⚫ EOL      | 🟡 3.11.1.7              | NeoForge, Forge, Fabric | OpenGL 3.3+             |
+| 1.20.2            | ⚫ EOL      | 🔴 3.10.0.5              | NeoForge, Forge, Fabric | OpenGL 3.3+             |
+| 1.20~1.20.1       | ⚫ EOL      | 🔵 3.12.0.1              | NeoForge, Forge, Fabric | OpenGL 3.3+             |
+| 1.19.4            | ⚫ EOL      | 🔴 3.10.1.3              | Forge                   | OpenGL 3.3+             |
+| 1.19.2            | ⚫ EOL      | 🔴 3.10.1.2              | Forge                   | OpenGL 3.3+             |
+| 1.18.1~1.18.2     | ⚫ EOL      | 🔴 3.10.1.1              | Forge                   | OpenGL 3.3+             |
+
 ### License
 * Modern UI for Minecraft
-  - Copyright (C) 2019-2025 BloCamLimb et al.
+  - Copyright (C) 2019-2026 BloCamLimb et al.
   - [![License](https://img.shields.io/badge/License-LGPL--3.0--or--later-blue.svg?style=flat-square)](https://www.gnu.org/licenses/lgpl-3.0.en.html)
 * Additional Assets
   - [source-han-sans](https://github.com/adobe-fonts/source-han-sans) by Adobe, licensed under the OFL-1.1
@@ -83,6 +102,7 @@ You MUST use our Maven if you are in development environment, the version we pub
 from CurseForge and Modrinth.
 ```groovy
 repositories {
+    mavenCentral()
     maven {
         name 'IzzelAliz Maven'
         url 'https://maven.izzel.io/releases/'
@@ -96,44 +116,60 @@ repositories {
     }*/
 }
 ```
-##### ArchLoom / FabricLoom
+You can use either `implementation` or `api`. We don't list build scripts for all combinations of toolchains and Minecraft versions,
+because the principles are the same.
+##### NeoLoom / ArchLoom / FabricLoom
 ```groovy
 dependencies {
-  // If you are on Fabric, uncomment this and find a compatible FCAPI version.
-  // modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${fcapi_version}"
-  implementation "icyllis.modernui:ModernUI-Core:${modernui_version}"
-  // Modern UI core extensions
-  // Markdown (<=3.11.1) / Markflow (>=3.12.0) is required, others are optional
-  implementation "icyllis.modernui:ModernUI-Markflow:${modernui_version}"
-  // Choose one of Fabric or NeoForge
-  modImplementation("icyllis.modernui:ModernUI-Fabric:${minecraft_version}-${modernui_version}.+")
+    // If you are on Fabric, uncomment this and find a compatible FCAPI version.
+    // modApi "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:${fcapi_version}"
+
+    // If ModernUI version >= 3.13.0, use this ↓
+    implementation "dev.icyllis:modernui-core:${modernui_version}"
+    // If ModernUI version <= 3.12.0, use this ↓
+    //implementation "icyllis.modernui:ModernUI-Core:${modernui_version}"
+
+    // Modern UI core extensions
+    // Markdown (<=3.11.1) / Markflow (>=3.12.0) is required, others are optional
+    implementation "icyllis.modernui:ModernUI-Markflow:${modernui_version}"
+
+    // Choose one of Fabric or NeoForge
+    // For Minecraft >= 26.1, replace modImplementation with implementation
+    modImplementation("icyllis.modernui:ModernUI-Fabric:${minecraft_version}-${modernui_version}.+")
+    //modImplementation("icyllis.modernui:ModernUI-NeoForge:${minecraft_version}-${modernui_version}.+")
 }
 ```
 ##### ModDevGradle
 ```groovy
 dependencies {
-  // Modern UI
-  implementation("icyllis.modernui:ModernUI-NeoForge:${minecraft_version}-${modernui_version}.+")
-  additionalRuntimeClasspath(compileOnly("icyllis.modernui:ModernUI-Core:${modernui_version}")) {
-    exclude group: "org.slf4j", module: "slf4j-api"
-    exclude group: "org.apache.logging.log4j", module: "log4j-core"
-    exclude group: "org.apache.logging.log4j", module: "log4j-api"
-    exclude group: "com.google.code.findbugs", module: "jsr305"
-    exclude group: "org.jetbrains", module: "annotations"
-    exclude group: "com.ibm.icu", module: "icu4j"
-    exclude group: "it.unimi.dsi", module: "fastutil"
-  }
-  // Modern UI core extensions
-  // Markdown (<=3.11.1) / Markflow (>=3.12.0) is required, others are optional
-  additionalRuntimeClasspath(compileOnly("icyllis.modernui:ModernUI-Markflow:${modernui_version}")) {
-    exclude group: "org.slf4j", module: "slf4j-api"
-    exclude group: "org.apache.logging.log4j", module: "log4j-core"
-    exclude group: "org.apache.logging.log4j", module: "log4j-api"
-    exclude group: "com.google.code.findbugs", module: "jsr305"
-    exclude group: "org.jetbrains", module: "annotations"
-    exclude group: "com.ibm.icu", module: "icu4j"
-    exclude group: "it.unimi.dsi", module: "fastutil"
-  }
+    // Modern UI
+    implementation("icyllis.modernui:ModernUI-NeoForge:${minecraft_version}-${modernui_version}.+")
+
+    // If ModernUI version <= 3.12.0, replace
+    //      "dev.icyllis:modernui-core:${modernui_version}"
+    // with
+    //      "icyllis.modernui:ModernUI-Core:${modernui_version}"
+    additionalRuntimeClasspath(compileOnly("dev.icyllis:modernui-core:${modernui_version}")) {
+        exclude group: "org.slf4j", module: "slf4j-api"
+        exclude group: "org.apache.logging.log4j", module: "log4j-core"
+        exclude group: "org.apache.logging.log4j", module: "log4j-api"
+        exclude group: "com.google.code.findbugs", module: "jsr305"
+        exclude group: "org.jetbrains", module: "annotations"
+        exclude group: "com.ibm.icu", module: "icu4j"
+        exclude group: "it.unimi.dsi", module: "fastutil"
+    }
+
+    // Modern UI core extensions
+    // Markdown (<=3.11.1) / Markflow (>=3.12.0) is required, others are optional
+    additionalRuntimeClasspath(compileOnly("icyllis.modernui:ModernUI-Markflow:${modernui_version}")) {
+        exclude group: "org.slf4j", module: "slf4j-api"
+        exclude group: "org.apache.logging.log4j", module: "log4j-core"
+        exclude group: "org.apache.logging.log4j", module: "log4j-api"
+        exclude group: "com.google.code.findbugs", module: "jsr305"
+        exclude group: "org.jetbrains", module: "annotations"
+        exclude group: "com.ibm.icu", module: "icu4j"
+        exclude group: "it.unimi.dsi", module: "fastutil"
+    }
 }
 ```
 ##### ForgeGradle 5
@@ -163,7 +199,11 @@ minecraft {
   // You need to regenerate run configurations if you make any changes on this.
 }
 dependencies {
-    library("icyllis.modernui:ModernUI-Core:${modernui_version}") {
+    // If ModernUI version <= 3.12.0, replace
+    //      "dev.icyllis:modernui-core:${modernui_version}"
+    // with
+    //      "icyllis.modernui:ModernUI-Core:${modernui_version}"
+    library("dev.icyllis:modernui-core:${modernui_version}") {
       exclude group: "org.slf4j", module: "slf4j-api"
       exclude group: "org.apache.logging.log4j", module: "log4j-core"
       exclude group: "org.apache.logging.log4j", module: "log4j-api"
