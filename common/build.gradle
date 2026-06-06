@@ -9,6 +9,7 @@ repositories {
     maven {
         url 'https://maven.izzel.io/releases/'
     }
+    mavenLocal()
 }
 
 minivan {
