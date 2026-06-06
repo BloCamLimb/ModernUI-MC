@@ -30,3 +30,7 @@ dependencies {
     api("maven.modrinth:JYQhtZtO:PNODQNIn")
     compileOnly("org.lwjgl:lwjgl-vulkan:3.4.1")
 }
+
+test {
+    failOnNoDiscoveredTests = false
+}

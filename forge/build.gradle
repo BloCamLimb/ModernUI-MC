@@ -210,6 +210,12 @@ tasks.register('remapMavenJar', RemapJarTask) {
     archiveClassifier.set("maven")
 }*/
 
+tasks.register('mavenJar', Jar) {
+    dependsOn(jar)
+    with(tasks.jar)
+    archiveClassifier.set("maven")
+}
+
 if (project.hasProperty("keystore")) {
     shadowJar.doLast {
         ant.signjar(
@@ -250,7 +256,7 @@ jar {
 publishing {
     publications {
         mavenForge(MavenPublication) {
-            artifact(shadowJar.archiveFile) {
+            artifact(mavenJar.archiveFile) {
                 builtBy build
             }
             artifact(sourcesJar.archiveFile) {
