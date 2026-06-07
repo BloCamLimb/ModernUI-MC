@@ -181,6 +181,7 @@ final class Registration {
             //UIManager.getInstance().registerMenuScreen(Registration.TEST_MENU, menu -> new TestUI());
 
             event.enqueueWork(() -> {
+                UIManagerForge.initializeRenderer();
                 if (ModernUIMod.sDevelopment) {
                     MenuScreens.register(MuiRegistries.TEST_MENU.get(), MenuScreenFactory.create(menu ->
                             new TestPauseFragment()));

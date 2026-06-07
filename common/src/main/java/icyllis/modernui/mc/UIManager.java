@@ -411,7 +411,15 @@ public abstract class UIManager implements LifecycleOwner {
         //mDecor.setLayoutTransition(new LayoutTransition());
 
         mRoot.setView(mDecor);
-        resize(minecraft.getWindow().getWidth(), minecraft.getWindow().getHeight());
+        Window window = minecraft.getWindow();
+        //noinspection ConstantValue
+        if (window != null) {
+            resize(window.getWidth(), window.getHeight());
+        } else {
+            // there's a race condition, so we're seeing null values
+            // but we will receive resize event anyway
+            resize(854, 480);
+        }
 
         mDecor.getViewTreeObserver().addOnScrollChangedListener(this::scheduleHoverMoveForScroll);
 

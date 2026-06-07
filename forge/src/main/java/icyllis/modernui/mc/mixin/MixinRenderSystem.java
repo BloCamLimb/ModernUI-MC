@@ -81,8 +81,6 @@ public class MixinRenderSystem {
                 }
             }
         }
-        UIManagerForge.initialize();
-        UIManagerForge.initializeRenderer();
     }
 
     /**
