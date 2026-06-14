@@ -24,8 +24,6 @@ import icyllis.arc3d.engine.ContextOptions;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.mc.ModernUIMod;
-import icyllis.modernui.mc.VulkanModIntegration;
-import icyllis.modernui.mc.forge.UIManagerForge;
 import net.minecraft.util.TimeSource;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.system.Configuration;
@@ -71,14 +69,7 @@ public class MixinRenderSystem {
                 }
             }
             case "Vulkan" -> {
-                if (ModernUIMod.isVulkanModLoaded()) {
-                    var context = VulkanModIntegration.wrapContext();
-                    if (!Core.initVulkan(context, options)) {
-                        throw new IllegalStateException("Failed to create Vulkan device");
-                    }
-                } else {
-                    throw new UnsupportedOperationException("Unknown Vulkan backend");
-                }
+                throw new UnsupportedOperationException("Unknown Vulkan backend");
             }
         }
     }

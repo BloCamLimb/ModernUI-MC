@@ -73,6 +73,7 @@ public final class ModernUIForge extends ModernUIMod {
             warnSetup("You should remove ReBlurred, Modern UI already includes its features, " +
                     "and Modern UI has better performance than it");
         }
+        sVulkanModLoaded = ModList.get().isLoaded("vulkanmod");
         sLegendaryTooltipsLoaded = ModList.get().isLoaded("legendarytooltips");
         sUntranslatedItemsLoaded = ModList.get().isLoaded("untranslateditems");
 

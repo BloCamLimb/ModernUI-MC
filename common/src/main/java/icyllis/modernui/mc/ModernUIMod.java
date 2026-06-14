@@ -42,7 +42,7 @@ public abstract class ModernUIMod {
 
     protected static boolean sOptiFineLoaded;
     protected static boolean sIrisApiLoaded;
-    protected static boolean sVulkanModLoaded;
+    protected static volatile boolean sVulkanModLoaded;
     protected static volatile boolean sLegendaryTooltipsLoaded;
     protected static volatile boolean sUntranslatedItemsLoaded;
 
@@ -64,12 +64,6 @@ public abstract class ModernUIMod {
             Class.forName("net.irisshaders.iris.api.v0.IrisApi");
             sIrisApiLoaded = true;
             LOGGER.info(MARKER, "Iris API installed...");
-        } catch (Exception ignored) {
-        }
-        try {
-            Class.forName("net.vulkanmod.vulkan.Vulkan", false, ModernUIMod.class.getClassLoader());
-            sVulkanModLoaded = true;
-            LOGGER.info(MARKER, "VulkanMod installed...");
         } catch (Exception ignored) {
         }
     }
