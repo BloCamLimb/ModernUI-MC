@@ -73,7 +73,7 @@ If you have any questions, feel free to join our [Discord](https://discord.gg/km
 ### Compatibility Matrix
 | Minecraft version | Status     | Latest Modern UI version | Mod loaders             | Rendering backend       |
 |-------------------|------------|--------------------------|-------------------------|-------------------------|
-| 26.1~26.1.2       | ✅ Mainline | 🟢 3.13.0.4              | NeoForge, Forge, Fabric | OpenGL 3.3+, Vulkan 1.1 |
+| 26.1~26.1.2       | ✅ Mainline | 🟢 3.13.0.5              | NeoForge, Forge, Fabric | OpenGL 3.3+, Vulkan 1.1 |
 | 1.21.6~1.21.8     | ⚠️ Legacy  | 🟢 3.13.0.3              | NeoForge, Forge, Fabric | OpenGL 3.3+             |
 | 1.21.4            | ⚫ EOL      | 🔵 3.12.0.3              | NeoForge, Forge, Fabric | OpenGL 3.3+             |
 | 1.21.3            | ⚫ EOL      | 🟡 3.11.1.10             | NeoForge, Forge, Fabric | OpenGL 3.3+             |

@@ -1,5 +1,16 @@
 Changelogs
 ===
+### Modern UI 3.13.0.5
+Changes from
+* 3.13.0.4 → 3.13.0.5 for Minecraft 26.1-26.1.2
+#### NeoForge Extension 26.1.2
+* Fix compatibility with Beryl
+* Fix UI thread loading issue
+#### Forge Extension 26.1.2
+* Fix UI thread loading issue, but no Vulkan support
+#### Fabric Extension 26.1.2
+* Same as NeoForge version
+
 ### Modern UI 3.13.0.4 (3.13.0.3, 3.13.0.1)
 Changes from
 * 3.13.0.4 → 3.13.0.4 for Minecraft 26.1-26.1.2
