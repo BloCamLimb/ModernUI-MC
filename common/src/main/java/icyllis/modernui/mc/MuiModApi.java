@@ -389,36 +389,17 @@ public abstract class MuiModApi {
         return calcGuiScales(window.getWidth(), window.getHeight());
     }
 
-    // V4, this matches vanilla, screen size is 640x480 dp at least
+    // V5, this matches vanilla, screen size is 640x480 dp at least
     public static int calcGuiScales(int framebufferWidth, int framebufferHeight) {
-        double w = framebufferWidth / 16.;
-        double h = framebufferHeight / 9.;
+        double w = framebufferWidth / 4.;
+        double h = framebufferHeight / 3.;
         double base = Math.min(w, h);
 
-        int min;
-        int det = (int) (Math.min(framebufferWidth, h * 12) / 320);
-        if (det >= 2) {
-            min = MathUtil.clamp((int) (base / 64), 2, MAX_GUI_SCALE);
-        } else {
-            min = 2;
-        }
-        int max = MathUtil.clamp(det, 2, MAX_GUI_SCALE);
+        int det = (int) (base / 80);
+        int min = 2;
+        int max = MathUtil.clamp(det, min, MAX_GUI_SCALE);
+        int auto = max;
 
-        int auto;
-        if (min >= 2) {
-            double step = base > 216 ? 42. : base > 120 ? 36. : 30.;
-            int i = (int) (base / step);
-            int j = (int) (Math.max(w, h) / step);
-            double v1 = base / (i * 30.);
-            if (v1 > 42 / 30. || j > i) {
-                auto = MathUtil.clamp(i + 1, min, max);
-            } else {
-                auto = MathUtil.clamp(i, min, max);
-            }
-        } else {
-            auto = 2;
-        }
-        assert min <= auto && auto <= max;
         return min << 8 | auto << 4 | max;
     }
 

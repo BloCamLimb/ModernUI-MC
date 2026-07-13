@@ -356,6 +356,11 @@ final class Registration {
             public boolean createCycleButton() {
                 return false;
             }
+
+            @Override
+            public boolean applyValueImmediately() {
+                return false;
+            }
         }
 
         /*@SubscribeEvent

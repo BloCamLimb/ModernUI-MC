@@ -54,7 +54,7 @@ public abstract class MixinWindow {
 
     /**
      * @author BloCamLimb
-     * @reason Make GUI scale more suitable, and not limited to even numbers when forceUnicode = true
+     * @reason Make GUI scale not limited to even numbers when forceUnicode = true
      */
     @Inject(method = "calculateScale", at = @At("HEAD"), cancellable = true)
     public void onCalculateScale(int guiScaleIn, boolean forceUnicode, CallbackInfoReturnable<Integer> ci) {
