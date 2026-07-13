@@ -234,11 +234,11 @@ public class PreferredFontAccordion implements View.OnClickListener,
         if (item.getItemId() == PreferencesFragment.ID_RESET_TO_DEFAULT) {
 
             String newValue = Config.CLIENT.mFirstFontFamily.getDefault();
-            boolean changed = applyNewValue(mInput.getContext(), newValue, () -> {
+            boolean changed = applyNewValue(mParent.getContext(), newValue, () -> {
                 mOnFontChanged.run();
                 updateSpinnerSelection();
             });
-            if (changed) {
+            if (changed && mInput != null) {
                 mInput.setText(newValue);
             }
 
@@ -248,6 +248,9 @@ public class PreferredFontAccordion implements View.OnClickListener,
     }
 
     private void updateSpinnerSelection() {
+        if (mSpinner == null) {
+            return;
+        }
         FontFamily first = ModernUIClient.getInstance().getFirstFontFamily();
         if (first != null) {
             String firstName = first.getFamilyName();
