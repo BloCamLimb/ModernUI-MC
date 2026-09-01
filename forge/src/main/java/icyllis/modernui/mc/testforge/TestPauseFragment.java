@@ -339,9 +339,9 @@ public class TestPauseFragment extends Fragment {
                     mBoxAnimator.start();
                 }
             });
-            mBoxAnimator = ObjectAnimator.ofInt(mBoxPaint, new IntProperty<>("boxAlpha") {
+            mBoxAnimator = ObjectAnimator.ofFloat(mBoxPaint, new FloatProperty<>("boxAlpha") {
                 @Override
-                public void setValue(@Nonnull Paint object, int value) {
+                public void setValue(@Nonnull Paint object, float value) {
                     object.setAlpha(value);
                     if (value > 0) {
                         mItemView.setVisibility(View.VISIBLE);
@@ -350,11 +350,11 @@ public class TestPauseFragment extends Fragment {
                 }
 
                 @Override
-                public Integer get(@Nonnull Paint object) {
-                    return object.getAlpha();
+                public Float get(@Nonnull Paint object) {
+                    return object.getAlphaF();
                 }
-            }, 0, 128);
-            mRodAnimator.setInterpolator(TimeInterpolator.LINEAR);
+            }, 0, 128 / 255f);
+            mBoxAnimator.setInterpolator(TimeInterpolator.LINEAR);
             mBoxAnimator.setDuration(400);
             mBoxPaint.setRGBA(64, 64, 64, 0);
             {
@@ -414,7 +414,7 @@ public class TestPauseFragment extends Fragment {
             float centerX = getWidth() / 2f;
             float centerY = getHeight() / 2f;
 
-            int boxAlpha = mBoxPaint.getAlpha();
+            float boxAlpha = mBoxPaint.getAlphaF();
 
             float px1l = centerX - (15 / 64f) * mSize;
             float py1 = centerY + (8 / 64f) * mSize;

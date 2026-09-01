@@ -1,5 +1,5 @@
 {
-  "vertex": "minecraft:core/rendertype_text_intensity",
+  "vertex": "minecraft:core/text",
   "fragment": "modernui:core/rendertype_modern_text_sdf_fill",
   "samplers": [
     { "name": "Sampler0" },

@@ -25,11 +25,9 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.*;
-import net.minecraft.client.renderer.MultiBufferSource;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
-import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.system.MemoryUtil;
 
@@ -1165,17 +1163,6 @@ public class GlyphManagerForge {
             builder.vertex(x, y + height, 0).color(r, g, b, a).uv(u1, v2).endVertex();
             builder.vertex(x + width, y + height, 0).color(r, g, b, a).uv(u2, v2).endVertex();
             builder.vertex(x + width, y, 0).color(r, g, b, a).uv(u2, v1).endVertex();*/
-        }
-
-        public void drawGlyph(Matrix4f matrix, @Nonnull MultiBufferSource buffer, float x, float y, int r, int g,
-                              int b, int a, boolean seeThrough, int packedLight) {
-            //VertexConsumer builder = buffer.getBuffer(seeThrough ? seeThroughType : renderType);
-            x += baselineX;
-            y += baselineY;
-            /*builder.vertex(matrix, x, y, 0).color(r, g, b, a).uv(u1, v1).uv2(packedLight).endVertex();
-            builder.vertex(matrix, x, y + height, 0).color(r, g, b, a).uv(u1, v2).uv2(packedLight).endVertex();
-            builder.vertex(matrix, x + width, y + height, 0).color(r, g, b, a).uv(u2, v2).uv2(packedLight).endVertex();
-            builder.vertex(matrix, x + width, y, 0).color(r, g, b, a).uv(u2, v1).uv2(packedLight).endVertex();*/
         }
 
         /**

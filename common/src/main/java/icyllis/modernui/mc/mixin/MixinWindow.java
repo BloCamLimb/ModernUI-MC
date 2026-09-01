@@ -83,8 +83,8 @@ public abstract class MixinWindow {
             // physical DPI is usually not necessary...
             try {
                 int[] w = {0}, h = {0};
-                org.lwjgl.glfw.GLFW.glfwGetMonitorPhysicalSize(monitor.getMonitor(), w, h);
-                VideoMode mode = monitor.getCurrentMode();
+                org.lwjgl.glfw.GLFW.glfwGetMonitorPhysicalSize(monitor.monitor(), w, h);
+                VideoMode mode = monitor.currentMode();
                 metrics.xdpi = 25.4f * mode.getWidth() / w[0];
                 metrics.ydpi = 25.4f * mode.getHeight() / h[0];
             } catch (NoSuchMethodError ignored) {

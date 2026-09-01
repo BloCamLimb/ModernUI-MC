@@ -18,8 +18,11 @@
 
 package icyllis.modernui.mc;
 
+import com.mojang.blaze3d.systems.GpuDevice;
+import icyllis.arc3d.engine.ContextOptions;
 import icyllis.arc3d.engine.DriverBugWorkarounds;
 import icyllis.modernui.ModernUI;
+import icyllis.modernui.core.Core;
 import icyllis.modernui.graphics.text.FontFamily;
 import icyllis.modernui.text.Typeface;
 import icyllis.modernui.view.WindowManager;
@@ -171,6 +174,43 @@ public abstract class ModernUIClient extends ModernUI {
             }
         }
         return null;
+    }
+
+    /**
+     * Create the Arc3D context on top of the device Minecraft already created, called
+     * from each loader's {@code MixinRenderSystem} at the tail of
+     * {@code RenderSystem.initRenderer}.
+     */
+    public static void initArc3DEngine(@Nonnull GpuDevice device) {
+        Core.initialize();
+        ContextOptions options = new ContextOptions();
+        options.mDepthClipNegativeOneToOne = false;
+        String value = getBootstrapProperty(BOOTSTRAP_USE_STAGING_BUFFERS_IN_OPENGL);
+        if (value != null) {
+            options.mUseStagingBuffers = Boolean.parseBoolean(value);
+        }
+        value = getBootstrapProperty(BOOTSTRAP_ALLOW_SPIRV_IN_OPENGL);
+        if (value != null) {
+            options.mAllowGLSPIRV = Boolean.parseBoolean(value);
+        }
+        options.mDriverBugWorkarounds = getGpuDriverBugWorkarounds();
+        String backendName = device.getDeviceInfo().backendName();
+        switch (backendName) {
+            case "OpenGL" -> {
+                if (!Core.initOpenGL(options)) {
+                    throw new IllegalStateException("Failed to create OpenGL device");
+                }
+            }
+            case "Vulkan" -> {
+                var context = isVulkanModLoaded()
+                        ? VulkanModIntegration.wrapContext()
+                        : VanillaVulkanIntegration.wrapContext();
+                if (!Core.initVulkan(context, options)) {
+                    throw new IllegalStateException("Failed to create Vulkan device");
+                }
+            }
+            default -> throw new UnsupportedOperationException("Unknown GPU backend " + backendName);
+        }
     }
 
     public static void loadFonts(String first,

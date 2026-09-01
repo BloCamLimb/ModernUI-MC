@@ -20,22 +20,13 @@ package icyllis.modernui.mc.mixin;
 
 import icyllis.modernui.mc.*;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
-import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.*;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import javax.annotation.Nullable;
-
 @Mixin(Minecraft.class)
 public abstract class MixinMinecraft {
-
-    @Shadow
-    @Nullable
-    public Screen screen;
 
     /*@Shadow
     @Final
@@ -43,17 +34,6 @@ public abstract class MixinMinecraft {
 
     @Shadow
     public abstract boolean isWindowActive();*/
-
-    /**
-     * Forge breaks the event, see
-     * <a href="https://github.com/MinecraftForge/MinecraftForge/issues/8992">this issue</a>
-     */
-    @Inject(method = "setScreen", at = @At(value = "FIELD",
-            target = "Lnet/minecraft/client/Minecraft;screen:Lnet/minecraft/client/gui/screens/Screen;",
-            opcode = Opcodes.PUTFIELD))
-    private void onSetScreen(Screen guiScreen, CallbackInfo ci) {
-        MuiModApi.dispatchOnScreenChange(screen, guiScreen);
-    }
 
     @Inject(method = "onGameLoadFinished", at = @At("HEAD"))
     private void beforeGameLoadFinished(@Coerce Object cookie, CallbackInfo ci) {

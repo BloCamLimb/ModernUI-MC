@@ -274,7 +274,7 @@ public enum BlurHandler {
         PostChain blurEffect = minecraft.getShaderManager().getPostChain(
                 GAUSSIAN_BLUR, LevelTargetBundle.MAIN_TARGETS);
         if (blurEffect != null) {
-            blurEffect.process(minecraft.getMainRenderTarget(), resourceAllocator);
+            blurEffect.process(minecraft.gameRenderer.mainRenderTarget(), resourceAllocator);
         }
     }
 }

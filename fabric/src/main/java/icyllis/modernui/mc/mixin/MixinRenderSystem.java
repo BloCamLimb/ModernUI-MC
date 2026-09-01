@@ -20,11 +20,8 @@ package icyllis.modernui.mc.mixin;
 
 import com.mojang.blaze3d.systems.GpuDevice;
 import com.mojang.blaze3d.systems.RenderSystem;
-import icyllis.arc3d.engine.ContextOptions;
-import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIClient;
 import icyllis.modernui.mc.ModernUIMod;
-import icyllis.modernui.mc.VulkanModIntegration;
 import icyllis.modernui.mc.fabric.UIManagerFabric;
 import net.minecraft.util.TimeSource;
 import org.lwjgl.opengl.GL;
@@ -53,34 +50,7 @@ public class MixinRenderSystem {
 
     @Inject(method = "initRenderer", at = @At("TAIL"), remap = false)
     private static void onInitRenderer(GpuDevice device, CallbackInfo ci) {
-        Core.initialize();
-        ContextOptions options = new ContextOptions();
-        String value = ModernUIClient.getBootstrapProperty(ModernUIClient.BOOTSTRAP_USE_STAGING_BUFFERS_IN_OPENGL);
-        if (value != null) {
-            options.mUseStagingBuffers = Boolean.parseBoolean(value);
-        }
-        value = ModernUIClient.getBootstrapProperty(ModernUIClient.BOOTSTRAP_ALLOW_SPIRV_IN_OPENGL);
-        if (value != null) {
-            options.mAllowGLSPIRV = Boolean.parseBoolean(value);
-        }
-        options.mDriverBugWorkarounds = ModernUIClient.getGpuDriverBugWorkarounds();
-        switch (device.getBackendName()) {
-            case "OpenGL" -> {
-                if (!Core.initOpenGL(options)) {
-                    throw new IllegalStateException("Failed to create OpenGL device");
-                }
-            }
-            case "Vulkan" -> {
-                if (ModernUIMod.isVulkanModLoaded()) {
-                    var context = VulkanModIntegration.wrapContext();
-                    if (!Core.initVulkan(context, options)) {
-                        throw new IllegalStateException("Failed to create Vulkan device");
-                    }
-                } else {
-                    throw new UnsupportedOperationException("Unknown Vulkan backend");
-                }
-            }
-        }
+        ModernUIClient.initArc3DEngine(device);
         UIManagerFabric.initialize();
         UIManagerFabric.initializeRenderer();
     }

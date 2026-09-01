@@ -27,7 +27,6 @@ import net.minecraft.client.resources.language.LanguageManager;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.ConfigScreenHandler;
-import net.minecraftforge.data.loading.DatagenModLoader;
 import net.minecraftforge.eventbus.api.bus.BusGroup;
 import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
@@ -148,9 +147,8 @@ public final class ModernUIForge extends ModernUIMod {
 
         private Client(FMLJavaModLoadingContext context) {
             super();
-            if (!DatagenModLoader.isRunningDataGen()) {
-                UIManagerForge.initialize();
-            }
+            // the UI manager is initialized from MixinRenderSystem, together with the
+            // Arc3D context it needs
             context.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.CLIENT_SPEC,
                     ModernUI.NAME_CPT + "/client.toml");
             context.registerConfig(ModConfig.Type.CLIENT, ConfigImpl.TEXT_SPEC,

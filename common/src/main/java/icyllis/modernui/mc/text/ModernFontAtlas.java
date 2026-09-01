@@ -18,6 +18,7 @@
 
 package icyllis.modernui.mc.text;
 
+import com.mojang.blaze3d.GpuFormat;
 import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.platform.TextureUtil;
@@ -25,7 +26,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
-import com.mojang.blaze3d.textures.TextureFormat;
 import icyllis.arc3d.core.MathUtil;
 import icyllis.arc3d.core.Rect2i;
 import icyllis.arc3d.core.RectanglePacker;
@@ -36,6 +36,7 @@ import icyllis.modernui.annotation.Nullable;
 import icyllis.modernui.annotation.RenderThread;
 import icyllis.modernui.core.Core;
 import icyllis.modernui.mc.ModernUIMod;
+import icyllis.modernui.mc.VanillaVulkanIntegration;
 import icyllis.modernui.mc.VulkanModIntegration;
 import icyllis.modernui.text.TextUtils;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -96,6 +97,8 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
     private int mHeight = 0;
 
     private final Rect2i mRect = new Rect2i();
+    // scratch for widening single channel rows, see stitch()
+    private ByteBuffer mPaddedPixels;
 
     private record Chunk(int x, int y, RectanglePacker packer) {
     }
@@ -126,7 +129,7 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
         mBorderWidth = borderWidth;
         // 64MB at most
         mMaxTextureSize = Math.min(
-                RenderSystem.getDevice().getMaxTextureSize(),
+                RenderSystem.getDevice().getDeviceInfo().limits().maxTextureSize(),
                 maskFormat == Engine.MASK_FORMAT_A8
                         ? 8192
                         : 4096
@@ -186,8 +189,20 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
 
         // the source image includes border, but glyph.width/height does not include
         var rect = mRect;
-        rect.set(0, 0,
-                glyph.width + mBorderWidth * 2, glyph.height + mBorderWidth * 2);
+        final int srcWidth = glyph.width + mBorderWidth * 2;
+        final int srcHeight = glyph.height + mBorderWidth * 2;
+        // Blaze3D appends every writeToTexture into one shared staging buffer and advances
+        // its cursor by the byte count of the write. A single channel glyph is
+        // srcWidth*srcHeight bytes, rarely a multiple of four, so the next upload, which is
+        // a vanilla RGBA8 texture, ends up with a bufferOffset that is not a multiple of its
+        // own four byte texel block. That is VUID-vkCmdCopyBufferToImage-dstImage-07975, and
+        // the vanilla Vulkan backend does not survive it: the misaligned copy corrupts the
+        // command buffer and the device is eventually lost. Widen our own rows instead, so
+        // the byte count stays aligned and the cursor is left where the next upload wants it.
+        final int dstWidth = mMaskFormat == Engine.MASK_FORMAT_A8
+                ? (srcWidth + 3) & ~3
+                : srcWidth;
+        rect.set(0, 0, dstWidth, srcHeight);
         boolean inserted = false;
         for (Chunk chunk : mChunks) {
             if (chunk.packer.addRect(rect)) {
@@ -201,20 +216,15 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
             return false;
         }
 
-        // include border
-        NativeImage.Format format = mMaskFormat == Engine.MASK_FORMAT_ARGB
-                ? NativeImage.Format.RGBA
-                : NativeImage.Format.LUMINANCE;
         var commandEncoder = RenderSystem.getDevice().createCommandEncoder();
-        commandEncoder.writeToTexture(getTexture(), pixels, format,
+        commandEncoder.writeToTexture(getTexture(),
+                dstWidth == srcWidth ? pixels : padRows(pixels, srcWidth, srcHeight, dstWidth),
                 0, 0, rect.x(), rect.y(),
-                rect.width(), rect.height());
+                dstWidth, srcHeight);
         if (mUseMipmaps) {
             assert mipPixels != null;
             commandEncoder.writeToTexture(getTexture(), mipPixels,
-                    1, 0, rect.x() / 2, rect.y() / 2,
-                    rect.width() / 2, rect.height() / 2,
-                    0, 0);
+                    1, 0, rect.x() / 2, rect.y() / 2);
         }
         /*int rowBytes = rect.width() * ColorInfo.bytesPerPixel(colorType);
         boolean res = ((GLDevice) mContext.getDevice()).writePixels(
@@ -233,10 +243,35 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
         // exclude border
         glyph.u1 = (float) (rect.left() + mBorderWidth) / mWidth;
         glyph.v1 = (float) (rect.top() + mBorderWidth) / mHeight;
-        glyph.u2 = (float) (rect.right() - mBorderWidth) / mWidth;
+        // not rect.right(), the rect may carry padding columns that are not the glyph
+        glyph.u2 = (float) (rect.left() + mBorderWidth + glyph.width) / mWidth;
         glyph.v2 = (float) (rect.bottom() - mBorderWidth) / mHeight;
 
         return true;
+    }
+
+    /**
+     * Copy {@code srcWidth} wide rows into a {@code dstWidth} wide scratch buffer, zeroing
+     * the columns that were added, so the upload spans a whole number of four byte units.
+     */
+    @NonNull
+    private ByteBuffer padRows(@NonNull ByteBuffer src, int srcWidth, int height, int dstWidth) {
+        final int size = dstWidth * height;
+        ByteBuffer dst = mPaddedPixels;
+        if (dst == null || dst.capacity() < size) {
+            dst = ByteBuffer.allocateDirect(size);
+            mPaddedPixels = dst;
+        }
+        dst.clear();
+        final int srcPos = src.position();
+        for (int row = 0; row < height; row++) {
+            final int dstRow = row * dstWidth;
+            dst.put(dstRow, src, srcPos + row * srcWidth, srcWidth);
+            for (int x = srcWidth; x < dstWidth; x++) {
+                dst.put(dstRow + x, (byte) 0);
+            }
+        }
+        return dst.limit(size);
     }
 
     boolean resize() {
@@ -333,7 +368,7 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
         if (mMaskFormat == Engine.MASK_FORMAT_A8) {
             // Minecraft's OpenGL backend has no real texture view,
             // but if on Vulkan, we have to modify the VkImageView
-            switch (RenderSystem.getDevice().getBackendName()) {
+            switch (RenderSystem.getDevice().getDeviceInfo().backendName()) {
                 case "OpenGL" -> {
                     int boundTexture = glGetInteger(GL_TEXTURE_BINDING_2D);
                     glBindTexture(GL_TEXTURE_2D, ((GlTexture) texture).glId());
@@ -349,6 +384,8 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
                 case "Vulkan" -> {
                     if (ModernUIMod.isVulkanModLoaded()) {
                         VulkanModIntegration.replaceMainImageViewWithSwizzle(textureView, Swizzle.make("111r"));
+                    } else {
+                        VanillaVulkanIntegration.replaceImageViewWithSwizzle(textureView, Swizzle.make("111r"));
                     }
                 }
             }
@@ -377,8 +414,8 @@ public class ModernFontAtlas extends AbstractTexture implements Dumpable {
                 "ModernUI_MC_FontAtlas" + mMaskFormat,
                 GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_COPY_SRC | GpuTexture.USAGE_TEXTURE_BINDING,
                 switch (mMaskFormat) {
-                    case Engine.MASK_FORMAT_A8 -> TextureFormat.RED8;
-                    case Engine.MASK_FORMAT_ARGB -> TextureFormat.RGBA8;
+                    case Engine.MASK_FORMAT_A8 -> GpuFormat.R8_UNORM;
+                    case Engine.MASK_FORMAT_ARGB -> GpuFormat.RGBA8_UNORM;
                     default -> throw new AssertionError(mMaskFormat);
                 },
                 mWidth, mHeight,

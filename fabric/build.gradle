@@ -48,11 +48,11 @@ repositories {
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
 
-    implementation "net.fabricmc:fabric-loader:0.19.2"
-    api "net.fabricmc.fabric-api:fabric-api:0.149.0+26.1.2"
+    implementation "net.fabricmc:fabric-loader:0.19.3"
+    api "net.fabricmc.fabric-api:fabric-api:0.158.0+26.2"
 
-    implementation "com.terraformersmc:modmenu:18.0.0-beta.1"
-    api "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:26.1.3"
+    implementation "com.terraformersmc:modmenu:20.0.1"
+    api "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:26.2.1"
 
     implementation project(':common')
 

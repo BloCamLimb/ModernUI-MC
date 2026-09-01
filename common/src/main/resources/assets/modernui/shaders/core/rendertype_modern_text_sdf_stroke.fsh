@@ -3,13 +3,17 @@
 // Copyright (C) 2024 BloCamLimb.
 // Licensed under LGPL-3.0-or-later.
 
+#if !defined(IS_GUI)
 #moj_import <minecraft:fog.glsl>
+#endif
 #moj_import <minecraft:dynamictransforms.glsl>
 
 uniform sampler2D Sampler0;
 
+#if !defined(IS_GUI)
 in float sphericalVertexDistance;
 in float cylindricalVertexDistance;
+#endif
 in vec4 vertexColor;
 in vec2 texCoord0;
 
@@ -48,5 +52,9 @@ void main() {
     vec4 color = vertexColor * ColorModulator;
     color.a *= 1.0 - clamp(dist / fwidth(dist) + 0.5, 0.0, 1.0);
     if (color.a < 0.01) discard;
+#ifdef IS_GUI
+    fragColor = color;
+#else
     fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance, FogEnvironmentalStart, FogEnvironmentalEnd, FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
+#endif
 }

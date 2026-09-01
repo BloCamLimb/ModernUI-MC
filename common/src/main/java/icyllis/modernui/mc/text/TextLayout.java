@@ -23,7 +23,7 @@ import icyllis.modernui.graphics.MathUtil;
 import icyllis.modernui.graphics.text.Font;
 import icyllis.modernui.util.SparseArray;
 import net.minecraft.client.gui.font.glyphs.BakedGlyph;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
@@ -296,68 +296,185 @@ public class TextLayout {
     }
 
     /**
-     * Render this text in Minecraft render system.
-     *
-     * @param matrix        the transform matrix
-     * @param source        the vertex buffer source
-     * @param x             the left pos of the text line to render
-     * @param top           the top of the text line to render
-     * @param r             the default red value (0...255, was divided by 4 if isShadow=true)
-     * @param g             the default green value (0...255, was divided by 4 if isShadow=true)
-     * @param b             the default blue value (0...255, was divided by 4 if isShadow=true)
-     * @param a             the alpha value (0...255)
-     * @param isShadow      whether to use a darker color to draw?
-     * @param preferredMode a render mode, normal, see through or SDF
-     * @param polygonOffset polygon offset layering requested?
-     * @param uniformScale  additional scale factor if uniform scale
-     * @param bgColor       the background color of the text in 0xAARRGGBB format
-     * @param packedLight   see {@link net.minecraft.util.LightCoordsUtil}
-     * @return the total advance, always positive
+     * Special version for GUI text rendering.
      */
-    public float drawText(@Nonnull final Matrix4fc matrix,
-                          @Nonnull final MultiBufferSource source,
-                          float x, float top,
-                          int r, int g, int b, final int a,
-                          final boolean isShadow, int preferredMode,
-                          final boolean polygonOffset, final float uniformScale,
-                          final int bgColor, final int packedLight) {
-        final int startR = r;
-        final int startG = g;
-        final int startB = b;
+    public ModernPreparedText prepareTextWithDensity(float x, float top,
+                                                     final int color, final boolean dropShadow,
+                                                     int preferredMode, final float uniformScale,
+                                                     final int bgColor, float xAdj, float yAdj) {
         final float density;
         final BakedGlyph[] glyphs;
         if (preferredMode == TextRenderType.MODE_SDF_FILL) {
             int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
             glyphs = getGlyphs(resLevel);
             density = resLevel;
-        } /*else if (preferredMode == TextRenderType.MODE_UNIFORM_SCALE) {
+        } else if (preferredMode == TextRenderType.MODE_UNIFORM_SCALE) {
             if (uniformScale <= 0.001f) {
                 // drop if flipped or too small
-                return mTotalAdvance;
+                return ModernPreparedText.EMPTY;
             }
             density = mCreatedResLevel * uniformScale;
             glyphs = getGlyphsUniformScale(density);
             preferredMode = TextRenderType.MODE_NORMAL;
-        } */else {
+        } else {
             glyphs = getGlyphs(mCreatedResLevel);
             density = mCreatedResLevel;
         }
+
+        return new ModernPreparedText(x, top, color, dropShadow, preferredMode, bgColor, xAdj, yAdj, density, glyphs,
+                this);
+    }
+
+    /**
+     * The vertex sink for world (3D) text rendering.
+     * {@code RenderTypeFeatureRenderer.getVertexBuilder}
+     */
+    @FunctionalInterface
+    public interface BufferSource {
+
+        @Nonnull
+        VertexConsumer getBuffer(@Nonnull RenderType renderType);
+    }
+
+    /**
+     * Obfuscated chars pick a random glyph per frame; resolve them once so that every
+     * pass over the same string agrees on which glyph images are drawn.
+     *
+     * @return the input array when nothing was replaced, a copy otherwise
+     */
+    @Nonnull
+    private static BakedGlyph[] resolveObfuscated(@Nonnull BakedGlyph[] glyphs, @Nonnull int[] flags) {
+        BakedGlyph[] result = glyphs;
+        for (int i = 0, e = glyphs.length; i < e; i++) {
+            if ((flags[i] & CharacterStyle.OBFUSCATED_MASK) == 0 ||
+                    !(glyphs[i] instanceof GlyphManager.FastCharSet chars)) {
+                continue;
+            }
+            if (result == glyphs) {
+                result = glyphs.clone();
+            }
+            result[i] = chars.glyphs.get(RANDOM.nextInt(chars.glyphs.size()));
+        }
+        return result;
+    }
+
+    /**
+     * Draw this layout in the 3D world, see
+     * {@link net.minecraft.client.renderer.feature.TextFeatureRenderer} and
+     * {@link net.minecraft.client.renderer.feature.NameTagFeatureRenderer}.
+     */
+    public float drawText(@Nonnull final Matrix4fc matrix,
+                          @Nonnull final BufferSource source,
+                          final float x, final float top,
+                          final int color, final boolean dropShadow,
+                          final int preferredMode, final boolean polygonOffset,
+                          final int bgColor, final int packedLight) {
+        final float density;
+        final BakedGlyph[] baseGlyphs;
+        if (preferredMode == TextRenderType.MODE_SDF_FILL) {
+            int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
+            baseGlyphs = getGlyphs(resLevel);
+            density = resLevel;
+        } else {
+            baseGlyphs = getGlyphs(mCreatedResLevel);
+            density = mCreatedResLevel;
+        }
+        return drawResolvedText(matrix, source, resolveObfuscated(baseGlyphs, mGlyphFlags),
+                density, x, top, color, dropShadow, preferredMode, polygonOffset,
+                bgColor, packedLight);
+    }
+
+    /**
+     * The glowing outline of a string plus its fill. Both passes share one resolved
+     * glyph array, so obfuscated chars line up; the stroke is emitted first so that it
+     * lands in an earlier draw of the group.
+     *
+     * @param drawOutline false to draw the fill alone, i.e. no distance field available
+     */
+    public float drawTextWithOutline(@Nonnull final Matrix4fc matrix,
+                                     @Nonnull final BufferSource source,
+                                     final float x, final float top,
+                                     final int color, final int outlineColor,
+                                     final boolean drawOutline, final int packedLight) {
+        final int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
+        final BakedGlyph[] glyphs = resolveObfuscated(getGlyphs(resLevel), mGlyphFlags);
+        if (drawOutline) {
+            drawOutlinePass(matrix, source, glyphs, x, top, resLevel, outlineColor, packedLight);
+        }
+        return drawResolvedText(matrix, source, glyphs, resLevel, x, top, color, false,
+                TextRenderType.MODE_SDF_FILL, true, 0, packedLight);
+    }
+
+    private float drawResolvedText(@Nonnull final Matrix4fc matrix,
+                                   @Nonnull final BufferSource source,
+                                   @Nonnull final BakedGlyph[] glyphs, final float density,
+                                   final float x, final float top,
+                                   final int color, final boolean dropShadow,
+                                   final int preferredMode, final boolean polygonOffset,
+                                   final int bgColor, final int packedLight) {
+        final boolean seeThrough = preferredMode == TextRenderType.MODE_SEE_THROUGH;
+        final net.minecraft.client.gui.Font.DisplayMode compatDisplayMode =
+                polygonOffset ? net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET
+                        : seeThrough ? net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH
+                        : net.minecraft.client.gui.Font.DisplayMode.NORMAL;
+
+        if ((bgColor & 0xFF000000) != 0) {
+            var renderable = GlyphManager.getInstance().getEffectGlyph().createEffect(
+                    x - 1, top - 1, x + mTotalAdvance + 1, top + 9,
+                    -TextRenderEffect.EFFECT_DEPTH, bgColor, 0, 0
+            );
+            renderable.render(matrix,
+                    source.getBuffer(renderable.renderType(compatDisplayMode)),
+                    packedLight, false);
+        }
+
+        final int a = color >>> 24;
+        final int r = color >> 16 & 0xff;
+        final int g = color >> 8 & 0xff;
+        final int b = color & 0xff;
+
+        final boolean hasShadow = dropShadow && ModernTextRenderer.sAllowShadow;
+        final float shadowOffset = hasShadow ? ModernTextRenderer.sShadowOffset : 0;
+
+        // the shadow goes first, the fill is then lifted towards the viewer
+        if (hasShadow) {
+            drawGlyphPass(matrix, source, glyphs, x, top, density, compatDisplayMode,
+                    r >> 2, g >> 2, b >> 2, a, true, shadowOffset, 0,
+                    preferredMode, seeThrough, polygonOffset, packedLight);
+        }
+        drawGlyphPass(matrix, source, glyphs, x, top, density, compatDisplayMode,
+                r, g, b, a, false, shadowOffset,
+                hasShadow ? net.minecraft.client.gui.Font.SHADOW_DEPTH : 0,
+                preferredMode, seeThrough, polygonOffset, packedLight);
+
+        if (mHasEffect) {
+            if (hasShadow) {
+                drawEffectPass(matrix, source, compatDisplayMode, x, top,
+                        r >> 2, g >> 2, b >> 2, a, true, shadowOffset, packedLight);
+            }
+            drawEffectPass(matrix, source, compatDisplayMode, x, top,
+                    r, g, b, a, false, shadowOffset, packedLight);
+        }
+
+        return mTotalAdvance;
+    }
+
+    private void drawGlyphPass(@Nonnull final Matrix4fc matrix,
+                               @Nonnull final BufferSource source,
+                               @Nonnull final BakedGlyph[] glyphs,
+                               float x, float top, final float density,
+                               final net.minecraft.client.gui.Font.DisplayMode compatDisplayMode,
+                               final int startR, final int startG, final int startB, final int a,
+                               final boolean isShadow, final float shadowOffset, final float z,
+                               final int preferredMode, final boolean seeThrough,
+                               final boolean polygonOffset, final int packedLight) {
         final float invDensity = 1.0f / density;
-        float shadowOffset = 0;
         if (isShadow) {
-            shadowOffset = ModernTextRenderer.sShadowOffset;
-            /*if (preferredMode == TextRenderType.MODE_NORMAL) {
-                // align to screen pixel center in 2D
-                shadowOffset = Math.round(shadowOffset * density) * invDensity;
-            }*/
             x += shadowOffset;
             top += shadowOffset;
         }
-
         final var positions = mPositions;
         final var flags = mGlyphFlags;
-        //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
-
         final float baseline = top + sBaselineOffset;
 
         Identifier prevTexture = null;
@@ -365,20 +482,9 @@ public class TextLayout {
         net.minecraft.client.gui.Font.DisplayMode prevVanillaDisplayMode = null;
         VertexConsumer builder = null;
 
-        final boolean seeThrough = preferredMode == TextRenderType.MODE_SEE_THROUGH;
-        net.minecraft.client.gui.Font.DisplayMode compatDisplayMode =
-                polygonOffset ? net.minecraft.client.gui.Font.DisplayMode.POLYGON_OFFSET :
-                        seeThrough ? net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH :
-                                net.minecraft.client.gui.Font.DisplayMode.NORMAL;
-        if ((bgColor & 0xFF000000) != 0) {
-            var renderable = GlyphManager.getInstance().getEffectGlyph().createEffect(
-                    x - 1, top - 1, x + mTotalAdvance + 1, top + 9,
-                    -TextRenderEffect.EFFECT_DEPTH, bgColor, 0, 0
-            );
-            var buffer = source.getBuffer(renderable.renderType(compatDisplayMode));
-            renderable.render(matrix, buffer, packedLight, false);
-        }
-
+        int r;
+        int g;
+        int b;
         for (int i = 0, e = glyphs.length; i < e; i++) {
             var vglyph = glyphs[i];
             if (vglyph == null) {
@@ -386,27 +492,25 @@ public class TextLayout {
             }
             final int bits = flags[i];
             if (!(vglyph instanceof ModernBakedGlyph glyph)) {
-                // used in 3D world rendering, and it's atlas sprite or player skin
+                // atlas sprite or player skin, they don't use style and have no shadow
                 if (!isShadow) {
-                    int glyphColor;
-                    if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) == 0) {
-                        glyphColor = ARGB.color(a, bits);
-                    } else {
-                        glyphColor = ARGB.color(a, startR, startG, startB);
-                    }
-                    // atlas sprite and player skin don't use style
+                    int glyphColor = (bits & CharacterStyle.IMPLICIT_COLOR_MASK) == 0
+                            ? ARGB.color(a, bits)
+                            : ARGB.color(a, startR, startG, startB);
                     var renderable = vglyph.createGlyph(
                             x + positions[i << 1],
                             top + positions[i << 1 | 1],
-                            glyphColor, 0,
-                            Style.EMPTY,
-                            0, 0
+                            glyphColor, 0, Style.EMPTY, 0, 0
                     );
                     if (renderable != null) {
-                        var buffer = source.getBuffer(renderable.renderType(compatDisplayMode));
-                        renderable.render(matrix, buffer, packedLight, false);
+                        renderable.render(matrix,
+                                source.getBuffer(renderable.renderType(compatDisplayMode)),
+                                packedLight, false);
                     }
                 }
+                continue;
+            }
+            if ((bits & CharacterStyle.NO_SHADOW_MASK) != 0 && isShadow) {
                 continue;
             }
             float rx;
@@ -420,27 +524,20 @@ public class TextLayout {
             net.minecraft.client.gui.Font.DisplayMode vanillaDisplayMode = null;
             boolean isBitmapFont = false;
             boolean isColorEmoji = false;
-            if ((bits & CharacterStyle.NO_SHADOW_MASK) != 0 && isShadow) {
-                continue;
-            }
-            if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
-                var chars = (GlyphManager.FastCharSet) glyph;
-                int fastIndex = RANDOM.nextInt(chars.glyphs.size());
-                glyph = chars.glyphs.get(fastIndex);
-            }
             if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
                 final float scaleFactor;
                 if (getFont(i) instanceof BitmapFont bitmapFont) {
                     texture = bitmapFont.getCurrentTextureName();
-                    ascent = bitmapFont.getAscent();
+                    ascent = -glyph.y / TextLayoutEngine.BITMAP_SCALE;
                     scaleFactor = 1f / TextLayoutEngine.BITMAP_SCALE;
                     isBitmapFont = true;
                 } else {
                     if (isShadow) {
+                        // color emoji has no shadow
                         continue;
                     }
                     texture = GlyphManager.EMOJI_SHEET;
-                    ascent = TextLayout.STANDARD_BASELINE_OFFSET;
+                    ascent = STANDARD_BASELINE_OFFSET;
                     scaleFactor = TextLayoutProcessor.sBaseFontSize / GlyphManager.EMOJI_BASE;
                     isColorEmoji = true;
                 }
@@ -452,10 +549,10 @@ public class TextLayout {
                     rx += 1.0f - shadowOffset;
                     ry += 1.0f - shadowOffset;
                 }
-
                 w = glyph.width * scaleFactor;
                 h = glyph.height * scaleFactor;
-                mode = seeThrough ? preferredMode : TextRenderType.MODE_NORMAL; // for color emoji
+                // both are direct mask, they are never SDF
+                mode = seeThrough ? TextRenderType.MODE_SEE_THROUGH : TextRenderType.MODE_NORMAL;
                 if (isBitmapFont) {
                     vanillaDisplayMode = seeThrough
                             ? net.minecraft.client.gui.Font.DisplayMode.SEE_THROUGH
@@ -468,16 +565,10 @@ public class TextLayout {
                 mode = preferredMode;
                 rx = x + positions[i << 1] + glyph.x * invDensity;
                 ry = baseline + positions[i << 1 | 1] + glyph.y * invDensity;
-
                 w = glyph.width * invDensity;
                 h = glyph.height * invDensity;
                 texture = GlyphManager.FONT_SHEET;
             }
-            /*if (preferredMode == TextRenderType.MODE_NORMAL) {
-                // align to screen pixel center in 2D
-                rx = Math.round(rx * density) * invDensity;
-                ry = Math.round(ry * density) * invDensity;
-            }*/
             if (isColorEmoji) {
                 r = 0xff;
                 g = 0xff;
@@ -512,183 +603,135 @@ public class TextLayout {
                 upSkew = 0.25f * ascent;
                 downSkew = 0.25f * (ascent - h);
             }
-            builder.addVertex(matrix, rx + upSkew, ry, 0)
+            builder.addVertex(matrix, rx + upSkew, ry, z)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u1, glyph.v1)
                     .setLight(packedLight);
-            builder.addVertex(matrix, rx + downSkew, ry + h, 0)
+            builder.addVertex(matrix, rx + downSkew, ry + h, z)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u1, glyph.v2)
                     .setLight(packedLight);
-            builder.addVertex(matrix, rx + w + downSkew, ry + h, 0)
+            builder.addVertex(matrix, rx + w + downSkew, ry + h, z)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u2, glyph.v2)
                     .setLight(packedLight);
-            builder.addVertex(matrix, rx + w + upSkew, ry, 0)
+            builder.addVertex(matrix, rx + w + upSkew, ry, z)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u2, glyph.v1)
                     .setLight(packedLight);
         }
+    }
 
-        if (mHasEffect) {
-            var placeholder = GlyphManager.getInstance().getEffectGlyph().createEffect(
-                    x, top, x + mTotalAdvance, top + 9,
-                    TextRenderEffect.EFFECT_DEPTH, ~0, 0, 0
-            );
-            builder = source.getBuffer(placeholder.renderType(compatDisplayMode));
-            for (int i = 0, e = glyphs.length; i < e; i++) {
-                final int bits = flags[i];
-                if ((bits & CharacterStyle.EFFECT_MASK) == 0) {
-                    continue;
-                }
-                if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
-                    r = startR;
-                    g = startG;
-                    b = startB;
-                } else {
-                    r = bits >> 16 & 0xff;
-                    g = bits >> 8 & 0xff;
-                    b = bits & 0xff;
-                    if (isShadow) {
-                        r >>= 2;
-                        g >>= 2;
-                        b >>= 2;
-                    }
-                }
-                final float rx1 = x + positions[i << 1];
-                final float rx2 = x + ((i + 1 == e) ? mTotalAdvance : positions[(i + 1) << 1]);
-                if ((bits & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
-                    TextRenderEffect.drawStrikethrough(matrix, builder, rx1, rx2, baseline,
-                            r, g, b, a, packedLight);
-                }
-                if ((bits & CharacterStyle.UNDERLINE_MASK) != 0) {
-                    TextRenderEffect.drawUnderline(matrix, builder, rx1, rx2, baseline,
-                            r, g, b, a, packedLight);
+    private void drawEffectPass(@Nonnull final Matrix4fc matrix,
+                                @Nonnull final BufferSource source,
+                                final net.minecraft.client.gui.Font.DisplayMode compatDisplayMode,
+                                float x, float top,
+                                final int startR, final int startG, final int startB, final int a,
+                                final boolean isShadow, final float shadowOffset,
+                                final int packedLight) {
+        if (isShadow) {
+            x += shadowOffset;
+            top += shadowOffset;
+        }
+        final float baseline = top + sBaselineOffset;
+        var placeholder = GlyphManager.getInstance().getEffectGlyph().createEffect(
+                x, top, x + mTotalAdvance, top + 9,
+                TextRenderEffect.EFFECT_DEPTH, ~0, 0, 0
+        );
+        final VertexConsumer builder = source.getBuffer(placeholder.renderType(compatDisplayMode));
+
+        final var positions = mPositions;
+        final var flags = mGlyphFlags;
+        int r;
+        int g;
+        int b;
+        for (int i = 0, e = flags.length; i < e; i++) {
+            final int bits = flags[i];
+            if ((bits & CharacterStyle.EFFECT_MASK) == 0) {
+                continue;
+            }
+            if ((bits & CharacterStyle.IMPLICIT_COLOR_MASK) != 0) {
+                r = startR;
+                g = startG;
+                b = startB;
+            } else {
+                r = bits >> 16 & 0xff;
+                g = bits >> 8 & 0xff;
+                b = bits & 0xff;
+                if (isShadow) {
+                    r >>= 2;
+                    g >>= 2;
+                    b >>= 2;
                 }
             }
+            final float rx1 = x + positions[i << 1];
+            final float rx2 = x + ((i + 1 == e) ? mTotalAdvance : positions[(i + 1) << 1]);
+            if ((bits & CharacterStyle.STRIKETHROUGH_MASK) != 0) {
+                TextRenderEffect.drawStrikethrough(matrix, builder, rx1, rx2, baseline,
+                        r, g, b, a, packedLight);
+            }
+            if ((bits & CharacterStyle.UNDERLINE_MASK) != 0) {
+                TextRenderEffect.drawUnderline(matrix, builder, rx1, rx2, baseline,
+                        r, g, b, a, packedLight);
+            }
         }
-
-        return mTotalAdvance;
     }
 
     /**
-     * Special case of drawText() when drawing the glowing outline of drawText8xOutline().
-     * No fast digit replacement, no shadow, no background, no underline, no strikethrough,
-     * no bitmap replacement, force to use input color, can have obfuscated rendering (but should not).
-     *
-     * @param matrix      the position transformation
-     * @param source      the vertex buffer source
-     * @param x           the left pos of the text line to render
-     * @param top         the top of the text line to render
-     * @param r           the default outline red value (0...255)
-     * @param g           the default outline green value (0...255)
-     * @param b           the default outline blue value (0...255)
-     * @param a           the alpha value (0...255)
-     * @param packedLight see {@link net.minecraft.util.LightCoordsUtil}
+     * A single SDF stroke pass rather than vanilla's eight offset copies.
      */
-    @SuppressWarnings("UnnecessaryLocalVariable")
-    public void drawTextOutline(@Nonnull Matrix4fc matrix,
-                                @Nonnull MultiBufferSource source,
-                                final float x, final float top,
-                                int r, int g, int b, int a,
-                                int packedLight) {
-        final float resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
-
-        final BakedGlyph[] glyphs = getGlyphs((int) resLevel);
+    private void drawOutlinePass(@Nonnull final Matrix4fc matrix,
+                                 @Nonnull final BufferSource source,
+                                 @Nonnull final BakedGlyph[] glyphs,
+                                 final float x, final float top, final int resLevel,
+                                 final int outlineColor, final int packedLight) {
         final var positions = mPositions;
         final var flags = mGlyphFlags;
-        //final boolean alignPixels = TextLayoutProcessor.sAlignPixels;
-
         final float baseline = top + sBaselineOffset;
 
-        VertexConsumer builder = null;
+        final int a = outlineColor >>> 24;
+        final int r = outlineColor >> 16 & 0xff;
+        final int g = outlineColor >> 8 & 0xff;
+        final int b = outlineColor & 0xff;
 
         // outset glyph bounds
-        final float sBloat = 1.0f / resLevel;
-        for (int i = 0, e = glyphs.length; i < e; i++) {
-            var vglyph = glyphs[i];
-            if (vglyph == null) {
-                continue;
-            }
-            if (!(vglyph instanceof ModernBakedGlyph glyph)) {
-                continue;
-            }
-            final int bits = flags[i];
-            final float rx;
-            final float ry;
-            final float w;
-            final float h;
-            if ((bits & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
-                continue;
-            } else {
-                if ((bits & CharacterStyle.OBFUSCATED_MASK) != 0) {
-                    var chars = (GlyphManager.FastCharSet) glyph;
-                    int fastIndex = RANDOM.nextInt(chars.glyphs.size());
-                    glyph = chars.glyphs.get(fastIndex);
-                }
-                rx = x + positions[i << 1] + glyph.x / resLevel;
-                ry = baseline + positions[i << 1 | 1] + glyph.y / resLevel;
+        final float bloat = 1.0f / resLevel;
+        final float depth = ModernTextRenderer.OUTLINE_DEPTH;
+        VertexConsumer builder = null;
 
-                w = glyph.width / resLevel;
-                h = glyph.height / resLevel;
+        for (int i = 0, e = glyphs.length; i < e; i++) {
+            if (!(glyphs[i] instanceof ModernBakedGlyph glyph) ||
+                    (flags[i] & CharacterStyle.ANY_BITMAP_REPLACEMENT) != 0) {
+                // bitmap font and color emoji have no distance field to stroke
+                continue;
             }
-            /*if (alignPixels) {
-                rx = Math.round(rx * scale) / scale;
-                ry = Math.round(ry * scale) / scale;
-            }*/
+            final float rx = x + positions[i << 1] + glyph.x / (float) resLevel;
+            final float ry = baseline + positions[i << 1 | 1] + glyph.y / (float) resLevel;
+            final float w = glyph.width / (float) resLevel;
+            final float h = glyph.height / (float) resLevel;
+            final float uBloat = (glyph.u2 - glyph.u1) / glyph.width;
+            final float vBloat = (glyph.v2 - glyph.v1) / glyph.height;
             if (builder == null) {
-                builder = source.getBuffer(TextRenderType.getOrCreate(GlyphManager.FONT_SHEET,
-                        TextRenderType.MODE_SDF_STROKE));
+                builder = source.getBuffer(TextRenderType.getOrCreate(
+                        GlyphManager.FONT_SHEET, TextRenderType.MODE_SDF_STROKE));
             }
-            float uBloat = (glyph.u2 - glyph.u1) / glyph.width;
-            float vBloat = (glyph.v2 - glyph.v1) / glyph.height;
-            builder.addVertex(matrix, rx - sBloat, ry - sBloat, 0.001f)
+            builder.addVertex(matrix, rx - bloat, ry - bloat, depth)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u1 - uBloat, glyph.v1 - vBloat)
                     .setLight(packedLight);
-            builder.addVertex(matrix, rx - sBloat, ry + h + sBloat, 0.001f)
+            builder.addVertex(matrix, rx - bloat, ry + h + bloat, depth)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u1 - uBloat, glyph.v2 + vBloat)
                     .setLight(packedLight);
-            builder.addVertex(matrix, rx + w + sBloat, ry + h + sBloat, 0)
+            builder.addVertex(matrix, rx + w + bloat, ry + h + bloat, depth)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u2 + uBloat, glyph.v2 + vBloat)
                     .setLight(packedLight);
-            builder.addVertex(matrix, rx + w + sBloat, ry - sBloat, 0)
+            builder.addVertex(matrix, rx + w + bloat, ry - bloat, depth)
                     .setColor(r, g, b, a)
                     .setUv(glyph.u2 + uBloat, glyph.v1 - vBloat)
                     .setLight(packedLight);
         }
-    }
-
-    /**
-     * Special version for GUI text rendering.
-     */
-    public ModernPreparedText prepareTextWithDensity(float x, float top,
-                                                     final int color, final boolean dropShadow,
-                                                     int preferredMode, final float uniformScale,
-                                                     final int bgColor, float xAdj, float yAdj) {
-        final float density;
-        final BakedGlyph[] glyphs;
-        if (preferredMode == TextRenderType.MODE_SDF_FILL) {
-            int resLevel = TextLayoutEngine.adjustPixelDensityForSDF(mCreatedResLevel);
-            glyphs = getGlyphs(resLevel);
-            density = resLevel;
-        } else if (preferredMode == TextRenderType.MODE_UNIFORM_SCALE) {
-            if (uniformScale <= 0.001f) {
-                // drop if flipped or too small
-                return ModernPreparedText.EMPTY;
-            }
-            density = mCreatedResLevel * uniformScale;
-            glyphs = getGlyphsUniformScale(density);
-            preferredMode = TextRenderType.MODE_NORMAL;
-        } else {
-            glyphs = getGlyphs(mCreatedResLevel);
-            density = mCreatedResLevel;
-        }
-
-        return new ModernPreparedText(x, top, color, dropShadow, preferredMode, bgColor, xAdj, yAdj, density, glyphs,
-                this);
     }
 
     /**

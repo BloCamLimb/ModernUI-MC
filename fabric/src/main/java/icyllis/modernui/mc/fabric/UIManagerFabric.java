@@ -69,7 +69,7 @@ public final class UIManagerFabric extends UIManager {
         if (!minecraft.isSameThread()) {
             throw new IllegalStateException("Not called from main thread");
         }
-        minecraft.setScreen(new SimpleScreen(fragment, null, null, CommonComponents.EMPTY));
+        minecraft.gui.setScreen(new SimpleScreen(fragment, null, null, CommonComponents.EMPTY));
     }
 
     @Override
@@ -83,7 +83,7 @@ public final class UIManagerFabric extends UIManager {
                 onHoverMove(false);
             }
             // for non-mui screens
-            if (mScreen == null && minecraft.screen == null) {
+            if (mScreen == null && minecraft.gui.screen() == null) {
                 //mTicks = 0;
                 mElapsedTimeMillis = 0;
             }
@@ -94,10 +94,9 @@ public final class UIManagerFabric extends UIManager {
     @Override
     protected void onPreKeyInput(int action, KeyEvent event) {
         if (action == GLFW_PRESS) {
-            if (minecraft.screen == null ||
-                    minecraft.screen.shouldCloseOnEsc() ||
-                    minecraft.screen instanceof TitleScreen) {
-                if (event.hasControlDownWithQuirk() && OPEN_CENTER_KEY.matches(event)) {
+            Screen screen = minecraft.gui.screen();
+            if (screen == null || screen instanceof TitleScreen) {
+                if (OPEN_CENTER_KEY.matches(event)) {
                     open(new CenterFragment2());
                     return;
                 }

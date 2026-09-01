@@ -66,6 +66,12 @@ public class CenterFragment2 extends Fragment {
     @Override
     public void onCreate(@Nullable DataSet savedInstanceState) {
         super.onCreate(savedInstanceState);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable DataSet savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
         var ft = getChildFragmentManager().beginTransaction();
         var args = getArguments();
         if (args != null && args.getBoolean("navigateToPreferences")) {
@@ -75,7 +81,7 @@ public class CenterFragment2 extends Fragment {
         }
         ft
                 .setReorderingAllowed(true)
-                .commit();
+                .commitNow();
     }
 
     @Override
@@ -217,9 +223,8 @@ public class CenterFragment2 extends Fragment {
                     }
                 }
                 if (ft != null) {
-                    ft.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-                            .setReorderingAllowed(true)
-                            .commit();
+                    ft.setReorderingAllowed(true)
+                            .commitNow();
                 }
             });
 
@@ -232,7 +237,7 @@ public class CenterFragment2 extends Fragment {
         {
             var tabContainer = new FragmentContainerView(getContext());
             tabContainer.setId(id_tab_container);
-            var params = new LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT);
+            var params = new LinearLayout.LayoutParams(0, MATCH_PARENT, 1);
             base.addView(tabContainer, params);
         }
 
@@ -282,4 +287,5 @@ public class CenterFragment2 extends Fragment {
 
         return button;
     }
+
 }

@@ -75,7 +75,6 @@ public class SimpleScreen extends Screen implements MuiScreen {
 
     @Override
     public void extractRenderState(@Nonnull GuiGraphicsExtractor gr, int mouseX, int mouseY, float deltaTick) {
-        mHost.render(gr, mouseX, mouseY, deltaTick);
         super.extractRenderState(gr, mouseX, mouseY, deltaTick);
     }
 
